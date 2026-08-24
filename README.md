@@ -1,4 +1,4 @@
-﻿# 🏢 Connected Enterprise — Modular ERP, CRM & Helpdesk Suite
+# 🏢 Connected Enterprise — Modular ERP, CRM & Helpdesk Suite
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg?logo=python&logoColor=white)](https://python.org)
 [![Flask](https://img.shields.io/badge/Framework-Flask_2.x-lightgrey.svg?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
@@ -8,6 +8,27 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 > **Connected Enterprise** is a comprehensive, production-grade ERP, CRM, and Helpdesk platform designed for B2B service providers, equipment rental firms, and technical assistance operations. Built with a decoupled **Modular Flask Blueprints** architecture, it features robust ticketing, automated PDF proposal generation, financial contract management, resilient background email queuing, and granular Access Control (ACL).
+
+## 📸 Interface Preview & Screenshots
+
+<div align="center">
+
+### 📊 1. Operations & Executive Dashboard
+![Operations Dashboard](docs/screenshots/02_dashboard.png)
+
+### 📋 2. Knowledge Base & Kanban Workflow
+![Knowledge Base & Kanban](docs/screenshots/05_knowledge_kanban.png)
+
+### 🎫 3. Enterprise Helpdesk & SLA Lifecycle
+![Tickets List](docs/screenshots/03_tickets.png)
+
+### 📑 4. Commercial Proposal & Quote Builder
+![Commercial Proposals](docs/screenshots/04_proposals.png)
+
+### 🔐 5. Secure Authentication Portal
+![Login Screen](docs/screenshots/01_login.png)
+
+</div>
 
 ---
 

@@ -3,6 +3,8 @@ Seed script for Connected Enterprise ERP & CRM.
 Creates sample demonstration data (Users, Departments, Equipment, Tickets)
 for local testing and portfolio showcase.
 """
+import os
+import sys
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash
 
@@ -19,16 +21,16 @@ def run_seed():
 
         print("🏢 Creating Departments...")
         depts_data = [
-            ("Suporte Técnico", "Atendimento ao cliente e suporte operacional."),
-            ("Comercial & Vendas", "Gestão de propostas e contratos."),
-            ("Financeiro", "Contas a pagar e receber."),
-            ("Desenvolvimento", "Engenharia de software e infraestrutura."),
+            ("Suporte Técnico", "suporte-tecnico"),
+            ("Comercial & Vendas", "comercial-vendas"),
+            ("Financeiro", "financeiro"),
+            ("Desenvolvimento", "desenvolvimento"),
         ]
         dept_map = {}
-        for name, desc in depts_data:
-            dept = Department.query.filter_by(name=name).first()
+        for name, slug in depts_data:
+            dept = Department.query.filter_by(slug=slug).first() or Department.query.filter_by(name=name).first()
             if not dept:
-                dept = Department(name=name, description=desc)
+                dept = Department(name=name, slug=slug)
                 db.session.add(dept)
                 db.session.flush()
             dept_map[name] = dept
@@ -170,6 +172,7 @@ def run_seed():
         print("   🛠️ Atendente: usuario='atendente' | senha='user123'")
         print("   🏢 Cliente:  usuario='cliente'  | senha='client123'")
         print("=" * 60)
+        os._exit(0)
 
 if __name__ == "__main__":
     run_seed()

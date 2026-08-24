@@ -1,0 +1,111 @@
+[
+  {
+    "date": "2026-01-01",
+    "name": "Confraternização Universal",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2026-02-16",
+    "name": "Carnaval",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2026-02-17",
+    "name": "Carnaval",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2026-02-18",
+    "name": "Quarta-feira de Cinzas",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2026-04-03",
+    "name": "Sexta-feira Santa",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2026-04-21",
+    "name": "Tiradentes",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2026-05-01",
+    "name": "Dia do Trabalhador",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2026-06-04",
+    "name": "Corpus Christi",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2026-07-09",
+    "name": "Revolução Constitucionalista",
+    "type": "feriado",
+    "level": "estadual",
+    "law": "Lei estadual nº 9.497/1997"
+  },
+  {
+    "date": "2026-09-07",
+    "name": "Independência do Brasil",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2026-10-12",
+    "name": "Nossa Senhora Aparecida",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2026-10-28",
+    "name": "Dia do Servidor Público",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2026-11-02",
+    "name": "Finados",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2026-11-15",
+    "name": "Proclamação da República",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2026-11-20",
+    "name": "Dia Nacional de Zumbi e da Consciência Negra",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2026-12-24",
+    "name": "Véspera de Natal",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2026-12-25",
+    "name": "Natal",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2026-12-31",
+    "name": "Véspera de Ano-Novo",
+    "type": "facultativo",
+    "level": "nacional"
+  }
+]
