@@ -16,16 +16,19 @@
 ### 📊 1. Operations & Executive Dashboard
 ![Operations Dashboard](docs/screenshots/02_dashboard.png)
 
-### 📋 2. Knowledge Base & Kanban Workflow
-![Knowledge Base & Kanban](docs/screenshots/05_knowledge_kanban.png)
+### 🎫 2. Enterprise Helpdesk & SLA Lifecycle
+![Helpdesk Tickets](docs/screenshots/03_helpdesk_tickets.png)
 
-### 🎫 3. Enterprise Helpdesk & SLA Lifecycle
-![Tickets List](docs/screenshots/03_tickets.png)
+### 📑 3. Commercial Proposal & Quote Builder
+![Commercial Proposals](docs/screenshots/04_nova_proposta.png)
 
-### 📑 4. Commercial Proposal & Quote Builder
-![Commercial Proposals](docs/screenshots/04_proposals.png)
+### 📈 4. Proposal Pipeline & Contract Tracking
+![Proposal History](docs/screenshots/05_historico_propostas.png)
 
-### 🔐 5. Secure Authentication Portal
+### 📋 5. Knowledge Base & Kanban Workflow
+![Knowledge Base & Kanban](docs/screenshots/06_central_conhecimento.png)
+
+### 🔐 6. Secure Authentication Portal
 ![Login Screen](docs/screenshots/01_login.png)
 
 </div>
