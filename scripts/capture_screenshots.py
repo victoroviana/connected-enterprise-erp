@@ -1,99 +1,68 @@
 ﻿import os
 import sys
 import time
-import subprocess
-import urllib.request
+import threading
+
+sys.path.insert(0, r"c:\Users\User\Desktop\connected_erp_crm")
+
+from platform_app import create_app
 from playwright.sync_api import sync_playwright
 
-def wait_for_server(url, timeout=25):
-    start = time.time()
-    while time.time() - start < timeout:
-        try:
-            with urllib.request.urlopen(url, timeout=2) as resp:
-                if resp.status < 500:
-                    return True
-        except Exception:
-            time.sleep(0.5)
-    return False
+app = create_app()
+
+def run_app():
+    app.run(host="127.0.0.1", port=6002, threaded=True, debug=False, use_reloader=False)
 
 def main():
-    print("[+] Starting application server on port 6002...")
-    env = os.environ.copy()
-    env["PYTHONIOENCODING"] = "utf-8"
-    
-    proc = subprocess.Popen(
-        [sys.executable, "app.py"],
-        cwd=r"c:\Users\User\Desktop\connected_erp_crm",
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-    
+    t = threading.Thread(target=run_app, daemon=True)
+    t.start()
+    time.sleep(3)
+
     base_url = "http://127.0.0.1:6002"
     screenshots_dir = r"c:\Users\User\Desktop\connected_erp_crm\docs\screenshots"
     os.makedirs(screenshots_dir, exist_ok=True)
 
-    try:
-        print("[+] Waiting for server to become ready...")
-        if not wait_for_server(f"{base_url}/auth/login"):
-            print("[-] Server failed to respond in time.")
-            return
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(viewport={"width": 1440, "height": 900})
+        page = context.new_page()
 
-        with sync_playwright() as p:
-            print("[+] Launching Playwright browser...")
-            browser = p.chromium.launch(headless=True)
-            context = browser.new_context(viewport={"width": 1440, "height": 900})
-            page = context.new_page()
+        # 1. Login Page
+        print("[+] 1. Login")
+        page.goto(f"{base_url}/auth/login")
+        page.screenshot(path=os.path.join(screenshots_dir, "01_login.png"))
 
-            # 1. Login Page
-            print("[+] Capturing 01_login.png...")
-            page.goto(f"{base_url}/auth/login", wait_until="networkidle")
-            page.screenshot(path=os.path.join(screenshots_dir, "01_login.png"))
+        # Log in
+        print("[+] Logging in...")
+        page.fill("input[name='usuario']", "admin")
+        page.fill("input[name='senha']", "admin123")
+        page.click("button[type='submit']")
+        page.wait_for_load_state("domcontentloaded")
+        time.sleep(1)
+        print(f"    Logged in! Current URL: {page.url}")
 
-            # Log in as admin
-            print("[+] Logging in as admin...")
-            page.fill("input[name='usuario']", "admin")
-            page.fill("input[name='senha']", "admin123")
-            page.click("button[type='submit']")
-            page.wait_for_load_state("networkidle")
-            time.sleep(2)
+        pages_to_capture = [
+            ("02_dashboard.png", f"{base_url}/"),
+            ("03_nova_proposta.png", f"{base_url}/nova_proposta"),
+            ("04_historico_propostas.png", f"{base_url}/historico_propostas"),
+            ("05_central_conhecimento.png", f"{base_url}/central-conhecimento/"),
+            ("06_estoque_equipamentos.png", f"{base_url}/estoque"),
+            ("07_cracha_recibos.png", f"{base_url}/cracha/recibos"),
+            ("08_parametros.png", f"{base_url}/parametros"),
+        ]
 
-            # 2. Main Executive Home / Dashboard
-            print("[+] Capturing 02_dashboard.png...")
-            page.goto(f"{base_url}/", wait_until="networkidle")
-            time.sleep(1)
-            page.screenshot(path=os.path.join(screenshots_dir, "02_dashboard.png"))
+        for filename, url in pages_to_capture:
+            print(f"[+] Capturing {filename} from {url}...")
+            page.goto(url)
+            time.sleep(1.5)
+            target_path = os.path.join(screenshots_dir, filename)
+            page.screenshot(path=target_path)
+            size = os.path.getsize(target_path)
+            print(f"    -> Saved {filename} ({size} bytes) | Title: {page.title()}")
 
-            # 3. Helpdesk / Sollus Tickets Dashboard
-            print("[+] Capturing 03_helpdesk_tickets.png...")
-            page.goto(f"{base_url}/sollus-tickets/", wait_until="networkidle")
-            time.sleep(2)
-            page.screenshot(path=os.path.join(screenshots_dir, "03_helpdesk_tickets.png"))
-
-            # 4. Commercial Proposals (Nova Proposta)
-            print("[+] Capturing 04_nova_proposta.png...")
-            page.goto(f"{base_url}/nova_proposta", wait_until="networkidle")
-            time.sleep(2)
-            page.screenshot(path=os.path.join(screenshots_dir, "04_nova_proposta.png"))
-
-            # 5. Proposal History & Tracking
-            print("[+] Capturing 05_historico_propostas.png...")
-            page.goto(f"{base_url}/historico_propostas", wait_until="networkidle")
-            time.sleep(2)
-            page.screenshot(path=os.path.join(screenshots_dir, "05_historico_propostas.png"))
-
-            # 6. Central de Conhecimento / Kanban Board
-            print("[+] Capturing 06_central_conhecimento.png...")
-            page.goto(f"{base_url}/central-conhecimento", wait_until="networkidle")
-            time.sleep(2)
-            page.screenshot(path=os.path.join(screenshots_dir, "06_central_conhecimento.png"))
-
-            browser.close()
-            print("[+] ALL REAL SCREENSHOTS CAPTURED SUCCESSFULLY!")
-
-    finally:
-        proc.terminate()
-        proc.kill()
+        browser.close()
+        print("\n🎉 ALL SCREENSHOTS CAPTURED PERFECTLY!")
+        os._exit(0)
 
 if __name__ == "__main__":
     main()

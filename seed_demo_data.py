@@ -1,4 +1,4 @@
-﻿"""
+"""
 Seed script for Connected Enterprise ERP & CRM.
 Creates sample demonstration data (Users, Departments, Equipment, Tickets)
 for local testing and portfolio showcase.
@@ -85,6 +85,11 @@ def run_seed():
                     department_id=dept_map[u["dept"]].id,
                 )
                 db.session.add(user)
+                db.session.flush()
+            else:
+                user.password_hash = generate_password_hash(u["password"])
+                user.is_active = True
+                user.role = u["role"]
                 db.session.flush()
             user_map[u["usuario"]] = user
 

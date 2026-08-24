@@ -16,19 +16,25 @@
 ### 📊 1. Operations & Executive Dashboard
 ![Operations Dashboard](docs/screenshots/02_dashboard.png)
 
-### 🎫 2. Enterprise Helpdesk & SLA Lifecycle
-![Helpdesk Tickets](docs/screenshots/03_helpdesk_tickets.png)
+### 📑 2. Commercial Proposal & Quote Builder
+![Commercial Proposals](docs/screenshots/03_nova_proposta.png)
 
-### 📑 3. Commercial Proposal & Quote Builder
-![Commercial Proposals](docs/screenshots/04_nova_proposta.png)
+### 📈 3. Proposal Pipeline & Contract Tracking
+![Proposal History](docs/screenshots/04_historico_propostas.png)
 
-### 📈 4. Proposal Pipeline & Contract Tracking
-![Proposal History](docs/screenshots/05_historico_propostas.png)
+### 📋 4. Central Knowledge Base & Kanban Task Board
+![Knowledge Base & Kanban](docs/screenshots/05_central_conhecimento.png)
 
-### 📋 5. Knowledge Base & Kanban Workflow
-![Knowledge Base & Kanban](docs/screenshots/06_central_conhecimento.png)
+### 📦 5. Equipment Catalog & Inventory Management
+![Inventory & Equipment](docs/screenshots/06_estoque_equipamentos.png)
 
-### 🔐 6. Secure Authentication Portal
+### 💳 6. PVC Card Manufacturing & Production Receipts
+![ID Card Receipts](docs/screenshots/07_cracha_recibos.png)
+
+### ⚙️ 7. Dynamic Business Rules & Pricing Parameters
+![System Parameters](docs/screenshots/08_parametros.png)
+
+### 🔐 8. Secure Authentication Portal
 ![Login Screen](docs/screenshots/01_login.png)
 
 </div>
