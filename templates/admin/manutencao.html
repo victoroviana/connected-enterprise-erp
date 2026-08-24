@@ -1,0 +1,194 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+
+{% block title %}Administração | Manutenção do Sistema{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+  .maintenance-card {
+    border: 0;
+    border-radius: 1.5rem;
+    box-shadow: 0 18px 40px rgba(15, 35, 58, 0.08);
+    background: var(--card);
+    color: var(--text);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="py-4">
+  {% set hero_stats = [
+    {'label': 'Status', 'value': 'Ativo', 'hint': 'Alerta de manutenção'}
+  ] %}
+  {% set hero_help_tips = [
+    'Escolha a duração desejada para a contagem regressiva antes de disparar o alerta.',
+    'A mensagem personalizada será exibida como um aviso em tela cheia para todos os usuários logados.',
+    'Você pode cancelar o alerta a qualquer momento clicando no botão "Cancelar".'
+  ] %}
+  
+  {{ page_hero(
+    title='Manutenção do Sistema',
+    subtitle='Dispare avisos com contagem regressiva em tempo real para os usuários logados.',
+    eyebrow='Administração',
+    stats=None,
+    help_tips=hero_help_tips,
+    help_intro='Dicas de gerenciamento de manutenção.'
+  ) }}
+
+  <div class="card maintenance-card mt-4">
+    <div class="card-body p-4">
+      <div class="d-flex align-items-center gap-3 mb-4">
+        <div style="width: 48px; height: 48px; border-radius: 14px; background: rgba(239, 68, 68, 0.1); display: flex; align-items: center; justify-content: center; color: #ef4444; font-size: 1.25rem;">
+          <i class="fa-solid fa-triangle-exclamation animate-pulse"></i>
+        </div>
+        <div>
+          <h3 class="h5 fw-bold mb-1">Controle de Reinicialização e Alertas</h3>
+          <p class="text-muted mb-0">Informe os usuários com antecedência para que salvem seus trabalhos pendentes.</p>
+        </div>
+      </div>
+
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small text-muted fw-bold text-uppercase">Tempo do Alerta</label>
+          <select id="maintenanceDuration" class="form-select" style="border-radius: 0.85rem; background: var(--card); color: var(--text); border-color: rgba(148,163,184,0.3);">
+            <option value="15">15 segundos</option>
+            <option value="30" selected>30 segundos</option>
+            <option value="45">45 segundos</option>
+            <option value="60">60 segundos</option>
+            <option value="120">2 minutos</option>
+            <option value="300">5 minutos</option>
+          </select>
+        </div>
+        <div class="col-md-5">
+          <label class="form-label small text-muted fw-bold text-uppercase">Mensagem de Aviso</label>
+          <input type="text" id="maintenanceCustomMsg" class="form-control" style="border-radius: 0.85rem; background: var(--card); color: var(--text); border-color: rgba(148,163,184,0.3);" value="O sistema será reiniciado para manutenção rápida. Salve o seu trabalho!" placeholder="Mensagem personalizada...">
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+          <button id="btnTriggerMaintenance" class="btn btn-danger flex-grow-1" style="border-radius: 0.85rem; font-weight: 600;">
+            <i class="fa-solid fa-tower-broadcast me-1"></i> Disparar Alerta
+          </button>
+          <button id="btnCancelMaintenance" class="btn btn-outline-secondary d-none" style="border-radius: 0.85rem; font-weight: 600;">
+            <i class="fa-solid fa-ban me-1"></i> Cancelar
+          </button>
+        </div>
+      </div>
+
+      <div id="maintenanceAlertStatus" class="mt-4 alert alert-warning d-none mb-0" style="border-radius: 0.85rem; border: 1px solid rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.08); color: var(--text);">
+        <div class="d-flex align-items-center gap-2">
+          <i class="fa-solid fa-tower-broadcast text-warning" style="font-size: 1.15rem; animation: pulse 2s infinite;"></i>
+          <div>
+            <strong>Alerta de reinicialização ativo!</strong>
+            Restam <span id="adminTimer" class="fw-bold text-warning" style="font-size: 1.1rem;">--s</span> para a contagem regressiva finalizar.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const btnTrigger = document.getElementById('btnTriggerMaintenance');
+  const btnCancel = document.getElementById('btnCancelMaintenance');
+  const inputMsg = document.getElementById('maintenanceCustomMsg');
+  const selectDuration = document.getElementById('maintenanceDuration');
+  const alertStatus = document.getElementById('maintenanceAlertStatus');
+  const adminTimer = document.getElementById('adminTimer');
+
+  let adminTimerInterval = null;
+  let targetTime = null;
+
+  function updateAdminTimer() {
+    if (!targetTime) return;
+    const now = Date.now();
+    const remaining = Math.max(0, Math.ceil((targetTime - now) / 1000));
+    adminTimer.textContent = remaining + 's';
+    if (remaining <= 0) {
+      clearInterval(adminTimerInterval);
+      adminTimerInterval = null;
+      adminTimer.textContent = 'Encerrado';
+    }
+  }
+
+  function checkStatus() {
+    fetch('/admin/api/maintenance-check')
+      .then(res => res.json())
+      .then(data => {
+        if (data.active) {
+          btnTrigger.disabled = true;
+          btnTrigger.innerHTML = '<i class="fa-solid fa-tower-broadcast me-1"></i> Alerta Disparado';
+          btnCancel.classList.remove('d-none');
+          alertStatus.classList.remove('d-none');
+
+          if (data.remaining > 0) {
+            targetTime = Date.now() + (data.remaining * 1000);
+            if (!adminTimerInterval) {
+              updateAdminTimer();
+              adminTimerInterval = setInterval(updateAdminTimer, 1000);
+            }
+          } else {
+            adminTimer.textContent = 'Encerrado';
+          }
+        } else {
+          btnTrigger.disabled = false;
+          btnTrigger.innerHTML = '<i class="fa-solid fa-tower-broadcast me-1"></i> Disparar Alerta';
+          btnCancel.classList.add('d-none');
+          alertStatus.classList.add('d-none');
+          if (adminTimerInterval) {
+            clearInterval(adminTimerInterval);
+            adminTimerInterval = null;
+          }
+          targetTime = null;
+        }
+      })
+      .catch(() => {});
+  }
+
+  btnTrigger.addEventListener('click', function() {
+    const formData = new FormData();
+    formData.append('duration', selectDuration.value);
+    formData.append('message', inputMsg.value);
+    formData.append('csrf_token', '{{ csrf_token() }}');
+
+    fetch('/admin/trigger-maintenance', {
+      method: 'POST',
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.ok) {
+        checkStatus();
+      } else {
+        alert('Erro: ' + (data.message || 'Falha ao disparar.'));
+      }
+    })
+    .catch(err => alert('Erro de rede: ' + err));
+  });
+
+  btnCancel.addEventListener('click', function() {
+    const formData = new FormData();
+    formData.append('csrf_token', '{{ csrf_token() }}');
+
+    fetch('/admin/cancel-maintenance', {
+      method: 'POST',
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.ok) {
+        checkStatus();
+      } else {
+        alert('Erro: ' + (data.message || 'Falha ao cancelar.'));
+      }
+    })
+    .catch(err => alert('Erro de rede: ' + err));
+  });
+
+  checkStatus();
+  setInterval(checkStatus, 2000);
+});
+</script>
+{% endblock %}

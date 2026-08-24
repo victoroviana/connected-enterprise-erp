@@ -1,0 +1,94 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Crachá | {{ page_title }}{% endblock %}
+
+{% block head %}
+<style>
+  .cracha-form-card{border:0;border-radius:1.1rem;box-shadow:0 10px 24px rgba(15,35,58,.08);}
+  .cracha-form-card .card-header{background:transparent;border:0;padding:1.25rem 1.5rem 0;}
+  .cracha-form-card .card-body{padding:1.25rem 1.5rem 1.5rem;}
+  .cracha-preview{display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start;}
+  .cracha-preview img{width:180px;height:240px;object-fit:cover;border-radius:.75rem;border:1px solid #e2e8f0;background:#fff;}
+  .cracha-form-actions{display:flex;gap:.75rem;flex-wrap:wrap;}
+</style>
+{% endblock %}
+
+{% block content %}
+{% set hero_help_tips = [
+  'Selecione o cliente correto antes de anexar as imagens.',
+  'Envie frente e verso em JPG ou PNG para garantir boa impressão.',
+  'Use "Sem verso" quando o modelo não tiver segunda face.'
+] %}
+{% call page_hero(
+  title=page_title,
+  subtitle='Preencha os dados do modelo e envie as imagens.',
+  eyebrow='Crachá'|safe,
+  help_tips=hero_help_tips,
+  help_intro='Dicas rápidas para cadastrar modelos.'
+) %}
+  <div class="page-hero__actions">
+    <a class="btn btn-light" href="{{ url_for('cracha_bp.modelos') }}">Voltar</a>
+  </div>
+{% endcall %}
+
+<div class="card cracha-form-card">
+  <div class="card-body">
+    <form method="post" action="{{ action_url }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <label class="form-label">Cliente</label>
+          <select name="cliente_id" class="form-select" required>
+            <option value="">Selecione</option>
+            {% for cliente in clientes %}
+              <option value="{{ cliente.id_pk }}" {{ 'selected' if cracha.idclientes_fk == cliente.id_pk else '' }}>
+                {{ cliente.nome_fantasia }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-lg-6 d-flex align-items-end">
+          <div class="cracha-form-actions">
+            <button type="submit" class="btn btn-primary">Salvar</button>
+            {% if allow_save_more %}
+              <button type="submit" name="save_more" value="1" class="btn btn-outline-primary">Salvar +</button>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="cracha-preview">
+            <div>
+              <small class="text-muted d-block mb-2">Frente atual</small>
+              <img src="{{ cracha.frente_url or url_for('static', filename='images/cracha_frente.jpg') }}" alt="Frente do crachá">
+            </div>
+            <div>
+              <small class="text-muted d-block mb-2">Verso atual</small>
+              <img src="{{ cracha.verso_url or url_for('static', filename='images/cracha_verso.jpg') }}" alt="Verso do crachá">
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <label class="form-label">Frente (JPG/PNG)</label>
+          <input type="file" name="frente" class="form-control" {% if not cracha.frente_url %}required{% endif %}>
+        </div>
+        <div class="col-lg-6">
+          <label class="form-label">Verso (opcional)</label>
+          <input type="file" name="verso" class="form-control">
+          <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" id="sem_verso" name="sem_verso">
+            <label class="form-check-label" for="sem_verso">Sem verso</label>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <label class="form-label">Observações frente</label>
+          <textarea name="obs_frente" rows="4" class="form-control">{{ cracha.obs_frente or '' }}</textarea>
+        </div>
+        <div class="col-lg-6">
+          <label class="form-label">Observações verso</label>
+          <textarea name="obs_verso" rows="4" class="form-control">{{ cracha.obs_verso or '' }}</textarea>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

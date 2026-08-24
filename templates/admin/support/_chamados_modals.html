@@ -1,0 +1,311 @@
+<div class="modal sollus-modal fade" id="modalNovoChamado" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <form class="modal-content" method="post" action="{{ url_for((chamados_namespace or 'support_bp') ~ '.criar_chamado') }}" enctype="multipart/form-data">
+      {{ create_form.csrf_token }}
+      <div class="modal-header">
+        <h5 class="modal-title">Criar chamado</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Regi&atilde;o</label>
+            {{ create_form.region(class="form-select") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Selecione a unidade</label>
+            {{ create_form.unidade(class="form-select") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Novo cliente?</label>
+            {{ create_form.novo_cliente(class="form-select", id="novoClienteSelect") }}
+          </div>
+          <div class="col-md-6" id="numeroPropostaField" style="display: none;">
+            <label class="form-label">N&uacute;mero da proposta</label>
+            {{ create_form.numero_proposta(class="form-control") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Data e hora</label>
+            {{ create_form.data_os_criada(class="form-control", readonly=True) }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">CNPJ</label>
+            <div class="input-group">
+              {{ create_form.cnpj(class="form-control js-cnpj-mask", placeholder="00.000.000/0000-00", data_cnpj_lookup_url=url_for((chamados_namespace|default('support_bp')) ~ '.api_cnpj')) }}
+              <button class="btn btn-outline-secondary js-fetch-cnpj" type="button" title="Buscar CNPJ"><i class="bi bi-search"></i></button>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Empresa</label>
+            {{ create_form.cliente(class="form-control") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Contrato</label>
+            {{ create_form.contrato(class="form-select") }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">CEP</label>
+            <div class="input-group">
+              {{ create_form.cep(class="form-control js-cep-mask", id="novo-cep") }}
+              <button class="btn btn-outline-secondary js-fetch-cep" type="button" data-target-cep="#novo-cep" data-target-bairro="#novo-bairro" title="Buscar CEP"><i class="bi bi-search"></i></button>
+            </div>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label">Bairro</label>
+            {{ create_form.bairro(class="form-control", id="novo-bairro") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">N&uacute;mero da OS</label>
+            {{ create_form.ordem_servico(class="form-control") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">N&uacute;mero da Manuten&ccedil;&atilde;o</label>
+            {{ create_form.numero_manutencao(class="form-control") }}
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Anexo OS de entrada (opcional)</label>
+            {{ create_form.arquivo_entrada(class="form-control") }}
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Anexo OS de sa&iacute;da (opcional)</label>
+            {{ create_form.arquivo_saida(class="form-control") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">E-mail</label>
+            {{ create_form.email_responsavel(class="form-control") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Tipo de atendimento</label>
+            {{ create_form.tipo_atendimento(class="form-select") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">T&eacute;cnico</label>
+            {{ create_form.tecnico(class="form-select") }}
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Criar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalEditarChamado" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <form class="modal-content" method="post" enctype="multipart/form-data">
+      {{ edit_form.csrf_token }}
+      {{ edit_form.chamado_id }}
+      <div class="modal-header">
+        <h5 class="modal-title">Editar chamado</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-none">
+          {{ edit_form.region(class="form-select") }}
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Data do atendimento</label>
+            {{ edit_form.data(class="form-control") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">CNPJ</label>
+            <div class="input-group">
+              {{ edit_form.cnpj(class="form-control js-cnpj-mask", placeholder="00.000.000/0000-00", data_cnpj_lookup_url=url_for((chamados_namespace|default('support_bp')) ~ '.api_cnpj')) }}
+              <button class="btn btn-outline-secondary js-fetch-cnpj" type="button" title="Buscar CNPJ"><i class="bi bi-search"></i></button>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Cliente</label>
+            {{ edit_form.cliente(class="form-control") }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">CEP</label>
+            <div class="input-group">
+              {{ edit_form.cep(class="form-control js-cep-mask", id="edit-cep") }}
+              <button class="btn btn-outline-secondary js-fetch-cep" type="button" data-target-cep="#edit-cep" data-target-bairro="#edit-bairro" title="Buscar CEP"><i class="bi bi-search"></i></button>
+            </div>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label">Bairro</label>
+            {{ edit_form.bairro(class="form-control", id="edit-bairro") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Ordem de servi&ccedil;o</label>
+            {{ edit_form.ordem_servico(class="form-control") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">N&uacute;mero da Manuten&ccedil;&atilde;o</label>
+            {{ edit_form.numero_manutencao(class="form-control") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">T&eacute;cnico</label>
+            {{ edit_form.tecnico(class="form-select") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Tipo de atendimento</label>
+            {{ edit_form.tipo_atendimento(class="form-select") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">E-mail</label>
+            {{ edit_form.email_responsavel(class="form-control") }}
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Anexo OS de entrada (opcional)</label>
+            {{ edit_form.arquivo_entrada(class="form-control") }}
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Anexo OS de sa&iacute;da (opcional)</label>
+            {{ edit_form.arquivo_saida(class="form-control") }}
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Atualizar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalFecharChamado" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <form class="modal-content" method="post" enctype="multipart/form-data">
+      {{ close_form.csrf_token }}
+      <div class="modal-header">
+        <h5 class="modal-title">Fechar chamado</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Data do atendimento</label>
+            {{ close_form.data_atendimento(class="form-control") }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Hora de entrada</label>
+            {{ close_form.hora_entrada(class="form-control", type="time") }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Hora de sa&iacute;da</label>
+            {{ close_form.hora_saida(class="form-control", type="time") }}
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Anexo OS de sa&iacute;da (opcional)</label>
+            {{ close_form.arquivo_saida(class="form-control") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Status</label>
+            {{ close_form.retorno(class="form-select") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">T&eacute;cnico</label>
+            {{ close_form.tecnico(class="form-select") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Respons&aacute;vel no local</label>
+            {{ close_form.quem_atendeu(class="form-control") }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">E-mail respons&aacute;vel</label>
+            {{ close_form.email_responsavel(class="form-control") }}
+          </div>
+          <div class="col-12">
+            <label class="form-label">Descri&ccedil;&atilde;o</label>
+            {{ close_form.descricao(class="form-control", rows=3) }}
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-success">Fechar chamado</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalDetalhesChamado" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalhes do chamado</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Empresa</label>
+            <input class="form-control" readonly data-detail="cliente">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">CNPJ</label>
+            <input class="form-control" readonly data-detail="cnpj">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Contrato</label>
+            <input class="form-control" readonly data-detail="contrato">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">E-mail</label>
+            <input class="form-control" readonly data-detail="email_responsavel">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">OS passada para o t&eacute;cnico</label>
+            <input class="form-control" readonly data-detail="data_os_tecnico">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Data do atendimento</label>
+            <input class="form-control" readonly data-detail="data">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Hora de entrada</label>
+            <input class="form-control" readonly data-detail="hora_entrada">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Hora de sa&iacute;da</label>
+            <input class="form-control" readonly data-detail="hora_saida">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Tempo de atendimento</label>
+            <input class="form-control" readonly data-detail="tempo_atendimento">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Atendido por</label>
+            <input class="form-control" readonly data-detail="quem_atendeu">
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Resumo do atendimento</label>
+            <textarea class="form-control" rows="3" readonly data-detail="descricao"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Criado por</label>
+            <input class="form-control" readonly data-detail="criado_por">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">OS de entrada</label>
+            <div class="d-flex align-items-center gap-2">
+              <input class="form-control" readonly data-detail="ordem_servico">
+              <a class="btn btn-outline-secondary btn-sm d-none" data-detail-download="entrada" target="_blank" rel="noopener">
+                <i class="bi bi-download"></i>
+              </a>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">OS de sa&iacute;da</label>
+            <div class="d-flex align-items-center gap-2">
+              <input class="form-control" readonly data-detail="os_saida">
+              <a class="btn btn-outline-secondary btn-sm d-none" data-detail-download="saida" target="_blank" rel="noopener">
+                <i class="bi bi-download"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>

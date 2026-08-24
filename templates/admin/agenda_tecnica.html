@@ -1,0 +1,213 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Agenda externa Sollus Connected{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css">
+<style>
+  .agenda-card{border:0;border-radius:1.5rem;box-shadow:0 18px 40px rgba(15,35,58,.08);background:#fff;}
+  .agenda-card__head{padding:1.5rem 1.5rem 0;}
+  .agenda-card__body{padding:1.5rem;}
+  .agenda-table thead{background:#eef3ff;text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:#5a6782;}
+  .agenda-table tbody tr:hover{background:#f8fbff;}
+  .agenda-table tbody tr{cursor:pointer;}
+  .agenda-actions .btn{min-width:38px;}
+  #agendaCalendar{min-height:520px;}
+  .loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; z-index: 10; border-radius: 1.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set agenda_bp = agenda_bp or 'assist_bp' %}
+
+{{ page_hero(
+    title='Agenda externa dos técnicos',
+    subtitle='Planeje visitas em campo, evite sobreposições e visualize rapidamente a disponibilidade dos times.',
+    eyebrow='Assistência técnica',
+    stats=[],
+    help_tips=[
+      'Alterne entre lista e calendário pelo botão "Ver calendário" e use a busca para filtrar técnico, unidade ou observação.',
+      'Cadastre novos agendamentos pelo botão "Novo agendamento", definindo técnico, unidade, data e período.',
+      'Na lista, use o lápis para editar e a lixeira para excluir; o botão "Mostrar semana atual" reposiciona o calendário.'
+    ],
+    help_intro='Guia rápido para organizar a agenda externa.'
+) }}
+
+<div class="card agenda-card mb-4 position-relative">
+  <div id="agenda-loading" class="loading-overlay d-none">
+    <div class="spinner-border text-primary" role="status"></div>
+  </div>
+  <div class="agenda-card__head">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div>
+        <h2 class="h5 fw-bold mb-1">Visões disponíveis</h2>
+        <p class="text-muted mb-0">Alterne entre a lista detalhada e o calendário semanal.</p>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <button class="btn btn-outline-primary" id="btnToggleView" data-view="list">Ver calendário</button>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAdicionarAgenda">
+          <i class="bi bi-plus-lg"></i> Novo agendamento
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="agenda-card__body">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+      <div class="flex-grow-1">
+        <input type="search" class="form-control" id="agendaSearch" placeholder="Buscar técnico, unidade ou observação">
+      </div>
+      <div>
+        <button class="btn btn-outline-secondary btn-sm" id="btnToggleWeek">Mostrar semana atual</button>
+      </div>
+    </div>
+
+    <div id="agendaListView">
+      <div class="table-responsive">
+        <table class="table agenda-table align-middle mb-0" id="agendaTable">
+          <thead>
+            <tr>
+              <th>Técnico</th>
+              <th>Unidade</th>
+              <th>Data</th>
+              <th>Período</th>
+              <th>Observações</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="agenda-table-body">
+            <tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <nav aria-label="Navegação da agenda" class="mt-4">
+        <div class="d-flex justify-content-center align-items-center gap-2 flex-wrap">
+          <ul class="pagination justify-content-center mb-0" id="agenda-pagination"></ul>
+          <form class="d-flex align-items-center gap-2" id="agenda-page-jump">
+            <label class="small text-muted mb-0" for="agenda-page-input">Página</label>
+            <input type="number" min="1" class="form-control form-control-sm" id="agenda-page-input" placeholder="Página">
+            <button class="btn btn-outline-secondary btn-sm" type="submit">Ir</button>
+          </form>
+        </div>
+      </nav>
+    </div>
+
+    <div id="agendaCalendarView" class="d-none">
+      <div id="agendaCalendar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: adicionar -->
+<div class="modal sollus-modal fade" id="modalAdicionarAgenda" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" action="{{ url_for(agenda_bp ~ '.criar_agendamento') }}">
+      <div class="modal-header">
+        <h5 class="modal-title">Novo atendimento externo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3">
+          <label class="form-label">Técnico</label>
+          <select class="form-select" name="usuario_id" required>
+            <option value="">Selecione</option>
+            {% for tech in technicians %}
+            <option value="{{ tech.id }}">{{ tech.nome_completo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Data</label>
+            <input type="date" class="form-control" name="data_atendimento" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Período</label>
+            <select class="form-select" name="periodo">
+              {% for period in periods %}
+              <option value="{{ period }}">{{ period }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="row g-3 mt-1">
+          <div class="col-md-6">
+            <label class="form-label">Unidade</label>
+            <div class="form-control-plaintext text-muted px-0">Usaremos a unidade cadastrada do técnico.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Observações</label>
+            <textarea class="form-control" name="obs" rows="2" placeholder="Opcional"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar agendamento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: editar -->
+<div class="modal sollus-modal fade" id="modalEditarAgenda" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" id="formEditarAgenda">
+      <div class="modal-header">
+        <h5 class="modal-title">Editar agendamento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3">
+          <label class="form-label">Técnico</label>
+          <select class="form-select" name="usuario_id" required id="edit-usuario-id">
+            {% for tech in technicians %}
+            <option value="{{ tech.id }}">{{ tech.nome_completo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Data</label>
+            <input type="date" class="form-control" name="data_atendimento" required id="edit-data">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Período</label>
+            <select class="form-select" name="periodo" id="edit-periodo">
+              {% for period in periods %}
+              <option value="{{ period }}">{{ period }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="row g-3 mt-1">
+          <div class="col-md-6">
+            <label class="form-label">Unidade</label>
+            <input type="text" class="form-control" id="editAgendaUnit" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Observações</label>
+            <textarea class="form-control" name="obs" rows="2" id="edit-obs"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Atualizar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const API_AGENDA = "{{ api_endpoint }}";
+  const CSRF_TOKEN = "{{ csrf_token() }}";
+</script>
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js" defer></script>
+  <script src="{{ url_for('static', filename='js/admin_agenda.js') }}" defer></script>
+{% endblock %}

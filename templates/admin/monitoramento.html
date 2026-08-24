@@ -1,0 +1,837 @@
+{% extends "layout.html" %}
+
+{% from "components/page_hero.html" import page_hero %}
+
+{% block title %}Monitoramento de Atrasos{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+  /* Premium Aesthetics for Monitoring Dashboard */
+  .monitor-dashboard {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  /* Sector card filters */
+  .sector-card {
+    border: 0;
+    border-radius: 1.2rem;
+    box-shadow: 0 10px 30px rgba(15, 35, 58, 0.05);
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    background: var(--card);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+  }
+  
+  .sector-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 18px 38px rgba(15, 35, 58, 0.1);
+  }
+  
+  .sector-card.active {
+    border-color: var(--blue-700);
+    box-shadow: 0 15px 35px rgba(14, 93, 198, 0.15);
+  }
+  
+  .sector-card.active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100%;
+    background: var(--blue-700);
+  }
+  
+  .sector-card h4 {
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .sector-card .count-val {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+  }
+  
+  /* Custom sector colors */
+  .sector-card.color-total { border-top: 4px solid var(--blue-700); }
+  .sector-card.color-assistencia { border-top: 4px solid #3b82f6; }
+  .sector-card.color-oficina { border-top: 4px solid #10b981; }
+  .sector-card.color-estoque { border-top: 4px solid #f59e0b; }
+  .sector-card.color-suporte { border-top: 4px solid #8b5cf6; }
+  .sector-card.color-aguardando { border-top: 4px solid #6b7280; }
+  .sector-card.color-financeiro { border-top: 4px solid #ec4899; }
+  .sector-card.color-compras { border-top: 4px solid #06b6d4; }
+  .sector-card.color-comercial { border-top: 4px solid #f43f5e; }
+  .sector-card.color-rh { border-top: 4px solid #14b8a6; }
+  .sector-card.color-cracha { border-top: 4px solid #ec4899; }
+  .sector-card.color-generic { border-top: 4px solid #94a3b8; }
+  
+  /* Task Rows/Cards */
+  .task-row {
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 12px rgba(15, 35, 58, 0.02);
+    transition: all 0.2s ease;
+    border-left: 6px solid #ccc; /* fallback */
+    overflow: hidden;
+  }
+  
+  .task-row:hover {
+    box-shadow: 0 8px 24px rgba(15, 35, 58, 0.06);
+    transform: translateX(4px);
+  }
+  
+  /* Delay severity left-borders */
+  .severity-critical { border-left-color: #dc2626 !important; } /* >30 days - Red */
+  .severity-medium { border-left-color: #f97316 !important; }   /* 8-30 days - Orange */
+  .severity-light { border-left-color: #eab308 !important; }    /* 1-7 days - Yellow */
+  
+  .delay-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  
+  .badge-critical { background-color: rgba(220, 38, 38, 0.1); color: #dc2626; }
+  .badge-medium { background-color: rgba(249, 115, 22, 0.1); color: #f97316; }
+  .badge-light { background-color: rgba(234, 179, 8, 0.1); color: #ca8a04; }
+  
+  .task-meta-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+  }
+  
+  .task-meta-val {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  
+  .task-description-panel {
+    background: rgba(148, 163, 184, 0.04);
+    border-top: 1px solid rgba(148, 163, 184, 0.08);
+    padding: 1.25rem;
+  }
+  
+  .updates-log {
+    font-size: 0.85rem;
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 0.85rem;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+  }
+  
+  /* Filter bar styling */
+  .search-container {
+    background: var(--card);
+    border-radius: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    box-shadow: 0 8px 24px rgba(15, 35, 58, 0.03);
+    padding: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .btn-filter-clear {
+    border-radius: 8px;
+    padding: 0.375rem 0.75rem;
+  }
+  
+  /* Transitions */
+  .fade-slide {
+    animation: fadeSlideIn 0.3s ease-out forwards;
+  }
+  
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* TV Mode Custom Styling overrides */
+  body.tv-active {
+    background-color: #050b14 !important;
+    overflow: hidden !important;
+    padding-top: 0 !important;
+  }
+
+  body.tv-active .monitor-dashboard {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  body.tv-active .sidebar,
+  body.tv-active header,
+  body.tv-active nav.navbar,
+  body.tv-active .page-hero-container,
+  body.tv-active .search-container,
+  body.tv-active footer {
+    display: none !important;
+  }
+
+  body.tv-active main.content {
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+    padding: 1.5rem !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100vh !important;
+    background-color: #050b14 !important;
+  }
+
+  /* TV Mode Header */
+  .tv-only-header {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+  }
+
+  .pulsing-dot {
+    width: 12px;
+    height: 12px;
+    background-color: #dc2626;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+  }
+
+  /* TV Mode Task Row styling */
+  body.tv-active .task-row {
+    background: #0d1527 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    margin-bottom: 1.25rem !important;
+    padding: 1.5rem !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+  }
+
+  body.tv-active .task-row .fw-bold {
+    font-size: 1.45rem !important;
+    color: #ffffff !important;
+  }
+
+  body.tv-active .task-row .text-muted,
+  body.tv-active .task-row .task-meta-label {
+    color: #94a3b8 !important;
+    font-size: 0.95rem !important;
+  }
+
+  body.tv-active .task-row .task-meta-val {
+    font-size: 1.2rem !important;
+    color: #f1f5f9 !important;
+  }
+
+  body.tv-active .delay-badge {
+    font-size: 1.2rem !important;
+    padding: 0.5rem 1.1rem !important;
+  }
+
+  body.tv-active .badge {
+    font-size: 0.9rem !important;
+    padding: 0.4rem 0.8rem !important;
+  }
+
+  body.tv-active .pagination .page-link {
+    background-color: #0d1527 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    font-size: 1.15rem !important;
+    padding: 0.5rem 1rem !important;
+  }
+
+  body.tv-active .pagination .active .page-link {
+    background-color: #dc2626 !important;
+    border-color: #dc2626 !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="monitor-dashboard py-4">
+  
+  <!-- Cabeçalho Especial do Modo TV (Oculto por padrão) -->
+  <div class="tv-only-header d-none justify-content-between align-items-center mb-4 p-3 text-white shadow-lg fade-slide">
+    <div class="d-flex align-items-center gap-3">
+      <div class="pulsing-dot"></div>
+      <h2 class="m-0 fw-bold text-danger uppercase tracking-wider" style="font-size: 1.8rem; text-shadow: 0 0 10px rgba(220,38,38,0.4);">MONITORAMENTO DE ATRASOS</h2>
+    </div>
+    <div class="d-flex align-items-center gap-4">
+      <div class="tv-stat text-center px-3 border-end border-secondary">
+        <div class="text-muted small uppercase" style="font-size: 0.75rem;">Total Vencidas</div>
+        <div class="fw-bold fs-3 text-white" id="tvTotalCount">0</div>
+      </div>
+      <div class="tv-stat text-center px-3 border-end border-secondary">
+        <div class="text-muted small uppercase" style="font-size: 0.75rem;">Setor</div>
+        <div class="fw-bold fs-3 text-warning" id="tvActiveSector">TODOS</div>
+      </div>
+      <div class="tv-stat text-center px-3">
+        <div class="text-muted small uppercase" style="font-size: 0.75rem;">Página</div>
+        <div class="fw-bold fs-3 text-info" id="tvPageIndicator">1/1</div>
+      </div>
+      <button class="btn btn-danger btn-sm px-3 py-2 fw-bold" onclick="toggleTVMode()">
+        <i class="fa-solid fa-xmark me-1"></i> Sair do Modo TV
+      </button>
+    </div>
+  </div>
+
+  <!-- Barra de Progresso do Modo TV -->
+  <div class="progress tv-progress d-none mb-4" style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px;">
+    <div class="progress-bar bg-danger" id="tvProgressBar" role="progressbar" style="width: 0%; transition: width 0.1s linear;"></div>
+  </div>
+  
+  {% set help_tips = [
+    'Clique nos cards de setores para filtrar as tarefas daquele setor de forma instantânea.',
+    'Use o campo de busca para encontrar clientes, O.S. ou técnicos específicos.',
+    'Ative o "Modo TV" para exibição em tela cheia com auto-passagem de páginas e contraste otimizado.',
+    'Expanda cada tarefa para visualizar o histórico de atualizações e a descrição completa.',
+    'O botão "Ver Painel" abre o painel operacional principal pré-filtrado pela OS.'
+  ] %}
+  
+  <div class="page-hero-container">
+    {{ page_hero(
+      title='Painel de Monitoramento',
+      subtitle='Visualize todas as tarefas vencidas de todos os setores para tomada de decisão estratégica.',
+      eyebrow='Administração',
+      stats=hero_stats,
+      help_tips=help_tips,
+      help_intro='Dicas de Navegação do Painel'
+    ) }}
+  </div>
+
+  <!-- Grid de Contadores por Setor (Filtros interativos) -->
+  <div class="row g-3 mb-4 fade-slide">
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="sector-card color-total active" onclick="filterSector('ALL', this)">
+        <h4>Todos</h4>
+        <div class="count-val">{{ total_delayed }}</div>
+      </div>
+    </div>
+    {% for sector in all_sectors %}
+      {% set color_class = 'color-generic' %}
+      {% if sector == 'ASSISTENCIA TECNICA' %}{% set color_class = 'color-assistencia' %}
+      {% elif sector == 'OFICINA' %}{% set color_class = 'color-oficina' %}
+      {% elif sector == 'ESTOQUE' %}{% set color_class = 'color-estoque' %}
+      {% elif sector == 'SUPORTE' %}{% set color_class = 'color-suporte' %}
+      {% elif sector == 'AGUARDANDO' %}{% set color_class = 'color-aguardando' %}
+      {% elif sector == 'FINANCEIRO' %}{% set color_class = 'color-financeiro' %}
+      {% elif sector == 'COMPRAS' %}{% set color_class = 'color-compras' %}
+      {% elif sector == 'COMERCIAL' %}{% set color_class = 'color-comercial' %}
+      {% elif sector == 'RH' %}{% set color_class = 'color-rh' %}
+      {% elif sector == 'CRACHA' or sector == 'CRACHÁ' %}{% set color_class = 'color-cracha' %}
+      {% endif %}
+      <div class="col-6 col-md-4 col-xl-2">
+        <div class="sector-card {{ color_class }}" onclick="filterSector('{{ sector }}', this)">
+          <h4 title="{{ sector }}">{{ sector|replace('_', ' ')|title }}</h4>
+          <div class="count-val">{{ sector_counts.get(sector, 0) }}</div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Barra de Busca e Ações -->
+  <div class="search-container fade-slide">
+    <div class="row g-3 align-items-center">
+      <div class="col-md-6 col-lg-8">
+        <div class="input-group">
+          <span class="input-group-text bg-transparent border-end-0 text-muted">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </span>
+          <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="Buscar por cliente, OS, técnico ou nome da tarefa..." onkeyup="filterTasks()">
+        </div>
+      </div>
+      <div class="col-md-3 col-lg-2">
+        <select id="severityFilter" class="form-select" onchange="filterTasks()">
+          <option value="ALL">Todas as Gravidades</option>
+          <option value="critical">Crítico (> 30 dias)</option>
+          <option value="medium">Médio (8-30 dias)</option>
+          <option value="light">Leve (1-7 dias)</option>
+        </select>
+      </div>
+      <div class="col-md-3 col-lg-2 text-end">
+        <div class="btn-group w-100" role="group">
+          <button class="btn btn-outline-secondary btn-filter-clear w-50" onclick="clearFilters()" title="Limpar Filtros">
+            <i class="fa-solid fa-filter-circle-xmark"></i> Limpar
+          </button>
+          <button class="btn btn-dark w-50" onclick="toggleTVMode()" title="Modo TV (Tela Cheia / Auto-slide)">
+            <i class="fa-solid fa-desktop me-1"></i> Modo TV
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Container de Listagem -->
+  <div id="tasksList" class="fade-slide">
+    {% if tasks %}
+      {% for task in tasks %}
+        {% set severity = 'light' %}
+        {% if task.delay_days > 30 %}
+          {% set severity = 'critical' %}
+        {% elif task.delay_days >= 8 %}
+          {% set severity = 'medium' %}
+        {% endif %}
+        
+        <div class="task-row severity-{{ severity }}" data-sector="{{ task.departamento_responsavel.upper().strip() }}" data-severity="{{ severity }}" data-searchable="{{ task.nome.lower() }} {{ task.OS.lower() }} {{ (task.usuario_designado or '').lower() }} {{ task.departamento_responsavel.lower() }}">
+          <div class="p-3">
+            <div class="row g-3 align-items-center">
+              
+              <!-- Badge de Atraso e OS -->
+              <div class="col-md-3">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <span class="delay-badge badge-{{ severity }}">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    {{ task.delay_days }} dias
+                  </span>
+                  <span class="badge bg-secondary text-white">{{ task.unidade }}</span>
+                </div>
+                <div class="fw-bold text-primary">{{ task.OS }}</div>
+                <small class="text-muted">Prazo: {{ task.data_fim.strftime('%d/%m/%Y') }}</small>
+              </div>
+
+              <!-- Informações Principais (Cliente e Nome) -->
+              <div class="col-md-4">
+                <div class="task-meta-label">Cliente / Equipamento</div>
+                <div class="fw-bold text-truncate" title="{{ task.nome }}">{{ task.nome }}</div>
+                <div class="text-muted text-truncate" style="font-size: 0.85rem;" title="{{ task.tipo_atendimento or 'Não especificado' }}">
+                  {{ task.tipo_atendimento or 'Tipo não informado' }}
+                </div>
+              </div>
+
+              <!-- Setor e Técnico -->
+              <div class="col-md-3">
+                <div class="row">
+                  <div class="col-6 col-md-12 mb-1">
+                    <div class="task-meta-label">Setor</div>
+                    <span class="badge border border-secondary text-secondary" style="font-size: 0.75rem;">
+                      {{ task.departamento_responsavel }}
+                    </span>
+                  </div>
+                  <div class="col-6 col-md-12">
+                    <div class="task-meta-label">Responsável</div>
+                    <div class="task-meta-val text-truncate" title="{{ task.usuario_designado or 'Não designado' }}" style="font-size: 0.85rem;">
+                      <i class="fa-regular fa-user text-muted me-1"></i>
+                      {{ task.usuario_designado or 'Não designado' }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Botões de Ação -->
+              <div class="col-md-2 text-md-end">
+                <div class="d-flex d-md-block gap-2 justify-content-end">
+                  <button class="btn btn-sm btn-outline-primary mb-md-2 w-100 align-items-center justify-content-center d-inline-flex" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTask-{{ task.id }}">
+                    <i class="fa-solid fa-circle-info me-1"></i> Detalhes
+                  </button>
+                  {% if task.is_ticket %}
+                    <a href="{{ url_for('sollus_tickets.detail', ticket_id=task.ticket_id) }}" class="btn btn-sm btn-primary w-100 align-items-center justify-content-center d-inline-flex">
+                      <i class="fa-solid fa-square-arrow-up-right me-1"></i> Ver Ticket
+                    </a>
+                  {% elif task.is_support %}
+                    <a href="{{ url_for('support_bp.atendimentos_dashboard', atendimento_id=task.support_id) }}" class="btn btn-sm btn-primary w-100 align-items-center justify-content-center d-inline-flex">
+                      <i class="fa-solid fa-square-arrow-up-right me-1"></i> Ver Chamado
+                    </a>
+                  {% else %}
+                    <a href="{{ url_for('assist_bp.assistencia_dashboard', os_codigo=task.OS) }}" class="btn btn-sm btn-primary w-100 align-items-center justify-content-center d-inline-flex">
+                      <i class="fa-solid fa-square-arrow-up-right me-1"></i> Ver Painel
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Seção Expansível com Descrição e Atualizações -->
+          <div class="collapse" id="collapseTask-{{ task.id }}">
+            <div class="task-description-panel">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <h6 class="fw-bold mb-2 text-secondary"><i class="fa-solid fa-align-left me-1"></i> {% if task.is_ticket %}Descrição do Ticket{% elif task.is_support %}Descrição do Chamado{% else %}Descrição da OS{% endif %}</h6>
+                  <p class="mb-0 text-muted" style="font-size: 0.88rem; white-space: pre-line;">
+                    {{ task.descricao or 'Nenhuma descrição fornecida.' }}
+                  </p>
+                </div>
+                <div class="col-md-6">
+                  <h6 class="fw-bold mb-2 text-secondary"><i class="fa-solid fa-clock-rotate-left me-1"></i> Histórico de Atualizações</h6>
+                  <div class="updates-log">
+                    {% if task.atualizacoes %}
+                      <div class="text-muted" style="line-height: 1.6;">
+                        {{ task.atualizacoes|safe }}
+                      </div>
+                    {% else %}
+                      <span class="text-muted italic">Nenhuma atualização registrada neste chamado.</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="card border-0 shadow-sm text-center py-5">
+        <div class="card-body">
+          <div class="text-success mb-3" style="font-size: 3rem;">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <h4 class="fw-bold">Tudo em dia!</h4>
+          <p class="text-muted mb-0">Nenhuma tarefa pendente está em atraso em nenhum setor.</p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Card de Estado Vazio Dinâmico (usado pelo JS) -->
+  <div id="emptyState" class="card border-0 shadow-sm text-center py-5 d-none">
+    <div class="card-body">
+      <div class="text-muted mb-3" style="font-size: 3rem;">
+        <i class="fa-solid fa-filter-circle-xmark"></i>
+      </div>
+      <h4 class="fw-bold">Nenhum resultado</h4>
+      <p class="text-muted mb-0">Nenhuma tarefa em atraso atende aos critérios de pesquisa e filtros selecionados.</p>
+    </div>
+  </div>
+
+  <!-- Paginação -->
+  <nav aria-label="Navegação de páginas" class="mt-4 fade-slide" id="paginationNav">
+    <ul class="pagination justify-content-center" id="paginationControls">
+      <!-- Inserido dinamicamente via JS -->
+    </ul>
+  </nav>
+
+</div>
+
+<script>
+  let activeSector = 'ALL';
+  let currentPage = 1;
+  let itemsPerPage = 10;
+  let filteredTasks = []; // Contém os elementos de tarefa visíveis com base nos filtros ativos
+
+  // Variáveis para o Modo TV
+  let tvProgressInterval = null;
+  let tvProgress = 0;
+  const tvCycleDuration = 15000; // 15 segundos por página
+  const tvStep = 100; // atualiza a barra a cada 100ms
+
+  // Calcula dinamicamente o número de itens por página de acordo com a altura da tela no Modo TV
+  function updateItemsPerPageForTVMode() {
+    if (!document.body.classList.contains('tv-active')) {
+      itemsPerPage = 10;
+      return;
+    }
+    const winHeight = window.innerHeight;
+    const reservedHeight = 240; // Altura reservada para cabeçalho, barra de progresso, paginação e margens
+    const availableHeight = winHeight - reservedHeight;
+    // Cada linha/card no Modo TV tem aproximadamente 120px de altura
+    const calculatedItems = Math.floor(availableHeight / 120);
+    // Garante no mínimo 3 e no máximo 10 itens para ficar visualmente preenchido e não cortar
+    itemsPerPage = Math.max(3, Math.min(10, calculatedItems));
+    console.log(`[Modo TV] Itens calculados por página: ${itemsPerPage} (Altura da janela: ${winHeight}px)`);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Inicialização da listagem e paginação
+    filterTasks();
+
+    // Hook para tecla Esc sair do modo TV
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.body.classList.contains('tv-active')) {
+        toggleTVMode();
+      }
+    });
+
+    // Detectar quando o usuário sai do Fullscreen manualmente
+    const onFullscreenChange = () => {
+      const isCurrentlyFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+      if (!isCurrentlyFullscreen && document.body.classList.contains('tv-active')) {
+        exitTVModeCleanup();
+      }
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+    document.addEventListener('mozfullscreenchange', onFullscreenChange);
+    document.addEventListener('MSFullscreenChange', onFullscreenChange);
+
+    // Ajusta o tamanho da paginação caso a tela seja redimensionada no Modo TV
+    window.addEventListener('resize', () => {
+      if (document.body.classList.contains('tv-active')) {
+        const oldItemsPerPage = itemsPerPage;
+        updateItemsPerPageForTVMode();
+        if (oldItemsPerPage !== itemsPerPage) {
+          currentPage = 1;
+          filterTasks();
+        }
+      }
+    });
+  });
+
+  function filterSector(sector, element) {
+    // Update active class on cards
+    document.querySelectorAll('.sector-card').forEach(card => {
+      card.classList.remove('active');
+    });
+    element.classList.add('active');
+    
+    activeSector = sector.toUpperCase().trim();
+    currentPage = 1;
+    filterTasks();
+  }
+
+  function filterTasks() {
+    const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+    const severityVal = document.getElementById('severityFilter').value;
+    const taskRows = document.querySelectorAll('.task-row');
+    const emptyState = document.getElementById('emptyState');
+    
+    filteredTasks = [];
+
+    taskRows.forEach(row => {
+      const rowSector = row.getAttribute('data-sector').toUpperCase().strip ? row.getAttribute('data-sector').toUpperCase().strip() : row.getAttribute('data-sector').toUpperCase().trim();
+      const rowSeverity = row.getAttribute('data-severity');
+      const rowSearchText = row.getAttribute('data-searchable');
+      
+      // Check sector filter
+      const matchesSector = (activeSector === 'ALL' || rowSector === activeSector);
+      
+      // Check severity filter
+      const matchesSeverity = (severityVal === 'ALL' || rowSeverity === severityVal);
+      
+      // Check text search
+      const matchesSearch = (!searchVal || rowSearchText.includes(searchVal));
+      
+      if (matchesSector && matchesSeverity && matchesSearch) {
+        filteredTasks.push(row);
+      } else {
+        row.classList.add('d-none');
+      }
+    });
+
+    // Reset pagination to first page when filtering
+    renderPagination();
+
+    // Show/hide empty state
+    if (filteredTasks.length === 0 && taskRows.length > 0) {
+      emptyState.classList.remove('d-none');
+      document.getElementById('paginationNav').classList.add('d-none');
+    } else {
+      emptyState.classList.add('d-none');
+      document.getElementById('paginationNav').classList.remove('d-none');
+    }
+
+    // Atualizar cabeçalho TV
+    document.getElementById('tvTotalCount').innerText = filteredTasks.length;
+    document.getElementById('tvActiveSector').innerText = activeSector === 'ALL' ? 'TODOS' : activeSector.replace('_', ' ');
+  }
+
+  function renderPagination() {
+    const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
+    if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+
+    // Ocultar todos os itens filtrados e exibir apenas os da página atual
+    filteredTasks.forEach((row, idx) => {
+      if (idx >= startIndex && idx < endIndex) {
+        row.classList.remove('d-none');
+      } else {
+        row.classList.add('d-none');
+      }
+    });
+
+    // Renderizar controles de paginação
+    const controls = document.getElementById('paginationControls');
+    controls.innerHTML = '';
+
+    if (totalPages <= 1) {
+      document.getElementById('paginationNav').classList.add('d-none');
+      document.getElementById('tvPageIndicator').innerText = `1/1`;
+      return;
+    }
+    document.getElementById('paginationNav').classList.remove('d-none');
+    document.getElementById('tvPageIndicator').innerText = `${currentPage}/${totalPages}`;
+
+    // Botão Anterior
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;"><i class="fa-solid fa-chevron-left"></i></a>`;
+    controls.appendChild(prevLi);
+
+    // Páginas numéricas
+    for (let i = 1; i <= totalPages; i++) {
+      const pageLi = document.createElement('li');
+      pageLi.className = `page-item ${currentPage === i ? 'active' : ''}`;
+      pageLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>`;
+      controls.appendChild(pageLi);
+    }
+
+    // Botão Próximo
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;"><i class="fa-solid fa-chevron-right"></i></a>`;
+    controls.appendChild(nextLi);
+  }
+
+  function changePage(page) {
+    currentPage = page;
+    renderPagination();
+    if (document.body.classList.contains('tv-active')) {
+      // Reinicia o progresso no clique manual
+      tvProgress = 0;
+    }
+  }
+
+  // Lógica do Modo TV
+  function toggleTVMode() {
+    const isTV = !document.body.classList.contains('tv-active');
+    
+    if (isTV) {
+      enterTVMode();
+    } else {
+      exitTVModeCleanup();
+    }
+  }
+
+  let savedScrollY = 0;
+
+  function enterTVMode() {
+    savedScrollY = window.scrollY;
+    window.scrollTo(0, 0);
+
+    document.body.classList.add('tv-active');
+    
+    // Calcula os itens por página com base no tamanho real da tela
+    updateItemsPerPageForTVMode();
+    currentPage = 1;
+    filterTasks();
+
+    const tvHeader = document.querySelector('.tv-only-header');
+    const tvProg = document.querySelector('.tv-progress');
+    tvHeader.classList.remove('d-none');
+    tvHeader.classList.add('d-flex');
+    tvProg.classList.remove('d-none');
+    
+    // Request Fullscreen
+    const docEl = document.documentElement;
+    if (docEl.requestFullscreen) {
+      docEl.requestFullscreen().catch(err => console.log("Erro ao entrar em tela cheia:", err));
+    } else if (docEl.webkitRequestFullscreen) {
+      docEl.webkitRequestFullscreen();
+    } else if (docEl.mozRequestFullScreen) {
+      docEl.mozRequestFullScreen();
+    } else if (docEl.msRequestFullscreen) {
+      docEl.msRequestFullscreen();
+    }
+    
+    startTVCycle();
+  }
+
+  function exitTVModeCleanup() {
+    document.body.classList.remove('tv-active');
+    
+    // Restaura o padrão de 10 itens por página
+    itemsPerPage = 10;
+    currentPage = 1;
+    filterTasks();
+
+    const tvHeader = document.querySelector('.tv-only-header');
+    const tvProg = document.querySelector('.tv-progress');
+    if (tvHeader) {
+      tvHeader.classList.add('d-none');
+      tvHeader.classList.remove('d-flex');
+    }
+    if (tvProg) {
+      tvProg.classList.add('d-none');
+    }
+    
+    // Exit Fullscreen if active
+    const isCurrentlyFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+    if (isCurrentlyFullscreen) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    }
+    
+    stopTVCycle();
+    
+    // Fecha colapsos abertos
+    document.querySelectorAll('.task-row .collapse.show').forEach(el => {
+      el.classList.remove('show');
+    });
+
+    // Restaura o scroll para a posição que o usuário estava
+    window.scrollTo(0, savedScrollY);
+  }
+
+  function startTVCycle() {
+    stopTVCycle();
+    tvProgress = 0;
+    document.getElementById('tvProgressBar').style.width = '0%';
+    
+    tvProgressInterval = setInterval(() => {
+      tvProgress += (tvStep / tvCycleDuration) * 100;
+      if (tvProgress >= 100) {
+        tvProgress = 0;
+        const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
+        if (totalPages > 1) {
+          currentPage = (currentPage % totalPages) + 1;
+          renderPagination();
+        }
+      }
+      document.getElementById('tvProgressBar').style.width = tvProgress + '%';
+    }, tvStep);
+  }
+
+  function stopTVCycle() {
+    if (tvProgressInterval) {
+      clearInterval(tvProgressInterval);
+      tvProgressInterval = null;
+    }
+  }
+
+  function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('severityFilter').value = 'ALL';
+    
+    // Reset to "All" sector
+    const totalCard = document.querySelector('.sector-card.color-total');
+    filterSector('ALL', totalCard);
+  }
+</script>
+{% endblock %}

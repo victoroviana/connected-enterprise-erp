@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Chamados - {{ region.label }}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 15mm 10mm 15mm 10mm;
+        }
+        body {
+            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+            font-size: 8.5pt;
+            line-height: 1.4;
+        }
+        .header {
+            margin-bottom: 20px;
+            border-bottom: 2px solid #0d6efd;
+            padding-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header-title h1 {
+            font-size: 16pt;
+            font-weight: 700;
+            margin: 0 0 4px 0;
+            color: #0d6efd;
+            letter-spacing: -0.5px;
+        }
+        .header-title .meta {
+            font-size: 8pt;
+            color: #6c757d;
+        }
+        .header-right {
+            text-align: right;
+            font-size: 8pt;
+            color: #495057;
+            font-weight: 600;
+        }
+        .filters {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 20px;
+            font-size: 8pt;
+        }
+        .filters strong {
+            color: #212529;
+        }
+        .filters-list {
+            margin-top: 4px;
+            color: #495057;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th {
+            background-color: #f1f3f5;
+            font-weight: 600;
+            font-size: 8pt;
+            color: #495057;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #dee2e6;
+            border-top: 1px solid #dee2e6;
+            padding: 8px 6px;
+            text-align: left;
+        }
+        td {
+            border-bottom: 1px solid #dee2e6;
+            padding: 8px 6px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        tr:nth-child(even) td {
+            background-color: #fafbfc;
+        }
+        .text-nowrap {
+            white-space: nowrap;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 6px;
+            font-size: 7.5pt;
+            font-weight: 600;
+            border-radius: 4px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+        .badge-aberto {
+            background-color: #fff3cd;
+            color: #664d03;
+            border: 1px solid #ffe69c;
+        }
+        .badge-oficina {
+            background-color: #e2e3e5;
+            color: #41464b;
+            border: 1px solid #d3d6d8;
+        }
+        .badge-fechado {
+            background-color: #d1e7dd;
+            color: #0f5132;
+            border: 1px solid #badbcc;
+        }
+        .badge-outros {
+            background-color: #e2e3e5;
+            color: #383d41;
+            border: 1px solid #d6d8db;
+        }
+        .text-muted-small {
+            font-size: 7.5pt;
+            color: #6c757d;
+            margin-top: 2px;
+        }
+        .fw-semibold {
+            font-weight: 600;
+        }
+        .tempo-container {
+            font-size: 7.5pt;
+            margin-top: 3px;
+        }
+        .tempo-pill {
+            display: inline-block;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+        .tempo-pill--ok {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+        .tempo-pill--warning {
+            background-color: #fff3cd;
+            color: #664d03;
+        }
+        .tempo-pill--danger {
+            background-color: #f8d7da;
+            color: #842029;
+        }
+        .tempo-pill--unknown {
+            background-color: #e2e3e5;
+            color: #41464b;
+        }
+        .footer {
+            font-size: 7.5pt;
+            color: #6c757d;
+            text-align: center;
+            margin-top: 30px;
+            border-top: 1px solid #dee2e6;
+            padding-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">
+            <h1>Relatório de Chamados</h1>
+            <div class="meta">Gerado em {{ now.strftime("%d/%m/%Y às %H:%M") }}</div>
+        </div>
+        <div class="header-right">
+            <div>Filial: {{ region.label }}</div>
+            <div class="text-muted-small">Total: {{ chamados|length }} chamados</div>
+        </div>
+    </div>
+
+    <div class="filters">
+        <strong>Filtros Aplicados:</strong>
+        <div class="filters-list">
+            {% set active_filters = [] %}
+            {% if filters.status_group == 'open' %}
+                {% set _ = active_filters.append('Status: Em aberto') %}
+            {% elif filters.status_group == 'closed' %}
+                {% set _ = active_filters.append('Status: Concluídos') %}
+            {% elif filters.status %}
+                {% set _ = active_filters.append('Status: ' ~ filters.status) %}
+            {% else %}
+                {% set _ = active_filters.append('Status: Todos') %}
+            {% endif %}
+            {% if filters.tecnico %}
+                {% set _ = active_filters.append('Técnico: ' ~ filters.tecnico) %}
+            {% endif %}
+            {% if filters.search %}
+                {% set _ = active_filters.append('Busca: "' ~ filters.search ~ '"') %}
+            {% endif %}
+            {% if filters.data_visita %}
+                {% set _ = active_filters.append('Data da visita: ' ~ filters.data_visita) %}
+            {% endif %}
+            {{ active_filters|join('  |  ') }}
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 14%;">Abertura</th>
+                <th style="width: 14%;">OS / Ref</th>
+                <th style="width: 25%;">Cliente</th>
+                <th style="width: 14%;">Bairro</th>
+                <th style="width: 15%;">Técnico</th>
+                <th style="width: 18%;">Status / Tempo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in chamados %}
+            <tr>
+                <td class="text-nowrap">
+                    {{ item.data_os_criada_display or item.data_os_criada or '-' }}
+                </td>
+                <td>
+                    <div class="fw-semibold">{{ item.ordem_servico or '-' }}</div>
+                    {% if item.número_manutençao or item.numero_manutencao %}
+                    <div class="text-muted-small">Saída: {{ item.número_manutençao or item.numero_manutencao }}</div>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="fw-semibold">{{ item.cliente or '-' }}</div>
+                    {% if item.cnpj %}
+                    <div class="text-muted-small">CNPJ {{ item.cnpj }}</div>
+                    {% endif %}
+                </td>
+                <td>{{ item.bairro or '-' }}</td>
+                <td>
+                    {% if item.sem_tecnico %}
+                    <em style="color: #dc3545; font-style: normal;">Sem técnico</em>
+                    {% else %}
+                    {{ item.tecnico or item.tcnico or '-' }}
+                    {% endif %}
+                </td>
+                <td>
+                    {% set status_upper = (item.retorno or item.status or 'FECHADO')|upper %}
+                    {% if status_upper == 'ABERTO' %}
+                        <span class="badge badge-aberto">Aberto</span>
+                    {% elif status_upper == 'OFICINA' %}
+                        <span class="badge badge-oficina">Oficina</span>
+                    {% elif status_upper == 'FECHADO' %}
+                        <span class="badge badge-fechado">Fechado</span>
+                    {% else %}
+                        <span class="badge badge-outros">{{ status_upper|capitalize }}</span>
+                    {% endif %}
+                    
+                    {% if item.tempo_os_text %}
+                    <div class="tempo-container">
+                        <span class="tempo-pill tempo-pill--{{ item.tempo_os_class or 'unknown' }}">
+                            {{ item.tempo_os_text }}
+                        </span>
+                    </div>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center; color: #6c757d; padding: 20px;">Nenhum chamado encontrado para os filtros aplicados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Sollus Connected — Tecnologia em Controle de Ponto e Acesso
+    </div>
+</body>
+</html>

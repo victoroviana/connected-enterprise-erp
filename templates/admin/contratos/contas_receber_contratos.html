@@ -1,0 +1,380 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Contratos | Contas a Receber{% endblock %}
+
+{% block head %}
+<style>
+  .contas-card{border:0;border-radius:1.1rem;box-shadow:0 10px 24px rgba(15,35,58,.08);}
+  .contas-card .card-header{background:transparent;border:0;padding:1.25rem 1.5rem 0;}
+  .contas-card .card-body{padding:1.25rem 1.5rem 1.5rem;}
+  .contas-table th,.contas-table td{vertical-align:middle;}
+  .contas-table thead{background:#f3f6fb;text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:#5a6782;}
+  .contas-table tbody tr:hover{background:rgba(148,163,184,.08);}
+  .search-select{position:relative;}
+  .search-select-menu{
+    position:absolute;
+    left:0;
+    right:0;
+    top:calc(100% + 4px);
+    background:#fff;
+    border:1px solid #d6deea;
+    border-radius:.6rem;
+    box-shadow:0 14px 30px rgba(15,35,58,.18);
+    max-height:260px;
+    overflow:auto;
+    z-index:1055;
+    display:none;
+  }
+  .search-select.is-open .search-select-menu{display:block;}
+  .search-select-item{
+    width:100%;
+    text-align:left;
+    border:0;
+    background:transparent;
+    padding:.45rem .85rem;
+    font-size:.95rem;
+  }
+  .search-select-item:hover,
+  .search-select-item:focus{background:#f3f6fb;}
+  .search-select-empty{padding:.55rem .85rem;color:#6b7280;}
+</style>
+{% endblock %}
+
+{% block content %}
+{% set hero_stats = [
+  {'label': 'Registros', 'value': pagination.total, 'hint': 'contratos'}
+] %}
+{% set hero_help_tips = [
+  'Selecione um cliente para filtrar as contas a receber.',
+  'Atualize datas e valores conforme os pagamentos forem efetuados.',
+  'Use o botao Novo para adicionar parcelas manualmente.'
+] %}
+{% call page_hero(
+  title='Contas a Receber (Contratos)'|safe,
+  subtitle='Controle os recebimentos vinculados aos contratos ativos.',
+  eyebrow='Contratos'|safe,
+  stats=hero_stats,
+  help_tips=hero_help_tips,
+  help_intro='Dicas rápidas para cobrança.'
+) %}
+  <div class="page-hero__actions">
+    <button class="btn btn-light" type="button" data-bs-toggle="modal" data-bs-target="#modalNovaContaContrato">
+      <i class="fa-solid fa-plus me-1"></i> Nova conta
+    </button>
+  </div>
+{% endcall %}
+
+<div class="card contas-card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-lg-8">
+        <label class="form-label">Cliente</label>
+        <div class="search-select" data-search-select>
+          <input type="text" class="form-control" placeholder="Buscar cliente" data-select-target="clienteFilter" autocomplete="off">
+          <div class="search-select-menu" data-select-menu></div>
+        </div>
+        <select class="form-select d-none" id="clienteFilter" name="cliente_id">
+          <option value="">Todos</option>
+          {% for cliente in clientes %}
+          <option value="{{ cliente.id_pk }}" {{ 'selected' if cliente_id == cliente.id_pk else '' }}>{{ cliente.nome_fantasia }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+        <a class="btn btn-outline-secondary w-100" href="{{ url_for('contratos_bp.contas_receber_contratos') }}">Limpar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card contas-card">
+  <div class="card-header">
+    <h2 class="h6 fw-bold mb-1">Registros</h2>
+    <p class="text-muted mb-0">{{ pagination.total }} contrato(s) encontrado(s).</p>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover contas-table">
+        <thead>
+          <tr>
+            <th>Nome fantasia</th>
+            <th>Nº Contrato</th>
+            <th>Data vencimento</th>
+            <th>Valor</th>
+            <th>Data pagamento</th>
+            <th>Valor pago</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in contas %}
+          <tr>
+            <td class="fw-semibold">{{ row.nome_fantasia or '-' }}</td>
+            <td>{{ row.contrato_numero or '-' }}</td>
+            <td>{{ row.data_vencimento_br or '-' }}</td>
+            <td>{{ row.valor_cobrado if row.valor_cobrado is not none else '-' }}</td>
+            <td>{{ row.data_pagamento_br or '-' }}</td>
+            <td>{{ row.valor_pago if row.valor_pago is not none else '-' }}</td>
+            <td class="text-end">
+              <div class="d-flex justify-content-end gap-2">
+                {% if row.parcelas_restantes %}
+                <button
+                  class="btn btn-outline-secondary btn-sm"
+                  type="button"
+                  data-bs-toggle="modal"
+                  data-bs-target="#modalParcelasContrato{{ row.contrato_id }}"
+                >
+                  <i class="fa-solid fa-layer-group me-1"></i> Parcelas ({{ row.parcelas_restantes }})
+                </button>
+                {% endif %}
+                <button
+                  class="btn btn-outline-primary btn-sm btn-edit-conta"
+                  type="button"
+                  data-conta-id="{{ row.id_pk }}"
+                  data-cliente-id="{{ row.cliente_id or '' }}"
+                  data-contrato-id="{{ row.contrato_id or '' }}"
+                  data-vencimento="{{ row.data_vencimento_br or '' }}"
+                  data-valor="{{ row.valor_cobrado if row.valor_cobrado is not none else '' }}"
+                  data-pagamento="{{ row.data_pagamento_br or '' }}"
+                  data-valor-pago="{{ row.valor_pago if row.valor_pago is not none else '' }}"
+                >
+                  <i class="fa-solid fa-pen me-1"></i> Editar
+                </button>
+                <form method="post" action="{{ url_for('contratos_bp.contas_receber_contratos_excluir', conta_id=row.id_pk) }}" onsubmit="return confirm('Deseja excluir esta conta?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="fa-solid fa-trash me-1"></i> Excluir
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not contas %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">Nenhuma conta encontrada.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if contas %}
+      {% for row in contas %}
+        {% if row.parcelas_restantes %}
+        <div class="modal sollus-modal fade" id="modalParcelasContrato{{ row.contrato_id }}" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">
+                  Parcelas do contrato {{ row.contrato_numero or '-' }} - {{ row.nome_fantasia or '-' }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+              </div>
+              <div class="modal-body">
+                <div class="table-responsive">
+                  <table class="table table-hover contas-table">
+                    <thead>
+                      <tr>
+                        <th>Nome fantasia</th>
+                        <th>Nº Contrato</th>
+                        <th>Data vencimento</th>
+                        <th>Valor</th>
+                        <th>Data pagamento</th>
+                        <th>Valor pago</th>
+                        <th class="text-end">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for parcela in row.parcelas_outros %}
+                      <tr>
+                        <td class="fw-semibold">{{ parcela.nome_fantasia or '-' }}</td>
+                        <td>{{ parcela.contrato_numero or '-' }}</td>
+                        <td>{{ parcela.data_vencimento_br or '-' }}</td>
+                        <td>{{ parcela.valor_cobrado if parcela.valor_cobrado is not none else '-' }}</td>
+                        <td>{{ parcela.data_pagamento_br or '-' }}</td>
+                        <td>{{ parcela.valor_pago if parcela.valor_pago is not none else '-' }}</td>
+                        <td class="text-end">
+                          <div class="d-flex justify-content-end gap-2">
+                            <button
+                              class="btn btn-outline-primary btn-sm btn-edit-conta"
+                              type="button"
+                              data-bs-dismiss="modal"
+                              data-conta-id="{{ parcela.id_pk }}"
+                              data-cliente-id="{{ parcela.cliente_id or '' }}"
+                              data-contrato-id="{{ parcela.contrato_id or '' }}"
+                              data-vencimento="{{ parcela.data_vencimento_br or '' }}"
+                              data-valor="{{ parcela.valor_cobrado if parcela.valor_cobrado is not none else '' }}"
+                              data-pagamento="{{ parcela.data_pagamento_br or '' }}"
+                              data-valor-pago="{{ parcela.valor_pago if parcela.valor_pago is not none else '' }}"
+                            >
+                              <i class="fa-solid fa-pen me-1"></i> Editar
+                            </button>
+                            <form method="post" action="{{ url_for('contratos_bp.contas_receber_contratos_excluir', conta_id=parcela.id_pk) }}" onsubmit="return confirm('Deseja excluir esta conta?');">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                              <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="fa-solid fa-trash me-1"></i> Excluir
+                              </button>
+                            </form>
+                          </div>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+
+    {% if pagination.pages > 1 %}
+    <nav class="mt-3">
+      <ul class="pagination justify-content-end mb-0">
+        <li class="page-item {{ 'disabled' if not pagination.has_prev else '' }}">
+          <a class="page-link" href="{{ build_url('contratos_bp.contas_receber_contratos', page=pagination.prev_num) }}">Anterior</a>
+        </li>
+        {% for p in range(1, pagination.pages + 1) %}
+        {% if p == 1 or p == pagination.pages or (p >= pagination.page - 1 and p <= pagination.page + 1) %}
+        <li class="page-item {{ 'active' if p == pagination.page else '' }}">
+          <a class="page-link" href="{{ build_url('contratos_bp.contas_receber_contratos', page=p) }}">{{ p }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+        <li class="page-item {{ 'disabled' if not pagination.has_next else '' }}">
+          <a class="page-link" href="{{ build_url('contratos_bp.contas_receber_contratos', page=pagination.next_num) }}">Próxima</a>
+        </li>
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalNovaContaContrato" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('contratos_bp.contas_receber_contratos_novo') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="origin" value="list">
+        <input type="hidden" name="txtID" value="">
+        <div class="modal-header">
+          <h5 class="modal-title">Nova conta a receber</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label"><span class="text-danger">*</span> Cliente</label>
+              <div class="search-select" data-search-select>
+                <input type="text" class="form-control" id="selClienteSearch" placeholder="Buscar cliente" data-select-target="selCliente" autocomplete="off" required>
+                <div class="search-select-menu" data-select-menu></div>
+              </div>
+              <select class="form-select d-none" id="selCliente" name="selCliente">
+                <option value=""></option>
+                {% for cliente in clientes %}
+                <option value="{{ cliente.id_pk }}">{{ cliente.nome_fantasia }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><span class="text-danger">*</span> Nº Contrato</label>
+              <select class="form-select" id="selNumeroContratos" name="selNumeroContratos" required>
+                <option value=""></option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label"><span class="text-danger">*</span> Data vencimento</label>
+              <input type="text" class="form-control" name="txtDataVencimento" placeholder="dd/mm/aaaa" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label"><span class="text-danger">*</span> Valor</label>
+              <input type="text" class="form-control" name="txtValor" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Data pagamento</label>
+              <input type="text" class="form-control" name="txtDataPagamento" placeholder="dd/mm/aaaa">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Valor pago</label>
+              <input type="text" class="form-control" name="txtValorPago">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" name="save" value="1">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalEditarContaContrato" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" data-action-template="{{ url_for('contratos_bp.contas_receber_contratos_editar', conta_id=0) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="txtID" value="">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar conta a receber</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label"><span class="text-danger">*</span> Cliente</label>
+              <div class="search-select" data-search-select>
+                <input type="text" class="form-control" id="selClienteEditSearch" placeholder="Buscar cliente" data-select-target="selClienteEdit" autocomplete="off" required>
+                <div class="search-select-menu" data-select-menu></div>
+              </div>
+              <select class="form-select d-none" id="selClienteEdit" name="selCliente">
+                <option value=""></option>
+                {% for cliente in clientes %}
+                <option value="{{ cliente.id_pk }}">{{ cliente.nome_fantasia }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><span class="text-danger">*</span> Nº Contrato</label>
+              <select class="form-select" id="selNumeroContratosEdit" name="selNumeroContratos" required>
+                <option value=""></option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label"><span class="text-danger">*</span> Data vencimento</label>
+              <input type="text" class="form-control" name="txtDataVencimento" placeholder="dd/mm/aaaa" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label"><span class="text-danger">*</span> Valor</label>
+              <input type="text" class="form-control" name="txtValor" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Data pagamento</label>
+              <input type="text" class="form-control" name="txtDataPagamento" placeholder="dd/mm/aaaa">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Valor pago</label>
+              <input type="text" class="form-control" name="txtValorPago">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" name="save" value="1">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/contratos_contas_receber.js') }}" defer></script>
+{% endblock %}

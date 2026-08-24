@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Auto-assign{% endblock %}
+
+{% block content %}
+{{ page_hero(
+  title='Auto-assign',
+  subtitle='Defina quais departamentos devem atribuir tickets automaticamente em rodizio entre atendentes.',
+  eyebrow='Sollus Tickets'
+) }}
+<div class="row g-3">
+  <div class="col-12 col-lg-7">
+    <form class="card border-0 shadow-sm" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="card-body">
+        {% for dept in departments %}
+          <label class="d-flex align-items-center justify-content-between border rounded p-3 mb-2">
+            <span>
+              <span class="fw-semibold d-block">{{ dept.name }}</span>
+              <span class="small text-muted">Ultimo atendente: {{ dept.last_assigned_user_id or '-' }}</span>
+            </span>
+            <span class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" name="department_ids" value="{{ dept.id }}" {{ 'checked' if dept.auto_assign_enabled else '' }}>
+            </span>
+          </label>
+        {% else %}
+          <div class="text-muted">Nenhum departamento cadastrado.</div>
+        {% endfor %}
+      </div>
+      <div class="card-footer bg-transparent d-flex justify-content-end">
+        <button class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-1"></i> Salvar</button>
+      </div>
+    </form>
+  </div>
+  <div class="col-12 col-lg-5">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white fw-semibold">Importar osTicket legado</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('sollus_tickets.import_osticket') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label class="form-label" for="config_path">Caminho do ost-config.php</label>
+          <input class="form-control" id="config_path" name="config_path" value="C:\Users\User\Desktop\sollus_connected\implementar\html\upload\include\ost-config.php">
+          <label class="form-label mt-3" for="limit">Limite opcional</label>
+          <input class="form-control" id="limit" name="limit" type="number" min="1" placeholder="Ex.: 100">
+          <button class="btn btn-outline-primary mt-3"><i class="fa-solid fa-database me-1"></i> Importar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

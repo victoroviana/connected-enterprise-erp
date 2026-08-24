@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block title %}Acesso negado | Sollus Connected{% endblock %}
+
+{% block content %}
+<section class="page-hero mb-4">
+  <div class="page-hero__inner">
+    <div class="page-hero__content">
+      <div class="page-hero__eyebrow">Acesso restrito</div>
+      <h1 class="page-hero__title">Você não tem permissão para acessar {{ area_label or 'esta área' }}</h1>
+      <p class="page-hero__subtitle">
+        Se precisar de acesso a esta área, fale com o seu superior para solicitar a liberação.
+      </p>
+      <div class="page-hero__toolbar">
+        <a class="btn btn-light fw-semibold" href="{{ url_for('index') }}">Voltar ao início</a>
+        <button class="btn btn-outline-light fw-semibold" type="button" onclick="history.back()">
+          Voltar
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body">
+    <p class="mb-0 text-muted">
+      Caso acredite que o acesso deveria estar liberado, entre em contato com o administrador do sistema.
+    </p>
+  </div>
+</div>
+{% endblock %}

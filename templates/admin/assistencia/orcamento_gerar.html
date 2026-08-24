@@ -1,0 +1,303 @@
+{% extends "layout.html" %}
+{% block title %}Gerar orçamento{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+  .proposal-wrapper { padding-bottom: 3rem; }
+  .proposal-hero {
+    background: linear-gradient(130deg, rgba(15,123,200,.95), rgba(0,59,102,.95));
+    color: #f7fbff;
+    border-radius: 1.5rem;
+    padding: 2.25rem 2.6rem;
+    box-shadow: 0 22px 46px rgba(9,29,54,.28);
+  }
+  .proposal-hero .hero-title { font-weight: 700; letter-spacing: .3px; }
+  .proposal-hero .hero-subtitle { color: rgba(240,247,255,.88); max-width: 760px; }
+  .proposal-hero .hero-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    background: rgba(255,255,255,.18);
+    font-size: 1.9rem;
+    color: #fff;
+  }
+  .section-card { border-radius: 1.25rem; }
+  .section-card .card-header { background: transparent; border: 0; padding: 1.5rem 1.75rem 0; }
+  .section-card .card-body { padding: 1.5rem 1.75rem 1.75rem; }
+  .section-title { font-weight: 700; letter-spacing: .02em; }
+  .section-subtitle { font-size: .95rem; }
+  .proposal-form .form-label { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: #6c7893; font-weight: 600; }
+  .proposal-form .form-control,
+  .proposal-form .form-select { border-radius: .9rem; padding: .75rem 1rem; border-color: #d6deed; }
+  .proposal-wrapper .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .55rem;
+    border-radius: 1rem;
+    font-weight: 600;
+    padding: .75rem 1.4rem;
+  }
+  .proposal-wrapper .btn-primary { background: linear-gradient(135deg,#0f7bc8,#1ba8f0); color: #fff; border: 0; }
+  .issuer-preview,
+  .subcard,
+  .cond-item {
+    border: 1px solid rgba(148,163,184,.25);
+    border-radius: 1rem;
+    background: rgba(248,250,252,.82);
+    padding: 1rem;
+  }
+  .issuer-title { font-weight: 700; margin-bottom: .5rem; }
+  .issuer-line { font-size: .9rem; margin-bottom: .25rem; }
+  .orc-section,
+  .orc-modal-fields { display: none; }
+  .orc-section.active,
+  .orc-modal-fields.active { display: block; }
+  .orc-table thead { background: #f1f4fb; text-transform: uppercase; font-size: .7rem; letter-spacing: .08rem; color: #5a6782; }
+  .orc-table td { vertical-align: middle; }
+  .orc-total { font-weight: 700; color: #0f2657; }
+  .equip-stock-tag { display: inline-flex; padding: .15rem .45rem; border-radius: 999px; background: rgba(15,123,200,.1); color: #0f2657; }
+  .proposal-actions { display: flex; justify-content: flex-end; margin-bottom: 2rem; }
+  #orcamentoGerandoModal .modal-dialog { max-width: 420px; }
+  #orcamentoGerandoModal .modal-content { border: 0; background: transparent; }
+  #orcamentoPdfPreviewModal .modal-dialog { max-width: 960px; }
+  #orcamentoPdfPreviewModal .modal-content { border: 0; border-radius: 1.5rem; box-shadow: 0 28px 68px rgba(6,28,56,.28); overflow: hidden; }
+  #orcamentoPdfPreviewModal .modal-header { padding: 1.4rem 2rem; background: linear-gradient(135deg, rgba(15,123,200,.1), rgba(30,64,175,.08)); border-bottom: 0; }
+  #orcamentoPdfPreviewModal .modal-title { font-weight: 700; letter-spacing: .02em; color: #0f1c36; }
+  #orcamentoPdfPreviewModal .modal-body { padding: 0 2rem 2rem; background: #f8fbff; }
+  #orcamentoPdfPreviewModal .modal-footer { padding: 1.3rem 2rem; background: #eef5ff; border-top: 0; }
+  .pdf-frame-wrapper { border-radius: 1rem; overflow: hidden; border: 1px solid rgba(148,163,184,.25); background: #fff; min-height: 70vh; }
+  .pdf-frame { width: 100%; min-height: 70vh; border: 0; display: block; background: #fff; }
+  .loading-modal {
+    background: linear-gradient(135deg, #0f7bc8, #001b33);
+    color: #f8fafc;
+    padding: 2.4rem 2.6rem;
+    border-radius: 1.75rem;
+    box-shadow: 0 30px 60px rgba(5,26,52,.45);
+    position: relative;
+    overflow: hidden;
+  }
+  .loading-modal::after {
+    content: '';
+    position: absolute;
+    width: 420px;
+    height: 420px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.22), transparent 70%);
+    top: -280px;
+    right: -180px;
+    opacity: .6;
+  }
+  .loading-modal::before {
+    content: '';
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.08);
+    bottom: -120px;
+    left: -80px;
+    filter: blur(4px);
+  }
+  .loading-modal > * { position: relative; z-index: 1; }
+  .loading-icon {
+    width: 78px;
+    height: 78px;
+    border-radius: 22px;
+    background: rgba(255,255,255,.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    position: relative;
+    box-shadow: 0 15px 35px rgba(7,34,66,.3);
+  }
+  .loading-icon::after {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border-radius: 18px;
+    border: 2px solid rgba(255,255,255,.25);
+    border-top-color: #38bdf8;
+    animation: loading-spin 1.2s linear infinite;
+  }
+  .loading-icon i { font-size: 1.9rem; color: #38bdf8; position: relative; z-index: 1; }
+  .loading-modal h5 { font-weight: 700; letter-spacing: .05em; text-transform: uppercase; margin-bottom: .35rem; }
+  .loading-modal .loading-subtitle { margin-bottom: 1.4rem; color: rgba(236,248,255,.78); }
+  .loading-progress { position: relative; height: 10px; border-radius: 999px; background: rgba(255,255,255,.12); overflow: hidden; box-shadow: inset 0 1px 6px rgba(7,34,66,.45); }
+  .loading-progress .progress-bar { display: block; width: 0%; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#22c55e,#15803d); box-shadow: 0 8px 18px rgba(34,197,94,.45); transition: width .35s ease; position: relative; overflow: hidden; }
+  .loading-progress .progress-bar::after { content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 45%; background: linear-gradient(90deg,rgba(255,255,255,.0),rgba(255,255,255,.45),rgba(255,255,255,.0)); opacity: .6; transform: skewX(-12deg); animation: progress-sheen 1.4s ease-in-out infinite; }
+  .loading-footnote { margin-top: 1.2rem; font-size: .85rem; color: rgba(236,248,255,.7); }
+  @keyframes loading-spin { to { transform: rotate(1turn); } }
+  @keyframes progress-sheen { to { left: 110%; } }
+  @media (max-width: 576px) { .loading-modal { padding: 2rem 2.2rem; border-radius: 1.4rem; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="proposal-wrapper">
+  <div class="proposal-hero mb-4">
+    <div class="d-flex flex-wrap gap-4 align-items-center justify-content-between">
+      <div class="d-flex flex-column gap-3">
+        <div class="hero-icon"><i class="bi bi-file-earmark-pdf"></i></div>
+        <div>
+          <h1 class="hero-title h3 mb-2">Gerar orçamento</h1>
+          <p class="hero-subtitle mb-0">Monte o orçamento por tipo, vincule a OS e baixe o PDF para envio.</p>
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-light btn-sm" href="{{ url_for('assist_bp.assistencia_orcamentos_historico') }}">
+          <i class="bi bi-clock-history"></i> Histórico
+        </a>
+        <a class="btn btn-outline-light btn-sm" href="{{ url_for('assist_bp.assistencia_orcamentos') }}">
+          <i class="bi bi-arrow-left"></i> Orçamentos
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% include "admin/assistencia/_orcamento_form.html" %}
+
+</div>
+
+<div class="modal sollus-modal fade" id="orcamentoGerandoModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="loading-modal text-center">
+        <div class="loading-icon">
+          <i class="bi bi-file-earmark-pdf"></i>
+        </div>
+        <h5>Gerando orçamento</h5>
+        <p class="loading-subtitle mb-3">Estamos preparando a OS, montando os itens e aplicando o layout Sollus no PDF.</p>
+        <div class="loading-progress mb-2">
+          <div id="orcamentoGerandoProgress" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%;"></div>
+        </div>
+        <div class="loading-footnote">Isso costuma levar apenas alguns segundos.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="orcamentoPdfPreviewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title"><i class="bi bi-filetype-pdf me-2 text-primary"></i>Orçamento pronto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body pt-0">
+        <div class="pdf-frame-wrapper">
+          <iframe id="orcamentoPdfPreviewFrame" class="pdf-frame" title="Visualização do orçamento" src="about:blank"></iframe>
+        </div>
+      </div>
+      <div class="modal-footer border-0 justify-content-between flex-wrap gap-3">
+        <div class="d-flex flex-wrap gap-2">
+          <a id="orcamentoPdfDownloadBtn" class="btn btn-outline-primary" href="#" download>
+            <i class="bi bi-download"></i> Baixar PDF
+          </a>
+          <button id="orcamentoPdfPrintBtn" type="button" class="btn btn-outline-secondary">
+            <i class="bi bi-printer"></i> Imprimir
+          </button>
+          <a id="orcamentoPdfHistoryBtn" class="btn btn-outline-secondary" href="{{ url_for('assist_bp.assistencia_orcamentos_historico') }}">
+            <i class="bi bi-clock-history"></i> Histórico
+          </a>
+          <a id="orcamentoPdfOpenBtn" class="btn btn-outline-secondary" href="{{ url_for('assist_bp.assistencia_orcamentos') }}">
+            <i class="bi bi-list-check"></i> Orçamentos em aberto
+          </a>
+        </div>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+          <i class="bi bi-check2-circle"></i> Concluir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Pesquisa de OS -->
+<div class="modal fade" id="modalPesquisaOS" tabindex="-1" aria-labelledby="modalPesquisaOSLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header bg-light border-0">
+        <h5 class="modal-title fw-bold" id="modalPesquisaOSLabel">
+          <i class="bi bi-search me-2 text-primary"></i>Pesquisar OS Vinculada
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="mb-3">
+          <label for="inputBuscaOS" class="form-label fw-semibold text-muted small text-uppercase">Pesquisar OS</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="inputBuscaOS" class="form-control border-start-0 ps-0" placeholder="Digite o número da OS ou nome do cliente/empresa...">
+          </div>
+        </div>
+        <div class="table-responsive border rounded-3 overflow-hidden" style="max-height: 400px;">
+          <table class="table table-hover align-middle mb-0" id="tabelaBuscaOS">
+            <thead class="table-light">
+              <tr>
+                <th>OS</th>
+                <th>Empresa / Cliente</th>
+                <th>Unidade</th>
+                <th>Técnico</th>
+                <th>Data</th>
+                <th class="text-end">Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Dynamic Rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Pesquisa de Itens -->
+<div class="modal fade" id="modalPesquisaItem" tabindex="-1" aria-labelledby="modalPesquisaItemLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header bg-light border-0">
+        <h5 class="modal-title fw-bold" id="modalPesquisaItemLabel">
+          <i class="bi bi-search me-2 text-primary"></i>Pesquisar Item do Estoque
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="mb-3">
+          <label for="inputBuscaItem" class="form-label fw-semibold text-muted small text-uppercase">Pesquisar Item</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="inputBuscaItem" class="form-control border-start-0 ps-0" placeholder="Digite o nome ou descrição do item...">
+          </div>
+        </div>
+        <div class="table-responsive border rounded-3 overflow-hidden" style="max-height: 400px;">
+          <table class="table table-hover align-middle mb-0" id="tabelaBuscaItem">
+            <thead class="table-light">
+              <tr>
+                <th>Nome</th>
+                <th>Descrição</th>
+                <th class="text-center">Estoque</th>
+                <th class="text-center">Preço</th>
+                <th class="text-end">Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Dynamic Rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/orcamentos_tecnicos.js') }}?v=1.0.3"></script>
+{% endblock %}

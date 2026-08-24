@@ -1,0 +1,229 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% set images = gallery_images or [] %}
+
+{% block title %}Galeria{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+  .gallery-page .gallery-panel{
+    border:0;
+    border-radius:1.4rem;
+    box-shadow:0 20px 45px rgba(15,35,58,.1);
+  }
+
+  .gallery-page .gallery-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:1rem;
+  }
+
+  .gallery-page .gallery-item{
+    border:0;
+    padding:0;
+    background:#f4f7fc;
+    border-radius:1rem;
+    overflow:hidden;
+    box-shadow:0 12px 28px rgba(15,35,58,.08);
+    transition:transform .15s ease, box-shadow .15s ease;
+    cursor:pointer;
+  }
+
+  .gallery-page .gallery-item:hover{
+    transform:translateY(-4px);
+    box-shadow:0 18px 36px rgba(15,35,58,.12);
+  }
+
+  .gallery-page .gallery-item:focus-visible{
+    outline:2px solid #0E5DC6;
+    outline-offset:3px;
+  }
+
+  .gallery-page .gallery-item img{
+    width:100%;
+    height:200px;
+    object-fit:cover;
+    display:block;
+  }
+
+  .gallery-page .gallery-empty{
+    background:#f4f7fc;
+    border-radius:1rem;
+    padding:2rem;
+    text-align:center;
+    color:#5a6c84;
+  }
+
+  .gallery-modal .modal-content{
+    border:0;
+    border-radius:1.4rem;
+    overflow:hidden;
+    background:#0b0f1a;
+  }
+
+  .gallery-modal .modal-body{
+    position:relative;
+  }
+
+  .gallery-modal img{
+    width:100%;
+    height:auto;
+    display:block;
+  }
+
+  .gallery-nav{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 1rem;
+    pointer-events:none;
+  }
+
+  .gallery-nav-btn{
+    pointer-events:auto;
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    border:0;
+    background:rgba(15,35,58,.6);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 10px 22px rgba(0,0,0,.35);
+  }
+
+  .gallery-nav-btn:hover{
+    background:rgba(15,35,58,.85);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="gallery-page py-4">
+  {% set help_tips = [
+    'Clique em uma foto para ver o tamanho original.',
+    'Use o botão de seta para navegar entre imagens.',
+    'Novas fotos aparecem automaticamente após o envio pelo painel de administração.'
+  ] %}
+  {{ page_hero(
+    title='Galeria de fotos',
+    subtitle='Veja os registros mais recentes do time e eventos internos.',
+    eyebrow='Galeria',
+    stats=[{'label': 'Fotos disponiveis', 'value': images|length}],
+    help_tips=help_tips,
+    help_intro='Guia rapido para navegar nas imagens.'
+  ) }}
+
+  <div class="card gallery-panel">
+    <div class="card-body">
+      {% if images %}
+      <div class="gallery-grid">
+        {% for filename in images %}
+        <button
+          class="gallery-item"
+          type="button"
+          data-bs-toggle="modal"
+          data-bs-target="#galleryModal"
+          data-src="{{ url_for('serve_fotos', filename=filename) }}"
+          aria-label="Abrir foto {{ loop.index }}"
+        >
+          <img src="{{ url_for('serve_fotos', filename=filename) }}" alt="Foto da galeria {{ loop.index }}">
+        </button>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="gallery-empty">Nenhuma foto cadastrada ainda.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade gallery-modal" id="galleryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title text-white">Foto em tamanho grande</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body p-0">
+        <img id="galleryModalImage" src="" alt="Foto ampliada">
+        <div class="gallery-nav">
+          <button class="gallery-nav-btn" type="button" id="galleryPrevBtn" aria-label="Foto anterior">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          <button class="gallery-nav-btn" type="button" id="galleryNextBtn" aria-label="Próxima foto">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    var modal = document.getElementById('galleryModal');
+    if(!modal){ return; }
+    var imageEl = document.getElementById('galleryModalImage');
+    var prevBtn = document.getElementById('galleryPrevBtn');
+    var nextBtn = document.getElementById('galleryNextBtn');
+    var galleryImages = [
+      {% for filename in images %}
+      "{{ url_for('serve_fotos', filename=filename) }}"{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ];
+    var currentIndex = 0;
+
+    function setImage(index){
+      if(!galleryImages.length || !imageEl){ return; }
+      currentIndex = (index + galleryImages.length) % galleryImages.length;
+      imageEl.src = galleryImages[currentIndex];
+    }
+
+    function syncNavVisibility(){
+      var showNav = galleryImages.length > 1;
+      if(prevBtn){ prevBtn.toggleAttribute('hidden', !showNav); }
+      if(nextBtn){ nextBtn.toggleAttribute('hidden', !showNav); }
+    }
+    syncNavVisibility();
+
+    modal.addEventListener('show.bs.modal', function(event){
+      var trigger = event.relatedTarget;
+      if(!imageEl){ return; }
+      var src = trigger ? trigger.getAttribute('data-src') : '';
+      var idx = galleryImages.indexOf(src);
+      if(idx < 0){ idx = 0; }
+      setImage(idx);
+    });
+
+    if(prevBtn){
+      prevBtn.addEventListener('click', function(){
+        setImage(currentIndex - 1);
+      });
+    }
+
+    if(nextBtn){
+      nextBtn.addEventListener('click', function(){
+        setImage(currentIndex + 1);
+      });
+    }
+
+    document.addEventListener('keydown', function(event){
+      if(!modal.classList.contains('show')){ return; }
+      if(event.key === 'ArrowLeft'){ setImage(currentIndex - 1); }
+      if(event.key === 'ArrowRight'){ setImage(currentIndex + 1); }
+    });
+
+    modal.addEventListener('hidden.bs.modal', function(){
+      if(imageEl){ imageEl.src = ''; }
+    });
+  });
+</script>
+{% endblock %}

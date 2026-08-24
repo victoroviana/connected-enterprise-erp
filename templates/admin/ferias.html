@@ -1,0 +1,561 @@
+{% extends "layout.html" %}
+
+{% from "components/page_hero.html" import page_hero %}
+
+{% block title %}Mapa de Férias · Sollus Connected{% endblock %}
+
+
+
+{% block head %}
+
+<style>
+
+  .vac-card{border:0;border-radius:1.5rem;box-shadow:0 18px 40px rgba(15,35,58,.08);}
+
+  .vac-card__header{padding:1.5rem 1.5rem 0;}
+
+  .vac-card__body{padding:1.5rem;}
+
+  .vac-table thead{background:#eef3ff;text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:#5a6782;}
+
+  .vac-table tbody tr:hover{background:#f8fbff;}
+
+  .vac-alert{border-radius:1.5rem;background:linear-gradient(140deg,#0f7bc8,#053a6a);color:#fff;padding:1.75rem;box-shadow:0 20px 40px rgba(5,46,94,.35);}
+
+  .vac-alert small{letter-spacing:.08rem;text-transform:uppercase;color:rgba(255,255,255,.7);}
+
+  .vac-filter select{max-width:220px;}
+
+  .vac-alert__item{border-radius:1rem;padding:1rem 1.2rem;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(6px);margin-bottom:.85rem;box-shadow:0 12px 30px rgba(2,25,32,.25);}
+
+  .vac-alert__item strong{display:block;font-size:1rem;color:#fff;margin-bottom:.35rem;}
+
+  .vac-alert__item .period{display:block;font-size:.9rem;letter-spacing:.04rem;color:rgba(255,255,255,.85);}
+
+  .vac-alert__list{display:flex;flex-direction:column;gap:.85rem;}
+
+  .vac-alert__carousel{margin-top:1rem;border-radius:1.2rem;border:1px solid rgba(255,255,255,.25);padding:1rem 2rem;position:relative;overflow:hidden;}
+
+  .vac-alert__carousel .carousel-item{padding:0;}
+
+  .vac-alert__carousel .vac-alert__item{margin-bottom:0;}
+
+  .vac-alert__carousel .carousel-control-prev,
+
+  .vac-alert__carousel .carousel-control-next{width:2.6rem;top:50%;transform:translateY(-50%);opacity:.95;}
+
+  .vac-alert__carousel .carousel-control-prev{left:-.8rem;}
+
+  .vac-alert__carousel .carousel-control-next{right:-.8rem;}
+
+  .vac-alert__carousel .carousel-control-prev-icon,
+
+  .vac-alert__carousel .carousel-control-next-icon{filter:drop-shadow(0 4px 10px rgba(0,0,0,.35)) invert(1);width:1.9rem;height:1.9rem;}
+
+</style>
+
+{% endblock %}
+
+
+
+{% block content %}
+
+{% set stats = [
+
+  {'label': 'Ano selecionado', 'value': selected_year},
+
+  {'label': 'Total de perióodos', 'value': ferias_total},
+
+  {'label': 'Dias planejados', 'value': total_days}
+
+] %}
+{% set vac_help_tips = [
+  'Selecione o ano no topo e consulte o painel de próximas férias para evitar choques de agenda antes de lançar novas datas.',
+  'Use "Lançar período" para abrir o formulário; escolha colaborador, datas e, se necessário, adicione outra linha para registrar mais de um período de uma só vez.',
+  'Na tabela anual, use o lápis para ajustar datas/unidade e a lixeira para remover lançamentos, mantendo o planejamento atualizado.'
+] %}
+
+{{ page_hero(
+
+    title='Mapa de Férias da Equipe',
+
+    subtitle='Tenha visibilidade do planejamento anual e evite sobreposições entre times de atendimento e suporte.',
+
+    eyebrow='Administração',
+
+    stats=stats,
+    help_tips=vac_help_tips,
+    help_intro='Passo a passo para planejar as férias da equipe.'
+
+) }}
+
+
+
+<div class="row g-4">
+
+  <div class="col-xl-4">
+
+    <div class="vac-alert h-100">
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+
+        <div>
+
+          <small>Próximas férias</small>
+
+          <h2 class="h5 fw-bold mb-0">{{ selected_year }}</h2>
+
+        </div>
+
+        <button class="btn btn-light btn-sm text-success fw-semibold" data-bs-toggle="modal" data-bs-target="#modalAdicionarFerias">
+
+          <i class="bi bi-plus-lg"></i> Lançar período
+
+        </button>
+
+      </div>
+
+      {% if upcoming_ferias_groups %}
+
+        <div id="vacUpcomingCarousel" class="carousel slide vac-alert__carousel" data-bs-ride="carousel" data-bs-interval="6000" data-bs-touch="true">
+
+          <div class="carousel-inner">
+
+            {% for group in upcoming_ferias_groups %}
+
+            <div class="carousel-item {% if loop.first %}active{% endif %}">
+
+              <div class="vac-alert__list">
+
+                {% for entry in group %}
+
+                {% set vac_user = vacation_user_map.get(entry.id) %}
+
+                <div class="vac-alert__item">
+
+                  <strong>{{ vac_user.nome_completo if vac_user else entry.usuario_id }}</strong>
+
+                  <span class="period">{{ entry.data_inicial | local('%d/%m') }} → {{ entry.data_final | local('%d/%m') }} • {{ entry.display_unit or entry.unidade }}</span>
+
+                </div>
+
+                {% endfor %}
+
+              </div>
+
+            </div>
+
+            {% endfor %}
+
+          </div>
+
+          {% if upcoming_ferias_groups|length > 1 %}
+
+          <button class="carousel-control-prev" type="button" data-bs-target="#vacUpcomingCarousel" data-bs-slide="prev">
+
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+
+            <span class="visually-hidden">Anterior</span>
+
+          </button>
+
+          <button class="carousel-control-next" type="button" data-bs-target="#vacUpcomingCarousel" data-bs-slide="next">
+
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+
+            <span class="visually-hidden">Próximo</span>
+
+          </button>
+
+          {% endif %}
+
+        </div>
+
+      {% else %}
+
+        <p class="mb-0 opacity-75">Não há periódos futuros cadastrados para {{ selected_year }}.</p>
+
+      {% endif %}
+
+    </div>
+
+  </div>
+
+  <div class="col-xl-8">
+
+    <div class="card vac-card">
+
+      <div class="vac-card__header">
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+
+          <div>
+
+            <h2 class="h5 fw-bold mb-1">Planejamento anual</h2>
+
+            <p class="text-muted mb-0">Atualize datas e identifique facilmente quem estará ausente.</p>
+
+          </div>
+
+          <form method="get" class="vac-filter d-flex align-items-center gap-2">
+
+            <label class="text-muted small">Ano</label>
+
+            <select class="form-select" name="ano" onchange="this.form.submit()">
+
+              {% for year in available_years %}
+
+              <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+
+              {% endfor %}
+
+            </select>
+
+          </form>
+
+        </div>
+
+      </div>
+
+      <div class="table-responsive vac-card__body">
+
+        <table class="table vac-table align-middle mb-0">
+
+          <thead>
+
+            <tr>
+
+              <th>Colaborador</th>
+
+              <th>Período</th>
+
+              <th>Empresa</th>
+
+              <th class="text-center">Dias</th>
+
+              <th class="text-end">Ações</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            {% if ferias %}
+
+              {% for entry in ferias %}
+
+              <tr>
+
+                {% set vac_user = vacation_user_map.get(entry.id) %}
+
+                <td class="fw-semibold">{{ vac_user.nome_completo if vac_user else entry.usuario_id }}</td>
+
+                <td>{{ entry.data_inicial | local('%d/%m/%Y') }} → {{ entry.data_final | local('%d/%m/%Y') }}</td>
+
+                <td>{{ entry.display_unit or entry.unidade }}</td>
+
+                <td class="text-center">{{ entry.duration_days }}</td>
+
+                <td class="text-end">
+
+                  <div class="btn-group btn-group-sm" role="group">
+
+                    <button type="button" class="btn btn-outline-primary js-edit-ferias" data-bs-toggle="modal" data-bs-target="#modalEditarFerias" data-update-url="{{ url_for('admin_tools_bp.atualizar_ferias', ferias_id=entry.id) }}" data-ferias='{{ {
+
+                      "id": entry.id,
+
+                      "inicio": entry.data_inicial.isoformat(),
+
+                      "fim": entry.data_final.isoformat(),
+
+                      "unidade": entry.unidade,
+
+                      "user_id": vac_user.id if vac_user else ''
+
+                    } | tojson }}'>
+
+                      <i class="bi bi-pencil"></i>
+
+                    </button>
+
+                    <form method="post" action="{{ url_for('admin_tools_bp.excluir_ferias', ferias_id=entry.id) }}" onsubmit="return confirm('Remover o período de {{ vac_user.nome_completo if vac_user else entry.usuario_id }}?');">
+
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                      <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
+
+                    </form>
+
+                  </div>
+
+                </td>
+
+              </tr>
+
+              {% endfor %}
+
+            {% else %}
+
+              <tr>
+
+                <td colspan="5" class="text-center py-4 text-muted">Nenhum lançamento de férias para {{ selected_year }}.</td>
+
+              </tr>
+
+            {% endif %}
+
+          </tbody>
+
+        </table>
+
+
+
+      {% if ferias_pagination.pages > 1 %}
+      {% set pages_to_show = [] %}
+      {% for p in [1, ferias_pagination.page, ferias_pagination.page + 1, ferias_pagination.page + 2, ferias_pagination.page + 3, ferias_pagination.pages] %}
+        {% if 1 <= p <= ferias_pagination.pages and p not in pages_to_show %}
+          {% set _ = pages_to_show.append(p) %}
+        {% endif %}
+      {% endfor %}
+
+      <nav class="mt-3" aria-label="Paginação de periódos">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item {% if not ferias_pagination.has_prev %}disabled{% endif %}">
+              <a class="page-link" href="{{ url_for('admin_tools_bp.ferias_dashboard', ano=selected_year, page=ferias_pagination.prev_num or 1) }}">Anterior</a>
+            </li>
+            {% for page_num in pages_to_show %}
+            <li class="page-item {% if page_num == ferias_pagination.page %}active{% endif %}">
+              <a class="page-link" href="{{ url_for('admin_tools_bp.ferias_dashboard', ano=selected_year, page=page_num) }}">{{ page_num }}</a>
+            </li>
+            {% endfor %}
+            <li class="page-item {% if not ferias_pagination.has_next %}disabled{% endif %}">
+              <a class="page-link" href="{{ url_for('admin_tools_bp.ferias_dashboard', ano=selected_year, page=ferias_pagination.next_num or ferias_pagination.page) }}">Próximo</a>
+            </li>
+          </ul>
+          <form class="d-flex align-items-center gap-2" method="get" action="{{ url_for('admin_tools_bp.ferias_dashboard', ano=selected_year) }}">
+            <label class="small text-muted mb-0" for="ferias-page-input">Página</label>
+            <input type="number" min="1" max="{{ ferias_pagination.pages }}" class="form-control form-control-sm" id="ferias-page-input" name="page" value="{{ ferias_pagination.page }}">
+            <button class="btn btn-outline-secondary btn-sm" type="submit">Ir</button>
+          </form>
+        </div>
+      </nav>
+
+      {% endif %}
+
+
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!-- Modal: adicionar -->
+
+<div class="modal sollus-modal fade" id="modalAdicionarFerias" tabindex="-1" aria-hidden="true">
+
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+
+    <form class="modal-content" action="{{ url_for('admin_tools_bp.criar_ferias') }}" method="post" id="formAdicionarFerias">
+
+      <div class="modal-header">
+
+        <h5 class="modal-title">Cadastrar férias</h5>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
+      </div>
+
+      <div class="modal-body">
+
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+
+          <label class="form-label">Ano de referência</label>
+
+          <input type="number" class="form-control" name="ano_referencia" value="{{ selected_year }}" min="2000" required>
+
+        </div>
+
+        <div id="feriasPessoaContainer" class="d-flex flex-column gap-3">
+
+          <div class="border rounded-4 p-3 bg-light-subtle" data-ferias-row>
+
+            <div class="row g-3 align-items-end">
+
+              <div class="col-md-4">
+
+                <label class="form-label">Colaborador</label>
+
+                <select class="form-select" name="usuario_id[]" required>
+
+                  <option value="">Selecione</option>
+
+                  {% for user in users %}
+
+                  <option value="{{ user.id }}">{{ user.nome_completo }}</option>
+
+                  {% endfor %}
+
+                </select>
+
+                <div class="form-text">A unidade é definida automaticamente.</div>
+
+              </div>
+
+              <div class="col-md-3">
+
+                <label class="form-label">Data inicial</label>
+
+                <input type="date" class="form-control" name="data_inicial[]" required>
+
+              </div>
+
+              <div class="col-md-3">
+
+                <label class="form-label">Data final</label>
+
+                <input type="date" class="form-control" name="data_final[]" required>
+
+              </div>
+
+              <div class="col-md-2">
+
+                <label class="form-label">Empresa</label>
+
+                <div class="form-control-plaintext text-muted px-0">Usaremos a unidade cadastrada do colaborador.</div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <button type="button" class="btn btn-outline-primary mt-3" id="btnAdicionarLinha">
+
+          <i class="bi bi-plus-lg"></i> Adicionar colaborador
+
+        </button>
+
+      </div>
+
+      <div class="modal-footer">
+
+        <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+
+        <button type="submit" class="btn btn-primary">Salvar lançamentos</button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+
+<!-- Modal: editar -->
+
+<div class="modal sollus-modal fade" id="modalEditarFerias" tabindex="-1" aria-hidden="true">
+
+  <div class="modal-dialog modal-dialog-centered">
+
+    <form class="modal-content" method="post" id="formEditarFerias">
+
+      <div class="modal-header">
+
+        <h5 class="modal-title">Editar período</h5>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
+      </div>
+
+      <div class="modal-body">
+
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+
+          <label class="form-label">Colaborador</label>
+
+          <select class="form-select" name="usuario_id" required>
+
+            <option value="">Selecione</option>
+
+            {% for user in users %}
+
+            <option value="{{ user.id }}">{{ user.nome_completo }}</option>
+
+            {% endfor %}
+
+          </select>
+
+          <div class="form-text">A empresa segue o cadastro do colaborador.</div>
+
+        </div>
+
+        <div class="row g-3">
+
+          <div class="col-md-6">
+
+            <label class="form-label">Data inicial</label>
+
+            <input type="date" class="form-control" name="data_inicial" required>
+
+          </div>
+
+          <div class="col-md-6">
+
+            <label class="form-label">Data final</label>
+
+            <input type="date" class="form-control" name="data_final" required>
+
+          </div>
+
+        </div>
+
+        <div class="mt-3">
+
+          <label class="form-label">Empresa</label>
+
+          <input type="text" class="form-control" id="editFeriasUnit" readonly value="">
+
+          <div class="form-text">Definida automaticamente pelo cadastro do colaborador.</div>
+
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+
+        <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+
+        <button type="submit" class="btn btn-primary">Atualizar</button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+{% endblock %}
+
+
+
+{% block scripts %}
+
+  <script src="{{ url_for('static', filename='js/admin_ferias.js') }}" defer></script>
+
+{% endblock %}

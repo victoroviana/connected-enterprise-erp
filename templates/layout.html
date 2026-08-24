@@ -1,0 +1,6152 @@
+<!DOCTYPE html>
+
+
+<html lang="pt-BR" data-theme="light">
+
+
+<head>
+
+
+  <meta charset="utf-8" />
+
+
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+
+  <meta name="csrf-token" content="{{ csrf_token() }}" />
+
+
+  <title>{% block title %}Sollus Connected{% endblock %}</title>
+
+
+
+
+
+  <!-- Fonts / CSS base -->
+
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+
+
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}?v=3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon.png') }}?v=3">
+
+
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}?v=3">
+
+
+
+
+
+  <link href="{{ url_for('static', filename='css/sollus_tickets_premium.css') }}" rel="stylesheet">
+  {% block head %}{% endblock %}
+
+
+
+
+
+  {% set theme = ui_theme or {} %}
+
+
+  {% set tcolors = theme.colors or {} %}
+
+
+  {% set nav_start = tcolors.hero_start or '#0B3B8C' %}
+
+
+  {% set nav_end = tcolors.hero_end or '#0E5DC6' %}
+
+
+  {% set nav_text = tcolors.hero_text or '#ffffff' %}
+
+
+  {% set nav_btn_bg = 'linear-gradient(135deg,' ~ nav_start ~ ',' ~ nav_end ~ ')' %}
+
+
+  {% set nav_btn_border = 'rgba(255,255,255,0.65)' %}
+
+
+  {% set nav_btn_hover_bg = 'linear-gradient(135deg,' ~ nav_start ~ ',' ~ nav_end ~ ')' %}
+
+
+  {% set nav_btn_hover_border = 'rgba(255,255,255,0.9)' %}
+
+
+
+
+
+  <style>
+
+
+    :root{
+
+
+      --nav-h:56px; --side-w:280px;
+
+
+      --blue-900:#0B3B8C; --blue-700:#0E5DC6;
+
+
+      --bg:#f6f8fb; --card:#fff; --text:#0f172a; --muted:#55607a;
+
+
+      --nav-bg-start: {{ nav_start }};
+
+
+      --nav-bg-end: {{ nav_end }};
+
+
+      --nav-text-color: {{ nav_text }};
+
+
+      --nav-btn-bg: {{ nav_btn_bg }};
+
+
+      --nav-btn-border: {{ nav_btn_border }};
+
+
+      --nav-btn-hover-bg: {{ nav_btn_hover_bg }};
+
+
+      --nav-btn-hover-border: {{ nav_btn_hover_border }};
+
+
+    }
+
+
+    html[data-theme="dark"]{
+
+
+      --bg:#0b1220; --card:#0f172a; --text:#e5e7eb; --muted:#9aa4b2;
+
+
+      --blue-900:#0B3B8C; --blue-700:#0E5DC6;
+
+
+    }
+
+
+    .support-type--blue, .support-type--blue i, .support-type--blue .fa {
+
+
+      color: #0d6efd;
+
+
+    }
+
+
+    .support-type--blue .type-label{
+
+
+      color: #0d6efd; font-weight:600;
+
+
+    }
+
+
+    body{
+
+
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+
+
+      background:var(--bg); color:var(--text);
+
+
+      padding-top:var(--nav-h); margin:0; overflow-x:hidden;
+
+
+      min-height:100dvh; display:flex; flex-direction:column;
+
+
+    }
+
+
+    .sollus-modal .modal-content{
+
+
+      border:1px solid rgba(148,163,184,.35);
+
+
+      border-radius:18px;
+
+
+      box-shadow:0 30px 80px rgba(15,23,42,.22);
+
+
+      overflow:hidden;
+
+
+      background:#f8fafc;
+
+
+    }
+
+
+    .sollus-modal .modal-header{
+
+
+      background:linear-gradient(120deg,#0b3b8c,#0bb4d4);
+
+
+      color:#fff;
+
+
+      border-bottom:0;
+
+
+    }
+
+
+    .sollus-modal .modal-title{font-weight:600;letter-spacing:.02em;}
+
+
+    .sollus-modal .btn-close{filter:invert(1) grayscale(100%);opacity:.9;}
+
+
+    .sollus-modal .modal-body{
+
+
+      background:
+
+
+        radial-gradient(120% 120% at 0% 0%, rgba(14,93,198,.12), rgba(248,250,252,0) 55%),
+
+
+        radial-gradient(120% 120% at 100% 100%, rgba(11,180,212,.12), rgba(248,250,252,0) 55%);
+
+
+    }
+
+
+    .sollus-modal .modal-footer{
+
+
+      background:#f1f5f9;
+
+
+      border-top:1px solid rgba(148,163,184,.2);
+
+
+    }
+
+
+    .sollus-modal .form-label{
+
+
+      font-size:.75rem;
+
+
+      text-transform:uppercase;
+
+
+      letter-spacing:.08em;
+
+
+      color:#64748b;
+
+
+      margin-bottom:.35rem;
+
+
+    }
+
+
+    .sollus-modal .form-control,
+
+
+    .sollus-modal .form-select{
+
+
+      border-radius:12px;
+
+
+      border-color:rgba(148,163,184,.45);
+
+
+      box-shadow:none;
+
+
+    }
+
+
+    .sollus-modal .form-control:focus,
+
+
+    .sollus-modal .form-select:focus{
+
+
+      border-color:rgba(14,93,198,.7);
+
+
+      box-shadow:0 0 0 .2rem rgba(14,93,198,.15);
+
+
+    }
+
+
+    main.content{ flex:1 0 auto; }
+
+
+    .site-footer{ flex-shrink:0;margin-left:0;padding:0 1rem;transition:margin-left .25s ease; }
+
+
+    body:not(.module-home) .site-footer{margin-left:var(--side-w);}
+
+
+    body.sidebar-collapsed:not(.module-home) .site-footer{margin-left:72px;}
+
+
+    @media (max-width: 991px){
+
+
+      body:not(.module-home) .site-footer{margin-left:0;}
+
+
+    }
+
+
+
+
+
+    @media (max-width: 991px){
+
+
+      .sidebar{
+
+
+        width:min(86vw, var(--side-w));
+
+
+        transform:translateX(-105%);
+
+
+        z-index:1040;
+
+
+        box-shadow:12px 0 30px rgba(15,35,58,.22);
+
+
+      }
+
+
+      body.sidebar-mobile-open .sidebar{
+
+
+        transform:translateX(0);
+
+
+      }
+
+
+      .sidebar-backdrop{
+
+
+        display:block;
+
+
+        position:fixed;
+
+
+        top:var(--nav-h);
+
+
+        left:0;right:0;bottom:0;
+
+
+        background:rgba(15,23,42,.35);
+
+
+        backdrop-filter:blur(2px);
+
+
+        opacity:0;
+
+
+        pointer-events:none;
+
+
+        transition:opacity .2s ease;
+
+
+        z-index:1030;
+
+
+      }
+
+
+      body.sidebar-mobile-open .sidebar-backdrop{
+
+
+        opacity:1;
+
+
+        pointer-events:auto;
+
+
+      }
+
+
+      .content, body.sidebar-collapsed .content{
+
+
+        margin-left:0 !important;
+
+
+        padding:1.25rem 1rem 2.5rem;
+
+
+      }
+
+
+      .site-footer{
+
+
+        margin-left:0 !important;
+
+
+        padding-left:1rem;
+
+
+        padding-right:1rem;
+
+
+      }
+
+
+      body.sidebar-mobile-open{
+
+
+        overflow:hidden;
+
+
+      }
+
+
+    }
+
+
+
+
+
+    main.content > .container-fluid {
+
+
+      padding-top: clamp(1.5rem, 2.5vw, 2.75rem);
+
+
+      padding-bottom: 2.75rem;
+
+
+    }
+
+    /* FIX RESPONSIVO GLOBAL DE NAVBAR E TABELAS */
+    .navbar-sollus {
+      min-height: var(--nav-h);
+      height: auto;
+    }
+
+    @media (max-width: 991px) {
+      body {
+        padding-top: calc(var(--nav-h) + 14px) !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding-top: calc(var(--nav-h) + 42px) !important;
+      }
+    }
+
+    .table-responsive {
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 0.75rem;
+      max-width: 100%;
+    }
+
+    .table {
+      width: 100%;
+      margin-bottom: 0;
+    }
+
+    .table th, .table td {
+      vertical-align: middle;
+      overflow-wrap: break-word;
+    }
+
+    .table .badge {
+      display: inline-block;
+      max-width: 100%;
+      white-space: normal;
+      word-break: break-word;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .table th, .table td {
+      min-width: 80px;
+    }
+
+
+
+
+
+    .page-hero,
+
+
+    .page-hero__stat {
+
+
+      font-family: inherit;
+
+
+    }
+
+
+
+
+
+    .page-hero {
+
+
+      position: relative;
+
+
+      background: linear-gradient(115deg, #1f7bdd, #0b3f86 60%, #072e64);
+
+
+      color: #f8fbff;
+
+
+      border-radius: 1.5rem;
+
+
+      padding: 2.25rem clamp(1.5rem, 4vw, 2.85rem);
+
+
+      margin-bottom: 2rem;
+
+
+      box-shadow: 0 25px 60px rgba(7, 35, 76, 0.28);
+
+
+      overflow: hidden;
+
+
+    }
+
+
+
+
+
+    .page-hero::after {
+
+
+      content: "";
+
+
+      position: absolute;
+
+
+      inset: -35% auto auto 45%;
+
+
+      width: 360px;
+
+
+      height: 360px;
+
+
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.55), transparent 70%);
+
+
+      opacity: 0.4;
+
+
+      filter: blur(10px);
+
+
+      transform: translateX(35%);
+
+
+    }
+
+
+
+
+
+    .page-hero__inner {
+
+
+      position: relative;
+
+
+      display: flex;
+
+
+      flex-wrap: wrap;
+
+
+      gap: 1.5rem 2rem;
+
+
+      align-items: flex-start;
+
+
+      z-index: 1;
+
+
+    }
+
+
+
+
+
+    .page-hero__content {
+
+
+      flex: 1 1 280px;
+
+
+      min-width: 240px;
+
+
+    }
+
+
+
+
+
+    .page-hero__eyebrow {
+
+
+      text-transform: uppercase;
+
+
+      letter-spacing: 0.18em;
+
+
+      font-size: 0.68rem;
+
+
+      font-weight: 600;
+
+
+      margin-bottom: 0.5rem;
+
+
+      color: rgba(248, 250, 255, 0.78);
+
+
+    }
+
+
+
+
+
+    .page-hero__title {
+
+
+      font-size: clamp(1.7rem, 3vw, 2.3rem);
+
+
+      font-weight: 700;
+
+
+      margin: 0 0 0.35rem;
+
+
+    }
+
+
+
+
+
+    .page-hero__subtitle {
+
+
+      margin: 0;
+
+
+      color: rgba(248, 250, 255, 0.88);
+
+
+      max-width: 640px;
+
+
+      font-size: 1rem;
+
+
+    }
+
+
+
+
+
+    .page-hero__toolbar {
+
+
+      display: flex;
+
+
+      align-items: center;
+
+
+      gap: 0.5rem;
+
+
+      flex-wrap: wrap;
+
+
+      margin: 0.85rem 0 0.35rem;
+
+
+    }
+
+
+
+
+
+    .page-hero__help-btn {
+
+
+      display: inline-flex;
+
+
+      align-items: center;
+
+
+      gap: 0.55rem;
+
+
+      background: rgba(255, 255, 255, 0.2);
+
+
+      border: 0;
+
+
+      color: #0B3B8C;
+
+
+      font-weight: 700;
+
+
+      padding: 0.48rem 1rem;
+
+
+      border-radius: 999px;
+
+
+      box-shadow: 0 10px 22px rgba(7, 35, 76, 0.18);
+
+
+      backdrop-filter: blur(6px);
+
+
+      line-height: 1;
+
+
+    }
+
+
+
+
+
+    .page-hero__help-btn .page-hero__help-icon {
+
+
+      display: inline-flex;
+
+
+      align-items: center;
+
+
+      justify-content: center;
+
+
+      width: 26px;
+
+
+      height: 26px;
+
+
+      border-radius: 999px;
+
+
+      background: rgba(255, 255, 255, 0.32);
+
+
+      color: #0B3B8C;
+
+
+    }
+
+
+
+
+
+    .page-hero__help-btn:hover,
+
+
+    .page-hero__help-btn:focus-visible {
+
+
+      background: rgba(255, 255, 255, 0.26);
+
+
+      color: #0B3B8C;
+
+
+      border: 0;
+
+
+      outline: none;
+
+
+    }
+
+
+
+
+
+    .page-hero__meta {
+
+
+      display: flex;
+
+
+      flex-wrap: wrap;
+
+
+      gap: 0.75rem;
+
+
+      margin-top: 1.25rem;
+
+
+    }
+
+
+
+
+
+    .page-hero__stat {
+
+
+      background: rgba(8, 34, 78, 0.25);
+
+
+      border-radius: 1rem;
+
+
+      padding: 0.9rem 1.25rem;
+
+
+      min-width: 160px;
+
+
+      color: #fff;
+
+
+      box-shadow: 0 18px 30px rgba(4, 19, 45, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+
+    }
+
+
+
+
+
+    .page-hero__stat span {
+
+
+      display: block;
+
+
+      text-transform: uppercase;
+
+
+      letter-spacing: 0.1em;
+
+
+      font-size: 0.65rem;
+
+
+      color: rgba(248, 250, 255, 0.75);
+
+
+    }
+
+
+
+
+
+    .page-hero__stat strong {
+
+
+      display: block;
+
+
+      font-size: 1.9rem;
+
+
+      line-height: 1.1;
+
+
+      margin-top: 0.25rem;
+
+
+    }
+
+
+
+
+
+    .page-hero__stat small {
+
+
+      display: block;
+
+
+      font-size: 0.75rem;
+
+
+      color: rgba(248, 250, 255, 0.85);
+
+
+      margin-top: 0.35rem;
+
+
+    }
+
+
+
+
+
+    .page-hero__extra {
+
+
+      flex: 0 0 auto;
+
+
+      min-width: 220px;
+
+
+      display: flex;
+
+
+      flex-direction: column;
+
+
+      gap: 0.85rem;
+
+
+      align-items: flex-end;
+
+
+    }
+
+
+
+
+
+    .page-hero__meta--extra {
+
+
+      width: 100%;
+
+
+      display: flex;
+
+
+      justify-content: flex-end;
+
+
+    }
+
+
+
+
+
+    .page-hero__meta--extra .page-hero__stat {
+
+
+      min-width: 180px;
+
+
+    }
+
+
+
+
+
+    .page-hero__actions {
+
+
+      display: flex;
+
+
+      flex-wrap: wrap;
+
+
+      gap: 0.6rem;
+
+
+      justify-content: flex-end;
+
+
+    }
+
+
+
+
+
+    .page-hero__pill {
+
+
+      display: inline-flex;
+
+
+      align-items: center;
+
+
+      gap: 0.4rem;
+
+
+      background: rgba(255, 255, 255, 0.2);
+
+
+      padding: 0.35rem 0.95rem;
+
+
+      border-radius: 999px;
+
+
+      font-weight: 600;
+
+
+      color: #fff;
+
+
+    }
+
+
+
+
+
+    .page-hero__pill strong {
+
+
+      font-size: 1.15rem;
+
+
+    }
+
+
+
+
+
+    .page-hero--stacked .page-hero__inner {
+
+
+      flex-direction: column;
+
+
+    }
+
+
+
+
+
+    .page-hero--stacked .page-hero__extra {
+
+
+      width: 100%;
+
+
+      align-items: flex-start;
+
+
+    }
+
+
+
+
+
+    @media (max-width: 992px) {
+
+
+      .page-hero {
+
+
+        border-radius: 1.25rem;
+
+
+        padding: 1.65rem 1.75rem;
+
+
+      }
+
+
+      .page-hero__extra {
+
+
+        width: 100%;
+
+
+        align-items: flex-start;
+
+
+      }
+
+
+      .page-hero__actions {
+
+
+        justify-content: flex-start;
+
+
+      }
+
+
+    }
+
+
+
+
+
+    /* NAVBAR */
+
+
+
+
+
+    .navbar-sollus{
+
+
+      height:var(--nav-h);
+
+
+      background:linear-gradient(90deg,var(--nav-bg-start),var(--nav-bg-end));
+
+
+      box-shadow:0 10px 24px rgba(0,0,0,.18);
+
+
+      color:var(--nav-text-color);
+
+
+    }
+
+
+
+
+
+    .brand-stack{
+
+
+      display:flex;align-items:center;gap:.65rem;text-decoration:none;color:var(--nav-text-color);font-weight:600;
+
+
+      letter-spacing:.4px;text-transform:uppercase;font-size:1rem;
+
+
+    }
+
+
+
+
+
+    .brand-stack img{height:32px;width:auto;display:block;filter:drop-shadow(0 3px 12px rgba(0,0,0,.25));
+
+
+      border-radius:6px;background:rgba(255,255,255,.18);padding:4px;}
+
+
+    .brand-stack span{white-space:nowrap;}
+
+
+    .navbar-sollus .container-fluid{display:flex;align-items:center;gap:1rem;}
+
+
+    .nav-start{flex:1 1 0;display:flex;align-items:center;gap:.75rem;}
+
+
+    #btnSidebarToggle{
+
+
+      display:flex;
+
+
+      align-items:center;
+
+
+      justify-content:center;
+
+
+      width:38px;
+
+
+      height:34px;
+
+
+      padding:0;
+
+
+      border-radius:12px;
+
+
+      border:1px solid var(--nav-btn-border);
+
+
+      background:var(--nav-btn-bg);
+
+
+      color:var(--nav-text-color);
+
+
+      transition:background .2s ease,border-color .2s ease,color .2s ease;
+
+
+      box-shadow:0 4px 12px rgba(9,18,40,.25);
+
+
+    }
+
+
+
+
+
+    #btnSidebarToggleIcon{font-size:1.2rem;line-height:1;}
+
+
+    #btnSidebarToggle:focus,#btnSidebarToggle:hover{
+
+
+      background:var(--nav-btn-hover-bg);
+
+
+      border-color:var(--nav-btn-hover-border);
+
+
+      color:var(--nav-text-color);
+
+
+      outline:0;
+
+
+    }
+
+
+    body.sidebar-mobile-open #btnSidebarToggle{
+
+
+      background:var(--nav-btn-hover-bg);
+
+
+      border-color:var(--nav-btn-hover-border);
+
+
+      color:var(--nav-text-color);
+
+
+    }
+
+
+    .nav-center{flex:0 0 auto;display:flex;justify-content:center;}
+
+
+    .nav-end{flex:1 1 0;display:flex;align-items:center;justify-content:flex-end;gap:.65rem;}
+
+
+
+
+
+    .navbar-sollus .btn-outline-light,
+
+
+    .navbar-sollus .dropdown-toggle,
+
+
+    .navbar-sollus .btn-outline-light.btn-sm{
+
+
+      background:var(--nav-btn-bg);
+
+
+      color:var(--nav-text-color);
+
+
+      border-color:var(--nav-btn-border);
+
+
+    }
+
+
+
+
+
+    .navbar-sollus .btn-outline-light:hover,
+
+
+    .navbar-sollus .btn-outline-light:focus,
+
+
+    .navbar-sollus .dropdown-toggle:hover,
+
+
+    .navbar-sollus .dropdown-toggle:focus{
+
+
+      background:var(--nav-btn-hover-bg);
+
+
+      color:var(--nav-text-color);
+
+
+      border-color:var(--nav-btn-hover-border);
+
+
+    }
+
+
+
+
+
+    .module-dropdown .dropdown-toggle{
+
+
+      border-radius:999px;padding:.35rem 1rem;font-weight:600;letter-spacing:.04rem;
+
+
+      background:var(--nav-btn-bg);color:var(--nav-text-color);border:1px solid var(--nav-btn-border);
+
+
+    }
+
+
+
+
+
+    .module-dropdown .dropdown-menu{border-radius:14px;padding:.5rem 0;box-shadow:0 18px 36px rgba(12,44,92,.25);min-width:210px;}
+
+
+    .module-dropdown .dropdown-item{display:flex;align-items:center;gap:.55rem;font-weight:500;}
+
+
+    .module-dropdown .dropdown-item i{font-size:.95rem;color:var(--blue-700);}
+
+
+    .module-dropdown .dropdown-item.active{background:var(--blue-700);color:#fff;}
+
+
+
+
+
+    @media (max-width: 768px){
+
+
+      .navbar-sollus .container-fluid{flex-wrap:wrap;justify-content:space-between;gap:.75rem;}
+
+
+      .nav-start{order:-1;flex:0 0 auto;}
+
+
+      .nav-center{order:-2;flex:1 0 100%;justify-content:center;}
+
+
+      .nav-end{
+
+
+        order:-1;
+
+
+        flex:0 0 auto;
+
+
+        justify-content:flex-end;
+
+
+        gap:.6rem;
+
+
+      }
+
+
+      .nav-end .btn,
+
+
+      .nav-end .user-profile-trigger{
+
+
+        min-height:40px;
+
+
+      }
+
+
+      #btnSidebarToggle{
+
+
+        width:44px;height:40px;border-radius:14px;border-width:1px;
+
+
+        background:var(--nav-btn-bg);border-color:var(--nav-btn-border);color:var(--nav-text-color);
+
+
+        box-shadow:0 6px 16px rgba(14,93,198,.25);
+
+
+      }
+
+
+      body.sidebar-mobile-open #btnSidebarToggle{
+
+
+        background:var(--nav-btn-hover-bg);
+
+
+        border-color:var(--nav-btn-hover-border);
+
+
+      }
+
+
+      #btnSidebarToggle:hover,#btnSidebarToggle:focus-visible{
+
+
+        background:var(--nav-btn-hover-bg);
+
+
+        border-color:var(--nav-btn-hover-border);
+
+
+        color:var(--nav-text-color);
+
+
+      }
+
+
+      #btnSidebarToggleIcon{font-size:1.35rem;}
+
+
+      .module-dropdown .dropdown-toggle{
+
+
+        background:var(--nav-btn-bg);
+
+
+        border-color:var(--nav-btn-border);
+
+
+        color:var(--nav-text-color);
+
+
+        box-shadow:0 6px 14px rgba(14,93,198,.25);
+
+
+      }
+
+
+      .module-dropdown .dropdown-toggle:hover,
+
+
+      .module-dropdown .dropdown-toggle:focus,
+
+
+      .module-dropdown .dropdown-toggle.show{
+
+
+        background:var(--nav-btn-hover-bg);
+
+
+        border-color:var(--nav-btn-hover-border);
+
+
+        color:var(--nav-text-color);
+
+
+      }
+
+
+      #btnThemeToggle,
+
+
+      .nav-end .btn.btn-outline-light{
+
+
+        background:var(--nav-btn-bg);
+
+
+        border-color:var(--nav-btn-border);
+
+
+        color:var(--nav-text-color);
+
+
+        box-shadow:0 6px 14px rgba(14,93,198,.25);
+
+
+      }
+
+
+      #btnThemeToggle:hover,
+
+
+      #btnThemeToggle:focus,
+
+
+      .nav-end .btn.btn-outline-light:hover,
+
+
+      .nav-end .btn.btn-outline-light:focus{
+
+
+        background:var(--nav-btn-hover-bg);
+
+
+        border-color:var(--nav-btn-hover-border);
+
+
+        color:var(--nav-text-color);
+
+
+      }
+
+
+    }
+
+
+
+
+
+    @media (min-width: 769px){
+
+
+      .nav-end .btn{white-space:nowrap;}
+
+
+    }
+
+
+
+
+
+    .active-module{ background:#fff !important; color:var(--blue-700) !important; }
+
+
+    .user-pill{ color:var(--nav-text-color); display:flex; align-items:center; gap:.65rem; font-weight:600; }
+
+
+    .user-profile-trigger{ border:0;background:transparent;color:inherit;padding:0;display:flex;align-items:center;gap:.65rem;cursor:pointer; }
+
+
+    .user-profile-trigger:focus{ outline:2px solid rgba(255,255,255,.35); outline-offset:2px; }
+
+
+    .user-avatar{
+
+
+      width:32px;height:32px;border-radius:50%;
+
+
+      display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.2);
+
+
+      font-size:.8rem;font-weight:700;color:var(--blue-700);overflow:hidden;box-shadow:0 3px 8px rgba(15,35,58,.2);
+
+
+    }
+
+
+    .user-avatar img{width:100%;height:100%;object-fit:cover;}
+
+
+    .user-pill small{display:block;font-size:.65rem;letter-spacing:.08rem;text-transform:uppercase;color:rgba(255,255,255,.72);}
+
+
+
+
+
+    /* HOME (bem-vindo)  layout mais retangular e puxado pra direita */
+
+
+    body.module-home .sidebar{display:none !important;width:0 !important;}
+
+
+    body.module-home .content{margin-left:0 !important;}
+
+
+    body.module-home .content .container-fluid{
+
+
+      max-width:1200px;
+
+
+      margin:0 auto;
+
+
+      padding:3rem 0 3.5rem; /* sem padding lateral pra dar sensao de bloco mais largo */
+
+
+    }
+
+
+    body.module-home .welcome-hero{
+
+
+      max-width:1100px;
+
+
+      margin:0 0 0 auto; /* alinha o bloco mais pra direita */
+
+
+    }
+
+
+    body.module-home .row.g-4{
+
+
+      margin-left:auto;
+
+
+      margin-right:auto;
+
+
+      max-width:1100px;
+
+
+    }
+
+
+    body.module-home .quick-tips{
+
+
+      margin-left:auto;
+
+
+      margin-right:auto;
+
+
+      max-width:1100px;
+
+
+    }
+
+
+    body.module-home .flash-stack{right:1rem;}
+
+
+
+
+
+    .profile-modal .modal-content{border-radius:1.5rem;padding:1.5rem 1.75rem;box-shadow:0 25px 45px rgba(15,35,58,.18);border:0;}
+
+
+    .profile-modal .avatar-large{width:96px;height:96px;border-radius:50%;overflow:hidden;margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;background:#f1f4fb;border:3px solid rgba(14,93,198,.15);box-shadow:0 12px 30px rgba(15,35,58,.15);}
+
+
+    .profile-modal .avatar-large img{width:100%;height:100%;object-fit:cover;}
+
+
+    .profile-modal .avatar-large span{font-weight:700;font-size:1.5rem;color:#0B3B8C;}
+
+
+    .profile-modal .list-group-item{border:0;padding:.4rem 0;color:#4b556a;}
+
+
+    .profile-modal .list-group-item strong{display:block;font-size:.8rem;text-transform:uppercase;letter-spacing:.08rem;color:#0f1f3a;}
+
+
+
+
+
+    .page-help-modal .modal-dialog{
+
+
+      max-width: 860px;
+
+
+    }
+
+
+    .page-help-modal .modal-content{
+
+
+      border:0;
+
+
+      border-radius:1.6rem;
+
+
+      overflow:hidden;
+
+
+      box-shadow:0 32px 72px rgba(10,40,90,.22);
+
+
+      background:#f8fbff;
+
+
+    }
+
+
+    .page-help-modal .modal-header{
+
+
+      position:relative;
+
+
+      border:0;
+
+
+      background:linear-gradient(120deg,#0b3b8c,#0e5dc6);
+
+
+      color:#fff;
+
+
+      padding:1.6rem 1.8rem 1.25rem;
+
+
+      align-items:flex-start;
+
+
+      gap:1rem;
+
+
+    }
+
+
+    .page-help-modal .modal-header::after{
+
+
+      content:"";
+
+
+      position:absolute;
+
+
+      inset:auto -18% -120% auto;
+
+
+      width:340px;
+
+
+      height:340px;
+
+
+      background:radial-gradient(circle, rgba(255,255,255,.45), transparent 65%);
+
+
+      filter:blur(6px);
+
+
+      opacity:.5;
+
+
+      pointer-events:none;
+
+
+    }
+
+
+    .page-help-modal .help-icon{
+
+
+      width:58px;
+
+
+      height:58px;
+
+
+      border-radius:18px;
+
+
+      background:rgba(255,255,255,.14);
+
+
+      display:inline-flex;
+
+
+      align-items:center;
+
+
+      justify-content:center;
+
+
+      color:#fff;
+
+
+      font-size:1.45rem;
+
+
+      box-shadow:0 12px 28px rgba(5,25,60,.35), inset 0 1px 0 rgba(255,255,255,.35);
+
+
+    }
+
+
+    .page-help-modal .modal-title{font-weight:800;color:#fff;margin-bottom:.15rem;}
+
+
+    .page-help-modal .modal-eyebrow{
+
+
+      text-transform:uppercase;
+
+
+      letter-spacing:.16em;
+
+
+      font-size:.68rem;
+
+
+      font-weight:700;
+
+
+      color:rgba(255,255,255,.82);
+
+
+      margin:0;
+
+
+    }
+
+
+    .page-help-modal .modal-subtitle{color:rgba(255,255,255,.9);}
+
+
+    .page-help-modal .help-meta{
+
+
+      display:flex;
+
+
+      flex-wrap:wrap;
+
+
+      gap:.5rem;
+
+
+      margin-top:.35rem;
+
+
+    }
+
+
+    .page-help-modal .help-pill{
+
+
+      display:inline-flex;
+
+
+      align-items:center;
+
+
+      gap:.35rem;
+
+
+      padding:.35rem .75rem;
+
+
+      border-radius:999px;
+
+
+      background:rgba(255,255,255,.16);
+
+
+      color:#fff;
+
+
+      font-size:.82rem;
+
+
+      border:1px solid rgba(255,255,255,.22);
+
+
+      backdrop-filter:blur(3px);
+
+
+    }
+
+
+    .page-help-modal .help-pill--muted{
+
+
+      background:rgba(0,0,0,.12);
+
+
+      border-color:rgba(255,255,255,.18);
+
+
+      color:rgba(255,255,255,.86);
+
+
+    }
+
+
+    .page-help-modal .modal-body{
+
+
+      background:#f8fbff;
+
+
+      padding:1.6rem 1.6rem 1.8rem;
+
+
+    }
+
+
+    .page-help-modal #pageHelpList{
+
+
+      display:flex;
+
+
+      flex-direction:column;
+
+
+      gap:0.75rem;
+
+
+      margin:0;
+
+
+    }
+
+
+    .page-help-modal .list-group-item{
+
+
+      border:0;
+
+
+      border-radius:1rem !important;
+
+
+      background:#fff;
+
+
+      color:#0f172a;
+
+
+      display:flex;
+
+
+      align-items:flex-start;
+
+
+      gap:.75rem;
+
+
+      padding:1rem 1.1rem;
+
+
+      box-shadow:0 16px 26px rgba(15,35,58,.08);
+
+
+      border:1px solid rgba(15,35,58,.06);
+
+
+      cursor:pointer;
+
+
+      transition:all 0.2s ease;
+
+
+    }
+
+
+    .page-help-modal .list-group-item:hover{
+
+
+      transform:translateY(-2px);
+
+
+      box-shadow:0 20px 30px rgba(15,35,58,0.12);
+
+
+      border-color:rgba(14,93,198,.2);
+
+
+    }
+
+
+    .page-help-modal .list-group-item.active{
+
+
+      background:#fff;
+
+
+      border:2px solid #0E5DC6;
+
+
+      box-shadow:0 20px 30px rgba(14,93,198,0.15);
+
+
+    }
+
+
+    .page-help-modal .list-group-item i{
+
+
+      color:#0E5DC6;
+
+
+      font-size:1.15rem;
+
+
+      margin-top:.15rem;
+
+
+    }
+
+
+    .page-help-modal .list-group-item .step-badge{
+
+
+      min-width:30px;
+
+
+      height:30px;
+
+
+      border-radius:50%;
+
+
+      background:linear-gradient(135deg,#0b3b8c,#0e5dc6);
+
+
+      color:#fff;
+
+
+      display:inline-flex;
+
+
+      align-items:center;
+
+
+      justify-content:center;
+
+
+      font-weight:800;
+
+
+      font-size:.9rem;
+
+
+      box-shadow:0 8px 16px rgba(14,93,198,.25);
+
+
+    }
+
+
+
+
+
+    /* SIDEBAR */
+
+
+    .sidebar{
+
+
+      position: fixed; top: var(--nav-h); left: 0; bottom: 0;
+
+
+      width: var(--side-w); background: var(--card);
+
+
+      border-right:1px solid rgba(16,24,40,.08);
+
+
+      box-shadow: 2px 0 20px rgba(2,8,23,.06);
+
+
+      padding:.25rem .75rem .75rem;
+
+
+      transition: width .25s ease, transform .25s ease;
+
+
+      display:flex; flex-direction:column; overflow:hidden;
+
+
+    }
+
+
+
+
+
+    .sidebar .scroll{
+
+
+      overflow-y:auto;
+
+
+      overflow-x:hidden;
+
+
+      padding-right:.25rem;
+
+
+      display:flex;
+
+
+      flex-direction:column;
+
+
+      gap:.75rem;
+
+
+    }
+
+
+
+
+
+    .sidebar-backdrop{ display:none; }
+
+
+    .nav-group{ margin:.75rem 0 .25rem; color:var(--muted); font-size:.8rem; text-transform:uppercase; font-weight:700;}
+
+
+    .nav-link{
+
+
+      color:var(--text); border-radius:.6rem; margin:.25rem 0; display:flex; align-items:center; gap:.6rem; padding:.5rem .75rem;
+
+
+    }
+
+
+    .nav-link i{ width:1.25rem; text-align:center; opacity:.9; }
+
+
+    .nav-link.active, .nav-link:hover{ background: rgba(14,93,198,.1); color:#0E5DC6; text-decoration:none; }
+
+
+
+
+
+    .nav-link-central-conhecimento{
+
+
+      font-weight:700;
+
+
+    }
+
+
+    .nav-link-central-conhecimento i{ color:var(--blue-700); }
+
+
+    .nav-link-central-conhecimento:hover i,
+
+
+    .nav-link-central-conhecimento.active i{ color:var(--blue-900); }
+
+
+
+
+
+    body.sidebar-collapsed .sidebar{ width:72px; }
+
+
+    body.sidebar-collapsed .sidebar .label{ display:none; }
+
+
+    body.sidebar-collapsed .sidebar .nav-group{ display:none; }
+
+
+
+
+
+    .sidebar-section{
+
+
+      border-radius:.75rem;
+
+
+      padding:.1rem 0;
+
+
+    }
+
+
+    .sidebar-section + .sidebar-section{ margin-top:.25rem; }
+
+
+    .sidebar-section-toggle{
+
+
+      width:100%;
+
+
+      display:flex;
+
+
+      align-items:center;
+
+
+      justify-content:space-between;
+
+      text-align: left;
+
+
+
+      gap:.6rem;
+
+
+
+      background:transparent;
+
+
+
+      border:0;
+
+
+
+      color:var(--text);
+
+
+
+      font-weight:700;
+
+
+
+      font-size:.95rem;
+
+
+
+      padding:.4rem .6rem;
+
+
+
+      border-radius:.65rem;
+
+
+
+      cursor:pointer;
+
+
+
+    }
+
+
+
+    .sidebar-section-toggle:focus{
+
+
+
+      outline:2px solid rgba(14,93,198,.3);
+
+
+
+      outline-offset:2px;
+
+
+
+    }
+
+
+
+    .sidebar-section-toggle .section-title{
+
+      display:flex;
+
+      align-items:center;
+
+      gap:.55rem;
+
+      line-height: 1.2;
+
+      padding: .2rem 0;
+
+    }
+
+
+
+
+    .sidebar-section-toggle .section-icon{
+
+
+      width:1.3rem;
+
+
+      text-align:center;
+
+
+      color:var(--blue-700);
+
+
+      font-size:1.05rem;
+
+
+    }
+
+
+    .sidebar-section-toggle .chevron{
+
+
+      transition:transform .2s ease;
+
+
+      color:var(--muted);
+
+
+      font-size:1rem;
+
+
+    }
+
+
+    .sidebar-section.open .sidebar-section-toggle{
+
+
+      background:rgba(14,93,198,.12);
+
+
+      color:var(--blue-900);
+
+
+    }
+
+
+    .sidebar-section.open .sidebar-section-toggle .section-icon{ color:var(--blue-900); }
+
+
+    .sidebar-section.open .sidebar-section-toggle .chevron{ transform:rotate(180deg); color:var(--blue-900); }
+
+
+    .sidebar-section-body{
+
+
+      display:flex;
+
+
+      flex-direction:column;
+
+
+      padding:.15rem 0 .2rem;
+
+
+    }
+
+
+    .sidebar-section-body .nav-link{ margin:.15rem 0; }
+
+
+
+
+
+    html[data-theme="dark"] .table thead{
+
+
+      background:rgba(148,163,184,.18);
+
+
+      color:#e2e8f0;
+
+
+    }
+
+
+    html[data-theme="dark"] .table thead th{
+
+
+      color:#e2e8f0;
+
+
+    }
+
+
+    html[data-theme="dark"] .table tbody tr:hover{
+
+
+      background:rgba(148,163,184,.12);
+
+
+    }
+
+
+
+
+
+    body.sidebar-collapsed .sidebar-section{ padding:.35rem 0; }
+
+
+    body.sidebar-collapsed .sidebar-section-toggle{
+
+
+      justify-content:center;
+
+
+      padding:.35rem 0;
+
+
+    }
+
+
+    body.sidebar-collapsed .sidebar-section-toggle .section-text,
+
+
+    body.sidebar-collapsed .sidebar-section-toggle .chevron{ display:none; }
+
+
+    body.sidebar-collapsed .sidebar-section-body{ display:none !important; }
+
+
+
+
+
+    @media (max-width: 768px){
+
+
+      .sidebar-section{ padding:.25rem .25rem; }
+
+
+      .sidebar-section-toggle{ padding:.45rem .4rem; font-size:1rem; }
+
+
+    }
+
+
+
+
+
+    .content{ margin-left: var(--side-w); transition: margin-left .25s ease; }
+
+
+    body.sidebar-collapsed .content{ margin-left: 72px; }
+
+
+
+
+
+    /* Cards / tables */
+
+
+    .card{ background:var(--card); border:none; box-shadow:0 4px 20px rgba(2,8,23,.06); }
+
+
+    .table { --bs-table-bg: transparent; }
+
+
+
+
+
+    /* Flash area */
+
+
+    .flash-stack{ position:fixed; top: calc(var(--nav-h) + .75rem); right: .75rem; z-index: 1080; }
+
+
+
+
+
+    /* ===== Dark mode: form fields ===== */
+
+
+    html[data-theme="dark"] .form-control,
+
+
+    html[data-theme="dark"] .form-select,
+
+
+    html[data-theme="dark"] textarea,
+
+
+    html[data-theme="dark"] input[type="text"],
+
+
+    html[data-theme="dark"] input[type="email"],
+
+
+    html[data-theme="dark"] input[type="tel"],
+
+
+    html[data-theme="dark"] input[type="number"],
+
+
+    html[data-theme="dark"] input[type="password"]{
+
+
+      background-color:#1b2436 !important;
+
+
+      border-color:#2b364e !important;
+
+
+      color:#e8eefc !important;
+
+
+      caret-color:#e8eefc;
+
+
+    }
+
+
+    html[data-theme="dark"] .form-control::placeholder{
+
+
+      color:rgba(232,238,252,.65);
+
+
+    }
+
+
+    html[data-theme="dark"] .form-control:focus,
+
+
+    html[data-theme="dark"] .form-select:focus{
+
+
+      background-color:#1b2436 !important;
+
+
+      color:#e8eefc !important;
+
+
+      border-color:#3b82f6 !important;
+
+
+      box-shadow:0 0 0 .2rem rgba(59,130,246,.25) !important;
+
+
+    }
+
+
+    html[data-theme="dark"] .form-control:disabled,
+
+
+    html[data-theme="dark"] .form-select:disabled,
+
+
+    html[data-theme="dark"] .form-control[readonly]{
+
+
+      background-color:#162033 !important;
+
+
+      color:rgba(232,238,252,.7) !important;
+
+
+    }
+
+
+    html[data-theme="dark"] .form-select option{
+
+
+      background:#0f172a; color:#e8eefc;
+
+
+    }
+
+
+    html[data-theme="dark"] .input-group-text{
+
+
+      background:#162033; border-color:#2b364e; color:#e8eefc;
+
+
+    }
+
+
+    html[data-theme="dark"] .form-check-input{
+
+
+      background-color:#1b2436; border-color:#2b364e;
+
+
+    }
+
+
+    html[data-theme="dark"] .form-check-input:checked{
+
+
+      background-color:#3b82f6; border-color:#3b82f6;
+
+
+    }
+
+
+    html[data-theme="dark"] .form-control::file-selector-button{
+
+
+      background:#162033; color:#e8eefc; border-color:#2b364e;
+
+
+    }
+
+
+    html[data-theme="dark"] .modal-content{
+
+
+      background:#0f172a; color:#e8eefc; border-color:#1e293b;
+
+
+    }
+
+
+
+
+
+    /* ===== Dark mode: tabelas, cards, listas, dropdowns, textos ===== */
+
+
+    html[data-theme="dark"]{
+
+
+      --bs-body-bg: var(--bg);
+
+
+      --bs-body-color: var(--text);
+
+      --bs-body-color-rgb: 229, 231, 235;
+
+      --bs-body-bg-rgb: 11, 18, 32;
+
+
+      --bs-border-color: #263248;
+
+
+      --bs-heading-color: var(--text);
+
+
+      color-scheme: dark;
+
+
+    }
+
+
+    /* TABELAS */
+
+
+    html[data-theme="dark"] .table{
+
+
+      --bs-table-bg: transparent;
+
+
+      --bs-table-color: var(--text);
+
+
+      --bs-table-striped-bg: rgba(255,255,255,.03);
+
+
+      --bs-table-striped-color: var(--text);
+
+
+      --bs-table-hover-bg: rgba(255,255,255,.05);
+
+
+      --bs-table-hover-color: var(--text);
+
+
+      --bs-table-border-color: #263248;
+
+
+      color: var(--text);
+
+
+    }
+
+
+    html[data-theme="dark"] .table th,
+
+
+    html[data-theme="dark"] .table td{
+
+
+      color: var(--text) !important;
+
+
+      border-color: #263248 !important;
+
+
+    }
+
+
+    html[data-theme="dark"] .table-light,
+
+
+    html[data-theme="dark"] .table thead.table-light th,
+
+
+    html[data-theme="dark"] .table thead.table-light td{
+
+
+      background-color:#111827 !important;
+
+
+      color: var(--text) !important;
+
+
+      border-color:#263248 !important;
+
+
+    }
+
+
+
+
+
+    /* LIST-GROUP */
+
+
+    html[data-theme="dark"] .list-group-item{
+
+
+      background:#0f172a !important;
+
+
+      color: var(--text) !important;
+
+
+      border-color:#263248 !important;
+
+
+    }
+
+
+
+
+
+    /* CARDS / HEADERS */
+
+
+    html[data-theme="dark"] .card,
+
+
+    html[data-theme="dark"] .card .card-header{
+
+
+      background:#0f172a !important;
+
+
+      color: var(--text) !important;
+
+
+      border-color:#1e293b !important;
+
+
+    }
+
+
+    html[data-theme="dark"] .bg-white,
+
+
+    html[data-theme="dark"] .table-responsive.bg-white{
+
+
+      background:#0f172a !important;
+
+
+      color: var(--text) !important;
+
+
+      border-color:#263248 !important;
+
+
+    }
+
+
+    html[data-theme="dark"] .role-card,
+
+
+    html[data-theme="dark"] .support-card,
+
+
+    html[data-theme="dark"] .chamados-card,
+
+
+    html[data-theme="dark"] .assist-card,
+
+
+    html[data-theme="dark"] .agenda-card,
+
+
+    html[data-theme="dark"] .task-card,
+
+
+    html[data-theme="dark"] .diagram-container,
+
+
+    html[data-theme="dark"] .audit-json-block,
+
+
+    html[data-theme="dark"] .audit-diff-item,
+
+
+    html[data-theme="dark"] #equipamentos-selecionados > div,
+
+
+    html[data-theme="dark"] .history-pdf-frame,
+
+
+    html[data-theme="dark"] .pdf-frame{
+
+
+      background:#0f172a !important;
+
+
+      color: var(--text) !important;
+
+
+      border-color:#263248 !important;
+
+
+    }
+
+
+    html[data-theme="dark"] .audit-diff-item.is-changed{
+
+
+      background:rgba(120,53,15,.28) !important;
+
+
+      border-color:rgba(245,158,11,.4) !important;
+
+
+    }
+
+
+
+
+
+    /* DROPDOWNS */
+
+
+    html[data-theme="dark"] .dropdown-menu{ background:#0f172a; color:var(--text); border-color:#263248; }
+
+
+    html[data-theme="dark"] .dropdown-item{ color:var(--text); }
+
+
+    html[data-theme="dark"] .dropdown-item:hover{ background:rgba(255,255,255,.06); color:var(--text); }
+
+
+
+
+
+    /* Utilitrias que foram dark no Bootstrap */
+
+
+    html[data-theme="dark"] .text-dark{ color: var(--text) !important; }
+
+
+    html[data-theme="dark"] .bg-light{ background:#0f172a !important; }
+
+
+    html[data-theme="dark"] .text-muted{ color:#cbd5e1 !important; }
+
+
+
+
+
+    /* Links mais claros no dark */
+
+
+    html[data-theme="dark"] a{ color:#93c5fd; }
+
+
+    html[data-theme="dark"] a:hover{ color:#bfdbfe; }
+
+
+    /* Outline buttons in dark mode */
+
+    html[data-theme="dark"] .btn-outline-primary{
+
+      color:#e2e8f0; border-color:rgba(147,197,253,.7); background:rgba(59,130,246,.14);
+
+    }
+
+    html[data-theme="dark"] .btn-outline-primary:hover{
+
+      color:#f8fafc; background:rgba(59,130,246,.3); border-color:rgba(147,197,253,.9);
+
+    }
+
+    html[data-theme="dark"] .btn-outline-secondary{
+
+      color:#e2e8f0; border-color:rgba(148,163,184,.6); background:rgba(148,163,184,.12);
+
+    }
+
+    html[data-theme="dark"] .btn-outline-secondary:hover{
+
+      color:#f8fafc; background:rgba(148,163,184,.28); border-color:rgba(226,232,240,.8);
+
+    }
+
+    html[data-theme="dark"] .btn-outline-success{
+
+      color:#dcfce7; border-color:rgba(74,222,128,.7); background:rgba(34,197,94,.15);
+
+    }
+
+    html[data-theme="dark"] .btn-outline-success:hover{
+
+      color:#f0fdf4; background:rgba(34,197,94,.3); border-color:rgba(74,222,128,.9);
+
+    }
+
+    html[data-theme="dark"] .btn-outline-danger{
+
+      color:#fee2e2; border-color:rgba(248,113,113,.7); background:rgba(239,68,68,.16);
+
+    }
+
+    html[data-theme="dark"] .btn-outline-danger:hover{
+
+      color:#fff1f2; background:rgba(239,68,68,.32); border-color:rgba(248,113,113,.9);
+
+    }
+
+    html[data-theme="dark"] .btn-outline-warning{
+
+      color:#fef3c7; border-color:rgba(251,191,36,.75); background:rgba(234,179,8,.18);
+
+    }
+
+    html[data-theme="dark"] .btn-outline-warning:hover{
+
+      color:#fffbeb; background:rgba(234,179,8,.32); border-color:rgba(251,191,36,.9);
+
+    }
+
+    html[data-theme="dark"] .btn-outline-info{
+
+      color:#e0f2fe; border-color:rgba(125,211,252,.7); background:rgba(56,189,248,.14);
+
+    }
+
+    html[data-theme="dark"] .btn-outline-info:hover{
+
+      color:#f0f9ff; background:rgba(56,189,248,.3); border-color:rgba(125,211,252,.9);
+
+    }
+
+
+
+
+
+    /* Dark-mode overrides for home carousel and quick-tips */
+
+
+    html[data-theme="dark"] .module-carousel{
+
+
+      background: linear-gradient(135deg, var(--blue-900), var(--blue-700));
+
+
+      color: #ffffff;
+
+
+      box-shadow: 0 22px 48px rgba(0,0,0,.6);
+
+
+    }
+
+
+    html[data-theme="dark"] .module-carousel::before{
+
+
+      background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 55%);
+
+
+    }
+
+
+    html[data-theme="dark"] .module-carousel .feature-card{
+
+
+      background: linear-gradient(135deg, rgba(11,59,140,.18), rgba(14,93,198,.12));
+
+
+      color: #e8eefc;
+
+
+      box-shadow: none;
+
+
+    }
+
+
+    html[data-theme="dark"] .module-carousel .feature-card h2,
+
+
+    html[data-theme="dark"] .module-carousel .feature-card p{
+
+
+      color: #e8eefc;
+
+
+    }
+
+
+    html[data-theme="dark"] .module-carousel .feature-card .icon{
+
+
+      background: rgba(255,255,255,0.04);
+
+
+      color: #ffffff;
+
+
+      box-shadow: none;
+
+
+    }
+
+
+    html[data-theme="dark"] .module-carousel .carousel-control-prev,
+
+
+    html[data-theme="dark"] .module-carousel .carousel-control-next{
+
+
+      background: rgba(255,255,255,0.06);
+
+
+      color: #ffffff;
+
+
+      box-shadow: 0 12px 24px rgba(0,0,0,.45);
+
+
+    }
+
+
+    html[data-theme="dark"] .module-carousel .carousel-control-prev-icon,
+
+
+    html[data-theme="dark"] .module-carousel .carousel-control-next-icon{
+
+
+      filter: none; /* icons are already light */
+
+
+    }
+
+
+    html[data-theme="dark"] .module-carousel .carousel-indicators [data-bs-target]{
+
+
+      background-color: rgba(255,255,255,.18);
+
+
+    }
+
+
+    html[data-theme="dark"] .module-carousel .carousel-indicators .active{
+
+
+      background-color: rgba(255,255,255,.95);
+
+
+    }
+
+
+
+
+
+    html[data-theme="dark"] .quick-tips{
+
+
+      background: linear-gradient(135deg, var(--blue-900), var(--blue-700));
+
+
+      color: #ffffff;
+
+
+      box-shadow: 0 12px 32px rgba(0,0,0,.5);
+
+
+    }
+
+
+    html[data-theme="dark"] .quick-tips h3{
+
+
+      color: #ffffff;
+
+
+    }
+
+
+    html[data-theme="dark"] .quick-tips li{
+
+
+      color: rgba(255,255,255,.9);
+
+
+    }
+
+
+	
+
+
+	/* HOME: card azul mais largo e puxado pra direita em telas grandes */
+
+
+@media (min-width: 992px) {
+
+
+  /* container do home mais solto */
+
+
+  body.module-home .content .container-fluid {
+
+
+    max-width: 1200px;
+
+
+    margin: 0 auto;
+
+
+    padding: 3rem 0 3.5rem;
+
+
+  }
+
+
+
+
+
+  /* wrapper do hero, ocupando praticamente toda a largura til */
+
+
+  body.module-home .welcome-hero {
+
+
+    max-width: 100%;
+
+
+    margin: 0;
+
+
+  }
+
+
+
+
+
+  /* o prprio card azul (page-hero) mais largo e encostando mais  direita */
+
+
+  body.module-home .welcome-hero .page-hero,
+
+
+  body.module-home .page-hero.welcome-hero {
+
+
+    max-width: 1100px;
+
+
+    margin-left: auto;
+
+
+    margin-right: 0;
+
+
+  }
+
+
+}
+
+
+
+
+
+  </style>
+
+
+</head>
+
+
+
+
+
+{# ==== CONTEXTO ATUAL (endpoint / mdulo) ==== #}
+
+
+{% set current_endpoint = (request.endpoint or '') %}
+
+
+{% set current_blueprint = (request.blueprint or '') %}
+
+
+{% set module_context = 'home' %}
+
+
+
+
+
+{% if current_endpoint.startswith(('tickets.', 'sollus_tickets.', 'central_conhecimento.', 'audit.', 'admin.', 'support_bp.', 'tech_bp.', 'assist_bp.', 'atestados_bp.')) or
+
+
+      current_blueprint in ['tickets', 'sollus_tickets', 'central_conhecimento', 'admin', 'audit', 'support_bp', 'tech_bp', 'assist_bp', 'atestados_bp'] %}
+
+
+  {% set module_context = 'chamados' %}
+
+
+{% elif current_endpoint.startswith('propostas_') or current_endpoint.startswith('financeiro_bp.') or current_endpoint.startswith('contratos_bp.') or current_endpoint.startswith('cracha_bp.') or
+
+
+        current_blueprint in ['propostas_bp', 'equipamentos_bp', 'parametros_bp', 'auth_bp', 'admin_tools_bp', 'financeiro_bp', 'contratos_bp', 'cracha_bp'] %}
+
+
+  {% set module_context = 'propostas' %}
+
+
+{% endif %}
+
+
+
+
+
+<body class="{% if module_context == 'home' %}module-home{% elif module_context == 'chamados' %}module-chamados{% else %}module-propostas{% endif %}">
+
+
+
+
+
+  {% set display_name = (session.get('nome') or session.get('usuario') or 'Usuário').strip() %}
+
+
+  {% set name_parts = display_name.split() %}
+
+
+  {% set first_initial = (name_parts[0][0] if name_parts and name_parts[0] else 'U') %}
+
+
+
+
+
+  {% set user_permissions = (current_permissions if current_permissions is defined else (session.get('permissions') or {})) %}
+
+
+  {% set user_tipo = (session.get('tipo') or '').lower() %}
+
+
+  {% if user_tipo == 'administrador' %}{% set user_tipo = 'admin' %}{% endif %}
+
+
+  {% set user_raw_permissions = (current_user.permissions if current_user.is_authenticated and current_user.permissions else {}) %}
+
+
+  {% set user_depts = [] %}
+  {% if current_user.is_authenticated %}
+    {% for dept_name in (current_user.department_names or []) %}
+      {% if dept_name %}
+        {# Normalização básica de acentos para comparação robusta #}
+        {% set dnorm = dept_name.upper() | replace('Á','A') | replace('À','A') | replace('Â','A') | replace('Ã','A') | replace('É','E') | replace('Ê','E') | replace('Í','I') | replace('Ó','O') | replace('Ô','O') | replace('Õ','O') | replace('Ú','U') | replace('Ç','C') %}
+        {% set _ = user_depts.append(dnorm) %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+
+
+  {% set user_unit = (current_user.unit_code.upper() if current_user.is_authenticated and current_user.unit_code else '') %}
+
+
+  {% set support_allowed_depts = ['SUPORTE'] %}
+
+
+  {% set contratos_allowed_depts = ['CONTRATOS'] %}
+
+
+  {% set cracha_allowed_depts = ['CRACHA'] %}
+
+
+  {% set estoque_allowed_depts = ['ESTOQUE'] %}
+
+
+  {% set assist_allowed_depts = ['ASSISTENCIA TECNICA'] %}
+
+
+  {% set tecnica_allowed_depts = ['ASSISTENCIA TECNICA'] %}
+
+
+  {% set finance_allowed_depts = ['FINANCEIRO','FINANCAS','FINANÃ‡AS'] %}
+
+
+
+
+
+  {% set hr_allowed_depts = ['RH'] %}
+
+
+  {% set dept_flags = namespace(hr=false, support=false, assist=false, tecnica=false, finance=false, contratos=false, comercial=false, cracha=false, estoque=false) %}
+
+
+  {% for dept in user_depts %}
+
+
+    {% if dept in hr_allowed_depts %}{% set dept_flags.hr = true %}{% endif %}
+
+
+    {% if dept in support_allowed_depts %}{% set dept_flags.support = true %}{% endif %}
+
+
+    {% if dept in assist_allowed_depts %}{% set dept_flags.assist = true %}{% endif %}
+
+
+    {% if dept in tecnica_allowed_depts %}{% set dept_flags.tecnica = true %}{% endif %}
+
+
+    {% if dept in finance_allowed_depts %}{% set dept_flags.finance = true %}{% endif %}
+
+
+    {% if dept in contratos_allowed_depts %}{% set dept_flags.contratos = true %}{% endif %}
+
+
+    {% if dept in cracha_allowed_depts %}{% set dept_flags.cracha = true %}{% endif %}
+
+
+    {% if dept in estoque_allowed_depts %}{% set dept_flags.estoque = true %}{% endif %}
+
+
+    {% if dept == 'COMERCIAL' %}{% set dept_flags.comercial = true %}{% endif %}
+
+
+  {% endfor %}
+
+
+  {% set can_view_audit = user_tipo in ['admin','gestor'] or user_permissions.get('permissoes_gerenciar') or user_permissions.get('usuarios_acesso') %}
+
+
+  {% set can_manage_users = user_tipo in ['admin','gestor'] or user_permissions.get('usuarios_acesso') or user_permissions.get('permissoes_gerenciar') %}
+
+
+  {% set can_manage_permissions = user_tipo == 'admin' or user_permissions.get('permissoes_gerenciar') %}
+
+
+  {% set can_view_birthdays = user_permissions.get('admin_aniversariantes') %}
+
+
+  {% set can_view_vacations = user_tipo in ['admin','gestor'] or user_permissions.get('admin_ferias') or dept_flags.hr %}
+
+
+  {% set can_view_galeria = user_tipo in ['admin','gestor'] or user_permissions.get('admin_galeria') or dept_flags.hr %}
+
+
+  {% set can_view_monitoring = user_tipo == 'admin' or user_permissions.get('admin_monitoramento') %}
+
+
+  {% set can_view_agenda = user_tipo in ['admin','gestor'] or user_permissions.get('admin_agenda_tecnica') or dept_flags.tecnica %}
+
+
+  {% set can_view_support = user_tipo in ['admin','gestor'] or user_permissions.get('admin_suporte') or dept_flags.support or user_permissions.get('assistencia_atendimentos') or user_permissions.get('assistencia_agenda') %}
+
+
+  {# Acesso às rotas de atendimento (suporte + assistência técnica podem agendar) #}
+  {% set can_access_atendimentos = can_view_support or dept_flags.assist or user_permissions.get('assistencia_atendimentos') %}
+
+
+  {% set can_view_assistencia = user_tipo in ['admin','gestor'] or user_permissions.get('admin_assistencia') or dept_flags.assist or 'ESTOQUE' in user_depts or 'OFICINA' in user_depts or user_permissions.get('assistencia_chamados') or user_permissions.get('assistencia_equipamentos') or user_permissions.get('assistencia_atendimentos') or user_permissions.get('assistencia_orcamentos') or user_permissions.get('assistencia_propostas') or user_permissions.get('assistencia_atestados') or user_permissions.get('assistencia_agenda') %}
+
+
+  {% set can_view_tecnica = user_tipo in ['admin','gestor'] or user_permissions.get('admin_agenda_tecnica') or user_permissions.get('admin_assistencia') or dept_flags.tecnica or user_permissions.get('assistencia_agenda') or user_permissions.get('assistencia_chamados') or user_permissions.get('assistencia_equipamentos') or user_permissions.get('assistencia_orcamentos') or user_permissions.get('assistencia_propostas') or user_permissions.get('assistencia_atestados') %}
+
+
+  {% set can_view_financeiro = (user_tipo == 'admin') or user_permissions.get('financeiro') or user_permissions.get('financeiro_contas') or user_permissions.get('financeiro_cancelados') or user_permissions.get('financeiro_cota') or dept_flags.finance %}
+
+
+  {% set can_view_contratos = (user_tipo == 'admin') or user_permissions.get('contratos') or dept_flags.contratos %}
+
+
+  {% set can_view_estoque = user_tipo in ['admin','gestor'] or user_permissions.get('estoque') or dept_flags.estoque %}
+
+
+  {% set can_view_cracha = (user_tipo == 'admin') or dept_flags.cracha or user_permissions.get('cracha') or user_permissions.get('cracha_clientes') or user_permissions.get('cracha_modelos') or user_permissions.get('cracha_extratos') or user_permissions.get('cracha_recibos') or user_permissions.get('cracha_cortador') or user_permissions.get('cracha_produtos') or user_permissions.get('cracha_fornecedores') or user_permissions.get('cracha_empresas') %}
+
+
+  {% set can_view_comercial = user_tipo in ['admin','gestor','consultor'] or user_permissions.get('propostas') or dept_flags.comercial %}
+
+
+  {% set can_view_chamados = user_tipo in ['admin','gestor'] or user_permissions.get('chamados') %}
+
+
+  {% set can_access_admin_tools = can_view_birthdays or can_view_vacations or can_view_galeria or can_view_agenda or can_view_support or can_view_assistencia %}
+
+
+  {% set can_view_admin_hub = can_manage_users or can_manage_permissions or can_view_audit or can_access_admin_tools %}
+
+
+
+
+
+  {% set support_atendimento_pages = [
+
+
+        'support_bp.atendimentos_dashboard',
+
+
+        'support_bp.criar_atendimento',
+
+
+        'support_bp.editar_atendimento',
+
+
+        'support_bp.assumir_atendimento',
+
+
+        'support_bp.designar_tecnico',
+
+
+        'support_bp.excluir_atendimento',
+
+
+        'support_bp.atendimento_json',
+
+
+        'support_bp.atendimento_logs',
+
+
+        'support_bp.download_arquivo'
+
+
+  ] %}
+
+
+
+
+  {% set support_chamados_pages = [
+
+
+        'support_bp.chamados_dashboard',
+
+
+        'support_bp.criar_chamado',
+
+
+        'support_bp.editar_chamado',
+
+
+        'support_bp.fechar_chamado',
+
+
+        'support_bp.excluir_chamado',
+
+
+        'support_bp.exportar_chamados'
+
+
+  ] %}
+
+
+  {% set support_chamados_closed = ['support_bp.chamados_concluidos'] %}
+
+
+  {% set tech_chamados_pages = [
+
+
+        'tech_bp.chamados_dashboard',
+
+
+        'tech_bp.criar_chamado',
+
+
+        'tech_bp.editar_chamado',
+
+
+        'tech_bp.fechar_chamado',
+
+
+        'tech_bp.excluir_chamado',
+
+
+        'tech_bp.exportar_chamados'
+
+
+  ] %}
+
+
+  {% set tech_chamados_closed = ['tech_bp.chamados_concluidos'] %}
+
+
+  {% set tech_assistencia_pages = [
+
+
+        'assist_bp.assistencia_dashboard',
+
+
+        'assist_bp.assistencia_chamados',
+
+
+        'assist_bp.assistencia_controle',
+
+
+        'assist_bp.assistencia_equipamentos_fabrica',
+
+
+        'assist_bp.assistencia_concluidos',
+
+
+        'assist_bp.assistencia_cliente_nao_respondeu',
+
+
+        'assist_bp.assistencia_orcamentos',
+
+        'assist_bp.assistencia_orcamentos_gerar',
+
+        'assist_bp.assistencia_orcamentos_pdf',
+
+        'assist_bp.assistencia_orcamentos_historico',
+
+        'assist_bp.assistencia_propostas_equipamentos_nova',
+
+        'assist_bp.assistencia_propostas_equipamentos_historico',
+
+        'assist_bp.assistencia_propostas_equipamentos_pdf',
+
+        'assist_bp.assistencia_criar',
+
+
+        'assist_bp.assistencia_editar',
+
+
+
+        'assist_bp.assistencia_fabrica',
+
+
+
+        'assist_bp.assistencia_resposta',
+
+
+
+        'assist_bp.agenda_tecnica',
+
+
+
+        'assist_bp.criar_agendamento',
+
+
+
+        'assist_bp.atualizar_agendamento',
+
+
+
+        'assist_bp.excluir_agendamento',
+
+
+
+        'atestados_bp.index',
+
+
+
+        'atestados_bp.upload',
+
+
+
+        'atestados_bp.editar',
+
+
+
+        'atestados_bp.enviar',
+
+
+
+        'atestados_bp.historico_envios',
+
+
+
+        'atestados_bp.historico_envios_pdf',
+
+
+
+        'atestados_bp.converter_pdf',
+
+
+
+        'atestados_bp.baixar_excel',
+
+
+
+        'atestados_bp.remover'
+
+
+
+  ] %}
+
+
+
+
+
+
+  {# papel do usuário vindo da sessão #}
+
+
+
+  {% set role = session.get('tipo') or session.get('role') or '' %}
+
+
+
+
+
+
+  {% set proposals_core_endpoints = ['propostas_bp.nova_proposta','propostas_bp.historico_propostas'] %}
+
+
+
+  {% set section_comercial_active = (current_endpoint in proposals_core_endpoints) or (current_blueprint in ['parametros_bp']) %}
+
+
+
+  {% set admin_tools_endpoints = [
+
+
+
+    'auth_bp.gerenciar_usuarios','auth_bp.editar_usuario',
+
+
+
+    'auth_bp.gerenciar_permissoes','auth_bp.atualizar_permissao','auth_bp.excluir_permissao',
+
+
+
+    'admin_tools_bp.aniversariantes_dashboard','admin_tools_bp.ferias_dashboard',
+    'admin_tools_bp.monitoramento_atrasos',
+
+
+
+    'admin_tools_bp.galeria_dashboard','admin_tools_bp.galeria_upload','admin_tools_bp.galeria_excluir',
+
+
+
+    'admin_tools_bp.agenda_tecnica','admin_tools_bp.admin_hub'
+
+
+
+  ] %}
+
+
+
+  {% set audit_active = (current_endpoint or '').startswith('audit.') %}
+
+
+
+  {% set section_admin_active = (current_endpoint in admin_tools_endpoints) or audit_active %}
+
+
+
+  {% set section_chamados_active = current_endpoint.startswith('sollus_tickets.') or (current_endpoint.startswith('tickets.') and current_endpoint not in ['tickets.closed_list','tickets.reports_overview']) or current_endpoint in ['tickets.new','tickets.create_ticket','tickets.closed_list','tickets.reports_overview'] %}
+
+
+  {% set section_support_active = current_endpoint.startswith('support_bp.') %}
+
+  {% set section_assist_active = (current_endpoint in tech_assistencia_pages) or (can_view_assistencia and current_endpoint in proposals_core_endpoints) %}
+
+  {% set section_tecnica_active = current_endpoint in tech_chamados_pages or current_endpoint in tech_chamados_closed %}
+
+  {% set section_central_conhecimento_active = current_endpoint.startswith('central_conhecimento.') %}
+
+
+  {% set section_financeiro_active = current_endpoint.startswith('financeiro_bp.') %}
+
+  {% set section_contratos_active = current_endpoint.startswith('contratos_bp.') %}
+
+  {% set section_estoque_active = current_blueprint == 'equipamentos_bp' %}
+
+  {% set section_produtos_active = current_endpoint.startswith('cracha_bp.produtos') or current_endpoint.startswith('cracha_bp.produtos_grupo') or current_endpoint.startswith('cracha_bp.produtos_marca') %}
+
+  {% set section_fornecedor_active = current_endpoint.startswith('cracha_bp.fornecedor') %}
+
+  {% set section_empresas_active = current_endpoint.startswith('cracha_bp.empresas') %}
+
+  {% set section_cracha_active = current_endpoint.startswith('cracha_bp.') and not (section_produtos_active or section_fornecedor_active or section_empresas_active) %}
+
+  {% set central_conhecimento_allowed = (user_tipo == 'admin') or user_permissions.get('central_conhecimento') %}
+
+
+
+
+  {# ==== Estrutura dinmica da sidebar / menu de mdulos ==== #}
+
+  {% set sidebar_sections = [] %}
+
+
+
+  {% set comercial_links = [] %}
+  {% if user_tipo in ['admin','gestor','consultor'] or user_permissions.get('propostas_nova') or user_permissions.get('propostas') or dept_flags.comercial %}
+    {% set _ = comercial_links.append({'label': 'Nova Proposta', 'icon': 'fa-solid fa-file-circle-plus', 'url': url_for('propostas_bp.nova_proposta'), 'active': current_endpoint == 'propostas_bp.nova_proposta'}) %}
+  {% endif %}
+  {% if user_tipo in ['admin','gestor','consultor'] or user_permissions.get('propostas_historico') or user_permissions.get('propostas') or dept_flags.comercial %}
+    {% set _ = comercial_links.append({'label': 'Histórico', 'icon': 'fa-solid fa-clock-rotate-left', 'url': url_for('propostas_bp.historico_propostas'), 'active': current_endpoint == 'propostas_bp.historico_propostas'}) %}
+  {% endif %}
+  {% if user_tipo == 'admin' or user_permissions.get('propostas_parametros') %}
+    {% set _ = comercial_links.append({'label': 'Parâmetros', 'icon': 'fa-solid fa-sliders', 'url': url_for('parametros_bp.listar_parametros'), 'active': current_blueprint == 'parametros_bp'}) %}
+  {% endif %}
+
+  {% set _ = sidebar_sections.append({
+
+    'id': 'comercial',
+
+    'label': 'Comercial',
+
+    'icon': 'fa-solid fa-briefcase',
+
+    'links': comercial_links,
+
+    'visible': (comercial_links|length > 0) and can_view_comercial,
+
+    'open': section_comercial_active,
+
+    'menu_url': (comercial_links[0].url if comercial_links|length > 0 else url_for('propostas_bp.nova_proposta')),
+
+    'show_in_menu': (comercial_links|length > 0) and can_view_comercial
+
+  }) %}
+
+
+
+{% if can_view_estoque %}
+  {% set estoque_links = [] %}
+  {% if user_tipo in ['admin','gestor'] or user_permissions.get('estoque') or dept_flags.estoque %}
+    {% set _ = estoque_links.append({'label': 'Estoque', 'icon': 'fa-solid fa-boxes-stacked', 'url': url_for('equipamentos_bp.estoque'), 'active': current_endpoint == 'equipamentos_bp.estoque'}) %}
+  {% endif %}
+  {% if user_tipo in ['admin','gestor'] or user_permissions.get('estoque_pecas') or user_permissions.get('estoque') or dept_flags.estoque %}
+    {% set _ = estoque_links.append({'label': 'Peças', 'icon': 'fa-solid fa-gears', 'url': url_for('equipamentos_bp.pecas'), 'active': current_endpoint == 'equipamentos_bp.pecas'}) %}
+  {% endif %}
+
+  {% set _ = sidebar_sections.append({
+
+    'id': 'estoque',
+
+    'label': 'Estoque',
+
+    'icon': 'fa-solid fa-warehouse',
+
+    'links': estoque_links,
+
+    'visible': True,
+
+    'open': section_estoque_active,
+
+    'menu_url': url_for('equipamentos_bp.estoque'),
+
+    'show_in_menu': True
+
+  }) %}
+
+{% endif %}
+
+
+
+
+
+  {% set financeiro_links = [] %}
+  {% if (user_tipo == 'admin') or user_permissions.get('financeiro_contas') or user_permissions.get('financeiro') or dept_flags.finance %}
+    {% set _ = financeiro_links.append({'label': 'Contas a receber', 'icon': 'fa-solid fa-file-invoice-dollar', 'url': url_for('financeiro_bp.contas_receber'), 'active': current_endpoint == 'financeiro_bp.contas_receber'}) %}
+  {% endif %}
+  {% if (user_tipo == 'admin') or user_permissions.get('financeiro_cancelados') or user_permissions.get('financeiro') or dept_flags.finance %}
+    {% set _ = financeiro_links.append({'label': 'Cancelados', 'icon': 'fa-solid fa-ban', 'url': url_for('financeiro_bp.contas_receber_cancelados'), 'active': current_endpoint == 'financeiro_bp.contas_receber_cancelados'}) %}
+  {% endif %}
+  {% if (user_tipo == 'admin') or user_permissions.get('financeiro_cota') or user_permissions.get('financeiro') or dept_flags.finance %}
+    {% set _ = financeiro_links.append({'label': 'Cota mensal', 'icon': 'fa-solid fa-chart-pie', 'url': url_for('financeiro_bp.cota_dashboard'), 'active': current_endpoint == 'financeiro_bp.cota_dashboard'}) %}
+  {% endif %}
+
+  {% set _ = sidebar_sections.append({
+
+    'id': 'financeiro',
+
+    'label': 'Financeiro',
+
+    'icon': 'fa-solid fa-sack-dollar',
+
+    'links': financeiro_links,
+
+    'visible': can_view_financeiro,
+
+    'open': section_financeiro_active,
+
+    'menu_url': url_for('financeiro_bp.contas_receber'),
+
+    'show_in_menu': can_view_financeiro
+
+  }) %}
+
+
+
+  {% set contratos_links = [] %}
+  {% if (user_tipo == 'admin') or user_permissions.get('contratos_cancelamentos') or user_permissions.get('contratos') or dept_flags.contratos %}
+    {% set _ = contratos_links.append({'label': 'Cancelamentos', 'icon': 'fa-solid fa-file-circle-xmark', 'url': url_for('contratos_bp.cancelados'), 'active': current_endpoint == 'contratos_bp.cancelados'}) %}
+  {% endif %}
+  {% if (user_tipo == 'admin') or user_permissions.get('contratos_contas') or user_permissions.get('contratos') or dept_flags.contratos %}
+    {% set _ = contratos_links.append({'label': 'Contas a receber', 'icon': 'fa-solid fa-file-invoice-dollar', 'url': url_for('contratos_bp.contas_receber_contratos'), 'active': current_endpoint.startswith('contratos_bp.contas_receber_contratos')}) %}
+  {% endif %}
+  {% if (user_tipo == 'admin') or user_permissions.get('contratos_manutencoes') or user_permissions.get('contratos') or dept_flags.contratos %}
+    {% set _ = contratos_links.append({'label': 'Manutenções agendadas', 'icon': 'fa-solid fa-calendar-check', 'url': url_for('contratos_bp.manutencoes_agendadas'), 'active': current_endpoint.startswith('contratos_bp.manutencoes_agendadas')}) %}
+  {% endif %}
+
+  {% set _ = sidebar_sections.append({
+
+    'id': 'contratos',
+
+    'label': 'Contratos',
+
+    'icon': 'fa-solid fa-file-signature',
+
+    'links': contratos_links,
+
+    'visible': can_view_contratos,
+
+    'open': section_contratos_active,
+
+    'menu_url': url_for('contratos_bp.cancelados'),
+
+    'show_in_menu': can_view_contratos
+
+  }) %}
+
+
+
+  {% set produtos_links = [
+
+    {'label': 'Produtos', 'icon': 'fa-solid fa-boxes-stacked', 'url': url_for('cracha_bp.produtos'), 'active': current_endpoint.startswith('cracha_bp.produtos')},
+
+    {'label': 'Produtos Grupo', 'icon': 'fa-solid fa-layer-group', 'url': url_for('cracha_bp.produtos_grupo'), 'active': current_endpoint.startswith('cracha_bp.produtos_grupo')},
+
+    {'label': 'Produtos Marca', 'icon': 'fa-solid fa-tags', 'url': url_for('cracha_bp.produtos_marca'), 'active': current_endpoint.startswith('cracha_bp.produtos_marca')}
+
+  ] %}
+
+  {% set can_view_produtos = (user_tipo == 'admin') or dept_flags.cracha or user_permissions.get('cracha') or user_permissions.get('cracha_produtos') %}
+  {% set can_view_fornecedor = (user_tipo == 'admin') or dept_flags.cracha or user_permissions.get('cracha') or user_permissions.get('cracha_fornecedores') %}
+  {% set can_view_empresas = (user_tipo == 'admin') or dept_flags.cracha or user_permissions.get('cracha') or user_permissions.get('cracha_empresas') %}
+
+  {% set _ = sidebar_sections.append({
+
+    'id': 'produtos',
+
+    'label': 'Produtos',
+
+    'icon': 'fa-solid fa-boxes-stacked',
+
+    'links': produtos_links,
+
+    'visible': can_view_produtos,
+
+    'open': section_produtos_active,
+
+    'menu_url': url_for('cracha_bp.produtos'),
+
+    'show_in_menu': can_view_produtos
+
+  }) %}
+
+
+
+  {% set fornecedor_links = [
+
+    {'label': 'Fornecedor', 'icon': 'fa-solid fa-truck-field', 'url': url_for('cracha_bp.fornecedor'), 'active': current_endpoint.startswith('cracha_bp.fornecedor')}
+
+  ] %}
+
+  {% set _ = sidebar_sections.append({
+
+    'id': 'fornecedor',
+
+    'label': 'Fornecedor',
+
+    'icon': 'fa-solid fa-truck-field',
+
+    'links': fornecedor_links,
+
+    'visible': can_view_fornecedor,
+
+    'open': section_fornecedor_active,
+
+    'menu_url': url_for('cracha_bp.fornecedor'),
+
+    'show_in_menu': can_view_fornecedor
+
+  }) %}
+
+
+
+  {% set empresas_links = [
+
+    {'label': 'Empresas', 'icon': 'fa-solid fa-building', 'url': url_for('cracha_bp.empresas'), 'active': current_endpoint.startswith('cracha_bp.empresas')}
+
+  ] %}
+
+  {% set _ = sidebar_sections.append({
+
+    'id': 'empresas',
+
+    'label': 'Empresas',
+
+    'icon': 'fa-solid fa-building',
+
+    'links': empresas_links,
+
+    'visible': can_view_empresas,
+
+    'open': section_empresas_active,
+
+    'menu_url': url_for('cracha_bp.empresas'),
+
+    'show_in_menu': can_view_empresas
+
+  }) %}
+
+
+
+  {% set cracha_links = [] %}
+  {% if user_tipo == 'admin' or dept_flags.cracha or user_permissions.get('cracha') or user_permissions.get('cracha_clientes') %}
+    {% set _ = cracha_links.append({'label': 'Clientes', 'icon': 'fa-solid fa-users', 'url': url_for('cracha_bp.clientes'), 'active': current_endpoint.startswith('cracha_bp.clientes')}) %}
+  {% endif %}
+  {% if current_user.is_authenticated %}
+    {% set _ = cracha_links.append({'label': 'Pedidos', 'icon': 'fa-solid fa-list-check', 'url': url_for('cracha_bp.pedidos'), 'active': (current_endpoint == 'cracha_bp.pedidos')}) %}
+    {% set _ = cracha_links.append({'label': 'Histórico Pedidos', 'icon': 'fa-solid fa-clock-rotate-left', 'url': url_for('cracha_bp.pedidos_historico'), 'active': (current_endpoint == 'cracha_bp.pedidos_historico')}) %}
+  {% endif %}
+  {% if user_tipo == 'admin' or dept_flags.cracha or user_permissions.get('cracha') or user_permissions.get('cracha_modelos') %}
+    {% set _ = cracha_links.append({'label': 'Crachás', 'icon': 'fa-solid fa-id-card', 'url': url_for('cracha_bp.modelos'), 'active': current_endpoint.startswith('cracha_bp.modelos')}) %}
+  {% endif %}
+  {% if user_tipo == 'admin' or dept_flags.cracha or user_permissions.get('cracha') or user_permissions.get('cracha_extratos') %}
+    {% set _ = cracha_links.append({'label': 'Extratos', 'icon': 'fa-solid fa-clipboard-list', 'url': url_for('cracha_bp.extratos'), 'active': current_endpoint.startswith('cracha_bp.extratos')}) %}
+  {% endif %}
+  {% if user_tipo == 'admin' or dept_flags.cracha or user_permissions.get('cracha') or user_permissions.get('cracha_recibos') %}
+    {% set _ = cracha_links.append({'label': 'Recibos', 'icon': 'fa-solid fa-receipt', 'url': url_for('cracha_bp.recibos'), 'active': current_endpoint == 'cracha_bp.recibos'}) %}
+  {% endif %}
+  {% if user_tipo == 'admin' or dept_flags.cracha or user_permissions.get('cracha') or user_permissions.get('cracha_cortador') %}
+    {% set _ = cracha_links.append({'label': 'Cortador de Fotos', 'icon': 'fa-solid fa-crop-simple', 'url': url_for('cracha_bp.cortador_fotos'), 'active': current_endpoint == 'cracha_bp.cortador_fotos'}) %}
+  {% endif %}
+
+  {% set _ = sidebar_sections.append({
+
+    'id': 'cracha',
+
+    'label': 'Crachá',
+
+    'icon': 'fa-solid fa-id-card',
+
+    'links': cracha_links,
+
+    'visible': (cracha_links|length > 0),
+
+    'open': section_cracha_active,
+
+    'menu_url': (cracha_links[0].url if cracha_links|length > 0 else url_for('cracha_bp.sem_permissao')),
+
+    'show_in_menu': (cracha_links|length > 0)
+
+  }) %}
+
+
+
+  {% set chamados_links = [] %}
+  {% if user_tipo in ['admin','gestor'] or user_permissions.get('chamados') %}
+    {% set _ = chamados_links.append({'label': 'Painel', 'icon': 'fa-solid fa-ticket', 'url': url_for('sollus_tickets.dashboard'), 'active': current_endpoint == 'sollus_tickets.dashboard'}) %}
+  {% endif %}
+  {% if user_tipo in ['admin','gestor'] or user_permissions.get('chamados_novo') or user_permissions.get('chamados') %}
+    {% set _ = chamados_links.append({'label': 'Novo ticket', 'icon': 'fa-solid fa-plus-circle', 'url': url_for('sollus_tickets.new_ticket'), 'active': current_endpoint in ['sollus_tickets.new_ticket','sollus_tickets.create_ticket']}) %}
+  {% endif %}
+  {% if user_tipo in ['admin','gestor'] or user_permissions.get('chamados_fechados') or user_permissions.get('chamados') %}
+    {% set _ = chamados_links.append({'label': 'Tickets fechados', 'icon': 'fa-solid fa-inbox', 'url': url_for('sollus_tickets.closed_tickets'), 'active': current_endpoint == 'sollus_tickets.closed_tickets'}) %}
+  {% endif %}
+  {% if user_tipo in ['admin','gestor'] or user_permissions.get('chamados_relatorios') or user_permissions.get('chamados') %}
+    {% set _ = chamados_links.append({'label': 'Relatórios', 'icon': 'fa-solid fa-chart-pie', 'url': url_for('sollus_tickets.reports'), 'active': current_endpoint == 'sollus_tickets.reports'}) %}
+  {% endif %}
+  {% if user_tipo in ['admin','gestor'] or user_permissions.get('chamados_autoassign') or user_permissions.get('chamados') %}
+    {% set _ = chamados_links.append({'label': 'Auto-assign', 'icon': 'fa-solid fa-user-check', 'url': url_for('sollus_tickets.auto_assign'), 'active': current_endpoint == 'sollus_tickets.auto_assign'}) %}
+  {% endif %}
+  {% if user_tipo in ['admin','gestor'] or user_permissions.get('chamados_admin') or user_permissions.get('chamados') %}
+    {% set _ = chamados_links.append({'label': 'Administração', 'icon': 'fa-solid fa-sliders', 'url': url_for('sollus_tickets.admin_settings'), 'active': current_endpoint == 'sollus_tickets.admin_settings'}) %}
+  {% endif %}
+
+  {% set _ = sidebar_sections.append({
+
+    'id': 'chamados',
+
+    'label': 'Sollus Tickets',
+
+    'icon': 'fa-solid fa-computer',
+
+    'links': chamados_links,
+
+    'visible': (chamados_links|length > 0) and can_view_chamados,
+
+    'open': section_chamados_active,
+
+    'menu_url': (chamados_links[0].url if chamados_links|length > 0 else url_for('sollus_tickets.dashboard')),
+
+    'show_in_menu': (chamados_links|length > 0) and can_view_chamados
+
+  }) %}
+
+
+
+  {% if can_view_assistencia %}
+
+    {% set assist_links = [] %}
+    {% if user_tipo in ['admin','gestor'] or user_permissions.get('admin_assistencia') or dept_flags.assist or user_permissions.get('assistencia_chamados') %}
+      {% set _ = assist_links.append({'label': 'Chamados', 'icon': 'fa-solid fa-table-cells-large', 'url': url_for('assist_bp.assistencia_chamados'), 'active': current_endpoint == 'assist_bp.assistencia_chamados'}) %}
+    {% endif %}
+    {% if user_tipo in ['admin','gestor'] or user_permissions.get('admin_assistencia') or dept_flags.assist or 'ESTOQUE' in user_depts or 'OFICINA' in user_depts or user_permissions.get('assistencia_equipamentos') %}
+      {% set _ = assist_links.append({'label': 'Controle de equipamentos', 'icon': 'fa-solid fa-clipboard-check', 'url': url_for('assist_bp.assistencia_controle'), 'active': current_endpoint == 'assist_bp.assistencia_controle'}) %}
+    {% endif %}
+    {% if user_tipo in ['admin','gestor'] or user_permissions.get('admin_assistencia') or dept_flags.assist or user_permissions.get('assistencia_atendimentos') or can_view_support %}
+      {% if can_access_atendimentos %}
+        {% set _ = assist_links.append({'label': 'Atendimentos Suporte', 'icon': 'fa-solid fa-list-check', 'url': url_for('support_bp.atendimentos_dashboard'), 'active': current_endpoint in support_atendimento_pages}) %}
+      {% endif %}
+    {% endif %}
+    {% if user_tipo in ['admin','gestor'] or user_permissions.get('admin_assistencia') or dept_flags.assist or user_permissions.get('assistencia_propostas') %}
+      {% set _ = assist_links.append({'label': 'Nova Proposta', 'icon': 'fa-solid fa-file-circle-plus', 'url': url_for('propostas_bp.nova_proposta'), 'active': current_endpoint == 'propostas_bp.nova_proposta'}) %}
+      {% set _ = assist_links.append({'label': 'Histórico de Propostas', 'icon': 'fa-solid fa-clock-rotate-left', 'url': url_for('propostas_bp.historico_propostas'), 'active': current_endpoint == 'propostas_bp.historico_propostas'}) %}
+    {% endif %}
+    {% if user_tipo in ['admin','gestor'] or user_permissions.get('admin_assistencia') or dept_flags.assist or user_permissions.get('assistencia_orcamentos') %}
+      {% set _ = assist_links.append({'label': 'Orçamentos', 'icon': 'fa-solid fa-file-invoice', 'url': url_for('assist_bp.assistencia_orcamentos'), 'active': current_endpoint in ['assist_bp.assistencia_orcamentos', 'assist_bp.assistencia_orcamentos_gerar', 'assist_bp.assistencia_orcamentos_pdf']}) %}
+      {% set _ = assist_links.append({'label': 'Histórico de orçamentos', 'icon': 'fa-solid fa-clock-rotate-left', 'url': url_for('assist_bp.assistencia_orcamentos_historico'), 'active': current_endpoint == 'assist_bp.assistencia_orcamentos_historico'}) %}
+    {% endif %}
+    {% if user_tipo in ['admin','gestor'] or user_permissions.get('admin_assistencia') or dept_flags.assist or user_permissions.get('assistencia_atestados') %}
+      {% set _ = assist_links.append({'label': 'Atestados', 'icon': 'fa-solid fa-file-lines', 'url': url_for('atestados_bp.index'), 'active': current_endpoint.startswith('atestados_bp.')}) %}
+    {% endif %}
+    {% if user_tipo in ['admin','gestor'] or user_permissions.get('admin_assistencia') or dept_flags.assist or user_permissions.get('assistencia_agenda') or user_permissions.get('admin_agenda_tecnica') %}
+      {% set _ = assist_links.append({'label': 'Agenda técnica', 'icon': 'fa-solid fa-calendar-check', 'url': url_for('assist_bp.agenda_tecnica'), 'active': current_endpoint == 'assist_bp.agenda_tecnica'}) %}
+    {% endif %}
+
+    {% if assist_links|length > 0 %}
+      {% set _ = sidebar_sections.append({
+
+        'id': 'assistencia',
+
+        'label': 'Assistência técnica',
+
+        'icon': 'fa-solid fa-screwdriver-wrench',
+
+        'links': assist_links,
+
+        'visible': True,
+
+        'open': section_assist_active,
+
+        'menu_url': assist_links[0].url,
+
+        'show_in_menu': True
+
+      }) %}
+    {% endif %}
+
+  {% endif %}
+
+
+
+  {% if can_view_support %}
+
+    {% set support_links = [] %}
+    {% if user_tipo in ['admin','gestor'] or user_permissions.get('admin_suporte') or dept_flags.support or user_permissions.get('assistencia_atendimentos') %}
+      {% set _ = support_links.append({'label': 'Atendimentos Suporte', 'icon': 'fa-solid fa-list-check', 'url': url_for('support_bp.atendimentos_dashboard'), 'active': current_endpoint in support_atendimento_pages}) %}
+    {% endif %}
+    {% if user_tipo in ['admin','gestor'] or user_permissions.get('admin_suporte') or dept_flags.support or user_permissions.get('assistencia_agenda') or user_permissions.get('admin_agenda_tecnica') %}
+      {% set _ = support_links.append({'label': 'Agenda técnica', 'icon': 'fa-solid fa-calendar-check', 'url': url_for('support_bp.agenda_tecnica'), 'active': current_endpoint == 'support_bp.agenda_tecnica'}) %}
+    {% endif %}
+
+    {% if support_links|length > 0 %}
+      {% set _ = sidebar_sections.append({
+
+        'id': 'suporte',
+
+        'label': 'Suporte',
+
+        'icon': 'fa-solid fa-headset',
+
+        'links': support_links,
+
+        'visible': True,
+
+        'open': section_support_active,
+
+        'menu_url': support_links[0].url,
+
+        'show_in_menu': True
+
+      }) %}
+    {% endif %}
+
+  {% endif %}
+
+
+
+{% if can_view_tecnica %}
+
+    {% set tecnica_links = [
+
+      {'label': 'Chamados técnicos', 'icon': 'fa-solid fa-toolbox', 'url': url_for('tech_bp.chamados_dashboard'), 'active': current_endpoint in tech_chamados_pages},
+
+
+    ] %}
+
+    {% set _ = sidebar_sections.append({
+
+      'id': 'tecnica',
+
+      'label': 'Técnica',
+
+      'icon': 'fa-solid fa-toolbox',
+
+      'links': tecnica_links,
+
+      'visible': True,
+
+      'open': section_tecnica_active,
+
+      'menu_url': url_for('tech_bp.chamados_dashboard'),
+
+      'show_in_menu': True
+
+    }) %}
+
+  {% endif %}
+
+
+
+  {% if central_conhecimento_allowed %}
+    {% set central_conhecimento_links = [] %}
+    {% if user_tipo == 'admin' or user_permissions.get('central_conhecimento_quadro') or user_permissions.get('central_conhecimento') %}
+      {% set _ = central_conhecimento_links.append({'label': 'Quadro', 'icon': 'fa-solid fa-table-columns', 'url': url_for('central_conhecimento.board'), 'active': current_endpoint == 'central_conhecimento.board'}) %}
+    {% endif %}
+    {% if user_tipo == 'admin' or user_permissions.get('central_conhecimento_historico') or user_permissions.get('central_conhecimento') %}
+      {% set _ = central_conhecimento_links.append({'label': 'Histórico', 'icon': 'fa-solid fa-clock-rotate-left', 'url': url_for('central_conhecimento.history'), 'active': current_endpoint == 'central_conhecimento.history'}) %}
+    {% endif %}
+
+    {% set _ = sidebar_sections.append({
+
+      'id': 'central_conhecimento',
+
+      'label': 'Central de Conhecimento',
+
+      'icon': 'fa-solid fa-book-open',
+
+      'links': central_conhecimento_links,
+
+      'visible': True,
+
+      'open': section_central_conhecimento_active,
+
+      'menu_url': url_for('central_conhecimento.board'),
+
+      'show_in_menu': True
+
+    }) %}
+
+  {% endif %}
+
+
+
+  {% set admin_links = [] %}
+
+  {% set _ = admin_links.append({'label': 'Painel', 'icon': 'fa-solid fa-table-columns', 'url': url_for('admin_tools_bp.admin_hub'), 'active': current_endpoint == 'admin_tools_bp.admin_hub'}) %}
+  {% if can_manage_users %}
+    {% set _ = admin_links.append({'label': 'Usuários', 'icon': 'fa-solid fa-users-gear', 'url': url_for('auth_bp.gerenciar_usuarios'), 'active': current_endpoint in ['auth_bp.gerenciar_usuarios','auth_bp.editar_usuario']}) %}
+    {% set _ = admin_links.append({'label': 'Usuários Online', 'icon': 'fa-solid fa-user-clock', 'url': url_for('admin_tools_bp.online_users'), 'active': current_endpoint == 'admin_tools_bp.online_users'}) %}
+    {% set _ = admin_links.append({'label': 'Manutenção', 'icon': 'fa-solid fa-screwdriver-wrench', 'url': url_for('admin_tools_bp.manutencao_sistema'), 'active': current_endpoint == 'admin_tools_bp.manutencao_sistema'}) %}
+  {% endif %}
+  {% if can_manage_permissions %}
+    {% set _ = admin_links.append({'label': 'Permissões', 'icon': 'fa-solid fa-user-shield', 'url': url_for('auth_bp.gerenciar_permissoes'), 'active': current_endpoint in ['auth_bp.gerenciar_permissoes','auth_bp.atualizar_permissao','auth_bp.excluir_permissao']}) %}
+  {% endif %}
+  {% if user_tipo in ['admin','gestor'] or user_permissions.get('admin_auditoria') or user_permissions.get('permissoes_gerenciar') or user_permissions.get('usuarios_acesso') %}
+    {% set _ = admin_links.append({'label': 'Auditoria', 'icon': 'fa-solid fa-shield-halved', 'url': url_for('audit.page'), 'active': audit_active}) %}
+  {% endif %}
+
+
+
+  {% if can_view_birthdays %}
+
+
+
+    {% set _ = admin_links.append({'label': 'Aniversariantes', 'icon': 'fa-solid fa-cake-candles', 'url': url_for('admin_tools_bp.aniversariantes_dashboard'), 'active': current_endpoint == 'admin_tools_bp.aniversariantes_dashboard'}) %}
+
+
+
+  {% endif %}
+
+
+
+  {% if can_view_vacations %}
+
+
+
+    {% set _ = admin_links.append({'label': 'Mapa de Férias', 'icon': 'fa-solid fa-umbrella-beach', 'url': url_for('admin_tools_bp.ferias_dashboard'), 'active': current_endpoint == 'admin_tools_bp.ferias_dashboard'}) %}
+
+
+
+  {% endif %}
+
+
+
+  {% if can_view_galeria %}
+
+
+
+    {% set _ = admin_links.append({'label': 'Galeria', 'icon': 'fa-solid fa-camera-retro', 'url': url_for('admin_tools_bp.galeria_dashboard'), 'active': current_endpoint == 'admin_tools_bp.galeria_dashboard'}) %}
+
+
+
+  {% endif %}
+
+
+
+  {% if can_view_monitoring %}
+
+
+
+    {% set _ = admin_links.append({'label': 'Monitoramento', 'icon': 'fa-solid fa-clock-rotate-left', 'url': url_for('admin_tools_bp.monitoramento_atrasos'), 'active': current_endpoint == 'admin_tools_bp.monitoramento_atrasos'}) %}
+
+
+
+  {% endif %}
+
+
+
+  {% if can_view_admin_hub and admin_links %}
+
+
+
+    {% set _ = sidebar_sections.append({
+
+
+
+      'id': 'admin-hub',
+
+
+
+      'label': 'Administração',
+
+
+
+      'icon': 'fa-solid fa-gears',
+
+
+
+      'links': admin_links,
+
+
+
+      'visible': True,
+
+
+
+      'open': section_admin_active,
+
+
+
+      'menu_url': url_for('admin_tools_bp.admin_hub'),
+
+
+
+      'show_in_menu': True
+
+
+
+    }) %}
+
+
+
+  {% endif %}
+
+
+
+
+
+
+  {% set modules_menu = [] %}
+
+
+
+  {% for section in sidebar_sections %}
+
+
+
+    {% if section.visible and section.links %}
+
+
+
+      {% set _ = modules_menu.append({
+
+
+
+        'label': section.label,
+
+
+
+        'icon': section.icon,
+
+
+
+        'url': section.menu_url or section.links[0].url,
+
+
+
+        'active': section.open
+
+
+
+      }) %}
+
+
+
+    {% endif %}
+
+
+
+  {% endfor %}
+
+
+
+
+
+
+  {% set second_initial = (name_parts[1][0] if name_parts|length > 1 and name_parts[1] else (name_parts[0][1] if name_parts and name_parts[0]|length > 1 else '')) %}
+
+
+
+  {% set computed_initials = (first_initial ~ second_initial).upper() %}
+
+
+
+  {% set avatar_initials = session.get('avatar_initials') or computed_initials or 'U' %}
+
+
+
+
+
+
+  <!-- NAVBAR -->
+
+
+
+  <nav class="navbar navbar-expand-lg navbar-dark fixed-top navbar-sollus">
+
+
+
+    <div class="container-fluid">
+
+
+
+      <div class="nav-start">
+
+
+
+        {% if module_context != 'home' %}
+
+
+
+        <button id="btnSidebarToggle" class="btn btn-outline-light btn-sm" type="button" aria-label="Abrir menu" title="Abrir menu">
+
+
+
+          <i id="btnSidebarToggleIcon" class="bi bi-list"></i>
+
+
+
+        </button>
+
+
+
+        {% endif %}
+
+
+
+
+
+
+        <div class="dropdown module-dropdown">
+
+
+
+          <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" id="modulesMenu" data-bs-toggle="dropdown" aria-expanded="false">
+
+
+
+            Módulos
+
+
+          </button>
+
+
+          <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="modulesMenu">
+
+
+            {% for item in modules_menu %}
+
+
+            <li>
+
+
+              <a class="dropdown-item {{ 'active' if item.active else '' }}" href="{{ item.url }}">
+
+
+                <i class="{{ item.icon }}"></i>{{ item.label }}
+
+
+              </a>
+
+
+            </li>
+
+
+            {% endfor %}
+
+
+          </ul>
+
+
+        </div>
+
+
+      </div>
+
+
+
+
+
+      <div class="nav-center">
+
+
+        <a class="brand-stack" href="{{ url_for('index') }}">
+
+
+          <img src="{{ url_for('static', filename='images/sollus_logo_white.png') }}" alt="Sollus logo">
+
+
+          <span>Sollus Connected</span>
+
+
+        </a>
+
+
+      </div>
+
+
+
+
+
+      <div class="nav-end">
+
+
+        <button id="btnThemeToggle" class="btn btn-outline-light btn-sm" type="button" title="Alternar tema">
+
+
+          <i id="themeIcon" class="bi bi-moon-stars"></i>
+
+
+        </button>
+
+
+
+
+
+        {% set avatar_path = session.get('avatar_path') %}
+
+
+        {% set avatar_url = url_for('static', filename=avatar_path) if avatar_path else None %}
+
+
+
+
+
+        <button class="user-profile-trigger user-pill" type="button" data-bs-toggle="modal" data-bs-target="#profileModal">
+
+
+          <span class="user-avatar">
+
+
+            {% if avatar_url %}
+
+
+              <img src="{{ avatar_url }}" alt="Avatar do usuário">
+
+
+            {% else %}
+
+
+              {{ avatar_initials }}
+
+
+            {% endif %}
+
+
+          </span>
+
+
+          <span class="d-none d-sm-inline text-start">
+
+
+            <span class="d-block">{{ session.get('nome') or session.get('usuario') or 'Usuário' }}</span>
+
+
+            <small>{{ session.get('role_label') or 'Usuário' }}</small>
+
+
+          </span>
+
+
+        </button>
+
+
+
+
+
+        <a class="btn btn-outline-light btn-sm d-flex align-items-center gap-1" href="{{ url_for('auth_bp.logout') }}">
+
+
+          <i class="bi bi-box-arrow-right"></i><span class="d-none d-sm-inline">Sair</span>
+
+
+        </a>
+
+
+      </div>
+
+
+    </div>
+
+
+  </nav>
+
+
+
+
+
+  <!-- SIDEBAR -->
+
+
+  {% if module_context != 'home' %}
+
+
+  {% macro render_sidebar_section(section) -%}
+
+
+    <div class="sidebar-section {{ 'open' if section.open else '' }}" id="sidebar-section-{{ section.id }}">
+
+
+      <button class="sidebar-section-toggle" type="button" data-target="sidebar-body-{{ section.id }}" aria-expanded="{{ 'true' if section.open else 'false' }}">
+
+
+        <span class="section-title">
+
+
+          <span class="section-icon"><i class="{{ section.icon }}"></i></span>
+
+
+          <span class="section-text">{{ section.label }}</span>
+
+
+        </span>
+
+
+        <i class="bi bi-chevron-down chevron" aria-hidden="true"></i>
+
+
+      </button>
+
+
+      <div id="sidebar-body-{{ section.id }}" class="sidebar-section-body" {% if not section.open %}hidden{% endif %}>
+
+
+        {% for link in section.links %}
+
+
+        <a class="nav-link {{ 'active' if link.active else '' }}" href="{{ link.url }}">
+
+
+          <i class="{{ link.icon }}"></i>
+
+
+          <span class="label">{{ link.label }}</span>
+
+
+        </a>
+
+
+        {% endfor %}
+
+
+      </div>
+
+
+    </div>
+
+
+  {%- endmacro %}
+
+
+
+
+
+  <aside class="sidebar">
+
+
+    <div class="scroll">
+
+
+      {% for section in sidebar_sections if section.visible %}
+
+
+        {{ render_sidebar_section(section) }}
+
+
+      {% endfor %}
+
+
+    </div>
+
+
+
+
+
+    <div class="mt-auto p-2 small text-muted">
+
+
+      <div>v1.0</div>
+
+
+    </div>
+
+
+  </aside>
+
+
+
+
+
+  <div class="sidebar-backdrop d-lg-none"></div>
+
+
+  {% endif %}
+
+
+
+
+
+  <!-- FLASH -->
+
+
+  <div class="flash-stack">
+
+
+    {% with msgs = get_flashed_messages(with_categories=true) %}
+
+
+      {% if msgs %}
+
+
+        {% for cat, msg in msgs %}
+
+
+          <div class="alert alert-{{ 'warning' if cat=='message' else cat }} alert-dismissible fade show shadow-sm mb-2" role="alert">
+
+
+            {{ msg }}
+
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+
+
+          </div>
+
+
+        {% endfor %}
+
+
+      {% endif %}
+
+
+    {% endwith %}
+
+
+  </div>
+
+
+
+
+
+  <!-- CONTEDO -->
+
+
+  <main class="content">
+
+
+    <div class="container-fluid">
+
+
+      {% block content %}{% endblock %}
+
+
+    </div>
+
+
+  </main>
+
+
+
+
+
+  <div class="modal sollus-modal fade profile-modal" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
+
+
+    <div class="modal-dialog modal-dialog-centered modal-md">
+
+
+      <div class="modal-content">
+
+
+        {% set avatar_path = session.get('avatar_path') %}
+
+
+        {% set avatar_url = url_for('static', filename=avatar_path) if avatar_path else None %}
+
+
+
+
+
+        <h5 class="text-center fw-bold mb-3" id="profileModalLabel">Meu perfil</h5>
+
+
+
+
+
+        <div class="avatar-large">
+
+
+          {% if avatar_url %}
+
+
+          <img src="{{ avatar_url }}" alt="Avatar do usuário">
+
+
+          {% else %}
+
+
+          <span>{{ avatar_initials }}</span>
+
+
+          {% endif %}
+
+
+        </div>
+
+
+
+
+
+        <div class="text-center mb-3">
+
+
+          <h5 class="mb-0">{{ session.get('nome') or session.get('usuario') or 'Usuário' }}</h5>
+
+
+          <div class="text-muted small">{{ session.get('email') }}</div>
+
+
+          <span class="badge bg-primary-subtle text-primary mt-2">{{ session.get('role_label') or 'Usuário' }}</span>
+
+
+        </div>
+
+
+
+
+
+        <ul class="list-group list-group-flush mb-3">
+
+
+          <li class="list-group-item">
+
+
+            <strong>Usuário</strong>
+
+
+            <span>{{ session.get('usuario') }}</span>
+
+
+          </li>
+
+
+          <li class="list-group-item">
+
+
+            <strong>Próximo nÂº da proposta</strong>
+
+
+            <span>{{ session.get('prox_num') }}</span>
+
+
+          </li>
+
+
+          <li class="list-group-item">
+
+
+            <strong>Telefone</strong>
+
+
+            <span>{{ session.get('phone') or 'N/A' }}</span>
+
+
+          </li>
+
+
+        </ul>
+
+
+
+
+
+        <form method="post" action="{{ url_for('auth_bp.update_avatar') }}" enctype="multipart/form-data">
+
+
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+
+          <div class="mb-3">
+
+
+            <label class="form-label">Telefone</label>
+
+
+            <input class="form-control" type="tel" name="phone" value="{{ session.get('phone') or '' }}" placeholder="(00) 00000-0000">
+
+
+            <div class="form-text">Informe o telefone de contato para as propostas.</div>
+
+
+          </div>
+
+
+          <div class="mb-3">
+
+
+            <label class="form-label">Atualizar avatar</label>
+
+
+            <input class="form-control" type="file" name="avatar" accept="image/png,image/jpeg,image/jpg">
+
+
+            <div class="form-text">Formatos aceitos: JPG, JPEG e PNG.</div>
+
+
+          </div>
+
+
+          <div class="d-flex justify-content-between gap-2">
+
+
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+
+
+            <button type="submit" class="btn btn-primary">Salvar avatar</button>
+
+
+          </div>
+
+
+        </form>
+
+
+      </div>
+
+
+    </div>
+
+
+  </div>
+
+
+
+
+
+  <div class="modal sollus-modal fade page-help-modal" id="pageHelpModal" tabindex="-1" aria-labelledby="pageHelpModalLabel" aria-hidden="true">
+
+
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+
+
+      <div class="modal-content">
+
+
+        <div class="modal-header">
+
+
+          <div class="help-icon" aria-hidden="true"><i class="bi bi-stars"></i></div>
+
+
+          <div class="flex-grow-1">
+
+
+            <p class="modal-eyebrow mb-1">Guia rpido</p>
+
+
+            <h5 class="modal-title mb-1" id="pageHelpModalLabel">Como usar esta pgina</h5>
+
+
+            <p class="modal-subtitle small mb-2" id="pageHelpIntro">Dicas rpidas para navegar melhor.</p>
+
+
+            <div class="help-meta">
+
+
+              <span class="help-pill" id="pageHelpPageLabel">Pgina atual</span>
+
+
+              <span class="help-pill help-pill--muted" id="pageHelpStepsLabel">Passos rápidos</span>
+
+
+            </div>
+
+
+          </div>
+
+
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
+
+        </div>
+
+
+        <div class="modal-body">
+
+
+          <div class="row g-3">
+
+
+            <div class="col-md-5 d-flex flex-column" style="max-height: 480px; overflow-y: auto; padding-right: 8px;">
+
+
+              <div class="list-group list-group-flush" id="pageHelpList"></div>
+
+
+            </div>
+
+
+            <div class="col-md-7 d-flex flex-column justify-content-center align-items-center bg-light rounded p-3 position-relative" style="min-height: 380px; border: 1px dashed rgba(0,0,0,0.1); background-color: #f8fafc !important;">
+
+
+              <div id="pageHelpImageWrapper" class="w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+
+
+                <img id="pageHelpImage" src="" class="img-fluid rounded shadow-sm d-none" style="max-height: 340px; object-fit: contain; cursor: zoom-in; transition: opacity 0.2s ease-in-out;" alt="Demonstração visual do passo" onclick="zoomHelpImage(this)">
+
+
+                <div id="pageHelpImagePlaceholder" class="text-muted text-center py-4">
+
+
+                  <i class="bi bi-image" style="font-size: 3rem; opacity: 0.5;"></i>
+
+
+                  <p class="mb-0 mt-2 small">Selecione um passo ao lado para ver o printscreen correspondente.</p>
+
+
+                </div>
+
+
+              </div>
+
+
+            </div>
+
+
+          </div>
+
+
+        </div>
+
+
+      </div>
+
+
+    </div>
+
+
+  </div>
+
+
+  <!-- Lightbox de Zoom para Prints de Ajuda -->
+
+
+  <div id="helpImageLightbox" class="d-none" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.9); z-index: 9999; display: flex; align-items: center; justify-content: center; cursor: zoom-out;" onclick="this.classList.add('d-none')">
+
+
+    <img id="helpLightboxImg" src="" style="max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+
+
+    <div style="position: absolute; top: 20px; right: 20px; color: #fff; font-size: 2rem; cursor: pointer;"><i class="bi bi-x-lg"></i></div>
+
+
+  </div>
+
+
+
+
+
+  <!-- FOOTER -->
+
+
+  <footer class="site-footer py-3">
+
+
+    <div class="container-fluid d-flex align-items-center justify-content-between gap-2 flex-wrap">
+      <div><strong>Connected Enterprise</strong>  <span id="footerYear"></span> &copy; Todos os direitos reservados.</div>
+      <div class="d-flex align-items-center gap-3 flex-wrap">
+        <a href="mailto:suporte@empresa.com.br" class="text-decoration-none"><i class="bi bi-envelope"></i> suporte@empresa.com.br</a>
+        <span>•</span>
+        <a href="https://www.empresa.com.br/" target="_blank" rel="noopener" class="text-decoration-none"><i class="bi bi-globe2"></i> empresa.com.br</a>
+        <span>•</span>
+        <span class="d-flex align-items-center gap-2 flex-wrap">
+          <i class="bi bi-telephone"></i>
+          <a href="tel:+551130000000">SP (11) 3000-0000</a> 
+          <a href="tel:+552130000000">RJ (21) 3000-0000</a> 
+        </span>
+      </div>
+    </div>
+
+
+  </footer>
+
+
+
+
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/help_catalog.js') }}"></script>
+
+
+
+
+
+  <script>
+
+
+  (function(){
+
+
+    const key='sollus:sidebar-collapsed';
+
+
+    const pinKey='sollus:sidebar-pinned';
+
+
+    const body=document.body;
+
+
+    const btn=document.getElementById('btnSidebarToggle');
+
+
+    const icon=document.getElementById('btnSidebarToggleIcon');
+
+
+    const sidebar=document.querySelector('.sidebar');
+
+
+    const backdrop=document.querySelector('.sidebar-backdrop');
+
+
+    const sidebarLinks=document.querySelectorAll('.sidebar .nav-link');
+
+
+    const sectionToggles=Array.from(document.querySelectorAll('.sidebar-section-toggle'));
+
+
+    const sectionBodies=new Map(sectionToggles.map(btn=>[btn.dataset.target, document.getElementById(btn.dataset.target)]));
+
+
+    const mqMobile=window.matchMedia('(max-width: 991px)');
+
+
+
+
+
+    function setSectionOpen(btnSection, open){
+
+
+      if(!btnSection){ return; }
+
+
+      const targetId=btnSection.dataset.target;
+
+
+      const bodyEl=sectionBodies.get(targetId);
+
+
+      const container=btnSection.closest('.sidebar-section');
+
+
+      if(!bodyEl || !container){ return; }
+
+
+      if(open){
+
+
+        container.classList.add('open');
+
+
+        bodyEl.removeAttribute('hidden');
+
+
+        btnSection.setAttribute('aria-expanded','true');
+
+
+      }else{
+
+
+        container.classList.remove('open');
+
+
+        bodyEl.setAttribute('hidden','');
+
+
+        btnSection.setAttribute('aria-expanded','false');
+
+
+      }
+
+
+    }
+
+
+
+
+
+    function closeAllSections(exceptBtn){
+
+
+      sectionToggles.forEach(toggle=>{
+
+
+        if(exceptBtn && toggle===exceptBtn){ return; }
+
+
+        const container=toggle.closest('.sidebar-section');
+
+
+        if(container && container.classList.contains('open')){
+
+
+          setSectionOpen(toggle, false);
+
+
+        }
+
+
+      });
+
+
+    }
+
+
+
+
+
+    function updateSidebarIcon(){
+
+
+      if(!icon){ return; }
+
+
+      if(mqMobile.matches){
+
+
+        const open=body.classList.contains('sidebar-mobile-open');
+
+
+        icon.className=open ? 'bi bi-x-lg' : 'bi bi-list';
+
+
+      }else{
+
+
+        if(body.classList.contains('sidebar-pinned')){
+
+
+          icon.className='bi bi-pin-angle-fill';
+
+
+          return;
+
+
+        }
+
+
+        const collapsed=body.classList.contains('sidebar-collapsed');
+
+
+        icon.className=collapsed ? 'bi bi-layout-sidebar' : 'bi bi-layout-sidebar-inset';
+
+
+      }
+
+
+    }
+
+
+
+
+
+    function applyDesktopCollapsed(collapsed, persist=true){
+
+
+      if(collapsed){
+
+
+        body.classList.remove('sidebar-pinned');
+
+
+        if(persist){ localStorage.setItem(pinKey, '0'); }
+
+
+      }
+
+
+      body.classList.toggle('sidebar-collapsed', collapsed);
+
+
+      if(persist){ localStorage.setItem(key, collapsed ? '1' : '0'); }
+
+
+      if(collapsed){ closeAllSections(); }
+
+
+      updateSidebarIcon();
+
+
+    }
+
+
+
+
+
+    function applyPinned(pinned, persist=true){
+
+
+      body.classList.toggle('sidebar-pinned', pinned);
+
+
+      if(persist){ localStorage.setItem(pinKey, pinned ? '1' : '0'); }
+
+
+      if(pinned){
+
+
+        applyDesktopCollapsed(false, false);
+
+
+      }
+
+
+      updateSidebarIcon();
+
+
+    }
+
+
+
+
+
+    function applyMobileOpen(open){
+
+
+      if(open){
+
+
+        body.classList.add('sidebar-mobile-open');
+
+
+      }else{
+
+
+        body.classList.remove('sidebar-mobile-open');
+
+
+        closeAllSections();
+
+
+      }
+
+
+      body.classList.remove('sidebar-collapsed');
+
+
+      updateSidebarIcon();
+
+
+    }
+
+
+
+
+
+    function syncViewportState(){
+
+
+      if(mqMobile.matches){
+
+
+        applyMobileOpen(false);
+
+
+      }else{
+
+
+        body.classList.remove('sidebar-mobile-open');
+
+
+        const pinned=localStorage.getItem(pinKey)==='1';
+
+
+        if(pinned){
+
+
+          applyPinned(true, false);
+
+
+        }else{
+
+
+          const stored=localStorage.getItem(key)==='1';
+
+
+          applyDesktopCollapsed(stored, false);
+
+
+        }
+
+
+      }
+
+
+    }
+
+
+
+
+
+    syncViewportState();
+
+
+
+
+
+    sectionToggles.forEach(toggle=>{
+
+
+      const container=toggle.closest('.sidebar-section');
+
+
+      const bodyEl=sectionBodies.get(toggle.dataset.target);
+
+
+      const isOpen=container && container.classList.contains('open');
+
+
+      if(bodyEl){
+
+
+        if(isOpen){
+
+
+          bodyEl.removeAttribute('hidden');
+
+
+          toggle.setAttribute('aria-expanded','true');
+
+
+        }else{
+
+
+          bodyEl.setAttribute('hidden','');
+
+
+          toggle.setAttribute('aria-expanded','false');
+
+
+        }
+
+
+      }
+
+
+
+
+
+      toggle.addEventListener('click', evt => {
+
+
+        evt.preventDefault();
+
+
+        evt.stopPropagation();
+
+
+        const wasCollapsed = !mqMobile.matches && body.classList.contains('sidebar-collapsed');
+
+
+        if(wasCollapsed){
+
+
+          applyDesktopCollapsed(false);
+
+
+        }
+
+
+        const currentContainer=toggle.closest('.sidebar-section');
+
+
+        const currentlyOpen=currentContainer && currentContainer.classList.contains('open');
+
+
+        if(currentlyOpen){
+
+
+          setSectionOpen(toggle, false);
+
+
+        }else{
+
+
+          closeAllSections(toggle);
+
+
+          setSectionOpen(toggle, true);
+
+
+        }
+
+
+      });
+
+
+    });
+
+
+
+
+
+    if(btn){
+
+
+      btn.addEventListener('click', () => {
+
+
+        if(mqMobile.matches){
+
+
+          applyMobileOpen(!body.classList.contains('sidebar-mobile-open'));
+
+
+        }else{
+
+
+          const pinned=body.classList.contains('sidebar-pinned');
+
+
+          applyPinned(!pinned);
+
+
+        }
+
+
+      });
+
+
+    }
+
+
+
+
+
+    function maybeCloseMobile(evt){
+
+
+      if(!mqMobile.matches){ return; }
+
+
+      if(!body.classList.contains('sidebar-mobile-open')){ return; }
+
+
+      const target = evt && evt.target ? evt.target : null;
+
+
+      const clickedToggle = target && btn && (target === btn || btn.contains(target));
+
+
+      const clickedSidebar = target && sidebar && sidebar.contains(target);
+
+
+      if(!clickedToggle && !clickedSidebar){
+
+
+        applyMobileOpen(false);
+
+
+      }
+
+
+    }
+
+
+
+
+
+    if(backdrop){
+
+
+      backdrop.addEventListener('click', () => applyMobileOpen(false));
+
+
+    }
+
+
+
+
+
+    document.addEventListener('click', maybeCloseMobile);
+
+
+    document.addEventListener('click', evt => {
+
+
+      if(!sidebar){ return; }
+
+
+      if(mqMobile.matches && body.classList.contains('sidebar-mobile-open')){ return; }
+
+
+      const target=evt.target;
+
+
+      const clickedToggleButton = btn && (target === btn || btn.contains(target));
+
+
+      if(clickedToggleButton){ return; }
+
+
+      if(!sidebar.contains(target)){
+
+
+        if(body.classList.contains('sidebar-collapsed')){
+
+
+          closeAllSections();
+
+
+          return;
+
+
+        }
+
+
+        if(!body.classList.contains('sidebar-pinned')){
+
+
+          applyDesktopCollapsed(true);
+
+
+        }
+
+
+      }
+
+
+    });
+
+
+
+
+
+    sidebarLinks.forEach(link => {
+
+
+      link.addEventListener('click', () => {
+
+
+        closeAllSections();
+
+
+        if(mqMobile.matches){
+
+
+          applyMobileOpen(false);
+
+
+        }
+
+
+      });
+
+
+    });
+
+
+
+
+
+    if(mqMobile.addEventListener){
+
+
+      mqMobile.addEventListener('change', syncViewportState);
+
+
+    }else if(mqMobile.addListener){
+
+
+      mqMobile.addListener(syncViewportState);
+
+
+    }
+
+
+
+
+
+    window.addEventListener('resize', () => {
+
+
+      if(!mqMobile.matches){ maybeCloseMobile(new Event('resize')); }
+
+
+    });
+
+
+
+
+
+    window.addEventListener('scroll', () => {
+
+
+      if(mqMobile.matches && body.classList.contains('sidebar-mobile-open')){
+
+
+        applyMobileOpen(false);
+
+
+      }
+
+
+    }, { passive: true });
+
+
+
+
+
+    const helpModalEl = document.getElementById('pageHelpModal');
+
+
+    const helpListEl = document.getElementById('pageHelpList');
+
+
+    const helpTitleEl = document.getElementById('pageHelpModalLabel');
+
+
+    const helpIntroEl = document.getElementById('pageHelpIntro');
+
+
+    const helpPageLabelEl = document.getElementById('pageHelpPageLabel');
+
+
+    const helpStepsEl = document.getElementById('pageHelpStepsLabel');
+
+
+    const helpButtons = document.querySelectorAll('.page-hero__help-btn');
+
+
+
+
+
+    function decodeHtmlEntities(str){
+
+
+      const el=document.createElement('textarea');
+
+
+      el.innerHTML=str;
+
+
+      return el.value;
+
+
+    }
+
+
+
+
+
+    function parseHelpTips(rawValue, fallback){
+
+
+      if(!rawValue){ return fallback; }
+
+
+      let normalized = rawValue.trim();
+
+
+      if(!normalized){ return fallback; }
+
+
+      if(normalized.includes('&')){
+
+
+        normalized = decodeHtmlEntities(normalized);
+
+
+      }
+
+
+      const splitGuess = normalized.split('||').map(s=>s.trim()).filter(Boolean);
+
+
+      if(splitGuess.length){ return splitGuess; }
+
+
+      try{
+
+
+        const parsed = JSON.parse(normalized);
+
+
+        if(Array.isArray(parsed) && parsed.length){ return parsed; }
+
+
+      }catch(err){ /* ignore */ }
+
+
+      return fallback;
+
+
+    }
+
+
+
+
+    window.zoomHelpImage = function(imgEl) {
+      const lightbox = document.getElementById('helpImageLightbox');
+      const lightboxImg = document.getElementById('helpLightboxImg');
+      if (lightbox && lightboxImg && imgEl && imgEl.src) {
+        lightboxImg.src = imgEl.src;
+        lightbox.classList.remove('d-none');
+      }
+    };
+
+    function showPageHelp(button){
+      if(!button || !helpModalEl || !helpListEl || !helpTitleEl || !helpIntroEl){ return; }
+
+      let pageName = button.getAttribute('data-help-page') || 'esta página';
+      let catalogHelp = window.SOLLUS_HELP_CATALOG && window.SOLLUS_HELP_CATALOG[pageName];
+
+      let title = catalogHelp ? catalogHelp.title : (button.getAttribute('data-help-title') || 'Como usar esta página');
+      let intro = catalogHelp ? catalogHelp.intro : (button.getAttribute('data-help-intro') || 'Veja o passo a passo para aproveitar esta área.');
+
+      if(title.includes('&')){ title = decodeHtmlEntities(title); }
+      if(intro.includes('&')){ intro = decodeHtmlEntities(intro); }
+      if(pageName.includes('&')){ pageName = decodeHtmlEntities(pageName); }
+
+      const fallbackTips = [
+        `Confira o cabeçalho para entender rapidamente o panorama de ${pageName.toLowerCase()}.`,
+        'Use os botões e filtros próximos ao topo para executar as principais ações.',
+        'Percorra cards, tabelas ou listas e clique em um item para abrir detalhes ou editar.'
+      ];
+
+      let steps = [];
+      if (catalogHelp && catalogHelp.steps) {
+        steps = catalogHelp.steps;
+      } else {
+        const tips = catalogHelp ? catalogHelp.tips : parseHelpTips(button.getAttribute('data-help-tips'), fallbackTips);
+        steps = tips.map((text, idx) => {
+          return {
+            title: `Passo ${idx + 1}`,
+            text: text,
+            image: null
+          };
+        });
+      }
+
+      helpTitleEl.textContent = title;
+      helpIntroEl.textContent = intro;
+      if(helpPageLabelEl){ helpPageLabelEl.textContent = pageName; }
+
+      const stepsLabel = steps.length === 1 ? '1 passo prático' : `${steps.length} passos práticos`;
+      if(helpStepsEl){ helpStepsEl.textContent = steps.length ? stepsLabel : 'Passos rápidos'; }
+
+      helpListEl.innerHTML = '';
+
+      const imgEl = document.getElementById('pageHelpImage');
+      const placeholderEl = document.getElementById('pageHelpImagePlaceholder');
+
+      function updateActiveImage(imageName) {
+        if (!imgEl || !placeholderEl) return;
+        if (imageName) {
+          imgEl.src = '/static/images/ajuda/' + imageName;
+          imgEl.classList.remove('d-none');
+          placeholderEl.classList.add('d-none');
+        } else {
+          imgEl.src = '';
+          imgEl.classList.add('d-none');
+          placeholderEl.classList.remove('d-none');
+        }
+      }
+
+      steps.forEach((step, idx) => {
+        if(!step || !step.text){ return; }
+
+        const item = document.createElement('div');
+        item.className = 'list-group-item';
+        if (idx === 0) {
+          item.classList.add('active');
+          updateActiveImage(step.image);
+        }
+
+        const badge = document.createElement('div');
+        badge.className = 'step-badge';
+        badge.textContent = idx + 1;
+
+        const copy = document.createElement('div');
+        copy.className = 'flex-grow-1';
+        copy.innerHTML = `<strong>${step.title}</strong><div class="small text-muted mt-1">${step.text}</div>`;
+
+        item.append(badge, copy);
+
+        item.addEventListener('click', () => {
+          Array.from(helpListEl.children).forEach(el => el.classList.remove('active'));
+          item.classList.add('active');
+          updateActiveImage(step.image);
+        });
+
+        helpListEl.append(item);
+      });
+
+      const modal = bootstrap.Modal.getOrCreateInstance(helpModalEl);
+      modal.show();
+    }
+
+
+
+    helpButtons.forEach(btn => {
+
+
+      btn.addEventListener('click', evt => {
+
+
+        evt.preventDefault();
+
+
+        evt.stopPropagation();
+
+
+        showPageHelp(btn);
+
+
+      });
+
+
+    });
+
+
+
+
+
+    const footerYear = document.getElementById('footerYear');
+
+
+    if(footerYear && !footerYear.textContent){ footerYear.append(new Date().getFullYear()); }
+
+
+
+
+
+    const themeKey = 'sollus:theme';
+
+
+    const root = document.documentElement;
+
+
+    const btnTheme = document.getElementById('btnThemeToggle');
+
+
+    const themeIcon = document.getElementById('themeIcon');
+
+
+
+
+
+    function applyTheme(t){
+
+
+      root.setAttribute('data-theme', t);
+
+
+      if(themeIcon){ themeIcon.className = t==='dark' ? 'bi bi-sun' : 'bi bi-moon-stars'; }
+
+
+      localStorage.setItem(themeKey, t);
+
+
+    }
+
+
+
+
+
+    let saved = localStorage.getItem(themeKey);
+
+
+    if(!saved){
+
+
+      saved = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+
+
+    }
+
+
+    applyTheme(saved);
+
+
+
+
+
+    if(btnTheme){ btnTheme.addEventListener('click', () => {
+
+
+      applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+
+
+    }); }
+
+
+  })();
+
+
+  </script>
+
+
+
+
+
+  {% block scripts %}{% endblock %}
+
+  {% if current_user.is_authenticated %}
+  <!-- Overlay de Manutenção -->
+  <div id="maintenanceOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 99999; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); color: #fff; align-items: center; justify-content: center; font-family: system-ui, -apple-system, sans-serif;">
+    <div style="max-width: 500px; width: 90%; padding: 2.5rem; text-align: center; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); position: relative;">
+      <!-- Botão X para minimizar (canto superior direito) -->
+      <button id="maintenanceDismissBtn" title="Minimizar" onclick="window.__maintenanceMinimize && window.__maintenanceMinimize()" style="position: absolute; top: 0.9rem; right: 0.9rem; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #94a3b8; border-radius: 0.5rem; width: 32px; height: 32px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: background 0.2s, color 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.18)';this.style.color='#fff'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='#94a3b8'">
+        <i class="bi bi-x-lg"></i>
+      </button>
+      <div style="margin-bottom: 1.5rem;">
+        <i class="fa-solid fa-triangle-exclamation text-warning" style="font-size: 4rem; display: inline-block; animation: pulse 2s infinite;"></i>
+      </div>
+      <h3 style="font-weight: 700; font-size: 1.75rem; margin-bottom: 0.75rem; letter-spacing: -0.025em;">Manutenção do Sistema</h3>
+      <p id="maintenanceMessage" style="color: #94a3b8; font-size: 1.05rem; margin-bottom: 1.5rem; line-height: 1.6;">O sistema será reiniciado em instantes para aplicação de atualizações.</p>
+      <div style="font-size: 3rem; font-weight: 800; color: #f59e0b; margin-bottom: 1.5rem;" id="maintenanceTimer">30s</div>
+      <div style="height: 6px; width: 100%; background: #334155; border-radius: 999px; overflow: hidden; margin-bottom: 1rem;">
+        <div id="maintenanceProgressBar" style="height: 100%; width: 100%; background: linear-gradient(90deg, #f59e0b, #ef4444); transition: width 1s linear; border-radius: 999px;"></div>
+      </div>
+      <small style="color: #64748b; font-size: 0.85rem; display: block; margin-bottom: 1.2rem;">Por favor, salve qualquer alteração pendente imediatamente.</small>
+      <button id="maintenanceDismissBtn2" onclick="window.__maintenanceMinimize && window.__maintenanceMinimize()" style="background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); color: #94a3b8; border-radius: 0.65rem; padding: 0.5rem 1.25rem; font-size: 0.85rem; cursor: pointer; transition: background 0.2s, color 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.14)';this.style.color='#fff'" onmouseout="this.style.background='rgba(255,255,255,0.07)';this.style.color='#94a3b8'">
+        <i class="bi bi-chevron-down me-1"></i> Minimizar e continuar trabalhando
+      </button>
+    </div>
+  </div>
+
+  <!-- Widget flutuante minimizado -->
+  <div id="maintenanceMiniWidget" style="display: none; position: fixed; bottom: 1.25rem; right: 1.25rem; z-index: 99998; background: rgba(15, 23, 42, 0.93); border: 1px solid rgba(245, 158, 11, 0.45); border-radius: 1rem; box-shadow: 0 8px 32px rgba(0,0,0,0.45); backdrop-filter: blur(12px); color: #fff; font-family: system-ui, -apple-system, sans-serif; min-width: 230px; overflow: hidden; animation: slideInWidget 0.3s ease;">
+    <div id="maintenanceMiniExpand" style="padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem; cursor: pointer;" title="Clique para expandir">
+      <i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b; font-size: 1.1rem; flex-shrink: 0; animation: pulse 2s infinite;"></i>
+      <div style="flex: 1; min-width: 0;">
+        <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #f59e0b; margin-bottom: 0.1rem;">Manutenção</div>
+        <div style="font-size: 0.78rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="maintenanceMiniMsg">Salve seu trabalho!</div>
+      </div>
+      <div style="font-size: 1.5rem; font-weight: 800; color: #f59e0b; flex-shrink: 0; min-width: 42px; text-align: right;" id="maintenanceMiniTimer">--s</div>
+      <button id="maintenanceMiniClose" title="Fechar widget" style="background: transparent; border: none; color: #475569; font-size: 0.9rem; cursor: pointer; flex-shrink: 0; padding: 2px 0 0 4px; line-height: 1;" onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#475569'">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div style="height: 3px; background: #1e293b;">
+      <div id="maintenanceMiniBar" style="height: 100%; width: 100%; background: linear-gradient(90deg, #f59e0b, #ef4444); transition: width 1s linear;"></div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.08); opacity: 0.85; }
+    }
+    @keyframes slideInWidget {
+      from { transform: translateY(16px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+  </style>
+
+  <script>
+  (function() {
+    let pollTimeout       = null;
+    let countdownInterval = null;
+    let targetTime        = null;
+    let totalDuration     = 30;
+    let isDismissed       = false;
+
+    const overlay     = document.getElementById('maintenanceOverlay');
+    const mini        = document.getElementById('maintenanceMiniWidget');
+    const timerEl     = document.getElementById('maintenanceTimer');
+    const miniTimerEl = document.getElementById('maintenanceMiniTimer');
+    const bar         = document.getElementById('maintenanceProgressBar');
+    const miniBar     = document.getElementById('maintenanceMiniBar');
+    const messageEl   = document.getElementById('maintenanceMessage');
+    const miniMsgEl   = document.getElementById('maintenanceMiniMsg');
+
+    // Expõe globalmente para os botões com onclick="window.__maintenanceMinimize()"
+    window.__maintenanceMinimize = function() {
+      isDismissed = true;
+      if (overlay) overlay.style.display = 'none';
+      if (mini)    mini.style.display    = 'block';
+    };
+
+    // Expandir (widget → overlay)
+    function expand() {
+      isDismissed = false;
+      if (mini)    mini.style.display    = 'none';
+      if (overlay) overlay.style.display = 'flex';
+    }
+
+    // Clique no widget abre o overlay novamente
+    var miniExpand = document.getElementById('maintenanceMiniExpand');
+    if (miniExpand) {
+      miniExpand.addEventListener('click', function(e) {
+        if (e.target.closest('#maintenanceMiniClose')) return;
+        expand();
+      });
+    }
+
+    // X do widget fecha o widget (mantém polling em background)
+    var miniClose = document.getElementById('maintenanceMiniClose');
+    if (miniClose) {
+      miniClose.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (mini) mini.style.display = 'none';
+        isDismissed = true;
+      });
+    }
+
+    // ── Atualiza contador ────────────────────────────────────────────────
+    function updateCountdown() {
+      if (!targetTime) return;
+      var now       = Date.now();
+      var remaining = Math.max(0, Math.ceil((targetTime - now) / 1000));
+      var pct       = Math.max(0, Math.min(100, (remaining / totalDuration) * 100));
+
+      if (timerEl)     timerEl.textContent     = remaining + 's';
+      if (miniTimerEl) miniTimerEl.textContent = remaining + 's';
+      if (bar)         bar.style.width         = pct + '%';
+      if (miniBar)     miniBar.style.width     = pct + '%';
+
+      if (remaining <= 0) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+        if (timerEl)     timerEl.textContent     = 'Aguarde...';
+        if (miniTimerEl) miniTimerEl.textContent = '...';
+        if (bar)         bar.style.width         = '0%';
+        if (miniBar)     miniBar.style.width     = '0%';
+      }
+    }
+
+    // ── Inicia / atualiza o alerta ───────────────────────────────────────
+    function startCountdown(remainingSeconds, message, originalDuration) {
+      if (messageEl) messageEl.textContent = message;
+      if (miniMsgEl) miniMsgEl.textContent = message.length > 40 ? message.substring(0, 38) + '…' : message;
+
+      // Define duração total apenas na primeira chamada (quando não havia alerta ativo)
+      if (!targetTime) {
+        var durationToUse = originalDuration || remainingSeconds;
+        totalDuration = durationToUse > 10 ? durationToUse : 10;
+        isDismissed   = false;
+      }
+
+      targetTime = Date.now() + (remainingSeconds * 1000);
+
+      // Mostra a interface correta conforme estado do usuário
+      if (!isDismissed) {
+        if (overlay) overlay.style.display = 'flex';
+        if (mini)    mini.style.display    = 'none';
+      } else {
+        if (overlay) overlay.style.display = 'none';
+        if (mini)    mini.style.display    = 'block';
+      }
+
+      if (countdownInterval) clearInterval(countdownInterval);
+      updateCountdown();
+      countdownInterval = setInterval(updateCountdown, 1000);
+    }
+
+    // ── Para tudo e esconde ──────────────────────────────────────────────
+    function stopCountdown() {
+      if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+      targetTime  = null;
+      isDismissed = false;
+      if (overlay) overlay.style.display = 'none';
+      if (mini)    mini.style.display    = 'none';
+    }
+
+    let currentInterval = 5000;
+
+    function scheduleNextPoll(ms) {
+      if (pollTimeout) clearTimeout(pollTimeout);
+      currentInterval = ms;
+      pollTimeout = setTimeout(checkMaintenance, ms);
+    }
+
+    // ── Poll do servidor (adaptativo: 5s se inativo, 2s se ativo) ────────
+    function checkMaintenance() {
+      fetch('/admin/api/maintenance-check')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.active) {
+            startCountdown(data.remaining, data.message || 'Manutenção em andamento.', data.duration);
+            scheduleNextPoll(2000);
+          } else {
+            stopCountdown();
+            scheduleNextPoll(5000);
+          }
+        })
+        .catch(function() {
+          // Em caso de falha de conexão (ex: servidor offline/reiniciando), tenta novamente em 2s se ativo, ou 5s se inativo
+          scheduleNextPoll(currentInterval === 2000 ? 2000 : 5000);
+        });
+    }
+
+    // Notifica o servidor para remover da lista online ao fechar/navegar para fora da página
+    window.addEventListener('pagehide', function() {
+      fetch('/admin/api/user-offline', { keepalive: true, method: 'GET' }).catch(function() {});
+    });
+
+    checkMaintenance();
+  })();
+  </script>
+  {% endif %}
+
+</body>
+
+</html>

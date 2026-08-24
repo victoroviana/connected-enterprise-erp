@@ -1,0 +1,166 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Relatórios Sollus{% endblock %}
+{% block content %}
+{% set hero_stats = [
+  {'label': 'Total', 'value': total},
+  {'label': 'Abertos', 'value': status_counts.get('open', 0)},
+  {'label': 'Em andamento', 'value': status_counts.get('in_progress', 0)},
+  {'label': 'Fechados', 'value': status_counts.get('closed', 0)}
+] %}
+{% set hero_tips = [
+  'Leia os KPIs iniciais para enxergar volume por status e tendência geral.',
+  'Use o bloco de prioridade e a série diária (últimos 30 dias) para identificar picos, gargalos e sazonalidade.',
+  'Na lista de últimos chamados, clique no ID/título para abrir detalhes ou volte ao dashboard pelo atalho do topo.'
+] %}
+{{ page_hero(
+  title='Relatórios de chamados',
+  subtitle='Acompanhe volumes por status e prioridades, veja tendências e chame detalhes rapidamente.',
+  eyebrow='Chamados TI',
+  stats=hero_stats,
+  help_tips=hero_tips,
+  help_intro='Dicas rápidas para navegar nos relatórios.'
+) }}
+
+<div class="row g-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <h5 class="mb-0"><i class="fa-solid fa-chart-line me-2"></i> Relatórios</h5>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('tickets.dashboard') }}">
+          <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
+        </a>
+      </div>
+
+      <div class="card-body">
+        <div class="row g-3">
+          <!-- KPIs -->
+          <div class="col-12 col-md-3">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small">Total de chamados</div>
+              <div class="fs-3 fw-bold">{{ total }}</div>
+            </div>
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small">Abertos</div>
+              <div class="fs-3 fw-bold">{{ status_counts.get('open', 0) }}</div>
+            </div>
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small">Em andamento</div>
+              <div class="fs-3 fw-bold">{{ status_counts.get('in_progress', 0) }}</div>
+            </div>
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small">Fechados</div>
+              <div class="fs-3 fw-bold">{{ status_counts.get('closed', 0) }}</div>
+            </div>
+          </div>
+
+          <!-- Prioridades -->
+          <div class="col-12 col-lg-6">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small mb-2">Por prioridade</div>
+              <ul class="list-group">
+                <li class="list-group-item d-flex justify-content-between">
+                  <span>Alta</span><span class="fw-bold">{{ priority_counts.get('high', 0) }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                  <span>Média</span><span class="fw-bold">{{ priority_counts.get('medium', 0) }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                  <span>Baixa</span><span class="fw-bold">{{ priority_counts.get('low', 0) }}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Srie diria (últimos 30 dias) -->
+          <div class="col-12 col-lg-6">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small mb-2">últimos 30 dias (aberturas)</div>
+              {% if daily_series %}
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle">
+                    <thead>
+                      <tr>
+                        <th>Dia</th>
+                        <th class="text-end">Qtd</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for p in daily_series %}
+                      <tr>
+                        <td>{{ p.date }}</td>
+                        <td class="text-end">{{ p.count }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="text-muted">Sem dados recentes.</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Recentes -->
+          <div class="col-12">
+            <div class="border rounded p-3">
+              <div class="text-muted small mb-2">últimos chamados</div>
+              {% if recent %}
+                <div class="table-responsive">
+                  <table class="table align-middle">
+                    <thead>
+                      <tr>
+                        <th style="width:90px">#</th>
+                        <th>Título</th>
+                        <th>Prioridade</th>
+                        <th>Status</th>
+                        <th>Data</th>
+                        <th>Abridor</th>
+                        <th class="text-end" style="width:120px">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for t in recent %}
+                      <tr>
+                        <td>{{ t.id }}</td>
+                        <td class="text-truncate" style="max-width: 340px;" title="{{ t.title }}">{{ t.title }}</td>
+                        <td>
+                          <span class="badge text-bg-{{ 'danger' if t.priority=='high' else ('secondary' if t.priority=='low' else 'primary') }}">
+                            {{ t.priority|upper }}
+                          </span>
+                        </td>
+                        <td>
+                          <span class="badge text-bg-{{ 'success' if t.status=='closed' else 'warning' }}">{{ t.status|upper }}</span>
+                        </td>
+                        <td>{{ t.created_at | local('%d/%m/%Y %H:%M') if t.created_at else '-' }}</td>
+                        <td>{{ t.user.name if t.user and t.user.name else (t.user.email if t.user else '') }}</td>
+                        <td class="text-end">
+                          <a class="btn btn-sm btn-outline-primary" href="{{ url_for('tickets.ticket_detail', ticket_id=t.id) }}">
+                            <i class="bi bi-eye"></i>
+                          </a>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="text-muted">Nenhum chamado encontrado.</div>
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}

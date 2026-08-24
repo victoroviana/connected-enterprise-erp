@@ -1,0 +1,91 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Crachá | Cortador de Fotos{% endblock %}
+
+{% block head %}
+<style>
+  .photo-cutter-card{border:0;border-radius:1.1rem;box-shadow:0 10px 24px rgba(15,35,58,.08);}
+  .photo-cutter-card .card-header{background:transparent;border:0;padding:1.25rem 1.5rem 0;}
+  .photo-cutter-card .card-body{padding:1.25rem 1.5rem 1.5rem;}
+  .photo-dropzone{border:1.5px dashed #b8c4d8;border-radius:1rem;background:#f8fafc;padding:1.5rem;transition:border-color .16s ease, background .16s ease;}
+  .photo-dropzone.is-dragover{border-color:#0d6efd;background:#eef5ff;}
+  .photo-dropzone input{max-width:520px;}
+  .photo-result-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:1rem;}
+  .photo-result{border:1px solid #e2e8f0;border-radius:1rem;background:#fff;padding:.85rem;}
+  .photo-result img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:.75rem;border:1px solid #e2e8f0;background:#f8fafc;}
+  .photo-result .form-check{min-height:auto;}
+  .photo-status{font-size:.76rem;font-weight:700;border-radius:999px;padding:.2rem .55rem;display:inline-flex;align-items:center;gap:.35rem;}
+  .photo-status--ok{background:#dcfce7;color:#166534;}
+  .photo-status--fallback{background:#fff7ed;color:#9a3412;}
+  .photo-cutter-empty{border:1px dashed #d4dbe8;border-radius:1rem;padding:2rem;text-align:center;color:#64748b;background:#fbfdff;}
+  .photo-cutter-errors{display:none;}
+</style>
+{% endblock %}
+
+{% block content %}
+{% set hero_help_tips = [
+  'Envie uma ou várias imagens de pessoas.',
+  'O sistema detecta o rosto, aplica o enquadramento vertical e gera arquivos JPG em 300 x 400.',
+  'Revise as prévias, selecione as fotos aprovadas e baixe o ZIP para usar nos crachás.'
+] %}
+{% call page_hero(
+  title='Cortador de Fotos',
+  subtitle='Recorte fotos automaticamente no padrão usado nos crachás.',
+  eyebrow='Crachá',
+  help_tips=hero_help_tips,
+  help_intro='Fluxo rápido para preparar fotos de crachá.'
+) %}
+{% endcall %}
+
+<div class="card photo-cutter-card mb-3">
+  <div class="card-header">
+    <h2 class="h6 fw-bold mb-1">Enviar imagens</h2>
+    <p class="text-muted mb-0">Formatos aceitos: JPG, PNG e WEBP.</p>
+  </div>
+  <div class="card-body">
+    <form id="photoCutterForm" class="photo-dropzone" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="row g-3 align-items-end">
+        <div class="col-lg-8">
+          <label class="form-label">Fotos</label>
+          <input class="form-control" type="file" id="photoCutterFiles" name="files" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple required>
+        </div>
+        <div class="col-lg-4 d-flex gap-2">
+          <button class="btn btn-primary w-100" type="submit">
+            <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Cortar fotos
+          </button>
+          <button class="btn btn-outline-secondary" type="reset">Limpar</button>
+        </div>
+      </div>
+      <div class="small text-muted mt-3">Também é possível arrastar arquivos para esta área.</div>
+    </form>
+  </div>
+</div>
+
+<div class="alert alert-danger photo-cutter-errors" id="photoCutterErrors"></div>
+
+<div class="card photo-cutter-card">
+  <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <div>
+      <h2 class="h6 fw-bold mb-1">Fotos recortadas</h2>
+      <p class="text-muted mb-0" id="photoCutterSummary">Nenhuma foto processada.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <button class="btn btn-outline-secondary btn-sm" type="button" id="photoSelectAll" disabled>Selecionar todas</button>
+      <button class="btn btn-primary btn-sm" type="button" id="photoDownloadZip" disabled>
+        <i class="fa-solid fa-file-zipper me-1"></i> Baixar ZIP
+      </button>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="photo-cutter-empty" id="photoCutterEmpty">
+      As prévias dos cortes aparecerão aqui após o processamento.
+    </div>
+    <div class="photo-result-grid" id="photoCutterResults"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/cracha_cortador_fotos.js') }}" defer></script>
+{% endblock %}

@@ -1,0 +1,824 @@
+
+
+
+
+{% extends "layout.html" %}
+
+
+
+{% from "components/page_hero.html" import page_hero %}
+
+
+
+
+
+
+
+
+
+
+
+{% block title %}Permissões  Sollus Connected{% endblock %}
+
+
+
+
+
+
+
+{% block head %}
+
+
+
+<style>
+  .perms-card{border:0;border-radius:1.25rem;box-shadow:0 12px 30px rgba(15,35,58,.08); background: var(--card); color: var(--text); }
+  .perms-card .card-header{background:transparent;border:0;padding:1.5rem 1.5rem 0;}
+  .perms-card .card-body{padding:1.5rem 1.5rem 1.75rem;}
+
+  .role-list{display:flex;flex-direction:column;gap:1.25rem;}
+  .role-card{border:1px solid rgba(148,163,184,0.2);border-radius:1.1rem;padding:1.25rem 1.5rem;background:var(--card);box-shadow:0 8px 22px rgba(0,0,0,0.1);transition:transform .18s ease, box-shadow .18s ease; color: var(--text); }
+  .role-card:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,0.15);}
+  .role-card__header{display:flex;flex-direction:column;gap:1rem;}
+  @media(min-width:768px){.role-card__header{flex-direction:row;align-items:center;}}
+  .role-card__identity{flex:1;display:flex;flex-direction:column;gap:.75rem;}
+  .role-card__title{display:flex;align-items:center;gap:.75rem;font-size:1.05rem;font-weight:700;color:var(--text);}
+  .role-card__badge{padding:.35rem .75rem;border-radius:999px;font-size:.65rem;font-weight:700;letter-spacing:.08em;background:rgba(14,93,198,0.1);color:var(--blue-700);}
+  .role-card__tags{display:flex;flex-wrap:wrap;gap:.5rem;}
+  .role-tag{padding:.35rem .65rem;border-radius:.75rem;font-size:.72rem;font-weight:600;background:rgba(148,163,184,0.1);color:var(--muted);border:1px solid rgba(148,163,184,.2);}
+  .role-tag.enabled{background:rgba(22,163,74,.12);color:#22c55e;border-color:rgba(22,163,74,.3);}
+  .role-card__actions{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;}
+  .role-card__toggle{display:inline-flex;align-items:center;gap:.35rem;}
+  .role-card__chevron{transition:transform .2s ease;}
+  .role-card__toggle[aria-expanded="true"] .role-card__chevron{transform:rotate(180deg);}
+  .role-card__actions .btn{min-width:0;padding:.45rem 1rem;font-weight:600;}
+  .role-card__actions form{margin:0;}
+  .role-card__body{padding-top:1.25rem;border-top:1px dashed rgba(148,163,184,0.2);margin-top:1.25rem;}
+  .role-card__meta{font-size:.8rem;color:var(--muted);}
+</style>
+
+
+
+{% endblock %}
+
+
+
+
+
+
+
+{% macro render_switches(form, prefix, disabled=False) %}
+
+
+
+  <div class="row g-3">
+
+
+
+  {% for key, meta in permission_definitions.items() %}
+
+
+
+    {% set field = form[key] %}
+
+
+
+    {% set field_id = prefix ~ '_' ~ key %}
+
+
+
+    <div class="col-12 col-md-6">
+
+
+
+      <div class="form-check form-switch">
+
+
+
+        {% if disabled %}
+
+
+
+          {{ field(class="form-check-input", id=field_id, disabled=True) }}
+
+
+
+        {% else %}
+
+
+
+          {{ field(class="form-check-input", id=field_id) }}
+
+
+
+        {% endif %}
+
+
+
+        <label class="form-check-label" for="{{ field_id }}">{{ meta['label'] }}</label>
+
+
+
+      </div>
+
+
+
+    </div>
+
+
+
+  {% endfor %}
+
+
+
+  </div>
+
+
+
+{% endmacro %}
+
+
+
+
+
+
+
+{% block content %}
+
+
+
+{% set role_stats = [
+
+
+
+  {'label': 'Tipos cadastrados', 'value': roles|length}
+
+
+
+] %}
+{% set perms_help_tips = [
+  'Use o formulário "Criar novo tipo" para cadastrar perfis com um identificador curto e selecionar as permissões iniciais.',
+  'Nos cartões, clique em "Editar detalhes" para expandir e ativar/desativar cada permissão antes de salvar o tipo.',
+  'Remova perfis que não são mais usados; os usuários associados migram para o tipo padrão.'
+] %}
+
+
+
+{{ page_hero(
+
+    title='Tipos e Permissões',
+
+    subtitle='Organize os acessos criando tipos de usuários e controlando o que cada equipe pode realizar na plataforma.',
+
+    eyebrow='Administração',
+
+    stats=role_stats,
+    help_tips=perms_help_tips,
+    help_intro='Guia rápido para configurar tipos e permissões.'
+
+) }}
+
+
+
+
+
+
+
+<div class="row g-4">
+
+
+
+  <div class="col-lg-4">
+
+    <div class="card perms-card h-100">
+
+      <div class="card-header">
+
+        <h2 class="h5 fw-bold mb-1">Criar novo tipo</h2>
+
+        <p class="text-muted mb-0">Defina um identificador curto e as Permissões iniciais.</p>
+
+      </div>
+
+      <div class="card-body">
+
+        <form method="post" class="perms-form">
+
+          {{ create_form.hidden_tag() }}
+
+          <div class="mb-3">
+
+
+
+            {{ create_form.name.label(class="form-label") }}
+
+
+
+            {{ create_form.name(class="form-control", placeholder="ex: supervisor") }}
+
+
+
+            {% for error in create_form.name.errors %}
+
+
+
+              <div class="text-danger small">{{ error }}</div>
+
+
+
+            {% endfor %}
+
+
+
+            <small class="text-muted">Use letras minúsculas, números ou underline.</small>
+
+
+
+          </div>
+
+
+
+          <div class="mb-3">
+
+
+
+            {{ create_form.label.label(class="form-label") }}
+
+
+
+            {{ create_form.label(class="form-control", placeholder="Nome exibido") }}
+
+
+
+            {% for error in create_form.label.errors %}
+
+
+
+              <div class="text-danger small">{{ error }}</div>
+
+
+
+            {% endfor %}
+
+
+
+          </div>
+
+
+
+          <div class="mb-3">
+
+
+
+            <span class="form-label d-block text-uppercase small fw-bold text-muted">Permissões</span>
+
+
+
+            {{ render_switches(create_form, 'create') }}
+
+
+
+          </div>
+
+
+
+          <div class="d-grid">
+
+
+
+            {{ create_form.submit(class="btn btn-primary btn-lg") }}
+
+
+
+          </div>
+
+
+
+        </form>
+
+      </div>
+
+    </div>
+
+
+
+  </div>
+
+
+
+
+
+  <div class="col-lg-8">
+
+
+
+    <div class="card perms-card">
+
+
+
+      <div class="card-header">
+
+
+
+        <h2 class="h5 fw-bold mb-1">Tipos cadastrados</h2>
+
+
+
+        <p class="text-muted mb-0">Edite Permissões existentes ou remova tipos não utilizados.</p>
+
+
+
+      </div>
+
+
+
+      <div class="card-body">
+
+
+
+        {% if roles %}
+
+
+
+          <div class="role-list" id="rolesList">
+
+
+
+            {% for role in roles %}
+
+
+
+              {% set form = update_forms[role.id] %}
+
+
+
+              {% set perms = role.to_permissions() %}
+
+
+
+              {% set is_admin = role.name == 'admin' %}
+
+
+
+              <div class="role-card" id="role{{ role.id }}">
+
+
+
+                <div class="role-card__header">
+
+
+
+                  <div class="role-card__identity">
+
+
+
+                    <div class="role-card__title">
+
+
+
+                      <span class="role-card__badge">{{ role.badge_label }}</span>
+
+
+
+                      <span>{{ role.label }}</span>
+
+
+
+                      {% if is_admin %}
+
+
+
+                        <span class="badge bg-secondary">Padrão</span>
+
+
+
+                      {% endif %}
+
+
+
+                    </div>
+
+
+
+                    <div class="role-card__meta">Identificador interno: {{ role.name }}</div>
+
+
+
+                    <div class="role-card__tags">
+
+
+
+                      {% for key, meta in permission_definitions.items() %}
+
+
+
+                        <span class="role-tag {{ 'enabled' if perms.get(key) else '' }}">{{ meta['label'] }}</span>
+
+
+
+                      {% endfor %}
+
+
+
+                    </div>
+
+
+
+                  </div>
+
+
+
+                  <div class="role-card__actions">
+
+
+
+                    <button class="btn btn-outline-primary btn-sm role-card__toggle" type="button" data-bs-toggle="collapse" data-bs-target="#roleCollapse{{ role.id }}" aria-expanded="{{ 'true' if loop.first else 'false' }}" aria-controls="roleCollapse{{ role.id }}">
+
+
+
+                      Editar detalhes <span class="ms-1 role-card__chevron bi bi-chevron-down"></span>
+
+
+
+                    </button>
+
+
+
+                    {% if not is_admin %}
+
+
+
+                    <form method="post" action="{{ url_for('auth_bp.excluir_permissao', role_id=role.id) }}" onsubmit="return confirm('Remover o tipo {{ role.label }}? usuários associados passarão para o tipo padrão.');">
+
+
+
+                      {{ form.csrf_token }}
+
+
+
+                      <button type="submit" class="btn btn-outline-danger btn-sm">Remover</button>
+
+
+
+                    </form>
+
+
+
+                    {% endif %}
+
+
+
+                  </div>
+
+
+
+                </div>
+
+
+
+                <div class="collapse role-card__body {{ 'show' if loop.first else '' }}" id="roleCollapse{{ role.id }}" data-bs-parent="#rolesList">
+
+
+
+                  <form method="post" action="{{ url_for('auth_bp.atualizar_permissao', role_id=role.id) }}" class="perms-form">
+
+
+
+                    {{ form.hidden_tag() }}
+
+
+
+                    {{ form.role_id() }}
+
+
+
+                    <div class="row g-3">
+
+
+
+                      <div class="col-md-6">
+
+
+
+                        {{ form.label.label(class="form-label") }}
+
+
+
+                        {{ form.label(class="form-control") }}
+
+
+
+                        {% for error in form.label.errors %}
+
+
+
+                          <div class="text-danger small">{{ error }}</div>
+
+
+
+                        {% endfor %}
+
+
+
+                      </div>
+
+
+
+                      <div class="col-md-6">
+
+
+
+                        <label class="form-label text-muted">Identificador</label>
+
+
+
+                        <input type="text" class="form-control" value="{{ role.name }}" readonly>
+
+
+
+                      </div>
+
+
+
+                    </div>
+
+
+
+                    <div class="mt-3">
+
+
+
+                      <span class="form-label d-block text-uppercase small fw-bold text-muted">Permissões do tipo</span>
+
+
+
+                      {{ render_switches(form, 'edit' ~ role.id, disabled=is_admin) }}
+
+
+
+                      {% if is_admin %}
+
+
+
+                        <small class="text-muted d-block mt-2">O tipo administrador possui todas as Permissões ativas.</small>
+
+
+
+                      {% endif %}
+
+
+
+                    </div>
+
+
+
+                    <div class="d-flex justify-content-end mt-4">
+
+
+
+                      <button type="submit" class="btn btn-primary">Salvar alterações</button>
+
+
+
+                    </div>
+
+
+
+                  </form>
+
+
+
+                </div>
+
+
+
+              </div>
+
+
+
+            {% endfor %}
+
+
+
+          </div>
+
+
+
+        {% else %}
+
+
+
+          <p class="text-muted mb-0">Nenhum tipo cadastrado até o momento.</p>
+
+
+
+        {% endif %}
+
+
+
+      </div>
+
+
+
+    </div>
+
+
+
+  </div>
+
+
+
+</div>
+
+
+
+<div class="card perms-card mt-4">
+
+  <div class="card-header">
+
+    <h2 class="h5 fw-bold mb-1">Departamentos</h2>
+
+    <p class="text-muted mb-0">Defina regras específicas para cada setor.</p>
+
+  </div>
+
+  <div class="card-body">
+
+    <div class="row g-4">
+
+      <div class="col-lg-4">
+
+        <form method="post" class="perms-form">
+
+          {{ department_form.hidden_tag() }}
+
+          <div class="mb-3">
+
+            {{ department_form.name.label(class="form-label") }}
+
+            {{ department_form.name(class="form-control", placeholder="Ex.: Suporte externo") }}
+
+            {% for error in department_form.name.errors %}
+
+              <div class="text-danger small">{{ error }}</div>
+
+            {% endfor %}
+
+          </div>
+
+          <div class="mb-3">
+
+            <span class="form-label d-block text-uppercase small fw-bold text-muted">Permissões</span>
+
+            {{ render_switches(department_form, 'dept-create') }}
+
+          </div>
+
+          <div class="d-grid">
+
+            {{ department_form.submit(class="btn btn-primary") }}
+
+          </div>
+
+        </form>
+
+      </div>
+
+      <div class="col-lg-8">
+
+        {% if departments %}
+
+        <div class="role-list" id="departmentsList">
+
+          {% for dept in departments %}
+
+            {% set form = department_forms[dept.id] %}
+
+            <div class="role-card" id="dept{{ dept.id }}">
+
+              <div class="role-card__header">
+
+                <div class="role-card__identity">
+
+                  <div class="role-card__title">
+
+                    <span class="role-card__badge">{{ dept.slug or 'DEP' }}</span>
+
+                    <span>{{ dept.name }}</span>
+
+                  </div>
+
+                  <div class="role-card__meta">Identificador interno: {{ dept.slug }}</div>
+
+                  <div class="role-card__tags">
+
+                    <span class="role-tag enabled">{{ dept.users.count() }} usuários</span>
+
+                  </div>
+
+                </div>
+
+                <div class="role-card__actions">
+
+                  <button class="btn btn-outline-primary btn-sm role-card__toggle" type="button" data-bs-toggle="collapse" data-bs-target="#deptCollapse{{ dept.id }}" aria-expanded="{{ 'true' if loop.first else 'false' }}" aria-controls="deptCollapse{{ dept.id }}">
+
+                    Editar detalhes <span class="ms-1 role-card__chevron bi bi-chevron-down"></span>
+
+                  </button>
+
+                  <form method="post" action="{{ url_for('auth_bp.excluir_departamento', dept_id=dept.id) }}" onsubmit="return confirm('Remover o departamento {{ dept.name }}? usuários associados ficarão sem departamento.');">
+
+                    {{ form.csrf_token }}
+
+                    <button type="submit" class="btn btn-outline-danger btn-sm">Remover</button>
+
+                  </form>
+
+                </div>
+
+              </div>
+
+              <div class="collapse role-card__body {{ 'show' if loop.first else '' }}" id="deptCollapse{{ dept.id }}" data-bs-parent="#departmentsList">
+
+                <form method="post" action="{{ url_for('auth_bp.atualizar_departamento', dept_id=dept.id) }}" class="perms-form">
+
+                  {{ form.hidden_tag() }}
+
+                  {{ form.department_id() }}
+
+                  <div class="mb-3">
+
+                    {{ form.name.label(class="form-label") }}
+
+                    {{ form.name(class="form-control") }}
+
+                    {% for error in form.name.errors %}
+
+                      <div class="text-danger small">{{ error }}</div>
+
+                    {% endfor %}
+
+                  </div>
+
+                  <div class="mt-3">
+
+                    <span class="form-label d-block text-uppercase small fw-bold text-muted">Permissões do departamento</span>
+
+                    {{ render_switches(form, 'dept' ~ dept.id) }}
+
+                  </div>
+
+                  <div class="d-flex justify-content-end mt-4">
+
+                    <button type="submit" class="btn btn-primary">Salvar alterações</button>
+
+                  </div>
+
+                </form>
+
+              </div>
+
+            </div>
+
+          {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <p class="text-muted mb-0">Nenhum departamento cadastrado.</p>
+
+        {% endif %}
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

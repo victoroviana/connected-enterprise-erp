@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+{% block title %}Chamados Finalizados · Sollus{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0"><i class="bi bi-check2-circle me-2"></i>Chamados finalizados</h5>
+  </div>
+  <div class="card-body">
+    {% if tickets and tickets|length %}
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Título</th>
+              <th>Solicitante</th>
+              <th>Atendente</th>
+              <th>Prioridade</th>
+              <th>Criado em</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in tickets %}
+              <tr>
+                <td>{{ t.id }}</td>
+                <td class="text-truncate" style="max-width: 320px;">{{ t.title }}</td>
+                <td>{{ t.user.name or t.user.email if t.user else '-' }}</td>
+                <td>{{ t.assignee.name or t.assignee.email if t.assignee else '—' }}</td>
+                <td>
+                  <span class="badge text-bg-{{ 'danger' if t.priority=='high' else ('secondary' if t.priority=='low' else 'primary') }}">
+                    {{ t.priority|upper }}
+                  </span>
+                </td>
+                <td>{{ t.created_at | local('%d/%m/%Y %H:%M') if t.created_at else '-' }}</td>
+                <td>
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('tickets.ticket_detail', ticket_id=t.id) }}">
+                    Abrir
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-muted">Nenhum chamado finalizado.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

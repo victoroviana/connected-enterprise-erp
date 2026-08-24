@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Novo Atestado | Assistência Técnica{% endblock %}
+
+{% block content %}
+{{ page_hero(
+  title='Novo atestado',
+  subtitle='Envie um arquivo DOCX e cadastre os e-mails relacionados.',
+  eyebrow='Assistência técnica'
+) }}
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-3">
+        <label class="form-label" for="arquivo">Arquivo DOCX</label>
+        <input type="file" class="form-control" id="arquivo" name="arquivo" accept=".docx" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="emails">E-mails (separados por vírgula)</label>
+        <input type="text" class="form-control" id="emails" name="emails" placeholder="email1@exemplo.com, email2@exemplo.com" required>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-cloud-upload"></i> Salvar</button>
+        <a href="{{ url_for('atestados_bp.index') }}" class="btn btn-outline-secondary">Voltar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

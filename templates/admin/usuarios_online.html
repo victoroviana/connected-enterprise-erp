@@ -1,0 +1,234 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Usuários Online - Sollus Connected{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+  .user-online-card {
+    border: 0;
+    border-radius: 1.25rem;
+    background: var(--card);
+    color: var(--text);
+    box-shadow: 0 4px 20px rgba(15, 35, 58, 0.04);
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s ease;
+    overflow: hidden;
+  }
+  .user-online-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(15, 35, 58, 0.12);
+  }
+  .user-avatar-circle {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+  }
+  .user-avatar-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .interaction-badge {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: rgba(15, 123, 200, 0.08);
+    color: var(--blue-700);
+    line-height: 1.4;
+  }
+  .interaction-badge.empty {
+    background: rgba(148, 163, 184, 0.1);
+    color: var(--muted);
+  }
+  .search-container {
+    max-width: 380px;
+  }
+  
+  @keyframes pulse-green {
+    0% { transform: scale(0.92); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.8; }
+    100% { transform: scale(0.92); opacity: 1; }
+  }
+  .online-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 50rem;
+    background: rgba(25, 135, 84, 0.1);
+    color: #198754;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .online-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #198754;
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse-green 1.8s infinite;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set help_tips = [
+  'Esta tela lista os usuários com atividade recente e interações nos últimos 3 minutos.',
+  'O status verde "Online" indica que o colaborador está conectado e navegando na plataforma no momento.',
+  'Utilize a busca no canto superior direito para localizar um usuário instantaneamente.'
+] %}
+
+{{ page_hero(
+    title='Usuários Online',
+    subtitle='Monitore em tempo real quem está conectado e ativo no sistema.',
+    eyebrow='Administração',
+    stats=hero_stats,
+    help_tips=help_tips,
+    help_intro='Ajuda rápida sobre usuários conectados.'
+) }}
+
+<div class="row g-4 mb-4">
+  <div class="col-12">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 rounded-4" style="background: rgba(148, 163, 184, 0.04); border: 1px solid rgba(148, 163, 184, 0.08);">
+      <div>
+        <h2 class="h6 fw-bold mb-1" style="color: var(--text);">Status em Tempo Real</h2>
+        <p class="text-muted mb-0 small">Exibindo apenas colaboradores ativos no momento.</p>
+      </div>
+      <form method="get" action="{{ url_for('admin_tools_bp.online_users') }}" class="search-container w-100 w-sm-auto">
+        <div class="input-group">
+          <span class="input-group-text bg-transparent border-end-0" style="border-color: rgba(148, 163, 184, 0.25);"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" name="q" id="onlineUsersSearch" value="{{ search_query or '' }}" class="form-control border-start-0 border-end-0" placeholder="Buscar colaborador..." style="border-color: rgba(148, 163, 184, 0.25); background: transparent; color: var(--text);">
+          {% if search_query %}
+            <a href="{{ url_for('admin_tools_bp.online_users') }}" class="btn bg-transparent border-start-0 border-top-1 border-bottom-1 border-end-1" style="border-color: rgba(148, 163, 184, 0.25); color: var(--muted);"><i class="bi bi-x-lg"></i></a>
+          {% else %}
+            <span class="input-group-text bg-transparent border-start-0" style="border-color: rgba(148, 163, 184, 0.25);">&nbsp;</span>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4" id="onlineUsersGrid">
+  {% for item in results %}
+  <div class="col-12 col-md-6 col-lg-4 user-card-col">
+    <div class="card h-100 user-online-card">
+      <div class="card-body p-4 d-flex flex-column align-items-center text-center position-relative">
+        
+        <!-- Indicador de Status -->
+        <div class="position-absolute top-0 end-0 m-3">
+          <span class="online-indicator">
+            <span class="online-dot"></span>
+            Online
+          </span>
+        </div>
+
+        <!-- Avatar -->
+        <div class="user-avatar-circle">
+          {% if item.user.avatar_path %}
+            <img src="{{ url_for('static', filename=item.user.avatar_path) }}" alt="Avatar">
+          {% else %}
+            {% set name_parts = (item.user.nome_completo or '').split() %}
+            {% set first_init = name_parts[0][0] if name_parts else '' %}
+            {% set second_init = name_parts[1][0] if name_parts|length > 1 else '' %}
+            {{ (first_init ~ second_init).upper() or (item.user.usuario[0] if item.user.usuario else 'U') }}
+          {% endif %}
+        </div>
+
+        <!-- Nome e Detalhes de Login -->
+        <h5 class="fw-bold mb-1 user-name" style="font-size: 1.15rem; color: var(--text);">{{ item.user.nome_completo or 'Não informado' }}</h5>
+        <p class="text-muted mb-2 small user-username">@{{ item.user.usuario or '-' }}</p>
+        <p class="text-muted mb-4 small user-email" style="font-size: 0.85rem;"><i class="bi bi-envelope me-1"></i>{{ item.user.email }}</p>
+
+        <!-- Linha Divisória sutil -->
+        <div class="w-100 my-2" style="border-top: 1px dashed rgba(148, 163, 184, 0.15);"></div>
+
+        <!-- Última atividade registrada no Banco -->
+        <div class="w-100 text-start mt-2">
+          <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; margin-bottom: 0.4rem;">Última Ação no Banco</div>
+          <div class="mb-2">
+            <span class="interaction-badge {% if not item.last_interaction_at %}empty{% endif %}" title="{{ item.last_interaction_desc }}">
+              {{ item.last_interaction_desc }}
+            </span>
+          </div>
+          {% if item.last_interaction_at %}
+          <div class="text-muted" style="font-size: 0.75rem;">
+            <i class="bi bi-clock me-1"></i>{{ item.last_interaction_at | local('%d/%m/%Y %H:%M:%S') }}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Última Requisição no Front (Ping) -->
+        <div class="w-100 text-start mt-3 pt-2" style="border-top: 1px solid rgba(148, 163, 184, 0.08);">
+          <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; margin-bottom: 0.25rem;">Navegação Ativa</div>
+          <div style="font-size: 0.82rem; font-weight: 600; color: var(--text);">
+            <i class="bi bi-activity text-primary me-1"></i>{{ item.online_since_desc }}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  {% else %}
+    {% if search_query %}
+    <div class="col-12 text-center py-5" id="noResultsContainer">
+      <div class="mb-3">
+        <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+      </div>
+      <h5 class="fw-bold" style="color: var(--text);">Nenhum colaborador encontrado</h5>
+      <p class="text-muted small">Nenhum resultado corresponde à sua pesquisa "{{ search_query }}".</p>
+      <a href="{{ url_for('admin_tools_bp.online_users') }}" class="btn btn-outline-primary btn-sm mt-2">Limpar Busca</a>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5" id="emptyStateContainer">
+      <div class="mb-3">
+        <i class="bi bi-people text-muted" style="font-size: 3.5rem;"></i>
+      </div>
+      <h5 class="fw-bold" style="color: var(--text);">Nenhum colaborador online no momento</h5>
+      <p class="text-muted small">Todos os colaboradores estão desconectados do sistema.</p>
+    </div>
+    {% endif %}
+  {% endfor %}
+</div>
+
+<!-- Pagination Controls -->
+{% if pagination.pages > 1 %}
+<nav aria-label="Navegação de página" class="mt-4">
+  <ul class="pagination justify-content-center mb-0">
+    <li class="page-item {{ 'disabled' if not pagination.has_prev else '' }}">
+      <a class="page-link" href="{{ build_url(page=pagination.prev_num) }}">Anterior</a>
+    </li>
+    {% for p in range(1, pagination.pages + 1) %}
+      {% if p == 1 or p == pagination.pages or (p >= pagination.page - 1 and p <= pagination.page + 1) %}
+        <li class="page-item {{ 'active' if p == pagination.page else '' }}">
+          <a class="page-link" href="{{ build_url(page=p) }}">{{ p }}</a>
+        </li>
+      {% elif p == 2 or p == pagination.pages - 1 %}
+        <li class="page-item disabled"><span class="page-link">...</span></li>
+      {% endif %}
+    {% endfor %}
+    <li class="page-item {{ 'disabled' if not pagination.has_next else '' }}">
+      <a class="page-link" href="{{ build_url(page=pagination.next_num) }}">Próxima</a>
+    </li>
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<!-- Backend pagination is active. No client-side DOM filtering required. -->
+{% endblock %}

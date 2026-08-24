@@ -1,0 +1,2141 @@
+{# templates/historico_propostas.html #}
+
+
+
+{% extends "layout.html" %}
+
+
+
+{% from "components/page_hero.html" import page_hero %}
+
+
+
+{% block title %}Histórico de Propostas{% endblock %}
+
+
+
+
+
+
+
+{% block head %}
+{{ super() }}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+  /* Select2 Custom Premium Styling */
+  .select2-container--default .select2-selection--single {
+    display: flex;
+    align-items: center;
+    height: 42px;
+    border-radius: 0.85rem;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background-color: var(--card, #fff);
+    color: var(--text, #000);
+  }
+  .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--text, #000);
+    line-height: normal;
+    padding-left: 0.75rem;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 40px;
+    right: 10px;
+  }
+  .select2-dropdown {
+    background-color: var(--card, #fff);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.85rem;
+    box-shadow: 0 10px 24px rgba(15,35,58,.08);
+    z-index: 9999;
+  }
+  .select2-container--default .select2-search--dropdown .select2-search__field {
+    background-color: var(--card, #fff);
+    color: var(--text, #000);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.75rem;
+  }
+  .select2-container--default .select2-results__option {
+    color: var(--text, #000);
+    padding: 0.5rem 0.75rem;
+  }
+  .select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: rgba(15, 123, 200, 0.15);
+    color: var(--text, #000);
+  }
+  .select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #0E5DC6 !important;
+    color: #fff !important;
+  }
+
+
+
+  #historyPdfModal .modal-dialog{max-width:960px;}
+
+
+
+  #historyPdfModal .modal-content{border:0;border-radius:1.5rem;box-shadow:0 28px 68px rgba(6,28,56,.28);overflow:hidden;}
+  .ambiente-preview{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:.75rem;}
+  .ambiente-preview.d-none{display:none;}
+  .ambiente-preview-item{width:160px;display:flex;flex-direction:column;gap:.4rem;}
+  .ambiente-preview-thumb{width:100%;height:96px;border-radius:12px;border:1px solid rgba(15,123,200,.18);overflow:hidden;background:#f2f6fb;display:flex;align-items:center;justify-content:center;}
+  .ambiente-preview-thumb img{width:100%;height:100%;object-fit:cover;}
+  .ambiente-title-input{font-size:.75rem;border-radius:.6rem;padding:.35rem .6rem;}
+
+
+
+  #historyPdfModal .modal-header{padding:1.4rem 2rem;background:linear-gradient(135deg, rgba(15,123,200,.12), rgba(30,64,175,.08));border-bottom:0;}
+
+
+
+  #historyPdfModal .modal-title{font-weight:700;letter-spacing:.02em;color:#0f1c36;}
+
+
+
+  #historyPdfModal .modal-body{padding:0 2rem 2rem;background:#f8fbff;}
+
+
+
+  #historyPdfModal .modal-footer{padding:1.3rem 2rem;background:#eef5ff;border-top:0;}
+
+
+
+  .history-pdf-frame-wrapper{height:70vh;border-radius:1.25rem;overflow:hidden;border:1px solid rgba(15,26,60,.08);background:linear-gradient(135deg, rgba(15,123,200,.06), rgba(99,102,241,.05));box-shadow:inset 0 1px 0 rgba(255,255,255,.4);}
+
+
+
+  .history-pdf-frame{width:100%;height:100%;border:0;background:#fff;}
+
+
+
+  .history-pdf-loading{height:70vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, rgba(15,123,200,.08), rgba(30,64,175,.08));color:#0f1c36;font-weight:600;gap:1rem;font-size:0.95rem;}
+
+
+
+  .history-pdf-meta{color:#475569;font-size:0.85rem;}
+
+
+
+  .history-pdf-actions{display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;}
+
+
+
+  .js-history-pdf.is-loading{pointer-events:none;opacity:.75;}
+
+  .search-select{position:relative;}
+  .search-select-menu{
+    position:absolute;
+    top:100%;
+    left:0;
+    right:0;
+    z-index:10;
+    background:#fff;
+    border:1px solid rgba(15,23,42,.12);
+    border-radius:.75rem;
+    box-shadow:0 10px 30px rgba(15,23,42,.12);
+    max-height:240px;
+    overflow:auto;
+    display:none;
+    margin-top:.35rem;
+  }
+  .search-select.is-open .search-select-menu{display:block;}
+  .search-select-item{
+    width:100%;
+    border:0;
+    background:transparent;
+    text-align:left;
+    padding:.5rem .75rem;
+    font-size:.95rem;
+    color:#0f172a;
+  }
+  .search-select-item:hover,
+  .search-select-item:focus{background:#f3f6fb;}
+  .search-select-empty{padding:.55rem .85rem;color:#6b7280;}
+
+  .history-card{border:0;border-radius:1.25rem;box-shadow:0 12px 30px rgba(15,35,58,.08);}
+  .history-card .card-body{padding:1.5rem;}
+  .history-table{table-layout:fixed;width:100%;}
+  .history-table thead{background:#f1f4fb;text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:#5a6782;}
+  .history-table th,.history-table td{white-space:normal;word-break:break-word;}
+  .history-table tbody tr{transition:transform .18s ease, box-shadow .18s ease;}
+  .history-table tbody tr:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(15,35,58,.08);}
+  .history-actions{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;}
+  .history-action-btn{min-width:84px;}
+  .history-table .version-row td{background:#f8fbff;}
+  .version-list{display:flex;flex-direction:column;gap:.75rem;padding:.75rem 0;}
+  .version-item{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;align-items:center;justify-content:space-between;border:1px solid rgba(15,23,42,.08);border-radius:.85rem;padding:.6rem .9rem;background:#fff;}
+  .version-item.is-current{border-color:rgba(14,93,198,.4);box-shadow:0 10px 20px rgba(14,93,198,.12);}
+  .version-main{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-weight:600;}
+  .version-meta{color:#64748b;font-size:.85rem;}
+  .version-actions{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;}
+  .version-toggle{display:inline-flex;align-items:center;gap:.35rem;}
+  .equip-stock-tag{
+    display:inline-flex;
+    align-items:center;
+    gap:.35rem;
+    padding:.2rem .65rem;
+    border-radius:999px;
+    font-size:.7rem;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    background:rgba(15,123,200,.12);
+    color:#0f2657;
+  }
+
+
+
+  @media (max-width:768px){
+
+
+
+    .history-pdf-frame-wrapper,.history-pdf-loading{height:60vh;}
+
+
+
+    #historyPdfModal .modal-body{padding:0 1.25rem 1.5rem;}
+
+
+
+    #historyPdfModal .modal-footer{padding:1.2rem 1.25rem;}
+
+
+
+  }
+
+
+
+</style>
+
+
+
+{% endblock %}
+
+
+
+
+
+
+
+{% block content %}
+
+
+
+<div class="py-4">
+
+
+
+  {% set hero_subtitle %}Bem-vindo(a), <strong>{{ session.get('nome') }}</strong>{% endset %}
+
+
+
+{% set page_results = propostas.items|length if propostas is defined and propostas.items is not none else (propostas|length if propostas is defined else 0) %}
+{% set history_table_cols = 7 + (1 if session.get('tipo') in ['admin', 'gestor'] else 0) %}
+
+
+
+  {% set total_results = page_results %}
+
+
+
+  {% if propostas is defined and propostas.total is not none %}
+
+
+
+    {% set total_results = propostas.total %}
+
+
+
+  {% endif %}
+
+
+
+  {% set history_stats = [
+
+
+
+    {'label': 'Neste filtro', 'value': page_results},
+
+
+
+    {'label': 'Total no histórico', 'value': total_results}
+
+
+
+  ] %}
+  {% set history_help_tips = [
+    'Combine filtros de cliente, data, usuário, serviço e modalidade para localizar a proposta antes de baixar.',
+    'Use o botão PDF para abrir ou baixar o documento gerado sem sair da página.',
+    'Clique em Editar para reabrir a proposta, ajustar dados e gerar novamente; administradores podem excluir entradas obsoletas.'
+  ] %}
+
+
+
+  {{ page_hero(
+
+
+
+      title='Histórico de Propostas',
+
+
+
+      subtitle=hero_subtitle,
+
+
+
+      eyebrow='Propostas',
+
+
+
+      stats=history_stats,
+      help_tips=history_help_tips,
+      help_intro='Guia rápido para consultar e reutilizar propostas.'
+
+
+
+  ) }}
+
+
+
+
+
+
+
+  {#  FILTROS  #}
+
+
+
+  <form class="row g-3 mt-3 mb-4" method="get"
+
+
+
+        action="{{ url_for('propostas_bp.historico_propostas') }}">
+
+
+
+    <div class="col-md-2">
+
+
+
+      <label class="form-label" for="data">Data</label>
+
+
+
+      <input type="date" id="data" name="data" class="form-control"
+
+
+
+             value="{{ date_sel }}">
+
+
+
+    </div>
+
+
+
+    
+    <div class="col-md-3">
+      <label class="form-label" for="empresa_search">Razão social ou CNPJ</label>
+      <input type="text" id="empresa_search" name="empresa" class="form-control"
+             list="empresa_options" placeholder="Razão social ou CNPJ" value="{{ empresa_sel }}">
+      <datalist id="empresa_options">
+        {% for empresa in empresa_options %}
+        <option value="{{ empresa }}"></option>
+        {% endfor %}
+      </datalist>
+    </div>
+
+
+
+
+
+
+
+    {% if session.get('tipo') in ['admin', 'gestor'] %}
+
+
+
+    <div class="col-md-3">
+
+
+
+      <label class="form-label" for="usuario_id">Usuário</label>
+
+
+
+      <select id="usuario_id" name="usuario_id" class="form-select">
+
+
+
+        <option value="">Todos</option>
+
+
+
+        {% for u in usuarios_list %}
+
+
+
+          <option value="{{ u.id }}"
+
+
+
+                  {% if user_sel == u.id %}selected{% endif %}>
+
+
+
+            {{ u.nome_completo }}
+
+
+
+          </option>
+
+
+
+        {% endfor %}
+
+
+
+      </select>
+
+
+
+    </div>
+
+
+
+    {% endif %}
+
+
+
+
+
+
+
+    <div class="col-md-3">
+
+
+
+      <label class="form-label" for="servico_type">Serviço</label>
+
+
+
+      <select id="servico_type_edit" name="servico_type" class="form-select">
+
+
+
+        <option value="">Todos</option>
+
+
+
+        {% for st in ServicoType %}
+
+
+
+          <option value="{{ st.name }}"
+
+
+
+                  {% if servico_sel == st.name %}selected{% endif %}>
+
+
+
+            {{ st.value }}
+
+
+
+          </option>
+
+
+
+        {% endfor %}
+
+
+
+      </select>
+
+
+
+    </div>
+
+
+
+
+
+
+
+    <div class="col-md-3">
+
+
+
+      <label class="form-label" for="modalidade_type_filter">Modalidade</label>
+
+
+
+      <select id="modalidade_type_filter" name="modalidade_type" class="form-select">
+
+
+
+        <option value="">Todas</option>
+
+
+
+        {% for mt in ModalidadeType %}
+
+
+
+          <option value="{{ mt.name }}"
+
+
+
+                  {% if modalidade_sel == mt.name %}selected{% endif %}>
+
+
+
+            {{ mt.value }}
+
+
+
+          </option>
+
+
+
+        {% endfor %}
+
+
+
+      </select>
+
+
+
+    </div>
+
+
+
+
+
+
+
+    <div class="col-md-1 align-self-end">
+
+
+
+      <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+
+
+
+    </div>
+
+
+
+    <div class="col-md-1 align-self-end">
+
+
+
+      <a href="{{ url_for('propostas_bp.historico_propostas') }}"
+
+
+
+         class="btn btn-secondary w-100">Limpar</a>
+
+
+
+    </div>
+
+
+
+  </form>
+
+
+
+
+
+
+
+  {#  TABELA  #}
+
+
+
+  {% if propostas.items %}
+
+
+
+  <div class="card history-card">
+    <div class="card-body">
+      <div class="table-responsive">
+  <table class="table align-middle mb-0 history-table">
+
+
+
+    <thead>
+
+
+
+      <tr>
+
+
+
+        <th>Nome da Proposta</th>
+
+
+
+        <th>Empresa</th>
+
+
+
+        <th>Cliente</th>
+
+
+
+        <th>Serviço</th>
+
+
+
+        <th>Modalidade</th>
+
+
+
+        <th>Criada em</th>
+
+
+
+        {% if session.get('tipo') in ['admin', 'gestor'] %}
+
+
+
+          <th>Criado por</th>
+
+
+
+        {% endif %}
+
+
+
+        <th>Ações</th>
+
+
+
+      </tr>
+
+
+
+    </thead>
+
+
+
+    <tbody>
+
+
+
+    {% for proposta in propostas.items %}
+      {% set original_id = proposta.original_proposal_id or proposta.id %}
+      {% set versions = versions_by_original.get(original_id, [proposta]) %}
+      {% set has_versions = versions|length > 1 %}
+      {% set version_label = 'Versão ' ~ (proposta.version_number or 1) %}
+      {% set can_edit = session.get('tipo') == 'admin' or not proposta.approved_at %}
+
+      <tr>
+        <td>
+          <button type="button"
+                  class="btn btn-link p-0 version-toggle js-toggle-versions"
+                  data-target="versions-{{ proposta.id }}"
+                  {% if not has_versions %}disabled{% endif %}>
+            <span>{{ proposta.filename or '---' }}</span>
+            {% if has_versions %}
+            <i class="bi bi-chevron-down"></i>
+            {% endif %}
+          </button>
+          <div class="small text-muted">
+            {{ version_label }}{% if proposta.is_original %} · Original{% endif %}{% if proposta.approved_at %} · Aprovada{% endif %}
+          </div>
+        </td>
+
+
+
+        <td>{{ proposta.company }}</td>
+
+
+
+        <td>{{ proposta.client_name }}</td>
+
+
+
+        <td>{{ proposta.servico_type.value }}</td>
+
+
+
+        <td>{{ proposta.modalidade_type.value }}</td>
+
+
+
+        <td>
+
+
+
+          {% if proposta.data_criacao_local %}
+
+
+
+            {{ proposta.data_criacao_local | local('%d/%m/%Y %H:%M') }}
+
+
+
+          {% else %} --- {% endif %}
+
+
+
+        </td>
+
+
+
+        {% if session.get('tipo') in ['admin', 'gestor'] %}
+
+
+
+          <td>{{ proposta.usuario.nome_completo or proposta.usuario.usuario }}</td>
+
+
+
+        {% endif %}
+
+
+
+        <td>
+
+
+
+          <div class="history-actions">
+
+
+
+            <button type="button"
+
+
+
+                    class="btn btn-primary btn-sm history-action-btn js-history-pdf d-inline-flex align-items-center justify-content-center gap-2"
+
+
+
+                    data-proposal-id="{{ proposta.id }}"
+
+
+
+                    data-proposal-name="{{ proposta.filename or proposta.client_name or 'Proposta' }}">
+
+
+
+              <span class="spinner-border spinner-border-sm d-none js-loading" role="status" aria-hidden="true"></span>
+
+
+
+              <span class="js-label">PDF</span>
+
+
+
+            </button>
+
+
+
+
+
+            <button class="btn btn-outline-primary btn-sm history-action-btn"
+                    onclick="abrirModalEdicao({{ proposta.id }})"
+                    {% if not can_edit %}disabled{% endif %}>
+              Editar
+            </button>
+
+
+
+
+
+            {% if session.get('tipo') in ['admin', 'gestor'] %}
+
+
+
+            <form method="post"
+
+
+
+                  action="{{ url_for('propostas_bp.excluir_proposta', id=proposta.id) }}"
+
+
+
+                  onsubmit="return confirm('Deseja realmente excluir esta proposta?')">
+
+
+
+              <button class="btn btn-outline-danger btn-sm history-action-btn">Excluir</button>
+
+
+
+            </form>
+
+
+
+            {% endif %}
+
+
+
+          </div>
+
+
+
+        </td>
+
+      </tr>
+
+      {% if versions|length > 1 %}
+      <tr class="version-row d-none" id="versions-{{ proposta.id }}">
+        <td colspan="{{ history_table_cols }}">
+          <div class="version-list">
+            {% for versao in versions %}
+            {% set versao_label = 'Versão ' ~ (versao.version_number or loop.index) %}
+            {% set can_approve = session.get('tipo') in ['admin', 'gestor'] or versao.usuario_id == session.get('usuario_id') %}
+            <div class="version-item {% if versao.id == proposta.id %}is-current{% endif %}">
+              <div class="version-main">
+                <span>{{ versao_label }}</span>
+                {% if versao.is_original %}<span class="badge bg-secondary">Original</span>{% endif %}
+                {% if versao.approved_at %}<span class="badge bg-success">Aprovada</span>{% endif %}
+              </div>
+              <div class="version-meta">
+                {% if versao.data_criacao_local %}
+                  {{ versao.data_criacao_local | local('%d/%m/%Y %H:%M') }}
+                {% elif versao.data_criacao %}
+                  {{ versao.data_criacao | local('%d/%m/%Y %H:%M') }}
+                {% endif %}
+                {% if versao.approved_at_local %}
+                  · Aprovada em {{ versao.approved_at_local | local('%d/%m/%Y %H:%M') }}
+                {% endif %}
+                {% if versao.approved_by %}
+                  · {{ versao.approved_by.nome_completo or versao.approved_by.usuario }}
+                {% endif %}
+              </div>
+              <div class="version-actions">
+                <button type="button"
+                        class="btn btn-outline-primary btn-sm js-history-pdf"
+                        data-proposal-id="{{ versao.id }}"
+                        data-proposal-name="{{ versao.filename or versao.client_name or 'Proposta' }}">
+                  Visualizar
+                </button>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm js-history-pdf-download"
+                        data-proposal-id="{{ versao.id }}"
+                        data-proposal-name="{{ versao.filename or versao.client_name or 'Proposta' }}">
+                  Baixar
+                </button>
+                {% if not versao.approved_at and can_approve %}
+                <button type="button"
+                        class="btn btn-success btn-sm js-approve-version"
+                        data-proposal-id="{{ versao.id }}"
+                        data-version-label="{{ versao_label }}">
+                  Aprovar
+                </button>
+                {% endif %}
+                <button type="button"
+                        class="btn btn-outline-info btn-sm js-view-changes"
+                        data-proposal-id="{{ versao.id }}"
+                        data-version-label="{{ versao_label }}">
+                  <i class="bi bi-clock-history"></i> Alterações
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </td>
+      </tr>
+      {% endif %}
+
+
+
+    {% endfor %}
+
+
+
+    </tbody>
+
+
+
+  </table>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+
+
+  {#  PAGINAÇÃO  #}
+
+
+
+    <nav aria-label="Paginação">
+    {% set pages_to_show = [] %}
+    {% for p in [1, propostas.page, propostas.page + 1, propostas.page + 2, propostas.page + 3, propostas.pages] %}
+      {% if 1 <= p <= propostas.pages and p not in pages_to_show %}
+        {% set _ = pages_to_show.append(p) %}
+      {% endif %}
+    {% endfor %}
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <ul class="pagination mb-0">
+        <li class="page-item {% if not propostas.has_prev %}disabled{% endif %}">
+          {% if propostas.has_prev %}
+          <a class="page-link" href="{{ url_for('propostas_bp.historico_propostas', page=propostas.prev_num, data=date_sel, usuario_id=user_sel, servico_type=servico_sel, modalidade_type=modalidade_sel, empresa=empresa_sel) }}">Anterior</a>
+          {% else %}
+          <span class="page-link">Anterior</span>
+          {% endif %}
+        </li>
+        {% for page_num in pages_to_show %}
+        <li class="page-item {% if propostas.page == page_num %}active{% endif %}">
+          <a class="page-link" href="{{ url_for('propostas_bp.historico_propostas', page=page_num, data=date_sel, usuario_id=user_sel, servico_type=servico_sel, modalidade_type=modalidade_sel, empresa=empresa_sel) }}">{{ page_num }}</a>
+        </li>
+        {% endfor %}
+        <li class="page-item {% if not propostas.has_next %}disabled{% endif %}">
+          {% if propostas.has_next %}
+          <a class="page-link" href="{{ url_for('propostas_bp.historico_propostas', page=propostas.next_num, data=date_sel, usuario_id=user_sel, servico_type=servico_sel, modalidade_type=modalidade_sel, empresa=empresa_sel) }}">Próximo</a>
+          {% else %}
+          <span class="page-link">Próximo</span>
+          {% endif %}
+        </li>
+      </ul>
+      <form class="d-flex align-items-center gap-2" method="get" action="{{ url_for('propostas_bp.historico_propostas') }}">
+        {% if date_sel %}<input type="hidden" name="data" value="{{ date_sel }}">{% endif %}
+        {% if empresa_sel %}<input type="hidden" name="empresa" value="{{ empresa_sel }}">{% endif %}
+        {% if user_sel %}<input type="hidden" name="usuario_id" value="{{ user_sel }}">{% endif %}
+        {% if servico_sel %}<input type="hidden" name="servico_type" value="{{ servico_sel }}">{% endif %}
+        {% if modalidade_sel %}<input type="hidden" name="modalidade_type" value="{{ modalidade_sel }}">{% endif %}
+        <label class="small text-muted mb-0" for="historico-propostas-page-input">Página</label>
+        <input type="number" min="1" max="{{ propostas.pages }}" class="form-control form-control-sm" id="historico-propostas-page-input" name="page" value="{{ propostas.page }}">
+        <button class="btn btn-outline-secondary btn-sm" type="submit">Ir</button>
+      </form>
+    </div>
+  </nav>
+
+
+
+
+
+
+
+  {% else %}
+
+
+
+    <div class="alert alert-info mt-4">Nenhuma proposta encontrada.</div>
+
+
+
+  {% endif %}
+
+
+
+</div>
+
+<div class="modal fade" id="approveVersionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirmar aprovação</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">Você está prestes a marcar <strong id="approveVersionLabel">esta versão</strong> como aprovada pelo cliente.</p>
+        <p class="mb-0 text-muted small">Após confirmar, esta versão não poderá mais ser alterada (exceto por administradores).</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success" id="approveVersionConfirm">Confirmar aprovação</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+{# MODAL DE EDIO #}
+
+
+
+<div class="modal sollus-modal fade" id="modalEdicao" aria-labelledby="modalEdicaoLabel" aria-hidden="true">
+
+
+
+  <div class="modal-dialog modal-xl">
+
+
+
+    <div class="modal-content">
+
+
+
+      <div id="erro-edicao-modal" class="alert alert-danger d-none m-3"></div>
+
+
+
+      <form id="formEdicao" enctype="multipart/form-data">
+
+
+
+        <input type="hidden" id="proposta_id" name="proposta_id">
+
+
+
+        <div class="modal-header">
+
+
+
+          <h5 class="modal-title" id="modalEdicaoLabel">Editar Proposta</h5>
+
+
+
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
+
+
+        </div>
+
+
+
+        <div class="modal-body">
+
+
+
+          <div class="row g-3">
+
+
+
+            <div class="col-md-4 mb-3">
+
+
+
+              <label class="form-label">Tipo de Documento</label>
+
+
+
+              <select class="form-select" id="document_type_edit" name="document_type">
+
+
+
+                <option value="cnpj">CNPJ</option>
+
+
+
+                <option value="cpf">CPF</option>
+
+
+
+              </select>
+
+
+
+            </div>
+
+
+
+            <div class="col-md-4 mb-3">
+
+
+
+              <label class="form-label" id="document_label_edit">CNPJ do Cliente</label>
+
+
+
+              <input type="text" class="form-control" id="document_edit" name="document" placeholder="00.000.000/0000-00">
+
+
+
+            </div>
+
+
+
+            <div class="col-md-4 mb-3">
+
+
+
+              <label class="form-label">Filial</label>
+
+
+
+              <select class="form-select" id="issuer_company_code_edit" name="issuer_company_code">
+
+
+
+                <option value="">-- Selecione --</option>
+
+
+
+                {% for code, label in issuer_options %}
+
+
+
+                <option value="{{ code }}">{{ label }}</option>
+
+
+
+                {% endfor %}
+
+
+
+              </select>
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3" id="divCompanyEdit">
+
+
+
+              <label class="form-label">Empresa</label>
+
+
+
+              <input type="text" class="form-control" id="company" name="company">
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3">
+
+
+
+              <label class="form-label">Pessoa de Contato</label>
+
+
+
+              <input type="text" class="form-control" id="client_name" name="client_name">
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3">
+
+
+
+              <label class="form-label">E-mail</label>
+
+
+
+              <input type="email" class="form-control" id="email" name="email">
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3">
+
+
+
+              <label class="form-label">Telefone</label>
+
+
+
+              <input type="text" class="form-control" id="telefone" name="telefone" placeholder="+55DDDNMERO">
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3">
+
+
+
+              <label class="form-label">Tipo de Serviço</label>
+
+
+
+              <select class="form-select" id="servico_type_edit" name="servico_type" required>
+
+
+
+                {% for st in ServicoType %}
+
+
+
+                <option value="{{ st.name }}">{{ st.value }}</option>
+
+
+
+                {% endfor %}
+
+
+
+              </select>
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3">
+
+
+
+              <label class="form-label" for="modalidade_type_edit">Modalidade</label>
+
+
+
+              <select class="form-select" id="modalidade_type_edit" name="modalidade_type" required>
+
+
+
+                {% for mt in ModalidadeType %}
+
+
+
+                <option value="{{ mt.name }}">{{ mt.value }}</option>
+
+
+
+                {% endfor %}
+
+
+
+              </select>
+
+
+
+            </div>
+
+
+
+            <div class="col-12 d-none" id="locacaoFieldsEdit">
+
+
+
+              <div class="row g-3">
+
+
+
+                <div class="col-md-3 mb-3">
+
+                  <label class="form-label">Modelo da locacao</label>
+
+                  <select class="form-select" id="locacao_modelo_edit" name="locacao_modelo">
+
+                    <option value="sintetico">Sintetico (simplificado)</option>
+
+                    <option value="analitico">Analitico (detalhado)</option>
+
+                  </select>
+
+                </div>
+
+                <div class="col-md-3 mb-3">
+
+
+
+                  <label class="form-label">Vigencia</label>
+
+
+
+                  <input type="text" class="form-control" id="locacao_vigencia_edit" name="locacao_vigencia" placeholder="Ex.: 24 meses">
+
+
+
+                </div>
+
+
+
+                <div class="col-md-3 mb-3">
+
+
+
+                  <label class="form-label">Qtd. CNPJs</label>
+
+
+
+                  <input type="number" class="form-control" id="locacao_qtd_cnpjs_edit" name="locacao_qtd_cnpjs" min="1">
+
+
+
+                </div>
+
+
+
+              </div>
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3">
+
+
+
+              <label class="form-label">Proposta em nome de outro consultor?</label>
+
+
+
+              <select class="form-select" id="usar_outro_usuario_edit" name="usar_outro_usuario">
+
+
+
+                <option value="nao">Não</option>
+
+
+
+                <option value="sim">Sim</option>
+
+
+
+              </select>
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3 d-none" id="outro_usuario_wrapper_edit">
+
+
+
+              <label class="form-label">Selecione o Consultor</label>
+
+
+
+              <select class="form-select" id="outro_usuario_edit" name="outro_usuario">
+
+
+
+                <option value="">-- Selecione --</option>
+
+
+
+                {% for u in usuarios_list %}
+
+
+
+                <option value="{{ u.id }}">{{ u.nome_completo }}</option>
+
+
+
+                {% endfor %}
+
+
+
+              </select>
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3 d-none" id="repPWrapperEdit">
+
+
+
+              <div class="form-check mt-1">
+
+
+
+                <input type="checkbox" class="form-check-input" id="rep_categoria_programa_edit" name="rep_categoria_programa">
+
+
+
+                <label class="form-check-label" for="rep_categoria_programa_edit">Equipamento REP-P (Programa)?</label>
+
+
+
+              </div>
+              <div class="mt-2 d-none" id="repMobileWrapperEdit">
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input" id="rep_tem_mobile_edit" name="rep_tem_mobile">
+                  <label class="form-check-label" for="rep_tem_mobile_edit">Tem mobile?</label>
+                </div>
+              <div class="row g-2 mt-2 d-none" id="repMobileQtdWrapperEdit">
+                <div class="col-md-6">
+                  <label class="form-label" for="rep_qtd_mobile_edit">Quantidade de mobiles</label>
+                  <input type="number" class="form-control" id="rep_qtd_mobile_edit" name="rep_qtd_mobile" min="1" step="1" inputmode="numeric">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="rep_mobile_valor_mensal_edit">Acréscimo mensal dos mobiles</label>
+                  <input type="text" class="form-control" id="rep_mobile_valor_mensal_edit" name="rep_mobile_valor_mensal" placeholder="R$ 0,00" inputmode="decimal">
+                </div>
+              </div>
+            </div>
+
+
+
+            </div>
+
+
+
+            <div class="col-12">
+
+
+
+              <hr>
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3">
+
+
+
+              <label class="form-label">Condições de Pagamento (Equipamento)</label>
+
+
+
+              <select class="form-select param-select-edit" id="pagto_equip_edit" name="pagto_equip">
+
+
+
+                <option value="">-- Selecione --</option>
+
+
+
+                {% for o in ParamOption.query.filter_by(category=ParamCategory.PAGTO_EQUIP).order_by(ParamOption.label) %}
+
+
+
+                <option value="{{ o.label }}">{{ o.label }}</option>
+
+
+
+                {% endfor %}
+
+
+
+                <option value="outros">Outros</option>
+
+
+
+              </select>
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3 d-none" id="pagto_equip_other_edit_wrapper">
+
+
+
+              <label class="form-label">Condições de Pagamento (especifique)</label>
+
+
+
+              <input type="text" name="pagto_equip_other" id="pagto_equip_other_edit" class="form-control">
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3">
+
+
+
+              <label class="form-label">Prazo de Entrega</label>
+
+
+
+              <select class="form-select param-select-edit" id="prazo_entrega_edit" name="prazo_entrega">
+
+
+
+                <option value="">-- Selecione --</option>
+
+
+
+                {% for o in ParamOption.query.filter_by(category=ParamCategory.PRAZO_ENTREGA).order_by(ParamOption.label) %}
+
+
+
+                <option value="{{ o.label }}">{{ o.label }}</option>
+
+
+
+                {% endfor %}
+
+
+
+                <option value="outros">Outros</option>
+
+
+
+              </select>
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3 d-none" id="prazo_entrega_other_edit_wrapper">
+
+
+
+              <label class="form-label">Prazo de Entrega (especifique)</label>
+
+
+
+              <input type="text" name="prazo_entrega_other" id="prazo_entrega_other_edit" class="form-control">
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3">
+
+
+
+              <label class="form-label">Frete</label>
+
+
+
+              <select class="form-select param-select-edit" id="frete_edit" name="frete">
+
+
+
+                <option value="">-- Selecione --</option>
+
+
+
+                {% for o in ParamOption.query.filter_by(category=ParamCategory.FRETE).order_by(ParamOption.label) %}
+
+
+
+                <option value="{{ o.label }}">{{ o.label }}</option>
+
+
+
+                {% endfor %}
+
+
+
+                <option value="outros">Outros</option>
+
+
+
+              </select>
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3 d-none" id="frete_other_edit_wrapper">
+
+
+
+              <label class="form-label">Frete (especifique)</label>
+
+
+
+              <input type="text" name="frete_other" id="frete_other_edit" class="form-control">
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3">
+
+
+
+              <label class="form-label" for="validade_edit">Validade da Proposta</label>
+
+
+
+              <input type="date" class="form-control" id="validade_edit" name="validade">
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3">
+
+
+
+              <label class="form-label">Garantia de Equipamento</label>
+
+
+
+              <select class="form-select param-select-edit" id="garantia_eq_edit" name="garantia_eq">
+
+
+
+                <option value="">-- Selecione --</option>
+
+
+
+                {% for o in ParamOption.query.filter_by(category=ParamCategory.GARANTIA_EQ).order_by(ParamOption.label) %}
+
+
+
+                <option value="{{ o.label }}">{{ o.label }}</option>
+
+
+
+                {% endfor %}
+
+
+
+                <option value="outros">Outros</option>
+
+
+
+              </select>
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3 d-none" id="garantia_eq_other_edit_wrapper">
+
+
+
+              <label class="form-label">Garantia de Equipamento (especifique)</label>
+
+
+
+              <input type="text" name="garantia_eq_other" id="garantia_eq_other_edit" class="form-control">
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3">
+
+
+
+              <label class="form-label">Garantia de Sistema</label>
+
+
+
+              <select class="form-select param-select-edit" id="garantia_sys_edit" name="garantia_sys">
+
+
+
+                <option value="">-- Selecione --</option>
+
+
+
+                {% for o in ParamOption.query.filter_by(category=ParamCategory.GARANTIA_SYS).order_by(ParamOption.label) %}
+
+
+
+                <option value="{{ o.label }}">{{ o.label }}</option>
+
+
+
+                {% endfor %}
+
+
+
+                <option value="outros">Outros</option>
+
+
+
+              </select>
+
+
+
+            </div>
+
+
+
+            <div class="col-md-6 mb-3 d-none" id="garantia_sys_other_edit_wrapper">
+
+
+
+              <label class="form-label">Garantia de Sistema (especifique)</label>
+
+
+
+              <input type="text" name="garantia_sys_other" id="garantia_sys_other_edit" class="form-control">
+
+
+
+            </div>
+
+            <div class="col-12 mb-3">
+              <label class="form-label" for="observacao_comercial_edit">Observação complementar (particularidades)</label>
+              <textarea class="form-control" id="observacao_comercial_edit" name="observacao_comercial" rows="3"
+                        placeholder="Particularidades ou observações para o cliente"></textarea>
+            </div>
+
+            
+            <div class="col-12 mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="ambiente_incluir_edit" name="ambiente_incluir" value="1">
+                <label class="form-check-label" for="ambiente_incluir_edit">Incluir fotos do ambiente do cliente?</label>
+              </div>
+            </div>
+
+            <div class="col-12 mb-3 d-none" id="ambienteFotosWrapperEdit">
+              <label class="form-label" for="ambiente_fotos_edit">Fotos do ambiente do cliente</label>
+              <input type="file" class="form-control" id="ambiente_fotos_edit" name="ambiente_fotos" multiple
+                     accept="image/png,image/jpeg">
+              <div class="form-text">Use fotos do ambiente para ilustrar a solução com o equipamento.</div>
+              <div class="ambiente-preview d-none" id="ambienteFotosPreviewEdit"></div>
+            </div>
+
+
+
+
+
+          </div>
+
+
+
+          <div class="mb-4 mt-3">
+
+
+
+            <div class="form-check form-switch">
+
+
+
+              <input class="form-check-input" type="checkbox" id="usar_sistema_edit" name="usar_sistema">
+
+
+
+              <label class="form-check-label" for="usar_sistema_edit">Adicionar Sistema de Ponto ou Acesso?</label>
+
+
+
+            </div>
+
+
+
+            <div id="sistema_edit_wrapper" class="border rounded p-3 mt-3 d-none">
+
+
+
+              <div class="row g-3 align-items-end">
+
+
+
+                <div class="col-md-6">
+
+
+
+                  <label class="form-label">Sistema</label>
+
+
+
+                  <select class="form-select" id="sistema_opcao_edit" name="sistema_opcao">
+
+
+
+                    <option value="">-- Selecione --</option>
+
+
+
+                    {% for option in system_options %}
+
+
+
+                    <option value="{{ option.key }}" data-description="{{ option.description|e }}" data-image="{{ option.image|e }}" data-default-quantity="{{ option.default_quantity }}" data-unit-price="{{ '%.2f'|format(option.unit_price) }}">{{ option.label }}</option>
+
+
+
+                    {% endfor %}
+
+
+
+                  </select>
+
+
+
+                </div>
+
+
+
+                <div class="col-md-3">
+
+
+
+                  <label class="form-label">Qtd.</label>
+
+
+
+                  <input type="number" class="form-control" id="sistema_quantidade_edit" name="sistema_quantidade" min="1" value="1">
+
+
+
+                </div>
+
+
+
+                <div class="col-md-3">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label mb-0">Valor mensal</label>
+                    <div class="form-check form-check-inline mb-0">
+                      <input class="form-check-input" type="checkbox" id="sistema_preco_manual_edit" name="sistema_preco_manual" value="1">
+                      <label class="form-check-label small" for="sistema_preco_manual_edit">Valor Fixo?</label>
+                    </div>
+                  </div>
+
+
+
+                  <input type="text" class="form-control" id="sistema_preco_unitario_edit" name="sistema_preco_unitario" placeholder="R$ 0,00">
+
+
+
+                </div>
+
+
+
+              </div>
+              <input type="hidden" id="sistema_preco_total_edit" name="sistema_preco_total" value="0">
+              
+              <div class="mt-3">
+                <label class="form-label">Descrição do sistema (Opcional)</label>
+                <textarea class="form-control" id="sistema_descricao_custom_edit" name="sistema_descricao_custom" rows="3" placeholder="Insira uma descrição personalizada. Caso fique vazio, será usada a descrição padrão do sistema." oninput="updateSistemaPreview()"></textarea>
+              </div>
+
+              <div id="sistema_preview_edit" class="mt-3 small text-muted"></div>
+            </div>
+
+
+
+          </div>
+
+
+
+          <div class="mb-3">
+            <label for="equip-edit-search" class="form-label">Adicionar Equipamento</label>
+            <div style="position:relative;">
+              <input type="text" id="equip-edit-search" class="form-control" placeholder="Digite o nome do equipamento..." autocomplete="off" />
+              <div id="equip-edit-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card,#fff);border:1px solid rgba(148,163,184,0.3);border-radius:0.75rem;box-shadow:0 10px 24px rgba(15,35,58,.12);z-index:9999;max-height:220px;overflow-y:auto;margin-top:2px;"></div>
+            </div>
+            {# Hidden native select keeps compatibility with the existing JS change listener #}
+            <select id="equipamento-edit-select" style="display:none;">
+              <option value=""></option>
+              {% for eq in equipments %}
+              <option value="{{ eq.id }}" data-nome="{{ eq.name }}" data-quantity="{{ eq.quantity or 0 }}">{{ eq.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+
+
+          <div id="equipamentos-edit-selecionados" class="mb-4"></div>
+
+
+
+          <div class="mb-3">
+
+
+
+            <div class="form-check form-switch">
+
+
+
+              <input class="form-check-input" type="checkbox" id="enviar_email_edit" name="enviar_email">
+
+
+
+              <label class="form-check-label" for="enviar_email_edit">Enviar e-mail para o cliente?</label>
+
+
+
+            </div>
+
+
+
+            <div id="email_options_edit" class="mt-3 d-none">
+
+
+
+              <div class="mb-3">
+
+
+
+                <label class="form-label">Conteúdo do e-mail</label>
+
+
+
+                <textarea class="form-control" id="email_corpo_edit" name="email_corpo" rows="3"></textarea>
+
+
+
+              </div>
+
+
+
+              <div class="form-check form-switch mb-3">
+
+
+
+                <input class="form-check-input" type="checkbox" id="enviar_copia_edit" name="enviar_copia">
+
+
+
+                <label class="form-check-label" for="enviar_copia_edit">Enviar cópia para outros e-mails?</label>
+
+
+
+              </div>
+
+
+
+              <div id="email_cc_edit_wrapper" class="d-none">
+
+
+
+                <label class="form-label">E-mails em cópia</label>
+
+
+
+                <textarea class="form-control" id="email_cc_edit" name="email_cc" rows="2" placeholder="separe por vrgula"></textarea>
+
+
+
+              </div>
+
+
+
+            </div>
+
+
+
+          </div>
+
+
+
+        </div>
+
+
+
+        <div class="modal-footer">
+
+
+
+          <button type="submit" class="btn btn-success">Salvar Alterações</button>
+
+
+
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+
+
+
+        </div>
+
+
+
+      </form>
+
+
+
+    </div>
+
+
+
+  </div>
+
+
+
+</div>
+
+
+
+<div class="modal sollus-modal fade" id="historyPdfModal" tabindex="-1" aria-hidden="true">
+
+
+
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+
+
+
+    <div class="modal-content">
+
+
+
+      <div class="modal-header border-0">
+
+
+
+        <h5 class="modal-title"><i class="bi bi-filetype-pdf text-primary me-2"></i>Proposta pronta</h5>
+
+
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
+
+
+      </div>
+
+
+
+      <div class="modal-body">
+
+
+
+        <div class="history-pdf-frame-wrapper">
+
+
+
+          <div id="historyPdfLoading" class="history-pdf-loading">
+
+
+
+            <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+
+
+
+            <span>Preparando PDF...</span>
+
+
+
+          </div>
+
+
+
+          <iframe id="historyPdfFrame" class="history-pdf-frame d-none" title="Pré-visualização da proposta"></iframe>
+
+
+
+        </div>
+
+
+
+      </div>
+
+
+
+      <div class="modal-footer border-0">
+
+
+
+        <div class="history-pdf-actions w-100">
+
+
+
+          <div class="flex-grow-1 history-pdf-meta" id="historyPdfMeta"></div>
+
+
+
+          <div class="d-flex flex-wrap gap-2 justify-content-end">
+
+
+
+            <a id="historyPdfDownload"
+
+
+
+               class="btn btn-primary disabled"
+
+
+
+               href="#"
+
+
+
+               role="button"
+
+
+
+               aria-disabled="true"
+
+
+
+               data-label-default="Baixar PDF"
+
+
+
+               download>
+
+
+
+              <i class="bi bi-download me-2"></i><span id="historyPdfDownloadLabel">Baixar PDF</span>
+
+
+
+            </a>
+
+
+
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+
+
+
+          </div>
+
+
+
+        </div>
+
+
+
+      </div>
+
+
+
+    </div>
+
+
+
+  </div>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+{% endblock %}
+
+
+
+
+
+
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{{ url_for('static', filename='js/historico_propostas.js') }}"></script>
+{% include "components/audit_modal.html" %}
+{% endblock %}
+
+

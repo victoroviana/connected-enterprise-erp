@@ -1,0 +1,70 @@
+{% macro page_hero(title, subtitle='', eyebrow='', stats=None, align='split', help_title=None, help_intro=None, help_tips=None) %}
+{% set has_caller = caller is defined %}
+{% set is_minimal = align == 'minimal' %}
+{% set stats_in_content = align == 'stacked' or has_caller or is_minimal %}
+{% set computed_help_title = help_title or ('Como usar ' ~ title) %}
+{% set computed_help_intro = help_intro or 'Dicas rápidas para aproveitar esta página.' %}
+{% set default_help_tips = [
+  'Veja os destaques do cabeçalho para entender o status atual.',
+  'Use os filtros, botões e ações próximos ao topo para executar as tarefas principais.',
+  'Role pelos cards e tabelas abaixo para encontrar, editar ou criar registros.'
+] %}
+{% set computed_help_tips = help_tips if help_tips is not none else default_help_tips %}
+<div class="page-hero {{ 'page-hero--stacked' if align == 'stacked' else '' }} {{ 'page-hero--minimal' if is_minimal else '' }}">
+  <div class="page-hero__inner">
+    <div class="page-hero__content">
+      {% if eyebrow %}
+      <p class="page-hero__eyebrow">{{ eyebrow }}</p>
+      {% endif %}
+      <h1 class="page-hero__title">{{ title }}</h1>
+      {% if subtitle %}
+      <p class="page-hero__subtitle">{{ subtitle | safe }}</p>
+      {% endif %}
+      {% if not is_minimal %}
+      <div class="page-hero__toolbar">
+        <button
+          type="button"
+          class="btn btn-light btn-sm page-hero__help-btn"
+          data-help-title="{{ computed_help_title | e }}"
+          data-help-intro="{{ computed_help_intro | e }}"
+          data-help-tips="{{ computed_help_tips | join('||') | e }}"
+          data-help-page="{{ title | e }}"
+        >
+          <span>Como usar</span>
+          <span class="page-hero__help-icon"><i class="bi bi-question-circle-fill"></i></span>
+        </button>
+      </div>
+      {% endif %}
+      {% if stats and stats_in_content %}
+      <div class="page-hero__meta">
+        {% for stat in stats %}
+        <div class="page-hero__stat">
+          {% if stat.label %}<span>{{ stat.label }}</span>{% endif %}
+          {% if stat.value is not none %}<strong>{{ stat.value }}</strong>{% endif %}
+          {% if stat.hint %}<small>{{ stat.hint }}</small>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% if not is_minimal and (has_caller or (stats and not stats_in_content)) %}
+    <div class="page-hero__extra">
+      {% if has_caller %}
+      {{ caller() }}
+      {% endif %}
+      {% if stats and not stats_in_content %}
+      <div class="page-hero__meta page-hero__meta--extra">
+        {% for stat in stats %}
+        <div class="page-hero__stat">
+          {% if stat.label %}<span>{{ stat.label }}</span>{% endif %}
+          {% if stat.value is not none %}<strong>{{ stat.value }}</strong>{% endif %}
+          {% if stat.hint %}<small>{{ stat.hint }}</small>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}

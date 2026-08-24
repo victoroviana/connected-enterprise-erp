@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Crachá | Empresas{% endblock %}
+
+{% block head %}
+<style>
+  .empresas-form-card{border:0;border-radius:1.1rem;box-shadow:0 10px 24px rgba(15,35,58,.08);}
+  .empresas-form-card .card-body{padding:1.5rem;}
+  .empresas-form-card .form-label span{color:#ef4444;}
+</style>
+{% endblock %}
+
+{% block content %}
+{% call page_hero(
+  title='Empresas'|safe,
+  subtitle=subtitle|safe,
+  eyebrow='Crachá'|safe
+) %}
+  <div class="page-hero__actions">
+    <a class="btn btn-light" href="{{ back_url }}">
+      <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+{% endcall %}
+
+<div class="card empresas-form-card">
+  <div class="card-body">
+    <form method="post" action="{{ action_url }}" class="row g-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="txtID" value="{{ empresa.id_pk if empresa else '' }}">
+      <div class="col-md-8">
+        <label class="form-label"><span>*</span> Nome</label>
+        <input type="text" class="form-control" name="txtNome" value="{{ empresa.nome if empresa else '' }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Ativo</label>
+        <select class="form-select" name="ativo">
+          <option value="1" {{ 'selected' if not empresa or empresa.ativo else '' }}>Sim</option>
+          <option value="0" {{ 'selected' if empresa and not empresa.ativo else '' }}>Não</option>
+        </select>
+      </div>
+      <div class="col-12 d-flex justify-content-end gap-2">
+        <button type="submit" class="btn btn-primary" name="save" value="1">Salvar</button>
+        {% if allow_more %}
+        <button type="submit" class="btn btn-outline-primary" name="save_more" value="1">Salvar +</button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

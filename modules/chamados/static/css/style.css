@@ -1,0 +1,291 @@
+/* ==================== THEME VARS ==================== */
+:root {
+  /* Dark theme (default) */
+  --bg:#0b1020;
+  --panel:#0b1226;
+  --muted:#9ca3af;
+  --text:#f3f4f6;
+
+  /* Paleta da marca (Sollus)  azul um pouco mais claro no dark */
+  --brand:#2D8BC0;     /* primria (dark) */
+  --brand-200:#7DB1CD; /* clara */
+  --brand-300:#59A6CC; /* intermediria */
+
+  --border:#1f2937;
+  --btn:#101a34;
+  --btn-text:var(--text);
+
+  --flash-success:rgba(34,197,94,.12); --flash-success-b:#14532d;
+  --flash-danger:rgba(239,68,68,.12); --flash-danger-b:#7f1d1d;
+  --flash-info:rgba(59,130,246,.12);  --flash-info-b:#1e3a8a;
+  --flash-warn:rgba(250,204,21,.12);  --flash-warn-b:#854d0e;
+
+  --accent:var(--brand);
+  --accent-2:var(--brand-200);
+
+  /* Sidebar sizes */
+  --sidebar-collapsed: 72px;
+  --sidebar-expanded: 240px;
+}
+html[data-theme="light"]{
+  --bg:#f3f7fb; --panel:#ffffff; --muted:#5b6774; --text:#0b1226;
+  --border:#dde3ea;
+  --btn:#f1f5f9; --btn-text:#0b1226;
+  --flash-success:rgba(34,197,94,.08); --flash-success-b:#16a34a;
+  --flash-danger:rgba(239,68,68,.08); --flash-danger-b:#dc2626;
+  --flash-info:rgba(59,130,246,.08);  --flash-info-b:#2563eb;
+  --flash-warn:rgba(250,204,21,.12);  --flash-warn-b:#ca8a04;
+}
+
+/* ==================== BASE / LAYOUT ==================== */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font:16px/1.5 system-ui,Segoe UI,Roboto,Ubuntu;
+  background:var(--bg); color:var(--text);
+  display:grid; grid-template-rows:auto 1fr auto; min-height:100vh; /* footer no rodap */
+}
+
+.container{
+  width:min(96vw, 1440px);
+  max-width:none;
+  margin:0 auto;
+  padding:16px clamp(12px, 2vw, 24px);
+}
+
+/* Topbar */
+.topbar{
+  background:linear-gradient(90deg,#0b1226,#0b1020);
+  border-bottom:1px solid var(--border);
+  position:relative; z-index:5;
+}
+html[data-theme="light"] .topbar{background:#ffffff}
+
+/* Pginas pblicas (sem sidebar), deixa a topbar transparente pra gradiente ocupar tudo */
+body:not(.has-sidebar) .topbar{
+  background:transparent !important;
+  border-bottom-color:transparent !important;
+}
+
+.topwrap{display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .logo{height:28px}
+.brand-title{color:var(--text);text-decoration:none;font-weight:600}
+.nav{display:flex;align-items:center;gap:8px}
+.userpill{opacity:.8}
+
+/* Esconde links herdados no topo (layout antigo) */
+.topbar .nav a { display:none; }
+
+/* Empurra APENAS o contedo por causa do sidebar */
+body.has-sidebar main.container,
+body.has-sidebar .footer .container{
+  margin-left: var(--sidebar-current);
+  transition: margin-left .18s ease;
+}
+
+/* Base */
+.footer{border-top:1px solid var(--border);padding:16px 0;color:var(--muted)}
+
+/* Tabelas */
+.table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--border)}
+.table th,.table td{padding:10px;border-bottom:1px solid var(--border)}
+
+/* Form */
+.form-row{margin-bottom:12px}
+.input,.textarea,.select{width:100%;padding:10px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:10px}
+.checkbox{display:inline-flex;align-items:center;gap:8px}
+
+/* Inputs: foco com a paleta da marca */
+.form-floating input:focus{
+  box-shadow: 0 0 0 3px rgba(125,177,205,.20);
+  border-color: var(--brand-300);
+}
+
+/* Botes */
+.btn{display:inline-flex;gap:8px;align-items:center;justify-content:center;padding:10px 16px;border-radius:12px;border:1px solid var(--border);background:var(--btn);color:var(--btn-text);text-decoration:none;cursor:pointer;transition:transform .08s ease, box-shadow .2s ease}
+.btn:hover{filter:brightness(1.05)} .btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#001018;box-shadow:0 6px 18px rgba(45,139,192,.25)}
+.btn.secondary{background:#0b1226;color:#e5e7eb}
+html[data-theme="light"] .btn.secondary{background:#f1f5f9;color:#0b1226}
+.btn.danger{ background:#7f1d1d; color:#fff; border-color:#7f1d1d; }
+.btn.danger:hover{ filter:brightness(1.05); }
+
+/* Flashes/cards/grid */
+.flashes{list-style:none;padding:0}
+.flash{padding:10px;border-radius:10px;margin-bottom:8px}
+.flash.success{background:var(--flash-success);border:1px solid var(--flash-success-b)}
+.flash.danger{background:var(--flash-danger);border:1px solid var(--flash-danger-b)}
+.flash.info{background:var(--flash-info);border:1px solid var(--flash-info-b)}
+.flash.warning{background:var(--flash-warn);border:1px solid var(--flash-warn-b)}
+
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 10px 26px rgba(0,0,0,.16)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.actions{margin-top:12px}
+.comment{border-top:1px dashed var(--border);padding:8px 0}
+.meta{color:var(--muted);font-size:12px;margin-bottom:4px}
+.pagination{display:flex;gap:12px;align-items:center;margin-top:12px}
+
+/* Dropzone */
+.dropzone{border:2px dashed var(--border);border-radius:14px;padding:16px;background:rgba(125,177,205,.06);text-align:center;transition:all .15s ease;color:var(--muted)}
+.dropzone.dragover{border-color:var(--accent);background:rgba(45,139,192,.16);color:var(--text)}
+.dropzone small{display:block;color:var(--muted)}
+
+/* Charts */
+.canvas-wrap{position:relative;height:280px}
+
+/* ==================== SIDEBAR ==================== */
+body.has-sidebar { --sidebar-current: var(--sidebar-collapsed); }
+body.sidebar-hover, body.sidebar-pinned { --sidebar-current: var(--sidebar-expanded); }
+
+.sidebar{
+  position: fixed; left:0; top:0; bottom:0;
+  width: var(--sidebar-collapsed);
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  transition: width .18s ease;
+  z-index: 1000;
+}
+body.sidebar-hover .sidebar,
+body.sidebar-pinned .sidebar { width: var(--sidebar-expanded); }
+
+.sidebar .s-header{
+  display:flex; align-items:center; gap:10px;
+  padding:12px; height:56px; border-bottom:1px solid var(--border);
+}
+.s-menu{
+  background:transparent; border:1px solid var(--border);
+  color:var(--text); border-radius:10px; width:36px; height:32px;
+  display:inline-flex; align-items:center; justify-content:center;
+  cursor:pointer; opacity:.9;
+}
+.s-menu:hover{ filter:brightness(1.05); }
+.s-logo{ height:28px; border-radius:6px; }
+.s-title{ font-weight:600; white-space:nowrap; overflow:hidden; opacity:.95; transition:font-size .12s ease, max-width .12s ease; }
+
+/* Ttulo visvel (menor) quando colapsado */
+body.has-sidebar:not(.sidebar-hover):not(.sidebar-pinned) .s-title{
+  font-size:10px; line-height:1;
+  max-width: calc(var(--sidebar-collapsed) - 20px);
+}
+
+/* Navegao */
+.s-nav{ display:flex; flex-direction:column; padding:8px; gap:4px; }
+.s-nav a{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; color:var(--text); text-decoration:none; border-radius:10px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.s-nav a:hover{ background: rgba(125,177,205,.10); }
+.s-nav a.active{ background: linear-gradient(90deg, var(--accent), var(--accent-2)); color:#001018; }
+
+/* Esconde labels quando colapsado */
+.s-label{ display:inline-block; }
+body.has-sidebar:not(.sidebar-hover):not(.sidebar-pinned) .s-nav a .s-label{ display:none; }
+body.has-sidebar:not(.sidebar-hover):not(.sidebar-pinned) .s-nav a{ justify-content:center; padding:10px; }
+
+/* ==================== MOBILE (sidebar off-canvas) ==================== */
+@media (max-width: 900px){
+  :root{ --sidebar-collapsed: 0px; }
+  .sidebar{ transform: translateX(-100%); width: var(--sidebar-expanded); }
+  body.sidebar-open .sidebar{ transform: translateX(0); }
+  #sidebarBackdrop.sidebar-backdrop{
+    position: fixed; inset:0; background: rgba(0,0,0,.4);
+    opacity:0; pointer-events:none; transition: opacity .18s ease; z-index: 999;
+  }
+  body.sidebar-open #sidebarBackdrop{ opacity:1; pointer-events:auto; }
+
+  /* contedo no recebe margem no mobile */
+  body.has-sidebar main.container,
+  body.has-sidebar .footer .container{ margin-left: 0; }
+}
+
+/* ==================== LOGIN ==================== */
+.login-hero{
+  position:relative; min-height:100vh;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+  z-index:0; /* contexto para o card ficar acima do bg fixo */
+}
+
+/* O fundo do login agora cobre a VIEWPORT TODA (sem faixas) */
+.login-bg{
+  position:fixed; inset:0;        /* < chave para preencher TUDO */
+  pointer-events:none;            /* no captura cliques */
+  z-index:-1;                     /* fica atrs de tudo */
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(125,177,205,.35), transparent),
+    radial-gradient(900px 600px at 110% 50%, rgba(45,139,192,.35), transparent),
+    linear-gradient(120deg, rgba(45,139,192,.25), rgba(125,177,205,.15) 40%, transparent 70%);
+  filter:saturate(1.2);
+}
+
+.login-card{
+  position:relative; z-index:1;
+  display:grid; grid-template-columns: 1.2fr 1fr;
+  max-width:980px; width:92%;
+  border-radius:22px; overflow:hidden;
+  background:rgba(11,18,38,.6); backdrop-filter: blur(10px);
+  border:1px solid rgba(125,177,205,.25);
+}
+.login-left{padding:36px 28px;background:linear-gradient(140deg, rgba(45,139,192,.16), rgba(125,177,205,.08));border-right:1px solid rgba(125,177,205,.2)}
+.login-right{padding:36px 28px;background:rgba(11,18,38,.7)}
+.login-brand{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.login-brand img{height:42px;border-radius:8px}
+.login-title{font-size:28px;margin:0}
+.login-sub{color:var(--muted);margin-top:6px}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:18px}
+.kpi{background:rgba(0,0,0,.2);border:1px solid rgba(125,177,205,.18);border-radius:14px;padding:12px}
+.kpi b{display:block;font-size:18px}
+.kpi small{color:var(--muted)}
+.form-floating{position:relative;margin:12px 0}
+.form-floating input{padding:14px 12px 14px 12px;border-radius:12px;background:rgba(0,0,0,.25);border:1px solid var(--border);outline:none;width:100%}
+.form-floating label{position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:#b7c6d1;transition:all .15s ease;background:transparent;padding:0 4px}
+.form-floating input::placeholder{color:transparent}
+.form-floating input:focus{border-color:var(--brand-300);box-shadow:0 0 0 3px rgba(125,177,205,.15)}
+.form-floating input:not(:placeholder-shown) + label,
+.form-floating input:focus + label{top:-8px;font-size:12px;color:var(--brand-200);background:linear-gradient(180deg, transparent 45%, rgba(11,18,38,.9) 46%);padding:0 6px;border-radius:6px}
+.row-between{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.toggle{display:inline-flex;align-items:center;gap:8px;opacity:.9}
+.toggle input{accent-color:var(--brand)}
+.link{color:var(--brand-200);text-decoration:none}
+.link:hover{text-decoration:underline}
+.btn-wide{width:100%;margin-top:12px}
+.showpass{position:absolute;right:12px;top:50%;transform:translateY(-50%);opacity:.7;cursor:pointer;font-size:13px}
+.form-floating .with-addon{padding-right:64px}
+@media (max-width:900px){ .login-card{grid-template-columns:1fr} .login-left{display:none} }
+
+/* LOGIN no tema CLARO com carto escuro e texto claro (sem bordas brancas) */
+html[data-theme="light"] .login-card{
+  --text:#f8fafc; --muted:rgba(255,255,255,.80); --border:rgba(255,255,255,.12);
+  background: rgba(12,18,38,.90); border:1px solid rgba(255,255,255,.16);
+}
+html[data-theme="light"] .login-left{
+  background: linear-gradient(140deg, rgba(125,177,205,.18), rgba(45,139,192,.10));
+  border-right:1px solid rgba(255,255,255,.14);
+}
+html[data-theme="light"] .login-right{ background: rgba(11,18,38,.88); }
+html[data-theme="light"] .login-card, html[data-theme="light"] .login-card *{ color:#f8fafc !important; }
+html[data-theme="light"] .login-right .form-floating input,
+html[data-theme="light"] .login-right .form-floating input::placeholder{
+  background: rgba(0,0,0,.28) !important; color:#fff !important; border-color: rgba(255,255,255,.18) !important;
+}
+html[data-theme="light"] .login-right .form-floating input:hover{ border-color: rgba(255,255,255,.24) !important; }
+html[data-theme="light"] .login-right .form-floating input:focus{
+  box-shadow:0 0 0 3px rgba(125,177,205,.25) !important; border-color: var(--brand-200) !important;
+}
+html[data-theme="light"] .form-floating label{
+  color:#dbe5ec !important; background: linear-gradient(180deg, transparent 45%, rgba(11,18,38,.88) 46%) !important;
+}
+html[data-theme="light"] .login-right .showpass{ color:#dbe5ec !important; }
+html[data-theme="light"] .kpi{ border-color: rgba(255,255,255,.10) !important; background: rgba(255,255,255,.04) !important; }
+
+/* Gradiente tambm no tema CLARO, cobrindo tudo (o .login-bg j est FIXED) */
+html[data-theme="light"] .login-bg{
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(125,177,205,.25), transparent),
+    radial-gradient(900px 600px at 110% 50%, rgba(45,139,192,.18), transparent),
+    linear-gradient(120deg, rgba(45,139,192,.12), rgba(125,177,205,.08) 40%, transparent 70%);
+  filter:saturate(1.05);
+}

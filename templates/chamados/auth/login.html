@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Sollus Tecnologia</title>
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}?v=3">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon.png') }}?v=3">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}?v=3">
+
+  <!-- Fonte -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      /* Paleta Sollus */
+      --blue-900:#003B66; 
+      --blue-800:#0a4f84; 
+      --blue-700:#0F7BC8; 
+      --blue-600:#1271b3;
+      --blue-500:#4DA0DD;
+      --cyan-100:#e0f7fa; 
+      --cyan-200:#b2ebf2;
+      --ink:#0d1b2a; 
+      --muted:#5c6b7a;
+      --bg:#f6f8fb;
+      --white:#ffffff;
+      --glass:rgba(255,255,255,.6);
+      --radius-xl:28px;
+      --radius-lg:18px;
+      --shadow-lg:0 20px 40px rgba(2,20,38,.18);
+      --shadow-md:0 10px 24px rgba(2,20,38,.12);
+      --ring:0 0 0 3px rgba(79,178,255,.35);
+      --border:1px solid rgba(13,27,42,.08);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0; font-family:'Montserrat',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Ubuntu,'Helvetica Neue',Arial,'Noto Sans',sans-serif;
+      color:var(--ink);
+      background: radial-gradient(1200px 800px at 10% 10%, rgba(13,27,42,.06), transparent 60%),
+                  radial-gradient(900px 700px at 90% 20%, rgba(19,116,197,.12), transparent 55%),
+                  linear-gradient(120deg, var(--cyan-100), var(--cyan-200));
+      display:flex; align-items:center; justify-content:center; 
+      padding: clamp(12px, 2vmin, 24px);
+      min-height: 100dvh;
+      position:relative; overflow-x:hidden; overflow-y:hidden; overscroll-behavior:none;
+    }
+
+    .bg-orb{ position:fixed; filter:blur(48px); opacity:.35; pointer-events:none; }
+    .bg-orb.o1{ width:min(46vw,520px); height:min(46vw,520px); background:radial-gradient(circle, var(--blue-700), transparent 70%); top:-12vmax; left:-12vmax; }
+    .bg-orb.o2{ width:min(52vw,620px); height:min(52vw,620px); background:radial-gradient(circle, var(--blue-500), transparent 65%); bottom:-14vmax; right:-14vmax; }
+
+    .container{
+      width:min(96vw, 980px);
+      min-height: clamp(460px, 64svh, 720px);
+      background:linear-gradient( to bottom right, rgba(255,255,255,.86), rgba(255,255,255,.76));
+      border:var(--border);
+      backdrop-filter:saturate(140%) blur(8px);
+      border-radius:var(--radius-xl);
+      box-shadow:var(--shadow-lg);
+      display:grid; grid-template-columns: 1.05fr .95fr; gap:0; overflow:hidden; position:relative; margin:auto;
+    }
+
+    .pane{ padding: clamp(20px, 4vw, 44px) clamp(16px, 4vw, 48px); display:flex; flex-direction:column; justify-content:center; }
+
+    /* Painel Login (esquerda) */
+    .login-section{ background:var(--white); }
+
+    .brand{ display:flex; flex-direction:column; align-items:center; gap:10px; margin-bottom:18px; }
+    .brand img{ width:clamp(110px, 22vw, 170px); max-width:100%; height:auto; display:block; filter:drop-shadow(0 6px 14px rgba(0,0,0,.08)); }
+
+    h2{ margin:0 0 8px; font-weight:700; letter-spacing:.2px; color:var(--blue-900); font-size: clamp(20px, 4vw, 28px); }
+    p.helper{ margin:0 0 22px; color:var(--muted); font-size:clamp(13px, 2.6vw, 14px); }
+
+    .messages{ width:100%; margin:8px 0 12px; }
+    .messages ul{ list-style:none; padding:0; margin:0; }
+    .messages li{
+      background: #ffe9e9; color:#a40000; border:1px solid #ffc6c6; border-radius:10px;
+      padding:10px 12px; font-size:13px; margin-bottom:8px; box-shadow:var(--shadow-md);
+    }
+
+    form#login-form{ width:min(480px,100%); margin-inline:auto; display:flex; flex-direction:column; gap:12px; }
+
+    .field{ position:relative; }
+    .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
+
+    .input{
+      width:100%; background:#f1f4f9; border:1px solid transparent; border-radius:12px; padding:14px 14px; 
+      font-size:16px;
+      outline:none; transition: box-shadow .15s ease, background .15s ease, border-color .15s ease;
+    }
+    .input:focus{ background:#fff; box-shadow:var(--ring); border-color:#b5daf6; }
+
+    .btn-primary{
+      -webkit-appearance:none; appearance:none; cursor:pointer; user-select:none;
+      border-radius:12px; border:1px solid transparent; padding:14px 18px; font-weight:700; letter-spacing:.4px;
+      text-transform:uppercase; font-size:12px; color:#fff; background:linear-gradient(135deg, var(--blue-700), var(--blue-900));
+      box-shadow:0 10px 20px rgba(15,123,200,.25); transition: transform .08s ease, box-shadow .2s ease, filter .15s ease;
+    }
+    .btn-primary:hover{ box-shadow:0 14px 28px rgba(15,123,200,.32); filter:saturate(110%); }
+    .btn-primary:active{ transform: translateY(1px); }
+    .btn-primary:disabled{ opacity:.7; cursor:not-allowed; }
+
+    .form-footer{ display:flex; align-items:center; justify-content:space-between; margin-top:4px; gap:10px; }
+    .form-tip{ font-size:12px; color:var(--muted); }
+
+    /* Painel Destaque (direita) */
+    .register-section{
+      color:#fff; position:relative; overflow:hidden; isolation:isolate;
+      background: radial-gradient(120% 120% at 110% -10%, rgba(33,150,243,.30) 0%, rgba(13,27,42,.0) 60%),
+                  linear-gradient(140deg, var(--blue-900) 0%, var(--blue-700) 55%, var(--blue-600) 100%);
+    }
+    .register-section::before{
+      content:""; position:absolute; inset:-40% -20% -20% -20%; z-index:-1; opacity:.18;
+      background-image: radial-gradient( circle at 1px 1px, rgba(255,255,255,.8) 1px, transparent 1px);
+      background-size: 18px 18px; transform: rotate(-12deg);
+    }
+    .register-inner{ max-width:460px; }
+    .register-section h2{ color:#fff; margin-bottom:10px; }
+    .register-section p{ margin:0 0 10px; font-size:15px; line-height:1.55; color:rgba(255,255,255,.92); }
+
+    .chip{
+      display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.18); font-size:12px; letter-spacing:.2px; margin:4px 6px 0 0;
+    }
+
+    @media (max-width: 1024px){
+      .pane{ padding: clamp(18px, 4vw, 36px) clamp(14px, 4vw, 36px); }
+    }
+    @media (max-width: 880px){
+      .container{ grid-template-columns: 1fr; min-height: auto; }
+      .register-section{ order:-1; padding:32px 28px; }
+      .pane{ padding: clamp(18px, 5vw, 28px) clamp(14px, 5vw, 22px); }
+      .form-footer{ flex-direction:column; align-items:stretch; }
+      .btn-primary{ width:100%; }
+    }
+    @media (max-width: 600px){
+      .brand img{ width:120px; }
+      .messages li{ font-size:12px; }
+      .register-inner{ max-width:none; }
+      .chip{ padding:6px 10px; font-size:11px; }
+    }
+    @media (max-height: 580px) and (orientation: landscape){
+      body{ align-items:flex-start; overflow-y:auto; }
+      .container{ margin-top:12px; margin-bottom:12px; min-height:auto; }
+    }
+    @media (prefers-reduced-motion: reduce){
+      .btn-primary, .input{ transition:none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-orb o1"></div>
+  <div class="bg-orb o2"></div>
+
+  <div class="container">
+    <!-- Painel Informativo -->
+    <section class="pane register-section">
+      <div class="register-inner">
+        <span class="chip">Seja exclusivo, seja Sollus</span>
+        <h2>Olá, Usuário!</h2>
+        <p>Não possui um cadastro ainda?</p>
+        <p>Entre em contato com o seu gestor para solicitar o acesso ao sistema.</p>
+        <div style="margin-top:12px; opacity:.9; font-size:12px;">
+          <span class="chip">Segurança</span>
+          <span class="chip">Controle de Acesso</span>
+          <span class="chip">Produtividade</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Painel de Login -->
+    <section class="pane login-section">
+      <div class="brand">
+        <!-- Use o arquivo que voc j tem em static/images -->
+        <img src="{{ url_for('static', filename='images/sollus_logo.png') }}" alt="Logo Sollus Tecnologia" />
+        <h2>Bem-vindo!</h2>
+        <p class="helper">Faça login para continuar</p>
+      </div>
+
+      <!-- Mensagens Flask -->
+      <div class="messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <ul>
+              {% for category, message in messages %}
+                <li>{{ message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+      </div>
+
+      <!-- IMPORTANTE: action aponta para o endpoint do seu blueprint 'auth' -->
+      <form id="login-form" method="POST" action="{{ url_for('auth.login') }}" novalidate>
+        <!-- CSRF obrigatrio no seu app -->
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- Campos: usei 'email' e 'password' (os nomes mais comuns no seu backend).
+             Se o seu login usa 'usuario' e 'senha', veja a nota no fim. -->
+        <div class="field">
+          <label class="sr-only" for="email">E-mail</label>
+          <input class="input" id="email" type="text" name="email" placeholder="E-mail" autocomplete="username" required />
+        </div>
+        <div class="field">
+          <label class="sr-only" for="password">Senha</label>
+          <input class="input" id="password" type="password" name="password" placeholder="Senha" autocomplete="current-password" required />
+        </div>
+
+        <div class="form-footer">
+          <span class="form-tip">Dica: mantenha suas credenciais em Segurança.</span>
+          <button type="submit" class="btn-primary" id="btnSubmit">Entrar</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script>
+    // Estado de carregamento no submit
+    (function(){
+      const form = document.getElementById('login-form');
+      const btn = document.getElementById('btnSubmit');
+      if(form && btn){
+        form.addEventListener('submit', function(){
+          btn.disabled = true; btn.textContent = 'Entrando';
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

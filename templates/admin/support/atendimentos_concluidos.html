@@ -1,0 +1,342 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Atendimentos Suporte Concluídos · Sollus Connected{% endblock %}
+
+{% block head %}
+<style>
+  .support-card{
+    border:0;
+    border-radius:1.5rem;
+    box-shadow:0 18px 40px rgba(15,35,58,.08);
+  }
+  .table-row-clickable{
+    cursor:pointer;
+  }
+  .table-row-clickable:hover{
+    background-color:rgba(15,118,255,.04);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{{ page_hero(
+    title='Atendimentos Suporte Concluídos',
+    subtitle='Revise os atendimentos finalizados e exporte os dados para auditoria.',
+    eyebrow='Suporte',
+    stats=hero_stats,
+    help_tips=[
+      'Filtre por técnico e intervalo de datas antes de exportar ou analisar os atendimentos encerrados.',
+      'Use o campo de OS e técnico para localizar rapidamente um fechamento específico.',
+      'Clique na linha para ver detalhes do atendimento concluído; utilize o botão de download para exportar o filtro atual.'
+    ],
+    help_intro='Dicas específicas para revisar encerramentos.'
+) }}
+
+<div class="card support-card mb-4">
+  <div class="card-body">
+    <form class="row g-3" method="get">
+      <div class="col-md-4">
+        <label class="form-label">Técnico</label>
+        {{ form.usuario_designado(class="form-select") }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">De</label>
+        {{ form.data_inicial(class="form-control") }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Até</label>
+        {{ form.data_final(class="form-control") }}
+      </div>
+      <div class="col-md-2 d-flex align-items-end gap-2">
+        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+        <a class="btn btn-outline-secondary" href="{{ url_for('support_bp.exportar_concluidos', **filter_args) }}">
+          <i class="bi bi-download"></i>
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card support-card">
+  <div class="card-body table-responsive">
+    <table class="table align-middle" id="tabelaAtendimentosConcluidos">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Cliente</th>
+          <th>Técnico</th>
+          <th>OS</th>
+          <th>Resumo</th>
+          <th class="text-end">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if entries %}
+          {% for item in entries %}
+          <tr
+            class="table-row-clickable"
+            data-entry-row="1"
+            data-id="{{ item.id }}"
+            data-cliente="{{ item.cliente|e }}"
+            data-tecnico="{{ (item.assigned_user.nome_completo if item.assigned_user else '')|e }}"
+            data-os="{{ (item.os_entrada or '')|e }}"
+            data-data="{{ item.data_atendimento | local('%d/%m/%Y %H:%M') if item.data_atendimento else '' }}"
+            data-resumo="{{ (item.resumo_atendimento or '')|e }}"
+            data-descricao="{{ (item.descricao or '')|e }}"
+          >
+            <td class="text-nowrap">
+              {{ item.data_atendimento | local('%d/%m/%Y %H:%M') if item.data_atendimento else '—' }}
+            </td>
+            <td>{{ item.cliente }}</td>
+            <td>{{ item.assigned_user.nome_completo if item.assigned_user else '—' }}</td>
+            <td>{{ item.os_entrada }}</td>
+            <td class="small text-muted">
+              {{ (item.resumo_atendimento or item.descricao or '') | truncate(200, True, '…') }}
+            </td>
+            <td class="text-end">
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm btn-ver-atendimento"
+                data-bs-toggle="modal"
+                data-bs-target="#modalAtendimentoConcluido"
+                data-id="{{ item.id }}"
+                data-cliente="{{ item.cliente|e }}"
+                data-tecnico="{{ (item.assigned_user.nome_completo if item.assigned_user else '')|e }}"
+                data-os="{{ (item.os_entrada or '')|e }}"
+                data-data="{{ item.data_atendimento | local('%d/%m/%Y %H:%M') if item.data_atendimento else '' }}"
+                data-resumo="{{ (item.resumo_atendimento or '')|e }}"
+                data-descricao="{{ (item.descricao or '')|e }}"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-5">Nenhum registro encontrado.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    {% if entries %}
+    <div class="d-flex justify-content-between align-items-center mt-3 gap-3">
+      <small class="text-muted" id="entriesInfo"></small>
+      <div class="d-flex align-items-center gap-2">
+        <nav>
+          <ul class="pagination pagination-sm mb-0" id="entriesPagination"></ul>
+        </nav>
+        <div class="input-group input-group-sm" style="width:120px;">
+          <input type="number" min="1" class="form-control" id="jumpPageInput" placeholder="Página" aria-label="Ir para página">
+          <button class="btn btn-outline-primary" id="jumpPageBtn" type="button">Ir</button>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Modal: detalhes do atendimento concluído (somente leitura) -->
+<div class="modal sollus-modal fade" id="modalAtendimentoConcluido" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalhes do atendimento concluído</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Cliente</label>
+            <p class="form-control-plaintext" id="view_cliente">—</p>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Técnico responsável</label>
+            <p class="form-control-plaintext" id="view_tecnico">—</p>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Data do atendimento</label>
+            <p class="form-control-plaintext" id="view_data">—</p>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">OS de entrada</label>
+            <p class="form-control-plaintext" id="view_os">—</p>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">ID interno</label>
+            <p class="form-control-plaintext" id="view_id">—</p>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Resumo do atendimento</label>
+          <textarea class="form-control" id="view_resumo" rows="2" readonly></textarea>
+        </div>
+
+        <div class="mb-0">
+          <label class="form-label fw-semibold">Descrição / detalhes</label>
+          <textarea class="form-control" id="view_descricao" rows="5" readonly></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const modalEl = document.getElementById('modalAtendimentoConcluido');
+  if (!modalEl) return;
+
+  const idEl        = document.getElementById('view_id');
+  const clienteEl   = document.getElementById('view_cliente');
+  const tecnicoEl   = document.getElementById('view_técnico');
+  const osEl        = document.getElementById('view_os');
+  const dataEl      = document.getElementById('view_data');
+  const resumoEl    = document.getElementById('view_resumo');
+  const descEl      = document.getElementById('view_descricao');
+
+  // Preenche modal quando clicar no botão "olhinho"
+  document.querySelectorAll('.btn-ver-atendimento').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      const ds = this.dataset || {};
+
+      if (idEl)      idEl.textContent      = ds.id || '—';
+      if (clienteEl) clienteEl.textContent = ds.cliente || '—';
+      if (tecnicoEl) tecnicoEl.textContent = ds.técnico || '—';
+      if (osEl)      osEl.textContent      = ds.os || '—';
+      if (dataEl)    dataEl.textContent    = ds.data || '—';
+      if (resumoEl)  resumoEl.value        = ds.resumo || '';
+      if (descEl)    descEl.value          = ds.descricao || '';
+    });
+  });
+
+  // Torna a linha inteira clicável (abre o mesmo modal)
+  document.querySelectorAll('tr[data-entry-row]').forEach(function(row){
+    row.addEventListener('click', function(e){
+      const btn = this.querySelector('.btn-ver-atendimento');
+      if (!btn) return;
+      // Se clicou diretamente no botão, deixa o próprio botão tratar
+      if (e.target.closest('.btn-ver-atendimento')) {
+        return;
+      }
+      btn.click();
+    });
+  });
+
+  // Paginação client-side: 10 registros por página
+  const rows = Array.from(document.querySelectorAll('tr[data-entry-row]'));
+  const pageSize = 10;
+  const totalRows = rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const paginationEl = document.getElementById('entriesPagination');
+  const infoEl = document.getElementById('entriesInfo');
+  const jumpInput = document.getElementById('jumpPageInput');
+  const jumpBtn = document.getElementById('jumpPageBtn');
+
+  if (!totalRows || !paginationEl || !infoEl) {
+    return;
+  }
+
+  let currentPage = 1;
+
+  function renderPage(page) {
+    if (page < 1) page = 1;
+    if (page > totalPages) page = totalPages;
+    currentPage = page;
+
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+
+    rows.forEach(function(row, index){
+      if (index >= start && index < end) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    const firstVisible = start + 1;
+    const lastVisible = Math.min(end, totalRows);
+    infoEl.textContent = `Mostrando ${firstVisible}–${lastVisible} de ${totalRows} atendimentos concluídos`;
+
+    // Reconstrói paginação
+    paginationEl.innerHTML = '';
+
+    const createPageItem = function(label, pageNumber, disabled, active) {
+      const li = document.createElement('li');
+      li.className = 'page-item';
+      if (disabled) li.classList.add('disabled');
+      if (active) li.classList.add('active');
+
+      const a = document.createElement('a');
+      a.className = 'page-link';
+      a.href = '#';
+      a.textContent = label;
+      a.dataset.page = pageNumber;
+
+      if (!disabled) {
+        a.addEventListener('click', function(ev){
+          ev.preventDefault();
+          if (!active) {
+            renderPage(pageNumber);
+          }
+        });
+      }
+
+      li.appendChild(a);
+      return li;
+    };
+
+    const pages = [];
+    [1, page, page + 1, page + 2, page + 3, totalPages].forEach(p => {
+      if (p >= 1 && p <= totalPages && !pages.includes(p)) {
+        pages.push(p);
+      }
+    });
+
+    paginationEl.appendChild(
+      createPageItem('Anterior', page - 1, page === 1, false)
+    );
+
+    pages.forEach(p => {
+      paginationEl.appendChild(
+        createPageItem(String(p), p, false, p === page)
+      );
+    });
+
+    paginationEl.appendChild(
+      createPageItem('Próximo', page + 1, page === totalPages, false)
+    );
+
+    if (jumpInput) {
+      jumpInput.max = totalPages;
+      jumpInput.value = page;
+    }
+  }
+
+  if (jumpBtn && jumpInput) {
+    jumpBtn.addEventListener('click', () => {
+      const page = parseInt(jumpInput.value, 10);
+      if (!Number.isNaN(page)) renderPage(page);
+    });
+    jumpInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        jumpBtn.click();
+      }
+    });
+  }
+
+  renderPage(1);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,2677 @@
+<!DOCTYPE html>
+
+
+
+<html lang="pt-BR">
+
+
+
+<head>
+
+
+
+  <meta charset="utf-8">
+
+  {% if favicon_ico %}<link rel="icon" href="{{ favicon_ico }}?v=3">{% endif %}
+
+  {% if favicon_png %}<link rel="icon" type="image/png" sizes="32x32" href="{{ favicon_png }}?v=3">{% endif %}
+
+  {% if favicon_png %}<link rel="apple-touch-icon" href="{{ favicon_png }}?v=3">{% endif %}
+
+
+
+  <style>
+
+
+
+    @page { size: A4; margin: 12mm; }
+
+
+
+    :root {
+
+
+
+      --blue-900: #0B3B8C;
+
+
+
+      --blue-700: #0E5DC6;
+
+
+
+      --blue-500: #2D7EF7;
+
+
+
+      --slate-900: #0f172a;
+
+
+
+      --slate-700: #1f2937;
+
+
+
+      --slate-500: #64748b;
+
+
+
+      --slate-300: #cbd5f5;
+
+
+
+      --page-bg: #f6f8fb;
+
+
+
+      --card-bg: #ffffff;
+
+
+
+      --chip-bg: #e8f1ff;
+
+
+
+      --chip-text: #0B3B8C;
+
+
+
+      --border-soft: rgba(11,59,140,0.08);
+
+
+
+      --shadow-soft: 0 28px 70px rgba(15,23,42,0.16);
+
+
+
+    }
+
+
+
+
+
+
+
+    * { box-sizing: border-box; }
+
+
+
+
+
+
+
+    html {
+
+
+
+      background: #f6f8fb;
+
+
+
+    }
+
+
+
+
+
+
+
+    body {
+
+
+
+      margin: 0;
+
+
+
+      font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+
+
+
+      color: var(--slate-900);
+
+
+
+      font-size: 11.5px;
+
+
+
+      line-height: 1.55;
+
+
+
+      background: #ffffff;
+
+
+
+    }
+
+
+
+
+
+
+
+    h1, h2, h3, h4 {
+
+
+
+      page-break-after: avoid;
+
+
+
+      break-after: avoid-page;
+
+
+
+    }
+
+
+
+
+
+
+
+    h1, h2, h3, h4, h5, h6 {
+
+
+
+      page-break-inside: avoid;
+
+
+
+      break-inside: avoid;
+
+
+
+    }
+
+
+
+
+
+
+
+    .section-no-break {
+
+
+
+      page-break-inside: avoid !important;
+
+
+
+      break-inside: avoid !important;
+
+
+
+    }
+
+
+
+
+
+
+
+    .document-shell {
+
+
+
+      padding: 32px 0 40px;
+
+
+
+      background: #f4f6fa;
+
+
+
+      min-height: 100vh;
+
+
+
+    }
+
+
+
+
+
+
+
+    .page {
+
+
+
+      width: 760px;
+
+
+
+      margin: 0 auto;
+
+
+
+      background: var(--card-bg);
+
+
+
+      border-radius: 22px;
+
+
+
+      box-shadow: var(--shadow-soft);
+
+
+
+      overflow: hidden;
+
+
+
+      border-top: 0;
+
+
+
+      border-bottom: 0;
+
+
+
+      position: relative;
+
+
+
+    }
+
+
+
+
+
+
+
+    header.cover {
+
+
+
+      background: linear-gradient(120deg, var(--blue-900), var(--blue-700));
+
+
+
+      color: #fff;
+
+
+
+      padding: 30px 40px;
+
+
+
+      display: flex;
+
+
+
+      justify-content: space-between;
+
+
+
+      gap: 32px;
+
+
+
+      position: relative;
+
+
+
+    }
+
+
+
+
+
+
+
+    header.cover::after {
+
+
+
+      content: '';
+
+
+
+      position: absolute;
+
+
+
+      inset: 18px 20px auto auto;
+
+
+
+      width: 160px;
+
+
+
+      height: 160px;
+
+
+
+      border-radius: 50%;
+
+
+
+      background: rgba(255,255,255,0.18);
+
+
+
+      filter: blur(4px);
+
+
+
+      z-index: 0;
+
+
+
+    }
+
+
+
+
+
+
+
+    .cover-info { position: relative; z-index: 1; flex: 1 1 auto; }
+
+
+
+    .cover-info span.badge {
+
+
+
+      display: inline-flex;
+
+
+
+      align-items: center;
+
+
+
+      gap: 6px;
+
+
+
+      padding: 6px 16px;
+
+
+
+      border-radius: 999px;
+
+
+
+      background: rgba(255,255,255,0.22);
+
+
+
+      text-transform: uppercase;
+
+
+
+      letter-spacing: .08em;
+
+
+
+      font-size: 10px;
+
+
+
+    }
+
+
+
+    .cover-info .badge-sub {
+
+      margin-top: 6px;
+
+      font-size: 10px;
+
+      letter-spacing: .08em;
+
+      text-transform: uppercase;
+
+      color: rgba(255,255,255,0.85);
+
+    }
+
+    .cover-info h1 {
+
+
+
+      margin: 14px 0 6px;
+
+
+
+      font-size: 24px;
+
+
+
+      font-weight: 600;
+
+
+
+    }
+
+
+
+    .cover-info p { margin: 2px 0; }
+
+
+
+
+
+
+
+    .cover-brand {
+
+
+
+      width: 160px;
+
+
+
+      height: 160px;
+
+
+
+      display: flex;
+
+
+
+      align-items: center;
+
+
+
+      justify-content: center;
+
+
+
+      position: relative;
+
+
+
+      z-index: 1;
+
+
+
+    }
+
+
+
+    .cover-brand img {
+
+
+
+      max-width: 140px;
+
+
+
+      max-height: 140px;
+
+
+
+      object-fit: contain;
+
+
+
+      filter: drop-shadow(0 18px 28px rgba(0,0,0,0.35));
+
+
+
+    }
+
+
+
+    .cover-brand strong { font-size: 22px; letter-spacing: .2em; }
+
+
+
+
+
+
+
+    .section {
+
+
+
+      padding: 30px 40px;
+
+
+
+      border-bottom: 1px solid var(--border-soft);
+
+
+
+    }
+
+
+
+    .section:last-of-type { border-bottom: 0; }
+
+
+
+
+
+
+
+    h2.section-title {
+
+
+
+      margin: 0 0 16px;
+
+
+
+      font-size: 16px;
+
+
+
+      font-weight: 600;
+
+
+
+      text-transform: uppercase;
+
+
+
+      letter-spacing: .08em;
+
+
+
+      color: var(--blue-900);
+
+
+
+    }
+
+
+
+
+
+
+
+    .info-columns {
+
+
+
+      display: grid;
+
+
+
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+
+
+
+      gap: 18px;
+
+
+
+    }
+
+
+
+    .info-card {
+
+
+
+      background: #f1f6ff;
+
+
+
+      border-radius: 18px;
+
+
+
+      padding: 20px 22px;
+
+
+
+      border: 1px solid rgba(14,93,198,0.08);
+
+
+
+      display: flex;
+
+
+
+      flex-direction: column;
+
+
+
+      gap: 10px;
+
+
+
+    }
+
+
+
+    .info-card h3 {
+
+
+
+      margin: 0 0 4px;
+
+
+
+      font-size: 13px;
+
+
+
+      font-weight: 600;
+
+
+
+      text-transform: uppercase;
+
+
+
+      letter-spacing: .08em;
+
+
+
+      color: var(--blue-900);
+
+
+
+    }
+
+
+
+    .info-item {
+
+
+
+      display: flex;
+
+
+
+      flex-direction: column;
+
+
+
+      gap: 2px;
+
+
+
+      word-break: break-word;
+
+
+
+    }
+
+
+
+    .info-label {
+
+
+
+      font-size: 10px;
+
+
+
+      text-transform: uppercase;
+
+
+
+      letter-spacing: .07em;
+
+
+
+      color: var(--slate-500);
+
+
+
+    }
+
+
+
+    .info-value {
+
+
+
+      font-weight: 600;
+
+
+
+      color: var(--slate-700);
+
+
+
+    }
+
+
+
+    .info-value.info-phone {
+
+
+
+      display: inline-flex;
+
+
+
+      align-items: center;
+
+
+
+      gap: 6px;
+
+
+
+    }
+
+
+
+    .whatsapp-chip {
+
+
+
+      display: inline-flex;
+
+
+
+      align-items: center;
+
+
+
+      justify-content: center;
+
+
+
+      width: 18px;
+
+
+
+      height: 18px;
+
+
+
+      border-radius: 50%;
+
+
+
+      background: rgba(14,93,198,0.15);
+
+
+
+      color: var(--blue-700);
+
+
+
+      font-size: 11px;
+
+
+
+      text-decoration: none;
+
+
+
+    }
+
+
+
+
+
+
+
+    .stats {
+
+
+
+      display: grid;
+
+
+
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+
+
+
+      gap: 16px;
+
+
+
+    }
+
+
+
+    .stat-card {
+
+
+
+      background: linear-gradient(140deg, rgba(14,93,198,0.16), rgba(11,59,140,0.05));
+
+
+
+      border: 1px solid rgba(14,93,198,0.15);
+
+
+
+      border-radius: 18px;
+
+
+
+      padding: 18px 20px;
+
+
+
+    }
+
+
+
+    .stat-card small { display:block; font-size: 10px; letter-spacing:.08em; text-transform:uppercase; color: var(--blue-700); }
+
+
+
+    .stat-card strong { display:block; margin-top:8px; font-size: 20px; color: var(--slate-900); }
+
+
+
+
+
+
+
+    .chips {
+
+
+
+      display:flex;
+
+
+
+      flex-wrap:wrap;
+
+
+
+      gap:8px;
+
+
+
+      margin:0;
+
+
+
+      padding:0;
+
+
+
+      list-style:none;
+
+
+
+    }
+
+
+
+    .chips li {
+
+
+
+      background: var(--chip-bg);
+
+
+
+      color: var(--chip-text);
+
+
+
+      padding:6px 12px;
+
+
+
+      border-radius:12px;
+
+
+
+      font-weight:600;
+
+
+
+      letter-spacing:.04em;
+
+
+
+      text-transform:uppercase;
+
+
+
+      font-size:10px;
+
+
+
+    }
+
+
+
+
+
+
+
+    table.items {
+
+
+
+      width:100%;
+
+
+
+      border-collapse:collapse;
+
+
+
+      border-radius:14px;
+
+
+
+      overflow:hidden;
+
+
+
+      font-size:11px;
+
+
+
+      box-shadow:0 20px 40px rgba(11,59,140,0.12);
+
+
+
+      table-layout: fixed;
+
+
+
+    }
+
+
+
+    table.items thead { background: linear-gradient(120deg, var(--blue-900), var(--blue-700)); color:#fff; }
+
+
+
+    table.items th, table.items td { padding:10px 12px; }
+
+
+
+    table.items th { text-align:left; font-weight:600; letter-spacing:.04em; font-size:10px; text-transform:uppercase; }
+
+
+
+    table.items tbody tr:nth-child(even) { background:#f5f8ff; }
+
+
+
+    th.description, td.description { width: 52%; }
+
+    td.description { word-break: break-word; line-height: 1.4; }
+
+    th.image, td.image { width: 12%; }
+
+    th.quantity, td.quantity { width: 8%; }
+
+    th.price, td.price { width: 14%; }
+
+    td.image { text-align:center; }
+
+    .system-name{color:var(--blue-700);font-weight:700;}
+
+    .item-desc{color:var(--slate-900);}
+
+    .bundle-details{display:inline-block;margin-left:6px;color:var(--slate-900);font-weight:600;}
+
+    .bundle-details .detail-value{color:var(--blue-700);font-weight:700;}
+
+    .detail-sep{margin:0 6px;color:var(--slate-500);}
+
+    .locacao-gallery{
+
+      margin-top:14px;
+
+      display:flex;
+
+      flex-wrap:wrap;
+
+      gap:12px;
+
+    }
+
+    .locacao-gallery .gallery-item{
+
+      display:flex;
+
+      flex-direction:column;
+
+      align-items:center;
+
+      gap:6px;
+
+      padding:8px 10px;
+
+      background:#f8fafc;
+
+      border-radius:12px;
+
+      box-shadow:0 8px 18px rgba(11,59,140,0.12);
+
+      page-break-inside: avoid;
+
+      break-inside: avoid;
+
+    }
+
+    .locacao-gallery .gallery-item img{
+      width:60px;
+      height:60px;
+      object-fit:contain;
+      border-radius:8px;
+      background:#fff;
+      box-shadow:0 6px 14px rgba(11,59,140,0.15);
+    }
+    .ambiente-block{
+      page-break-inside: avoid;
+      break-inside: avoid;
+      margin-bottom:16px;
+    }
+    .ambiente-gallery{
+      margin-top:16px;
+      display:block;
+    }
+    .ambiente-gallery .gallery-item{
+      width:100%;
+      padding:12px;
+      border-radius:14px;
+      background:#f8fafc;
+      box-shadow:0 10px 22px rgba(11,59,140,0.12);
+      page-break-inside: avoid;
+      break-inside: avoid-page;
+      display:inline-block;
+      margin-bottom:16px;
+    }
+    .ambiente-gallery .gallery-title{
+      font-size:12px;
+      font-weight:600;
+      color:var(--slate-900);
+      margin-bottom:8px;
+    }
+    .ambiente-gallery .gallery-item img{
+      width:100%;
+      height:auto;
+      max-height:420px;
+      object-fit:contain;
+      border-radius:12px;
+      display:block;
+    }
+    .locacao-gallery .gallery-name{
+
+      font-size:9.5px;
+
+      text-align:center;
+
+      color:var(--slate-900);
+
+      max-width:140px;
+
+      white-space:nowrap;
+
+      overflow:hidden;
+
+      text-overflow:ellipsis;
+
+    }
+
+
+
+    td.image img { width:80px; height:80px; object-fit:contain; border-radius:8px; border:1px solid rgba(14,93,198,0.12); box-shadow:0 8px 18px rgba(11,59,140,0.15); background:#fff; }
+
+
+
+    td.quantity, td.price { text-align:center; white-space:nowrap; }
+
+    .price-stack{
+
+      display:flex;
+
+      flex-direction:column;
+
+      align-items:center;
+
+      gap:4px;
+
+    }
+
+    .price-value{font-weight:600;}
+
+    .items-subtitle{
+
+      margin:12px 0 6px;
+
+      font-size:11px;
+
+      text-transform:uppercase;
+
+      letter-spacing:.08em;
+
+      color:var(--slate-500);
+
+      font-weight:600;
+
+      page-break-after: avoid;
+
+      break-after: avoid-page;
+
+    }
+
+    .items-block{
+
+      page-break-inside: avoid;
+
+      break-inside: avoid;
+
+    }
+
+    .items-table{margin-top:12px;}
+
+    .discount-pill{
+
+      display:inline-block;
+
+      margin:0;
+
+      padding:2px 6px;
+
+      border-radius:999px;
+
+      font-size:9px;
+
+      font-weight:700;
+
+      color:var(--blue-500);
+
+      background:rgba(45,126,247,0.18);
+
+    }
+
+
+
+    td.badge-empty { font-size:10px; color: var(--slate-500); font-style:italic; }
+
+
+
+
+
+
+
+    .totals { margin-top:14px; text-align:right; font-weight:600; color: var(--blue-900); }
+
+    .locacao-meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 6px;}
+
+    .locacao-meta .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--chip-bg);color:var(--chip-text);font-weight:600;font-size:10px;letter-spacing:.03em;}
+
+    .locacao-meta .pill strong{color:var(--blue-900);}
+
+
+
+    .totals span { display:block; }
+
+
+
+
+
+
+
+    .conditions-grid {
+
+
+
+      display:grid;
+
+
+
+      grid-template-columns:repeat(2,minmax(0,1fr));
+
+
+
+      gap:12px 18px;
+
+
+
+    }
+
+
+
+    .condition-card {
+      border:1px solid rgba(14,93,198,0.12);
+      border-radius:16px;
+      padding:14px 16px;
+      background:#f8fbff;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+
+
+    .condition-card strong { display:block; margin-bottom:4px; color: var(--blue-700); font-size:11px; }
+
+
+
+
+
+
+
+    .guarantee {
+
+
+
+      background:#f2f7ff;
+
+
+
+      border-radius:18px;
+
+
+
+      border:1px solid rgba(11,59,140,0.15);
+
+
+
+      padding:18px 20px;
+
+
+
+      line-height:1.65;
+      page-break-inside:auto;
+      break-inside:auto;
+      -webkit-box-decoration-break:clone;
+      box-decoration-break:clone;
+
+
+
+    }
+
+
+
+    .guarantee ul { margin:8px 0 0 18px; padding:0; }
+
+
+
+
+
+
+
+    .observacoes {
+
+
+
+      background: #fff4ed;
+
+
+
+      border:1px solid rgba(245,158,11,0.25);
+
+
+
+      border-radius:18px;
+
+
+
+      padding:16px 18px;
+
+
+
+      color:#713f12;
+
+
+
+    }
+
+
+
+    .observacoes ul { margin:6px 0 0 18px; }
+
+
+
+
+
+
+
+    .contact {
+      margin-top:24px;
+      background:#f5f8ff;
+      border:1px solid rgba(14,93,198,0.12);
+      border-radius:18px;
+      padding:22px 26px;
+      display:block;
+      box-shadow:0 18px 40px rgba(11,59,140,0.15);
+      page-break-inside:avoid;
+      break-inside:avoid;
+      page-break-after:avoid;
+    }
+    .contact-main {
+      display:block;
+      margin-bottom:12px;
+    }
+
+
+
+    .contact h3 { margin:0 0 8px; font-size:14px; color:var(--blue-900); text-transform:uppercase; letter-spacing:.05em; }
+
+
+
+    .contact p { margin:4px 0; }
+
+
+
+    .contact .contact-phone {
+      display:block;
+      margin:6px 0;
+    }
+    .contact .contact-phone span {
+      display:inline-block;
+      vertical-align:middle;
+      margin-right:8px;
+    }
+
+
+
+    .contact-meta {
+      border-top:1px dashed rgba(11,59,140,0.25);
+      padding-top:10px;
+      display:block;
+      font-size:10px;
+      color:var(--slate-500);
+      page-break-inside:avoid;
+      break-inside:avoid;
+      page-break-before:avoid;
+    }
+
+
+
+    .contact-meta .meta-note {
+      font-weight:600;
+      color:var(--blue-900);
+      letter-spacing:.03em;
+      display:block;
+      margin-bottom:6px;
+    }
+
+
+
+    .contact-meta .meta-lines {
+      display:block;
+      font-weight:600;
+      color:var(--slate-700);
+    }
+    .contact-meta .meta-lines span {
+      display:inline-block;
+      margin-right:16px;
+      margin-bottom:8px;
+    }
+
+
+
+    .contact-meta .meta-lines span:last-child { color:var(--blue-700); }
+
+    .contact-meta .social-links{
+      display:block;
+      margin-top:6px;
+    }
+
+    .contact-meta .social-links a{
+      display:inline-block;
+      vertical-align:middle;
+      width:16px;
+      height:16px;
+      margin-right:8px;
+    }
+
+    .contact-meta .social-links img{
+
+      width:100%;
+
+      height:100%;
+
+      object-fit:contain;
+
+      display:block;
+
+    }
+
+
+
+    .whatsapp-link {
+      display:inline-block;
+      vertical-align:middle;
+      width:16px;
+      height:16px;
+    }
+
+
+
+    .whatsapp-link img {
+
+
+
+      width:100%;
+
+
+
+      height:100%;
+
+
+
+      object-fit:contain;
+
+
+
+      display:block;
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+      .info-card.info-client { order: 1; }
+
+
+
+    .info-card.info-company { order: 2; }
+
+
+
+    @media (max-width: 680px) {
+
+
+
+      .info-columns { grid-template-columns: 1fr; }
+
+
+
+      .info-card.info-company { order: 2; }
+
+
+
+    }
+
+
+
+  </style>
+
+
+
+</head>
+
+
+
+<body>
+
+
+
+  {% set garantias = namespace(items=[]) %}
+
+
+
+  {% set comerciais = namespace(items=[]) %}
+
+
+
+  {% for label, value in condicoes %}
+
+
+
+    {% if value %}
+
+
+
+      {% if 'Garantia' in label %}
+
+
+
+        {% set _ = garantias.items.append((label, value)) %}
+
+
+
+      {% else %}
+
+
+
+        {% set _ = comerciais.items.append((label, value)) %}
+
+
+
+      {% endif %}
+
+
+
+    {% endif %}
+
+
+
+  {% endfor %}
+
+
+
+
+
+
+
+  <div class="document-shell">
+
+
+
+    <div class="page">
+
+
+
+      <header class="cover">
+
+
+
+        <div class="cover-info">
+
+
+
+          <span class="badge">Proposta {{ proposta_cod or '' }}{% if data_criacao %} • {{ data_criacao }}{% endif %}</span>
+          {% if validade %}<div class="badge-sub">Validade {{ validade }}</div>{% endif %}
+
+
+
+          <h1>Sollus Connected</h1>
+
+
+
+          <p>{{ company or 'Sollus Tecnologia' }}</p>
+
+
+
+          <p>{{ client_name }}</p>
+
+
+
+          {% if cnpj %}<p>CNPJ: {{ cnpj }}</p>{% endif %}
+
+
+
+          {% if servico_label %}<p>{{ servico_label }}{% if modalidade_label %} • {{ modalidade_label }}{% endif %}</p>{% endif %}
+
+
+
+        </div>
+
+
+
+        <div class="cover-brand">
+
+
+
+          {% if logo_image %}
+
+
+
+            <img src="{{ logo_image }}" alt="Sollus Tecnologia">
+
+
+
+          {% else %}
+
+
+
+            <strong>SOLLUS</strong>
+
+
+
+          {% endif %}
+
+
+
+        </div>
+
+
+
+      </header>
+
+
+
+
+
+
+
+      <section class="section">
+
+
+
+        <h2 class="section-title">Informações Principais</h2>
+
+
+
+        <div class="info-columns">
+
+
+
+          <div class="info-card info-client">
+
+
+
+            <h3>Dados do Cliente</h3>
+
+
+
+            <div class="info-item"><span class="info-label">Empresa</span><span class="info-value">{{ company or 'Empresa Teste' }}</span></div>
+
+
+
+            <div class="info-item"><span class="info-label">Contato</span><span class="info-value">{{ client_name or '-' }}</span></div>
+
+
+
+            <div class="info-item"><span class="info-label">{{ client_document_label }}</span><span class="info-value">{{ client_document_value or '-' }}</span></div>
+
+
+
+            <div class="info-item"><span class="info-label">E-mail</span><span class="info-value">{{ email or '-' }}</span></div>
+
+
+
+            <div class="info-item"><span class="info-label">Telefone</span><span class="info-value info-phone">{{ client_phone_display or '-' }}{% if client_whatsapp_url %}<a href="{{ client_whatsapp_url }}" class="whatsapp-chip">&#128241;</a>{% endif %}</span></div>
+
+
+
+            {% if servico_label %}<div class="info-item"><span class="info-label">Serviço</span><span class="info-value">{{ servico_label }}</span></div>{% endif %}
+
+
+
+            {% if modalidade_label %}<div class="info-item"><span class="info-label">Modalidade</span><span class="info-value">{{ modalidade_label }}</span></div>{% endif %}
+
+
+
+
+
+
+            {% if data_criacao %}<div class="info-item"><span class="info-label">Data de emissão</span><span class="info-value">{{ data_criacao }}</span></div>{% endif %}
+
+
+
+          </div>
+
+
+
+          <div class="info-card info-company">
+
+
+
+            <h3>Dados da Empresa</h3>
+
+
+
+            <div class="info-item"><span class="info-label">Empresa</span><span class="info-value">{{ issuer_company }}</span></div>
+
+
+
+            {% if issuer_company_cnpj %}<div class="info-item"><span class="info-label">CNPJ</span><span class="info-value">{{ issuer_company_cnpj }}</span></div>{% endif %}
+
+
+
+            <div class="info-item"><span class="info-label">Responsável</span><span class="info-value">{{ issuer_contact_name }}</span></div>
+
+
+
+            <div class="info-item"><span class="info-label">E-mail</span><span class="info-value">{{ issuer_email or '-' }}</span></div>
+
+
+
+                        <div class="info-item">
+
+
+
+              <span class="info-label">Telefone</span>
+
+
+
+              <span class="info-value info-phone">
+
+
+
+                {% set phone_list = consultor_phone_list or [issuer_phone] %}
+
+
+
+                {% for phone in phone_list %}
+
+
+
+                <span class="d-block">{{ phone }}</span>
+
+
+
+                {% endfor %}
+
+
+
+                {% if consultor_whatsapp_url %}
+
+
+
+                <span class="whatsapp-chip">&#9742;</span>
+
+
+
+                {% endif %}
+
+
+
+              </span>
+
+
+
+            </div>
+
+
+
+            {% if issuer_site %}<div class="info-item"><span class="info-label">Website</span><span class="info-value">{{ issuer_site }}</span></div>{% endif %}
+
+
+
+            {% if proposta_cod %}<div class="info-item"><span class="info-label">Código da proposta</span><span class="info-value">{{ proposta_cod }}</span></div>{% endif %}
+
+
+
+            {% if issuer_address %}<div class="info-item"><span class="info-label">Endereço</span><span class="info-value">{{ issuer_address }}</span></div>{% endif %}
+
+
+
+          </div>
+
+
+
+        </div>
+
+
+
+      </section>
+
+
+
+
+
+
+
+      <section class="section">
+
+
+
+        <h2 class="section-title">Resumo do Investimento</h2>
+
+
+
+        <div class="stats">
+
+
+
+          {% if investimento_unico %}
+          <div class="stat-card">
+            <small>Investimento único</small>
+            <strong>{{ investimento_unico }}</strong>
+          </div>
+          {% endif %}
+
+          {% if investimento_mensal %}
+          <div class="stat-card">
+            <small>{% if is_locacao %}Investimento mensal{% else %}Mensalidade do sistema{% endif %}</small>
+            <strong>{{ investimento_mensal }}</strong>
+          </div>
+          {% endif %}
+
+
+
+          <div class="stat-card">
+
+
+
+            <small>Itens contemplados</small>
+
+
+
+            <strong>{{ total_itens }}</strong>
+
+
+
+          </div>
+
+
+
+        </div>
+
+
+
+      </section>
+
+
+
+
+
+
+
+      <section class="section">
+
+
+
+        <h2 class="section-title">Itens da Proposta</h2>
+
+
+
+        
+
+        {% set system_items = namespace(rows=[]) %}
+
+        {% set equipment_items = namespace(rows=[]) %}
+
+        {% set acquisition_items = namespace(rows=[]) %}
+
+        {% for item in equipamentos %}
+          {% if item.is_system or (is_locacao and not item.is_acquisition) %}
+            {% set _ = system_items.rows.append(item) %}
+          {% elif is_locacao and item.is_acquisition %}
+            {% set _ = acquisition_items.rows.append(item) %}
+          {% else %}
+            {% set _ = equipment_items.rows.append(item) %}
+          {% endif %}
+        {% endfor %}
+
+        {% set show_split = system_items.rows and (equipment_items.rows or acquisition_items.rows) %}
+
+        {% set equipment_label = 'Equipamentos (locação)' if is_locacao and acquisition_items.rows else 'Equipamentos' %}
+
+
+
+
+
+        {% if equipment_items.rows %}
+
+        {% if show_split %}<div class="items-subtitle">{{ equipment_label }}</div>{% endif %}
+
+        <table class="items">
+
+          <thead>
+
+            <tr>
+
+              <th class="description">Descrição</th>
+
+              <th class="image">Imagem</th>
+
+              <th class="quantity">Qtd.</th>
+
+              <th class="price">Valor mensal</th>
+
+              <th class="price">Total mensal</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            {% for item in equipment_items.rows %}
+
+            <tr>
+
+              <td class="description">
+
+                {% if is_locacao and item.is_bundle %}
+
+                  {{ item.description | safe }}
+
+                {% else %}
+
+                  {{ item.description | replace('\n', '<br>') | safe }}
+
+                {% endif %}
+
+              </td>
+
+              <td class="image">
+
+                {% if item.image %}
+
+                  <img src="{{ item.image }}" alt="{{ item.description }}">
+
+                {% else %}
+
+                  <span class="badge-empty">Sem imagem</span>
+
+                {% endif %}
+
+              </td>
+
+              <td class="quantity">{{ item.quantity }}</td>
+
+              <td class="price">
+
+                <div class="price-stack">
+
+                  <span class="price-value">{{ item.unit_price }}</span>
+
+                  {% if item.discount_percent %}
+
+                  <span class="discount-pill">Desc. {{ ('%.2f' % item.discount_percent).rstrip('0').rstrip('.') }}%</span>
+
+                  {% endif %}
+
+                </div>
+
+              </td>
+
+              <td class="price">{{ item.total_price }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+          </tbody>
+
+        </table>
+
+        {% endif %}
+
+
+
+        {% if acquisition_items.rows %}
+
+        <div class="items-subtitle">Equipamentos (aquisição)</div>
+
+        <table class="items">
+
+          <thead>
+
+            <tr>
+
+              <th class="description">Descrição</th>
+
+              <th class="image">Imagem</th>
+
+              <th class="quantity">Qtd.</th>
+
+              <th class="price">Preço unitário</th>
+
+              <th class="price">Total</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            {% for item in acquisition_items.rows %}
+
+            <tr>
+
+              <td class="description">
+
+                {{ item.description | replace('\n', '<br>') | safe }}
+
+              </td>
+
+              <td class="image">
+
+                {% if item.image %}
+
+                  <img src="{{ item.image }}" alt="{{ item.description }}">
+
+                {% else %}
+
+                  <span class="badge-empty">Sem imagem</span>
+
+                {% endif %}
+
+              </td>
+
+              <td class="quantity">{{ item.quantity }}</td>
+
+              <td class="price">
+
+                <div class="price-stack">
+
+                  <span class="price-value">{{ item.unit_price }}</span>
+
+                  {% if item.discount_percent %}
+
+                  <span class="discount-pill">Desc. {{ ('%.2f' % item.discount_percent).rstrip('0').rstrip('.') }}%</span>
+
+                  {% endif %}
+
+                </div>
+
+              </td>
+
+              <td class="price">{{ item.total_price }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+          </tbody>
+
+        </table>
+
+        {% endif %}
+
+
+
+      {% if system_items.rows %}
+
+      <div class="items-block items-block--system">
+
+        {% if show_split %}<div class="items-subtitle">Sistema</div>{% endif %}
+
+        <table class="items{% if equipment_items.rows %} items-table{% endif %}">
+
+          <thead>
+
+            <tr>
+
+              <th class="description">Descrição</th>
+
+              <th class="image">Imagem</th>
+
+              <th class="quantity">Qtd.</th>
+
+              <th class="price">Valor mensal</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            {% for item in system_items.rows %}
+
+            <tr>
+
+              <td class="description">
+
+                {% if is_locacao and item.is_bundle %}
+
+                  {{ item.description | safe }}
+
+                {% else %}
+
+                  {{ item.description | replace('\n', '<br>') | safe }}
+
+                {% endif %}
+
+              </td>
+
+              <td class="image">
+
+                {% if item.image %}
+
+                  <img src="{{ item.image }}" alt="{{ item.description }}">
+
+                {% else %}
+
+                  <span class="badge-empty">Sem imagem</span>
+
+                {% endif %}
+
+              </td>
+
+              <td class="quantity">{{ item.quantity }}</td>
+
+              <td class="price">
+
+                <div class="price-stack">
+
+                  <span class="price-value">{{ item.unit_price }}</span>
+
+                  {% if item.discount_percent %}
+
+                  <span class="discount-pill">Desc. {{ ('%.2f' % item.discount_percent).rstrip('0').rstrip('.') }}%</span>
+
+                  {% endif %}
+
+                </div>
+
+              </td>
+
+            </tr>
+
+            {% endfor %}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+      {% endif %}
+
+
+
+
+
+
+
+
+
+        <div class="totals">
+
+        {% if is_locacao and locacao_gallery and not locacao_analitico %}
+
+        <div class="locacao-gallery">
+
+          {% for item in locacao_gallery %}
+
+          <div class="gallery-item">
+
+            {% if item.image %}
+
+            <img src="{{ item.image }}" alt="{{ item.name }}">
+
+            {% else %}
+
+            <span class="badge-empty">Sem imagem</span>
+
+            {% endif %}
+
+            <div class="gallery-name">{{ item.name }}</div>
+
+          </div>
+
+          {% endfor %}
+
+        </div>
+
+        {% endif %}
+
+
+
+        {% if is_locacao %}
+
+            {% if investimento_mensal %}<span>Investimento mensal: {{ investimento_mensal }}</span>{% endif %}
+
+            {% if investimento_unico %}<span>Investimento de aquisição: {{ investimento_unico }}</span>{% endif %}
+
+          {% else %}
+
+            {% if investimento_unico %}<span>Investimento dos equipamentos: {{ investimento_unico }}</span>{% endif %}
+
+            {% if investimento_mensal %}<span>Mensalidade do sistema: {{ investimento_mensal }}</span>{% endif %}
+
+          {% endif %}
+
+        </div>
+
+
+
+
+
+      </section>
+
+
+
+      {% if ambiente_fotos %}
+
+      <section class="section">
+
+        {% if ambiente_fotos %}
+        {% set first_foto = ambiente_fotos[0] %}
+        <div class="ambiente-block">
+          <h2 class="section-title">Ambiente do Cliente</h2>
+          <div class="ambiente-gallery">
+            <div class="gallery-item">
+              <div class="gallery-title">1. {{ first_foto.title or 'Ambiente do cliente' }}</div>
+              <img src="{{ first_foto.url }}" alt="Ambiente 1">
+            </div>
+          </div>
+        </div>
+        {% if ambiente_fotos|length > 1 %}
+        <div class="ambiente-gallery">
+          {% for foto in ambiente_fotos[1:] %}
+          <div class="gallery-item">
+            <div class="gallery-title">{{ loop.index + 1 }}. {{ foto.title or 'Ambiente do cliente' }}</div>
+            <img src="{{ foto.url }}" alt="Ambiente {{ loop.index + 1 }}">
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% endif %}
+
+      </section>
+
+      {% endif %}
+
+
+
+      {% if comerciais.items %}
+
+
+
+      <section class="section section-no-break">
+
+
+
+        <h2 class="section-title">Condições Comerciais</h2>
+
+
+
+        <div class="conditions-grid">
+
+
+
+          {% for label, value in comerciais.items %}
+
+
+
+          <div class="condition-card">
+
+
+
+            <strong>{{ label }}</strong>
+
+
+
+            <span>{{ value }}</span>
+
+
+
+          </div>
+
+
+
+          {% endfor %}
+
+
+
+        </div>
+
+
+
+      </section>
+
+
+
+      {% endif %}
+
+
+
+
+
+
+
+      {% if garantias.items %}
+
+
+
+      <section class="section section-no-break">
+
+
+
+        <h2 class="section-title">Garantia dos Produtos e Serviços</h2>
+
+
+
+        <div class="guarantee">
+
+
+
+          <p>Cada solução entregue pela Sollus Tecnologia é amparada por garantias que asseguram a continuidade da operação e a cobertura técnica necessária. Confira os prazos aplicáveis a esta proposta:</p>
+
+
+
+          <ul>
+
+
+
+            {% for label, value in garantias.items %}
+
+
+
+            <li><strong>{{ label }}:</strong> {{ value }}</li>
+
+
+
+            {% endfor %}
+
+
+
+          </ul>
+
+
+
+        </div>
+
+
+
+      </section>
+
+
+
+      {% endif %}
+
+
+
+
+
+
+
+      {% if observacoes_tecnicas %}
+
+
+
+      <section class="section section-no-break">
+
+
+
+        <h2 class="section-title">Observações Técnicas</h2>
+
+
+
+        <div class="observacoes">
+
+
+
+          {% if is_servico_ponto %}
+
+
+
+          <p>Para o módulo de ponto eletrônico, observe os requisitos adicionais abaixo:</p>
+
+
+
+          {% else %}
+
+
+
+          <p>Para o sistema de controle de acesso, observe os requisitos adicionais abaixo:</p>
+
+
+
+          {% endif %}
+
+
+
+          <ul>
+
+
+
+            {% for obs in observacoes_tecnicas %}
+
+
+
+            <li>{{ obs }}</li>
+
+
+
+            {% endfor %}
+
+
+
+          </ul>
+
+
+
+        </div>
+
+
+
+      </section>
+
+
+
+      {% endif %}
+
+
+
+
+
+
+
+      <section class="section section-no-break">
+
+
+
+        <div class="contact">
+
+
+
+          <div class="contact-main">
+
+
+
+            <h3>Próximos passos</h3>
+
+
+
+            <p>Consultor responsável: <strong>{{ nome_colaborador or 'Equipe Sollus Tecnologia' }}</strong></p>
+
+
+
+            {% if email_colaborador %}<p>E-mail: {{ email_colaborador }}</p>{% endif %}
+
+
+
+            {% if consultor_phone_list %}
+
+
+
+            <p class="contact-phone">
+
+
+
+              {% for phone in consultor_phone_list %}
+
+
+
+              <span>{{ phone }}</span>
+
+
+
+              {% endfor %}
+
+
+
+              {% if consultor_whatsapp_url and whatsapp_icon %}
+
+
+
+              <a class="whatsapp-link" href="{{ consultor_whatsapp_url }}" target="_blank" rel="noopener">
+
+
+
+                <img src="{{ whatsapp_icon }}" alt="WhatsApp">
+
+
+
+              </a>
+
+
+
+              {% endif %}
+
+
+
+            </p>
+
+
+
+            {% endif %}
+
+
+
+            <p>Estamos à disposição para ajustes, apresentações executivas e alinhamento com as áreas envolvidas.</p>
+
+
+
+          </div>
+
+
+
+          <div class="contact-meta">
+
+
+
+            <span class="meta-note">Proposta emitida pela plataforma Sollus Tecnologia. Conte conosco para construir experiências conectadas, seguras e eficientes.</span>
+
+
+
+            {% set footer_lines = issuer_footer_lines if issuer_footer_lines else [] %}
+
+
+
+            {% if not footer_lines %}
+
+
+
+              {% set footer_lines = [] %}
+
+
+
+              {% if issuer_address %}{% set footer_lines = footer_lines + [issuer_address] %}{% endif %}
+
+
+
+              {% if issuer_phone_display %}{% set footer_lines = footer_lines + [issuer_phone_display] %}{% endif %}
+
+
+
+              {% if issuer_site %}{% set footer_lines = footer_lines + [issuer_site] %}{% endif %}
+
+
+
+            {% endif %}
+
+
+
+            {% if footer_lines %}
+
+
+
+              <div class="meta-lines">
+
+
+
+                {% for line in footer_lines %}
+
+
+
+                {% if issuer_site and line == issuer_site %}
+
+
+
+                <span><a href="{{ issuer_site_href or issuer_site }}" target="_blank" rel="noopener">{{ line }}</a></span>
+
+
+
+                {% else %}
+
+
+
+                <span>{{ line }}</span>
+
+
+
+                {% endif %}
+
+
+
+                {% endfor %}
+
+
+
+              </div>
+
+
+
+              {% endif %}
+
+              {% if linkedin_icon or facebook_icon or instagram_icon or youtube_icon %}
+
+              <div class="social-links">
+
+                {% if youtube_icon %}
+
+                <a href="https://www.youtube.com/channel/UC3XwpoYt8-USzRX6eUWXNFA" target="_blank" rel="noopener">
+
+                  <img src="{{ youtube_icon }}" alt="YouTube">
+
+                </a>
+
+                {% endif %}
+
+                {% if linkedin_icon %}
+
+                <a href="https://br.linkedin.com/company/sollus-tecnologia-pontoeacesso" target="_blank" rel="noopener">
+
+                  <img src="{{ linkedin_icon }}" alt="LinkedIn">
+
+                </a>
+
+                {% endif %}
+
+                {% if facebook_icon %}
+
+                <a href="https://www.facebook.com/sollustecnologiaoficial" target="_blank" rel="noopener">
+
+                  <img src="{{ facebook_icon }}" alt="Facebook">
+
+                </a>
+
+                {% endif %}
+
+                {% if instagram_icon %}
+
+                <a href="https://www.instagram.com/sollustecnologia" target="_blank" rel="noopener">
+
+                  <img src="{{ instagram_icon }}" alt="Instagram">
+
+                </a>
+
+                {% endif %}
+
+              </div>
+
+              {% endif %}
+
+
+
+            </div>
+
+
+
+        </div>
+
+
+
+      </section>
+
+
+
+
+
+
+
+    </div>
+
+
+
+  </div>
+
+
+
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+

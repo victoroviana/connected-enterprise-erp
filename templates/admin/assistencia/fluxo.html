@@ -1,0 +1,395 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Fluxo de Equipamentos{% endblock %}
+
+{% block head %}
+<style>
+  .lane-wrap{display:grid;gap:1rem;}
+  .lane-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem;}
+  .lane-card{border:0;border-radius:1.1rem;background:#f8fafc;padding:1rem;box-shadow:0 12px 28px rgba(15,23,42,.08);}
+  .lane-head{display:flex;justify-content:space-between;align-items:center;gap:.75rem;margin-bottom:.5rem;}
+  .lane-title{font-weight:700;color:#0f172a;font-size:1rem;}
+  .lane-count{display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .6rem;border-radius:999px;background:#e0f2fe;color:#075985;font-weight:700;font-size:.85rem;}
+  .lane-owners{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.5rem;}
+  .lane-owner{padding:.2rem .6rem;border-radius:999px;background:#eef2ff;color:#4338ca;font-weight:700;font-size:.8rem;}
+  .task-card{border:1px solid #e2e8f0;border-radius:.85rem;padding:.75rem;margin-bottom:.75rem;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,.05);}
+  .task-title{font-weight:700;color:#0f172a;}
+  .task-meta{color:#475569;font-size:.85rem;}
+  .task-chips{display:flex;flex-wrap:wrap;gap:.35rem;margin:.4rem 0;}
+  .task-chip{padding:.2rem .55rem;border-radius:999px;background:#f1f5f9;color:#475569;font-weight:600;font-size:.8rem;}
+  .task-form{display:flex;gap:.35rem;align-items:center;margin-top:.35rem;}
+  .task-form select{min-width:140px;}
+  .empty-lane{color:#94a3b8;font-size:.9rem;font-weight:600;}
+  .lane-card.border-primary{border:2px solid var(--bs-primary) !important;}
+</style>
+{% endblock %}
+
+{% block content %}
+{{ page_hero(
+  title='Fluxo de Equipamentos',
+  subtitle='Mapa geral por etapa e responsável; mude status direto por aqui.',
+  eyebrow='Assistência',
+  help_tips=[
+    'Use a coluna do seu setor e atualize o status da OS diretamente (seleção ou arrastar-soltar).',
+    'Os contadores refletem o fluxo legado: Entrada, Conserto interno, Envio fábrica, Aguardando, Retorno/Testes, Descarte.',
+    'Precisa editar campos detalhados? Clique em “Ver dashboard” para abrir a tela completa.'
+  ],
+  help_intro='Journey map editável: cada etapa mostra responsáveis e OS associadas.'
+) }}
+
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+  <div class="text-muted small">Filtre para focar na sua fila.</div>
+  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('assist_bp.assistencia_dashboard') }}"><i class="bi bi-table"></i> Ver dashboard</a>
+  <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalNova">
+    <i class="bi bi-plus-lg"></i> Nova OS
+  </button>
+</div>
+
+<form method="get" class="row g-3 align-items-end mb-4">
+  <div class="col-md-3">
+    <label class="form-label">Departamento</label>
+    {{ filtro_form.departamento(class="form-select") }}
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Status</label>
+    {{ filtro_form.status(class="form-select") }}
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">OS</label>
+    {{ filtro_form.os_codigo(class="form-control", placeholder="Nº OS") }}
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Cliente</label>
+    {{ filtro_form.cliente(class="form-control", placeholder="Empresa") }}
+  </div>
+  <div class="col-12 d-flex gap-2">
+    <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i> Filtrar</button>
+    <a class="btn btn-link text-muted" href="{{ url_for('assist_bp.assistencia_fluxo') }}">Limpar</a>
+  </div>
+</form>
+
+{% set journey_steps = [
+  {'key': 'Entrada', 'title': 'Chegada / triagem', 'owners': ['Assistência Técnica']},
+  {'key': 'em progresso', 'title': 'Conserto interno', 'owners': ['Oficina', 'Assistência Técnica']},
+  {'key': 'fabrica', 'title': 'Envio fábrica', 'owners': ['Estoque', 'Assistência Técnica']},
+  {'key': 'aguardando', 'title': 'Aguardando retorno/aprovação', 'owners': ['Assistência Técnica', 'Cliente']},
+  {'key': 'concluído', 'title': 'Retorno / testes finais', 'owners': ['Oficina', 'Assistência Técnica']},
+  {'key': 'descarte', 'title': 'Descarte', 'owners': ['Assistência Técnica']}
+] %}
+
+<div class="lane-wrap">
+  <div id="lane-grid" class="lane-grid"></div>
+</div>
+
+<div class="d-flex justify-content-end mt-3" id="fluxo-pagination"></div>
+
+{# Modal Detalhes #}
+<div class="modal sollus-modal fade" id="modalDetalhes" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalhes da OS</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <dl class="row mb-0" id="detalhesContent"></dl>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Modal Nova OS (campos principais) #}
+<div class="modal sollus-modal fade" id="modalNova" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Nova OS - Assistência</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" action="{{ url_for('assist_bp.assistencia_criar') }}" enctype="multipart/form-data">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">{{ create_form.nome.label(class="form-label") }}{{ create_form.nome(class="form-control") }}</div>
+            <div class="col-md-3">{{ create_form.cnpj.label(class="form-label") }}{{ create_form.cnpj(class="form-control") }}</div>
+            <div class="col-md-3">{{ create_form.os_codigo.label(class="form-label") }}{{ create_form.os_codigo(class="form-control") }}</div>
+            <div class="col-md-4">{{ create_form.unidade.label(class="form-label") }}{{ create_form.unidade(class="form-select") }}</div>
+            <div class="col-md-4">{{ create_form.departamento_responsavel.label(class="form-label") }}{{ create_form.departamento_responsavel(class="form-select") }}</div>
+            <div class="col-md-4 d-none">{{ create_form.usuario_designado.label(class="form-label") }}{{ create_form.usuario_designado(class="form-control") }}</div>
+            <div class="col-md-4">{{ create_form.tipo_entrada.label(class="form-label") }}{{ create_form.tipo_entrada(class="form-select") }}</div>
+            <div class="col-md-4">{{ create_form.fluxo_tipo.label(class="form-label") }}{{ create_form.fluxo_tipo(class="form-select") }}</div>
+            <div class="col-md-4">{{ create_form.contrato.label(class="form-label") }}{{ create_form.contrato(class="form-select") }}</div>
+            <div class="col-md-4">{{ create_form.orcamento.label(class="form-label") }}{{ create_form.orcamento(class="form-control") }}</div>
+            <div class="col-md-4">{{ create_form.data_criacao.label(class="form-label") }}{{ create_form.data_criacao(class="form-control") }}</div>
+            <div class="col-md-4">{{ create_form.data_fim.label(class="form-label") }}{{ create_form.data_fim(class="form-control") }}</div>
+            <div class="col-md-4">{{ create_form.status.label(class="form-label") }}{{ create_form.status(class="form-select") }}</div>
+            <div class="col-12">{{ create_form.descricao.label(class="form-label") }}{{ create_form.descricao(class="form-control", rows="2") }}</div>
+            <div class="col-md-6">{{ create_form.notificacao.label(class="form-label") }}{{ create_form.notificacao(class="form-select") }}</div>
+            <div class="col-md-6">{{ create_form.arquivo.label(class="form-label") }}{{ create_form.arquivo(class="form-control") }}</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar OS</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+(function(){
+  const journeySteps = {{ journey_steps|tojson|default('[]') }};
+  const statusLabelMap = {{ status_label_map|tojson|default('{}') }};
+  const baseEndpoint = "{{ url_for('assist_bp.assistencia_fluxo_api') }}";
+  const queryParams = new URLSearchParams(window.location.search);
+  const laneGrid = document.getElementById('lane-grid');
+  const paginationEl = document.getElementById('fluxo-pagination');
+  const detalhesContent = document.getElementById('detalhesContent');
+  const detalhesModal = document.getElementById('modalDetalhes');
+
+  function buildLanes(data){
+    laneGrid.innerHTML = '';
+    journeySteps.forEach(step => {
+      const lane = document.createElement('div');
+      lane.className = 'lane-card';
+      lane.dataset.step = step.key;
+
+      const head = document.createElement('div');
+      head.className = 'lane-head';
+      head.innerHTML = `<div class="lane-title">${step.title}</div><span class="lane-count"><i class="bi bi-activity"></i>${getCount(data.status_counts, step.key)}</span>`;
+
+      const owners = document.createElement('div');
+      owners.className = 'lane-owners';
+      (step.owners || []).forEach(o => {
+        const tag = document.createElement('span');
+        tag.className = 'lane-owner';
+        tag.textContent = o;
+        owners.appendChild(tag);
+      });
+
+      lane.append(head, owners);
+
+      const items = data.groups[step.key] || [];
+      if(!items.length){
+        const empty = document.createElement('div');
+        empty.className = 'empty-lane';
+        empty.textContent = 'Sem OS nesta etapa.';
+        lane.appendChild(empty);
+      }else{
+        items.forEach(task => lane.appendChild(buildTaskCard(task)));
+      }
+
+      laneGrid.appendChild(lane);
+    });
+    attachDnD();
+  }
+
+  function getCount(counts, key){
+    const found = (counts || []).find(item => item[0] === key);
+    return found ? found[1] : 0;
+  }
+
+  function buildTaskCard(task){
+    const card = document.createElement('div');
+    card.className = 'task-card';
+    card.setAttribute('draggable','true');
+    card.dataset.taskId = task.id;
+    card.dataset.status = task.status;
+    card.addEventListener('click', evt => {
+      if(evt.target.closest('form')){ return; } // não abrir modal ao clicar no select/botão
+      showDetalhes(task);
+    });
+
+    const title = document.createElement('div');
+    title.className = 'task-title';
+    title.textContent = task.nome;
+    const meta = document.createElement('div');
+    meta.className = 'task-meta small';
+      meta.textContent = `OS ${task.os} · ${task.unidade_label || task.unidade || ''} · ${task.departamento_label || task.departamento_responsavel || ''}`;
+
+    const chips = document.createElement('div');
+    chips.className = 'task-chips';
+    chips.innerHTML = `
+      <span class="task-chip"><i class="bi bi-calendar2"></i> Limite: ${task.data_fim || 'N/D'}</span>
+      <span class="task-chip"><i class="bi bi-flag"></i> Status: ${statusLabelMap[task.status] || task.status_label}</span>
+      ${task.usuário_designado ? `<span class="task-chip"><i class="bi bi-person-gear"></i> ${task.usuário_designado}</span>` : '' }
+      <span class="task-chip"><i class="bi bi-diagram-3"></i> Fluxo: ${task.fluxo_tipo === 'fabrica' ? 'Fábrica' : 'Interno'}</span>
+      ${task.factory_followup_needed ? `<span class="task-chip text-warning"><i class="bi bi-exclamation-triangle"></i> 15d sem retorno</span>` : '' }
+      ${(task.requires_budget && !task.orçamento) ? `<span class="task-chip text-danger"><i class="bi bi-cash"></i> Orçamento obrigatório</span>` : '' }
+    `;
+
+    card.append(title, meta, chips);
+    if(task.descricao){
+      const desc = document.createElement('div');
+      desc.className = 'small text-muted';
+      desc.textContent = task.descricao;
+      card.appendChild(desc);
+    }
+
+    const form = document.createElement('form');
+    form.className = 'task-form';
+    form.method = 'post';
+    form.action = "{{ url_for('assist_bp.assistencia_mover', tarefa_id=0) }}".replace('0', task.id);
+    form.innerHTML = `
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <select name="status" class="form-select form-select-sm">
+        ${buildStatusOptions(task.status)}
+      </select>
+      <button class="btn btn-sm btn-primary" type="submit"><i class="bi bi-send-check"></i> Atualizar</button>
+    `;
+    card.appendChild(form);
+    return card;
+  }
+
+  function buildStatusOptions(selected){
+    return Object.entries(statusLabelMap).map(([value,label]) => {
+      const sel = value === selected ? 'selected' : '';
+      return `<option value="${value}" ${sel}>${label}</option>`;
+    }).join('');
+  }
+
+  function showDetalhes(task){
+    if(!detalhesContent || !detalhesModal){ return; }
+    const rows = [
+      ['Empresa', task.nome || ''],
+      ['OS', task.os || ''],
+      ['CNPJ', task.cnpj || ''],
+      ['Unidade', task.unidade_label || task.unidade || ''],
+      ['Departamento', task.departamento_label || task.departamento_responsavel || ''],
+      ['Status', statusLabelMap[task.status] || task.status_label],
+      ['Fluxo', task.fluxo_tipo === 'fabrica' ? 'Envio fábrica' : 'Conserto interno'],
+      ['Tipo entrada', task.tipo_entrada || ''],
+      ['Contrato', task.contrato || ''],
+      ['Orçamento', task.orçamento || ''],
+      ['Data entrada', task.data_criacao || ''],
+      ['Data limite', task.data_fim || ''],
+      ['Envio fábrica', task.data_envio || ''],
+      ['Retorno previsto', task.data_retorno || ''],
+      ['Descrição', task.descricao || ''],
+    ];
+    detalhesContent.innerHTML = rows.map(([k,v]) => `
+      <dt class="col-sm-4 text-muted">${k}</dt>
+      <dd class="col-sm-8">${v || '-'}</dd>
+    `).join('');
+    const modal = bootstrap.Modal.getOrCreateInstance(detalhesModal);
+    modal.show();
+  }
+
+  function attachDnD(){
+    document.querySelectorAll('.lane-card').forEach(lane => {
+      lane.addEventListener('dragover', evt => { evt.preventDefault(); lane.classList.add('border-primary'); });
+      lane.addEventListener('dragleave', () => lane.classList.remove('border-primary'));
+      lane.addEventListener('drop', evt => {
+        evt.preventDefault();
+        lane.classList.remove('border-primary');
+        const taskId = evt.dataTransfer.getData('task-id');
+        const status = lane.getAttribute('data-step');
+        if(!taskId || !status){ return; }
+        postMove(taskId, status);
+      });
+    });
+
+    document.querySelectorAll('.task-card').forEach(card => {
+      card.addEventListener('dragstart', evt => {
+        evt.dataTransfer.setData('task-id', card.getAttribute('data-task-id'));
+        evt.dataTransfer.effectAllowed = 'move';
+      });
+    });
+  }
+
+  function postMove(taskId, status){
+    const formData = new FormData();
+    formData.append('status', status);
+    formData.append('csrf_token', '{{ csrf_token() }}');
+    fetch("{{ url_for('assist_bp.assistencia_mover', tarefa_id=0) }}".replace('0', taskId), { method: 'POST', body: formData })
+      .then(() => loadPage(currentPage))
+      .catch(() => loadPage(currentPage));
+  }
+
+  function buildPageList(current, total) {
+    const pages = [];
+    [1, current, current + 1, current + 2, current + 3, total].forEach(page => {
+      if (page >= 1 && page <= total && !pages.includes(page)) {
+        pages.push(page);
+      }
+    });
+    return pages;
+  }
+
+  function buildPagination(data){
+    paginationEl.innerHTML = '';
+    const pagination = data.pagination || {};
+    if(!pagination.pages || pagination.pages <= 1){ return; }
+    const wrapper = document.createElement('div');
+    wrapper.className = 'd-flex align-items-center gap-2 flex-wrap';
+    const pages = buildPageList(pagination.page, pagination.pages);
+
+    wrapper.innerHTML = `
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item ${pagination.has_prev ? '' : 'disabled'}">
+          <a class="page-link" href="#" data-page="${pagination.prev_num || 1}">Anterior</a>
+        </li>
+        ${pages.map(pageNum => `
+          <li class="page-item ${pageNum === pagination.page ? 'active' : ''}">
+            <a class="page-link" href="#" data-page="${pageNum}">${pageNum}</a>
+          </li>
+        `).join('')}
+        <li class="page-item ${pagination.has_next ? '' : 'disabled'}">
+          <a class="page-link" href="#" data-page="${pagination.next_num || pagination.pages}">Próximo</a>
+        </li>
+      </ul>
+      <form class="d-flex align-items-center gap-2" id="fluxo-page-jump">
+        <label class="small text-muted mb-0" for="fluxo-page-input">Página</label>
+        <input type="number" min="1" class="form-control form-control-sm" id="fluxo-page-input" placeholder="Página">
+        <button class="btn btn-outline-secondary btn-sm" type="submit">Ir</button>
+      </form>
+    `;
+    paginationEl.appendChild(wrapper);
+    wrapper.querySelectorAll('a[data-page]').forEach(link => {
+      link.addEventListener('click', evt => {
+        evt.preventDefault();
+        if (link.closest('.disabled')) return;
+        const page = parseInt(link.dataset.page, 10);
+        if(page){ loadPage(page); }
+      });
+    });
+    const jumpForm = wrapper.querySelector('#fluxo-page-jump');
+    const jumpInput = wrapper.querySelector('#fluxo-page-input');
+    if (jumpInput) {
+      jumpInput.max = pagination.pages;
+      jumpInput.value = pagination.page;
+    }
+    if (jumpForm && jumpInput) {
+      jumpForm.addEventListener('submit', evt => {
+        evt.preventDefault();
+        const page = parseInt(jumpInput.value, 10);
+        if(page){ loadPage(page); }
+      });
+    }
+  }
+
+  let currentPage = parseInt(queryParams.get('page') || '1', 10);
+
+  function loadPage(page){
+    currentPage = page;
+    queryParams.set('page', page);
+    const url = `${baseEndpoint}?${queryParams.toString()}`;
+    laneGrid.innerHTML = '<div class="text-muted">Carregando...</div>';
+    fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        buildLanes(data);
+        buildPagination(data);
+      })
+      .catch(() => {
+        laneGrid.innerHTML = '<div class="text-danger">Erro ao carregar dados.</div>';
+      });
+  }
+
+  loadPage(currentPage);
+})();
+</script>
+{% endblock %}

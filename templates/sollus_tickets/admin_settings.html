@@ -1,0 +1,1300 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Administração Sollus Tickets{% endblock %}
+
+{% block content %}
+<style>
+  :root {
+    --bg-soft: #f8f9fa;
+    --border-soft: #eaedf1;
+    --sidebar-width: 280px;
+    --transition-speed: 0.2s;
+  }
+  
+  .premium-settings-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+  
+  /* Sidebar Navigation */
+  .settings-sidebar {
+    position: sticky;
+    top: 2rem;
+    padding-right: 1.5rem;
+  }
+  
+  .settings-nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    color: #4b5563;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    transition: all var(--transition-speed);
+    margin-bottom: 0.25rem;
+    text-decoration: none;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+  }
+  
+  .settings-nav-link:hover {
+    background-color: var(--bg-soft);
+    color: #1f2937;
+  }
+  
+  .settings-nav-link.active {
+    background-color: #e0e7ff;
+    color: #4338ca;
+    font-weight: 600;
+  }
+  
+  .settings-nav-link i {
+    width: 24px;
+    margin-right: 0.75rem;
+    font-size: 1.1rem;
+    text-align: center;
+  }
+
+  /* Cards & Forms */
+  .settings-card {
+    background: #ffffff;
+    border: 1px solid var(--border-soft);
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    margin-bottom: 2rem;
+    overflow: hidden;
+  }
+  
+  .settings-card-header {
+    background: #ffffff;
+    border-bottom: 1px solid var(--border-soft);
+    padding: 1.25rem 1.5rem;
+  }
+  
+  .settings-card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+  }
+  
+  .settings-card-subtitle {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+  }
+  
+  .settings-card-body {
+    padding: 1.5rem;
+  }
+  
+  /* Inputs Customizations */
+  .premium-input {
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.95rem;
+    transition: all var(--transition-speed);
+    background-color: #f9fafb;
+  }
+  
+  .premium-input:focus {
+    background-color: #ffffff;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+  
+  .form-label-premium {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.35rem;
+  }
+  
+  /* Form Row Actions */
+  .item-row {
+    transition: background-color var(--transition-speed);
+    border: 1px solid var(--border-soft);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: #fafafa;
+  }
+  
+  .item-row:hover {
+    background-color: #ffffff;
+    border-color: #d1d5db;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  }
+  
+  .btn-premium {
+    padding: 0.625rem 1.25rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    transition: all var(--transition-speed);
+  }
+  
+  .btn-primary-premium {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+    border: none;
+    color: white;
+  }
+  
+  .btn-primary-premium:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(79, 70, 229, 0.25);
+    color: white;
+  }
+
+  .btn-action-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+  }
+  
+  .tab-pane {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Checklist scrollable styles */
+  .checklist-container {
+    height: 120px;
+    padding: 0.5rem 0.75rem;
+    overflow-y: auto;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background-color: #f9fafb;
+    transition: border-color var(--transition-speed), background-color var(--transition-speed);
+  }
+  .checklist-container:focus-within {
+    background-color: #ffffff;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+  html[data-theme="dark"] .checklist-container {
+    border-color: rgba(148, 163, 184, 0.2);
+    background-color: rgba(15, 23, 42, 0.3);
+  }
+  html[data-theme="dark"] .checklist-container:focus-within {
+    background-color: rgba(15, 23, 42, 0.5);
+    border-color: #6366f1;
+  }
+  .checklist-item {
+    display: flex;
+    align-items: center;
+    padding: 0.25rem 0;
+    font-size: 0.875rem;
+  }
+  .checklist-item .form-check-input {
+    margin-top: 0;
+    margin-right: 0.5rem;
+    cursor: pointer;
+  }
+  .checklist-item .form-check-label {
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 0;
+  }
+  .checklist-item.selected .form-check-label {
+    font-weight: 600;
+    color: #4f46e5;
+  }
+  html[data-theme="dark"] .checklist-item.selected .form-check-label {
+    color: #818cf8;
+  }
+</style>
+
+<div class="premium-settings-container">
+  <div class="mb-5">
+    {{ page_hero(title='Configurações', subtitle='Gerencie as preferências e parâmetros do Sollus Tickets.', eyebrow='Administração') }}
+  </div>
+
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-12 col-lg-3">
+      <div class="settings-sidebar" id="admin-tabs" role="tablist">
+        <button class="settings-nav-link active" data-bs-toggle="pill" data-bs-target="#tab-geral" type="button">
+          <i class="fa-solid fa-building"></i> Departamentos & Equipes
+        </button>
+        <button class="settings-nav-link" data-bs-toggle="pill" data-bs-target="#tab-fluxos" type="button">
+          <i class="fa-solid fa-diagram-project"></i> Filas & SLAs
+        </button>
+        <button class="settings-nav-link" data-bs-toggle="pill" data-bs-target="#tab-comunicacao" type="button">
+          <i class="fa-solid fa-comment-dots"></i> Respostas & Templates
+        </button>
+        <button class="settings-nav-link" data-bs-toggle="pill" data-bs-target="#tab-email" type="button">
+          <i class="fa-solid fa-inbox"></i> Contas de E-mail
+        </button>
+        <button class="settings-nav-link" data-bs-toggle="pill" data-bs-target="#tab-acesso" type="button">
+          <i class="fa-solid fa-shield-halved"></i> Acesso & Permissões
+        </button>
+        <button class="settings-nav-link" data-bs-toggle="pill" data-bs-target="#tab-controle" type="button">
+          <i class="fa-solid fa-filter"></i> Regras & Banlist
+        </button>
+        <button class="settings-nav-link" data-bs-toggle="pill" data-bs-target="#tab-filas" type="button">
+          <i class="fa-solid fa-table-columns"></i> Visão de Filas
+        </button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="col-12 col-lg-9">
+      <div class="tab-content" id="admin-tabs-content">
+
+        {# ========== GERAL ========== #}
+        <div class="tab-pane fade show active" id="tab-geral" role="tabpanel">
+          
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <h3 class="settings-card-title">Departamentos</h3>
+              <p class="settings-card-subtitle">Organize as áreas de atendimento da sua empresa.</p>
+            </div>
+            <div class="settings-card-body">
+              <form class="item-row mb-4" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="department">
+                <div class="row g-3 align-items-end">
+                  <div class="col-md-3">
+                    <label class="form-label-premium">Nome</label>
+                    <input class="form-control premium-input" name="name" placeholder="Ex: Financeiro" required>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label-premium">E-mail</label>
+                    <input class="form-control premium-input" name="email" placeholder="contato@empresa.com">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label-premium">Template de E-mail</label>
+                    <select class="form-select premium-input" name="email_template_group_id">
+                      <option value="">Nenhum</option>
+                      {% for g in template_groups %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-2 d-flex gap-3 pb-2">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="is_active" checked id="d_act_n">
+                      <label class="form-check-label small" for="d_act_n">Ativo</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="auto_assign_enabled" id="d_auto_n">
+                      <label class="form-check-label small" for="d_auto_n">Auto</label>
+                    </div>
+                  </div>
+                  <div class="col-md-1">
+                    <button class="btn btn-primary-premium w-100"><i class="fa-solid fa-plus"></i></button>
+                  </div>
+                </div>
+              </form>
+
+              {% for dept in departments %}
+              <div class="item-row">
+                <form class="row g-3 align-items-center" method="post">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="department">
+                  <input type="hidden" name="id" value="{{ dept.id }}">
+                  <div class="col-md-3">
+                    <input class="form-control premium-input form-control-sm" name="name" value="{{ dept.name }}">
+                  </div>
+                  <div class="col-md-3">
+                    <input class="form-control premium-input form-control-sm" name="email" value="{{ dept.email or '' }}" placeholder="Sem e-mail">
+                  </div>
+                  <div class="col-md-3">
+                    <select class="form-select premium-input form-select-sm" name="email_template_group_id">
+                      <option value="">Sem Template</option>
+                      {% for g in template_groups %}<option value="{{ g.id }}" {% if dept.email_template_group_id==g.id %}selected{% endif %}>{{ g.name }}</option>{% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-2 d-flex gap-2">
+                    <div class="form-check mb-0">
+                      <input class="form-check-input" type="checkbox" name="is_active" {% if dept.is_active %}checked{% endif %} id="d_act_{{ dept.id }}">
+                      <label class="form-check-label small" for="d_act_{{ dept.id }}">Ativo</label>
+                    </div>
+                    <div class="form-check mb-0">
+                      <input class="form-check-input" type="checkbox" name="auto_assign_enabled" {% if dept.auto_assign_enabled %}checked{% endif %} id="d_auto_{{ dept.id }}">
+                      <label class="form-check-label small" for="d_auto_{{ dept.id }}">Auto</label>
+                    </div>
+                  </div>
+                  <div class="col-md-1 d-flex justify-content-end gap-1">
+                    <button class="btn btn-action-icon btn-light text-primary" title="Salvar Alterações"><i class="fa-solid fa-check"></i></button>
+                    <button type="submit" form="del_dept_{{ dept.id }}" class="btn btn-action-icon btn-light text-danger" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                  </div>
+                </form>
+                <form id="del_dept_{{ dept.id }}" method="post" class="d-none">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="kind" value="department">
+                  <input type="hidden" name="id" value="{{ dept.id }}">
+                </form>
+              </div>
+              {% else %}
+              <div class="text-center py-4 text-muted"><i class="fa-solid fa-building fa-3x mb-3 opacity-25"></i><br>Nenhum departamento cadastrado.</div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <h3 class="settings-card-title">Equipes</h3>
+              <p class="settings-card-subtitle">Agrupe seus agentes para melhor roteamento de chamados.</p>
+            </div>
+            <div class="settings-card-body">
+              <form class="item-row mb-4" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="team">
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label-premium">Nome da Equipe</label>
+                    <input class="form-control premium-input" name="name" placeholder="Ex: Suporte Nível 1" required>
+                    <div class="form-check mt-3">
+                      <input class="form-check-input" type="checkbox" name="is_active" checked id="t_act_n">
+                      <label class="form-check-label small" for="t_act_n">Equipe Ativa</label>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label-premium">Membros da Equipe</label>
+                    <div class="checklist-container">
+                      {% for a in agents %}
+                        <div class="checklist-item">
+                          <input class="form-check-input" type="checkbox" name="member_ids" value="{{ a.id }}" id="member_new_{{ a.id }}">
+                          <label class="form-check-label text-truncate" for="member_new_{{ a.id }}">
+                            {{ a.name or a.email }}
+                          </label>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary-premium w-100">Criar</button>
+                  </div>
+                </div>
+              </form>
+
+              {% for team in teams %}
+              <div class="item-row">
+                <form class="row g-3" method="post">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="team">
+                  <input type="hidden" name="id" value="{{ team.id }}">
+                  <div class="col-md-4">
+                    <input class="form-control premium-input form-control-sm mb-2" name="name" value="{{ team.name }}">
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="is_active" {% if team.is_active %}checked{% endif %} id="t_act_{{ team.id }}">
+                      <label class="form-check-label small" for="t_act_{{ team.id }}">Equipe Ativa</label>
+                    </div>
+                    <span class="badge bg-indigo text-primary-emphasis bg-primary-subtle rounded-pill px-3">{{ team.members|length }} membros</span>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="checklist-container">
+                      {# Primeiro renderiza os membros selecionados da equipe (em destaque no topo) #}
+                      {% for a in agents %}
+                        {% set is_m = namespace(v=false) %}
+                        {% for m in team.members %}{% if m.user_id==a.id %}{% set is_m.v=true %}{% endif %}{% endfor %}
+                        {% if is_m.v %}
+                          <div class="checklist-item selected">
+                            <input class="form-check-input" type="checkbox" name="member_ids" value="{{ a.id }}" checked id="member_{{ team.id }}_{{ a.id }}">
+                            <label class="form-check-label text-truncate" for="member_{{ team.id }}_{{ a.id }}">
+                              {{ a.name or a.email }}
+                            </label>
+                          </div>
+                        {% endif %}
+                      {% endfor %}
+                      {# Em seguida renderiza os agentes restantes #}
+                      {% for a in agents %}
+                        {% set is_m = namespace(v=false) %}
+                        {% for m in team.members %}{% if m.user_id==a.id %}{% set is_m.v=true %}{% endif %}{% endfor %}
+                        {% if not is_m.v %}
+                          <div class="checklist-item">
+                            <input class="form-check-input" type="checkbox" name="member_ids" value="{{ a.id }}" id="member_{{ team.id }}_{{ a.id }}">
+                            <label class="form-check-label text-truncate" for="member_{{ team.id }}_{{ a.id }}">
+                              {{ a.name or a.email }}
+                            </label>
+                          </div>
+                        {% endif %}
+                      {% endfor %}
+                    </div>
+                  </div>
+                  <div class="col-md-2 d-flex flex-column gap-2 justify-content-end">
+                    <button class="btn btn-sm btn-outline-primary w-100 rounded-pill">Salvar</button>
+                    <button type="submit" form="del_team_{{ team.id }}" class="btn btn-sm btn-outline-danger w-100 rounded-pill">Excluir</button>
+                  </div>
+                </form>
+                <form id="del_team_{{ team.id }}" method="post" class="d-none">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="kind" value="team">
+                  <input type="hidden" name="id" value="{{ team.id }}">
+                </form>
+              </div>
+              {% else %}
+              <div class="text-center py-4 text-muted"><i class="fa-solid fa-users fa-3x mb-3 opacity-25"></i><br>Nenhuma equipe cadastrada.</div>
+              {% endfor %}
+            </div>
+          </div>
+
+        </div>
+
+        {# ========== FLUXOS E SLAs ========== #}
+        <div class="tab-pane fade" id="tab-fluxos" role="tabpanel">
+          
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <h3 class="settings-card-title">Filas de Atendimento</h3>
+              <p class="settings-card-subtitle">Direcione chamados para filas específicas com base em regras.</p>
+            </div>
+            <div class="settings-card-body">
+              <form class="item-row mb-4" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="queue">
+                <div class="row g-3 align-items-end">
+                  <div class="col-md-4">
+                    <label class="form-label-premium">Nome da Fila</label>
+                    <input class="form-control premium-input" name="name" required>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label-premium">Departamento (Op)</label>
+                    <select class="form-select premium-input" name="department_id">
+                      <option value="">Nenhum</option>
+                      {% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label-premium">Equipe (Op)</label>
+                    <select class="form-select premium-input" name="team_id">
+                      <option value="">Nenhuma</option>
+                      {% for t in teams %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-2 d-grid">
+                    <button class="btn btn-primary-premium">Adicionar</button>
+                  </div>
+                </div>
+              </form>
+
+              {% for q in queues %}
+              <div class="item-row d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>{{ q.name }}</strong>
+                  <div class="small text-muted mt-1">
+                    {% if q.department %}Depto: {{ q.department.name }}{% endif %}
+                    {% if q.team %} | Equipe: {{ q.team.name }}{% endif %}
+                  </div>
+                </div>
+                <form method="post" class="m-0">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="kind" value="queue">
+                  <input type="hidden" name="id" value="{{ q.id }}">
+                  <button class="btn btn-action-icon btn-light text-danger"><i class="fa-solid fa-trash"></i></button>
+                </form>
+              </div>
+              {% else %}
+              <div class="text-center py-4 text-muted"><i class="fa-solid fa-layer-group fa-3x mb-3 opacity-25"></i><br>Nenhuma fila cadastrada.</div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <h3 class="settings-card-title">Acordos de Nível de Serviço (SLA)</h3>
+              <p class="settings-card-subtitle">Gerencie os prazos esperados de resolução.</p>
+            </div>
+            <div class="settings-card-body">
+              <form class="item-row mb-4" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="sla">
+                <div class="row g-3 align-items-end">
+                  <div class="col-md-6">
+                    <label class="form-label-premium">Nome do Plano SLA</label>
+                    <input class="form-control premium-input" name="name" required>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label-premium">Prazo (Horas)</label>
+                    <input class="form-control premium-input" type="number" name="grace_period_hours" value="48" min="1">
+                  </div>
+                  <div class="col-md-3 d-grid">
+                    <button class="btn btn-outline-primary btn-premium">Salvar Plano</button>
+                  </div>
+                </div>
+              </form>
+
+              {% for s in slas %}
+              <div class="item-row d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>{{ s.name }}</strong>
+                  <span class="badge bg-light text-dark ms-2"><i class="fa-regular fa-clock me-1"></i>{{ s.grace_period_hours }}h</span>
+                </div>
+                <form method="post" class="m-0">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="kind" value="sla">
+                  <input type="hidden" name="id" value="{{ s.id }}">
+                  <button class="btn btn-action-icon btn-light text-danger"><i class="fa-solid fa-trash"></i></button>
+                </form>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <h3 class="settings-card-title">Tópicos de Ajuda e Campos Dinâmicos</h3>
+              <p class="settings-card-subtitle">Categorias disponíveis para criação de chamados.</p>
+            </div>
+            <div class="settings-card-body">
+              <form class="item-row mb-4" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="topic">
+                <div class="row g-3 align-items-end">
+                  <div class="col-md-6">
+                    <label class="form-label-premium">Nome do Tópico</label>
+                    <input class="form-control premium-input" name="name" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label-premium">Departamento Destino</label>
+                    <select class="form-select premium-input" name="department_id">
+                      <option value="">(Automático)</option>
+                      {% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-2 d-grid">
+                    <button class="btn btn-primary-premium">Criar</button>
+                  </div>
+                </div>
+              </form>
+
+              {% for t in topics %}
+              <div class="item-row d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>{{ t.name }}</strong>
+                  {% if t.department %}<span class="badge bg-light text-muted ms-2"><i class="fa-solid fa-building me-1"></i>{{ t.department.name }}</span>{% endif %}
+                </div>
+                <form method="post" class="m-0">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="kind" value="topic">
+                  <input type="hidden" name="id" value="{{ t.id }}">
+                  <button class="btn btn-action-icon btn-light text-danger"><i class="fa-solid fa-trash"></i></button>
+                </form>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+        </div>
+
+        {# ========== COMUNICAÇÃO ========== #}
+        <div class="tab-pane fade" id="tab-comunicacao" role="tabpanel">
+          
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <h3 class="settings-card-title">Respostas Prontas</h3>
+              <p class="settings-card-subtitle">Crie textos padronizados para acelerar o atendimento.</p>
+            </div>
+            <div class="settings-card-body">
+              <form class="item-row mb-4" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="canned">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label-premium">Título da Resposta</label>
+                    <input class="form-control premium-input" name="title" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label-premium">Departamento Específico (Opcional)</label>
+                    <select class="form-select premium-input" name="department_id">
+                      <option value="">Todos</option>
+                      {% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label-premium">Mensagem</label>
+                    <textarea class="form-control premium-input" name="body" rows="3" required></textarea>
+                  </div>
+                  <div class="col-12 text-end">
+                    <button class="btn btn-primary-premium px-4">Salvar Resposta</button>
+                  </div>
+                </div>
+              </form>
+
+              {% for item in canned %}
+              <div class="item-row">
+                <form class="row g-3" method="post">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="canned">
+                  <input type="hidden" name="id" value="{{ item.id }}">
+                  <div class="col-md-4">
+                    <input class="form-control premium-input form-control-sm mb-2" name="title" value="{{ item.title }}">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="is_active" {% if item.is_active %}checked{% endif %} id="can_{{ item.id }}">
+                      <label class="form-check-label small" for="can_{{ item.id }}">Ativa</label>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <textarea class="form-control premium-input form-control-sm" name="body" rows="2">{{ item.body }}</textarea>
+                  </div>
+                  <div class="col-md-2 d-flex flex-column gap-2 justify-content-end">
+                    <button class="btn btn-sm btn-outline-primary rounded-pill w-100">Atualizar</button>
+                    <button type="submit" form="del_can_{{ item.id }}" class="btn btn-sm btn-outline-danger rounded-pill w-100">Excluir</button>
+                  </div>
+                </form>
+                <form id="del_can_{{ item.id }}" method="post" class="d-none">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="kind" value="canned">
+                  <input type="hidden" name="id" value="{{ item.id }}">
+                </form>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <h3 class="settings-card-title">Templates de Notificação (E-mail)</h3>
+              <p class="settings-card-subtitle">Personalize as mensagens automáticas enviadas pelo sistema.</p>
+            </div>
+            <div class="settings-card-body">
+              <div class="alert alert-light border-0 shadow-sm rounded-3 mb-4 text-muted small">
+                <i class="fa-solid fa-code me-2 text-primary"></i> <strong>Variáveis Suportadas:</strong> <code>{ticket_number}</code> <code>{ticket_subject}</code> <code>{requester}</code> <code>{agent}</code> <code>{body}</code> <code>{ticket_url}</code>
+              </div>
+              
+              <form class="item-row mb-4" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="template">
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label-premium">Grupo</label>
+                    <select class="form-select premium-input" name="group_id">
+                      {% for g in template_groups %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label-premium">Evento</label>
+                    <input class="form-control premium-input" name="event_key" placeholder="Ex: created, closed, reply" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label-premium">Assunto do E-mail</label>
+                    <input class="form-control premium-input" name="subject" required>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label-premium">Corpo (HTML)</label>
+                    <textarea class="form-control premium-input text-monospace small" name="body_html" rows="4" required></textarea>
+                  </div>
+                  <div class="col-12 text-end">
+                    <button class="btn btn-primary-premium px-4">Salvar Template</button>
+                  </div>
+                </div>
+              </form>
+
+              {% for tpl in templates %}
+              <div class="item-row p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill px-3 py-1 me-2">{{ tpl.event_key }}</span>
+                    <strong>{{ tpl.subject }}</strong>
+                    {% if not tpl.is_active %}<span class="badge bg-warning ms-2">Inativo</span>{% endif %}
+                  </div>
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-info rounded-pill px-3" onclick="previewTemplate({{ tpl.id }},'{{ csrf_token() }}')" type="button">Ver Preview</button>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3" type="button" data-bs-toggle="collapse" data-bs-target="#editTpl{{ tpl.id }}">Editar</button>
+                  </div>
+                </div>
+                <div class="collapse" id="editTpl{{ tpl.id }}">
+                  <form class="row g-3 border-top pt-3 mt-1" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="template">
+                    <input type="hidden" name="group_id" value="{{ tpl.group_id }}">
+                    <input type="hidden" name="event_key" value="{{ tpl.event_key }}">
+                    <div class="col-md-12">
+                      <label class="form-label-premium small">Assunto</label>
+                      <input class="form-control premium-input form-control-sm" name="subject" value="{{ tpl.subject }}">
+                    </div>
+                    <div class="col-md-12">
+                      <label class="form-label-premium small">HTML</label>
+                      <textarea class="form-control premium-input form-control-sm text-monospace" name="body_html" rows="5">{{ tpl.body_html }}</textarea>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-center">
+                      <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" name="is_active" {% if tpl.is_active %}checked{% endif %} id="tpl_act_{{ tpl.id }}">
+                        <label class="form-check-label small" for="tpl_act_{{ tpl.id }}">Ativo</label>
+                      </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                      <button class="btn btn-sm btn-primary rounded-pill px-4">Salvar</button>
+                      <button type="submit" form="del_tpl_{{ tpl.id }}" class="btn btn-sm btn-outline-danger rounded-pill px-3 ms-2">Excluir</button>
+                    </div>
+                  </form>
+                  <form id="del_tpl_{{ tpl.id }}" method="post" class="d-none">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="kind" value="template">
+                    <input type="hidden" name="id" value="{{ tpl.id }}">
+                  </form>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+        </div>
+
+        {# ========== EMAIL (CAIXAS) ========== #}
+        <div class="tab-pane fade" id="tab-email" role="tabpanel">
+          <div class="settings-card">
+            <div class="settings-card-header d-flex justify-content-between align-items-center">
+              <div>
+                <h3 class="settings-card-title">Caixas de E-mail</h3>
+                <p class="settings-card-subtitle">Contas IMAP/POP monitoradas para gerar chamados via E-mail.</p>
+              </div>
+              <form method="post" class="m-0">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-outline-primary btn-premium py-2" formaction="{{ url_for('sollus_tickets.sync_mailboxes') }}"><i class="fa-solid fa-rotate me-2"></i>Sincronizar Todas</button>
+              </form>
+            </div>
+            <div class="settings-card-body">
+              <form class="item-row mb-5" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="mailbox">
+                <h6 class="text-uppercase small fw-bold text-muted mb-3">Conectar Nova Caixa</h6>
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label-premium">Nome de Exibição</label>
+                    <input class="form-control premium-input" name="name" placeholder="Ex: Suporte TI" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label-premium">Endereço de E-mail</label>
+                    <input class="form-control premium-input" type="email" name="email" placeholder="suporte@empresa.com" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label-premium">Protocolo</label>
+                    <select class="form-select premium-input" name="protocol"><option value="imap">IMAP (Recomendado)</option><option value="pop">POP</option></select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label-premium">Servidor Host</label>
+                    <input class="form-control premium-input" name="host" placeholder="imap.gmail.com" required>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label-premium">Porta</label>
+                    <input class="form-control premium-input" type="number" name="port" value="993">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label-premium">Pasta</label>
+                    <input class="form-control premium-input" name="folder" value="INBOX">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label-premium">Usuário (Login)</label>
+                    <input class="form-control premium-input" name="username" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label-premium">Senha / App Password</label>
+                    <input class="form-control premium-input" type="password" name="password" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label-premium">Intervalo (Minutos)</label>
+                    <input class="form-control premium-input" type="number" name="fetch_frequency_minutes" value="5">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label-premium">Ação Pós-leitura</label>
+                    <select class="form-select premium-input" name="postfetch"><option value="nothing">Não fazer nada</option><option value="archive">Mover p/ Pasta</option><option value="delete">Excluir E-mail</option></select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label-premium">Departamento Destino</label>
+                    <select class="form-select premium-input" name="department_id">
+                      <option value="">(Automático)</option>
+                      {% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-12 mt-4 d-flex justify-content-between align-items-center">
+                    <div class="d-flex gap-4">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="use_ssl" checked id="mb_ssl_n">
+                        <label class="form-check-label" for="mb_ssl_n">Requer SSL</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="enabled" checked id="mb_en_n">
+                        <label class="form-check-label fw-bold text-success" for="mb_en_n">Ativar Leitura</label>
+                      </div>
+                    </div>
+                    <button class="btn btn-primary-premium px-5 py-2">Conectar Conta</button>
+                  </div>
+                </div>
+              </form>
+
+              <h6 class="text-uppercase small fw-bold text-muted mb-3">Contas Vinculadas</h6>
+              <div class="row g-3">
+                {% for mb in mailboxes %}
+                <div class="col-md-6">
+                  <div class="card h-100 border-0 shadow-sm" style="background: #f8fafc; border-radius: 1rem;">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                          <h5 class="mb-1 text-dark">{{ mb.name }}</h5>
+                          <span class="text-muted small"><i class="fa-regular fa-envelope me-1"></i> {{ mb.email }}</span>
+                        </div>
+                        <span class="badge {% if mb.enabled %}bg-success-subtle text-success-emphasis border border-success-subtle{% else %}bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle{% endif %} rounded-pill px-3 py-2">
+                          {% if mb.enabled %}<i class="fa-solid fa-circle-check me-1"></i> Sincronizando{% else %}Pausada{% endif %}
+                        </span>
+                      </div>
+                      <ul class="list-unstyled small text-muted mb-4">
+                        <li class="mb-1"><i class="fa-solid fa-server me-2 opacity-50"></i> {{ mb.protocol|upper }} / {{ mb.host }}:{{ mb.port }}</li>
+                        <li class="mb-1"><i class="fa-regular fa-folder-open me-2 opacity-50"></i> Pasta: {{ mb.folder }} (A cada {{ mb.fetch_frequency_minutes }}m)</li>
+                        <li><i class="fa-solid fa-clock-rotate-left me-2 opacity-50"></i> Última sync: {% if mb.last_sync_at %}{{ mb.last_sync_at | local('%d/%m/%Y %H:%M') }}{% else %}Nunca{% endif %}</li>
+                        {% if mb.num_errors %}<li class="text-danger mt-1"><i class="fa-solid fa-triangle-exclamation me-2"></i> {{ mb.num_errors }} erros de conexão relatados.</li>{% endif %}
+                      </ul>
+                      
+                      <div class="d-flex gap-2">
+                        <form method="post" class="flex-grow-1">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                          {% if mb.enabled %}
+                            <button class="btn btn-sm btn-outline-warning w-100 rounded-pill fw-semibold" formaction="{{ url_for('sollus_tickets.toggle_mailbox_active', mailbox_id=mb.id) }}">Pausar</button>
+                          {% else %}
+                            <button class="btn btn-sm btn-success w-100 rounded-pill fw-semibold" formaction="{{ url_for('sollus_tickets.toggle_mailbox_active', mailbox_id=mb.id) }}">Retomar</button>
+                          {% endif %}
+                        </form>
+                        <form method="post">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                          <button class="btn btn-sm btn-outline-secondary btn-action-icon rounded-circle" formaction="{{ url_for('sollus_tickets.sync_mailbox', mailbox_id=mb.id) }}" title="Sincronizar Agora"><i class="fa-solid fa-rotate"></i></button>
+                        </form>
+                        <form method="post">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                          <input type="hidden" name="action" value="delete">
+                          <input type="hidden" name="kind" value="mailbox">
+                          <input type="hidden" name="id" value="{{ mb.id }}">
+                          <button class="btn btn-sm btn-outline-danger btn-action-icon rounded-circle" title="Excluir Conta"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {% else %}
+                <div class="col-12 text-center py-4 text-muted"><i class="fa-solid fa-inbox fa-3x mb-3 opacity-25"></i><br>Nenhuma conta de e-mail conectada.</div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# ========== ACESSO E PERMISSÕES ========== #}
+        <div class="tab-pane fade" id="tab-acesso" role="tabpanel">
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <h3 class="settings-card-title">Perfis de Acesso (Roles)</h3>
+              <p class="settings-card-subtitle">Configure o que os técnicos podem fazer no Sollus Tickets.</p>
+            </div>
+            <div class="settings-card-body">
+              {% set perm_fields = [('can_view_all','Ver todos os tickets'),('can_assign','Atribuir tickets'),('can_manage_admin','Acesso Admin'),('can_close','Fechar tickets'),('can_reopen','Reabrir tickets'),('can_internal_note','Notas internas'),('can_transfer','Transferir depto'),('can_delete','Excluir tickets'),('can_merge','Mesclar tickets'),('limit_access','Limitar a atribuídos')] %}
+              
+              <form class="item-row mb-4" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="role_permission">
+                <div class="row g-3">
+                  <div class="col-md-12">
+                    <label class="form-label-premium">Nome do Perfil (Chave exata do usuário. Ex: tecnico, gestor, admin)</label>
+                    <input class="form-control premium-input form-control-lg" name="role_key" required>
+                  </div>
+                  <div class="col-12 mt-3">
+                    <label class="form-label-premium mb-3">Permissões Permitidas</label>
+                    <div class="row g-2">
+                      {% for field, label in perm_fields %}
+                      <div class="col-6 col-md-4">
+                        <div class="form-check custom-checkbox">
+                          <input class="form-check-input" type="checkbox" name="{{ field }}" id="new_{{ field }}">
+                          <label class="form-check-label" for="new_{{ field }}">{{ label }}</label>
+                        </div>
+                      </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  <div class="col-12 mt-4 text-end">
+                    <button class="btn btn-primary-premium px-5 py-2">Salvar Perfil</button>
+                  </div>
+                </div>
+              </form>
+
+              <h6 class="text-uppercase small fw-bold text-muted mb-3">Perfis Configurados</h6>
+              <div class="accordion accordion-flush" id="accordionPerms">
+                {% for perm in role_permissions %}
+                <div class="accordion-item border rounded-3 mb-2 overflow-hidden shadow-sm">
+                  <h2 class="accordion-header">
+                    <button class="accordion-button collapsed py-3 bg-light fw-bold text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#colP{{ perm.id }}">
+                      <i class="fa-solid fa-user-shield me-2 opacity-50"></i> {{ perm.role_key|upper }}
+                    </button>
+                  </h2>
+                  <div id="colP{{ perm.id }}" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-white pt-4">
+                      <form class="row g-3" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="role_permission">
+                        <input type="hidden" name="role_key" value="{{ perm.role_key }}">
+                        <div class="row g-3">
+                          {% for field, label in perm_fields %}
+                          <div class="col-6 col-md-4">
+                            <div class="form-check">
+                              <input class="form-check-input" type="checkbox" name="{{ field }}" {% if perm|attr(field) %}checked{% endif %} id="p{{ perm.id }}_{{ field }}">
+                              <label class="form-check-label small" for="p{{ perm.id }}_{{ field }}">{{ label }}</label>
+                            </div>
+                          </div>
+                          {% endfor %}
+                        </div>
+                        <div class="col-12 d-flex justify-content-between mt-4">
+                          <button type="submit" form="del_perm_{{ perm.id }}" class="btn btn-outline-danger btn-sm rounded-pill px-4">Excluir Perfil</button>
+                          <button class="btn btn-primary btn-sm rounded-pill px-5">Atualizar Permissões</button>
+                        </div>
+                      </form>
+                      <form id="del_perm_{{ perm.id }}" method="post" class="d-none">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="kind" value="role_permission">
+                        <input type="hidden" name="id" value="{{ perm.id }}">
+                      </form>
+                    </div>
+                  </div>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">Utilizando as permissões padrão do sistema para todos.</div>
+                {% endfor %}
+              </div>
+
+            </div>
+          </div>
+          
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <h3 class="settings-card-title">Gestores de Departamento</h3>
+              <p class="settings-card-subtitle">Dê permissão extra para visualizar tickets específicos de um setor.</p>
+            </div>
+            <div class="settings-card-body">
+              <form class="item-row mb-4" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="department_access">
+                <div class="row g-3 align-items-end">
+                  <div class="col-md-5">
+                    <label class="form-label-premium">Departamento</label>
+                    <select class="form-select premium-input" name="department_id" required>
+                      {% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label-premium">Usuário Privilegiado</label>
+                    <select class="form-select premium-input" name="user_id" required>
+                      {% for a in agents %}<option value="{{ a.id }}">{{ a.name or a.email }}</option>{% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-3 d-grid">
+                    <input type="hidden" name="role" value="manager">
+                    <input type="hidden" name="is_manager" value="on">
+                    <button class="btn btn-primary-premium">Liberar Gestor</button>
+                  </div>
+                </div>
+              </form>
+
+              {% for acc in department_access %}
+              <div class="item-row d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>{{ acc.user.name or acc.user.email if acc.user else acc.user_id }}</strong>
+                  <span class="text-muted small mx-2">pode gerenciar o departamento</span>
+                  <span class="badge bg-indigo text-primary bg-primary-subtle rounded-pill px-3">{{ acc.department.name if acc.department else acc.department_id }}</span>
+                </div>
+                <form method="post" class="m-0">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="kind" value="department_access">
+                  <input type="hidden" name="id" value="{{ acc.id }}">
+                  <button class="btn btn-action-icon btn-light text-danger"><i class="fa-solid fa-trash"></i></button>
+                </form>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+        </div>
+
+        {# ========== CONTROLE DE ENTRADA ========== #}
+        <div class="tab-pane fade" id="tab-controle" role="tabpanel">
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <h3 class="settings-card-title">Regras de Filtro e Roteamento Automático</h3>
+              <p class="settings-card-subtitle">Aplique ações automáticas nos chamados assim que chegarem.</p>
+            </div>
+            <div class="settings-card-body">
+              <form class="item-row mb-4 border-primary border-opacity-25" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="filter_rule">
+                <div class="row g-4">
+                  <div class="col-md-6">
+                    <label class="form-label-premium text-primary"><i class="fa-solid fa-1 me-1"></i> Nome e Configuração</label>
+                    <input class="form-control premium-input mb-3" name="name" placeholder="Ex: Spam Filter ou VIP Client" required>
+                    <div class="d-flex gap-3">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="is_active" checked id="fr_act_n">
+                        <label class="form-check-label small" for="fr_act_n">Regra Ativa</label>
+                      </div>
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="match_all" checked id="fr_all_n">
+                        <label class="form-check-label small" for="fr_all_n">Exigir todas as condições</label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="col-md-6">
+                    <label class="form-label-premium text-primary"><i class="fa-solid fa-2 me-1"></i> Se o ticket contiver...</label>
+                    <input class="form-control premium-input form-control-sm mb-2" name="sender_contains" placeholder="Remetente contém (ex: @gmail.com)">
+                    <input class="form-control premium-input form-control-sm mb-2" name="subject_contains" placeholder="Assunto contém (ex: urgente)">
+                    <input class="form-control premium-input form-control-sm" name="body_contains" placeholder="Mensagem contém">
+                  </div>
+                  
+                  <div class="col-12"><hr class="text-black-50 my-1"></div>
+                  
+                  <div class="col-12">
+                    <label class="form-label-premium text-primary mb-3"><i class="fa-solid fa-3 me-1"></i> Então execute estas ações:</label>
+                    <div class="row g-3">
+                      <div class="col-md-3">
+                        <select class="form-select premium-input form-select-sm" name="set_department_id"><option value="">Mover p/ Departamento...</option>{% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}</select>
+                      </div>
+                      <div class="col-md-3">
+                        <select class="form-select premium-input form-select-sm" name="assign_user_id"><option value="">Atribuir p/ Agente...</option>{% for a in agents %}<option value="{{ a.id }}">{{ a.name or a.email }}</option>{% endfor %}</select>
+                      </div>
+                      <div class="col-md-2">
+                        <select class="form-select premium-input form-select-sm" name="set_priority_key"><option value="">Alterar Prioridade</option><option value="low">Baixa</option><option value="normal">Normal</option><option value="high">Alta</option></select>
+                      </div>
+                      <div class="col-md-4 d-flex align-items-center gap-3">
+                        <div class="form-check text-danger">
+                          <input class="form-check-input" type="checkbox" name="reject_ticket" id="fr_rej_n">
+                          <label class="form-check-label small fw-bold" for="fr_rej_n">Rejeitar/Excluir Ticket</label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="col-12 text-end">
+                    <button class="btn btn-primary-premium px-5 py-2"><i class="fa-solid fa-wand-magic-sparkles me-2"></i> Criar Regra Mágica</button>
+                  </div>
+                </div>
+              </form>
+
+              {% for rule in filter_rules %}
+              <div class="item-row p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong class="fs-6">{{ rule.name }}</strong>
+                    {% if not rule.is_active %}<span class="badge bg-warning ms-2">Inativa</span>{% endif %}
+                  </div>
+                  <form method="post" class="m-0">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="kind" value="filter_rule">
+                    <input type="hidden" name="id" value="{{ rule.id }}">
+                    <button class="btn btn-sm btn-outline-danger rounded-pill"><i class="fa-solid fa-trash me-1"></i>Remover Regra</button>
+                  </form>
+                </div>
+                <div class="row mt-3 small text-muted">
+                  <div class="col-md-6 border-end">
+                    <span class="text-uppercase fw-bold text-dark d-block mb-1" style="font-size: 0.7rem;">Condições ({% if rule.match_all %}Todas{% else %}Qualquer{% endif %})</span>
+                    {% if rule.sender_contains %}<div>De: <code>{{ rule.sender_contains }}</code></div>{% endif %}
+                    {% if rule.subject_contains %}<div>Assunto: <code>{{ rule.subject_contains }}</code></div>{% endif %}
+                    {% if rule.body_contains %}<div>Corpo: <code>{{ rule.body_contains }}</code></div>{% endif %}
+                  </div>
+                  <div class="col-md-6 ps-md-3">
+                    <span class="text-uppercase fw-bold text-dark d-block mb-1" style="font-size: 0.7rem;">Ações</span>
+                    {% if rule.reject_ticket %}<div class="text-danger fw-bold"><i class="fa-solid fa-ban"></i> Rejeitar Ticket</div>{% endif %}
+                    {% if rule.set_department_id %}<div>Mover p/ Depto: {{ rule.set_department_id }}</div>{% endif %}
+                    {% if rule.assign_user_id %}<div>Atribuir p/: {{ rule.assign_user_id }}</div>{% endif %}
+                  </div>
+                </div>
+              </div>
+              {% else %}
+              <div class="text-center py-4 text-muted"><i class="fa-solid fa-wand-magic-sparkles fa-3x mb-3 opacity-25"></i><br>Nenhuma regra de automação criada.</div>
+              {% endfor %}
+            </div>
+          </div>
+          
+          <div class="settings-card mt-4 border-danger border-opacity-25 shadow-none">
+            <div class="settings-card-header bg-danger bg-opacity-10 border-danger border-opacity-25">
+              <h3 class="settings-card-title text-danger"><i class="fa-solid fa-ban me-2"></i> Banlist Simples</h3>
+              <p class="settings-card-subtitle text-danger opacity-75">Bloqueio forçado de domínios ou remetentes específicos.</p>
+            </div>
+            <div class="settings-card-body">
+              <form class="row g-2 mb-4" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="banlist">
+                <div class="col-md-2">
+                  <select class="form-select premium-input" name="kind"><option value="email">E-mail Exato</option><option value="domain">@dominio.com</option></select>
+                </div>
+                <div class="col-md-4">
+                  <input class="form-control premium-input" name="value" placeholder="Endereço ou domínio" required>
+                </div>
+                <div class="col-md-4">
+                  <input class="form-control premium-input" name="reason" placeholder="Motivo (Opcional)">
+                </div>
+                <div class="col-md-2 d-grid">
+                  <input type="hidden" name="is_active" value="on">
+                  <button class="btn btn-danger rounded-pill">Bloquear</button>
+                </div>
+              </form>
+              <div class="d-flex flex-wrap gap-2">
+                {% for item in banlist %}
+                <span class="badge bg-white border border-danger text-danger px-3 py-2 rounded-pill d-flex align-items-center gap-2">
+                  <span>{{ item.value }}</span>
+                  <form method="post" class="m-0 p-0" style="height: 16px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="kind" value="banlist">
+                    <input type="hidden" name="id" value="{{ item.id }}">
+                    <button class="btn btn-link text-danger p-0 m-0 border-0 lh-1" title="Remover ban"><i class="fa-solid fa-xmark"></i></button>
+                  </form>
+                </span>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# ========== FILAS CUSTOMIZADAS ========== #}
+        <div class="tab-pane fade" id="tab-filas" role="tabpanel">
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <h3 class="settings-card-title">Aparência das Filas (Colunas)</h3>
+              <p class="settings-card-subtitle">Personalize as colunas visíveis e a ordenação na visão de cada fila.</p>
+            </div>
+            <div class="settings-card-body">
+              <form class="item-row mb-4" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="queue_column">
+                <div class="row g-3 align-items-end">
+                  <div class="col-md-3">
+                    <label class="form-label-premium">Fila Alvo</label>
+                    <select class="form-select premium-input" name="queue_id">
+                      {% for q in queues %}<option value="{{ q.id }}">{{ q.name }}</option>{% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label-premium">Campo do BD</label>
+                    <input class="form-control premium-input" name="field_key" placeholder="Ex: updated_at, status" required>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label-premium">Rótulo na Tabela</label>
+                    <input class="form-control premium-input" name="label" placeholder="Ex: Atualizado Em">
+                  </div>
+                  <div class="col-md-1">
+                    <label class="form-label-premium">Ordem</label>
+                    <input class="form-control premium-input" type="number" name="sort_order" value="1">
+                  </div>
+                  <div class="col-md-2 d-grid">
+                    <input type="hidden" name="is_visible" value="on">
+                    <button class="btn btn-outline-primary btn-premium">Add Coluna</button>
+                  </div>
+                </div>
+              </form>
+
+              {% for col in queue_columns %}
+              <div class="item-row d-flex justify-content-between align-items-center py-2">
+                <div>
+                  <span class="badge bg-secondary me-2">{{ col.queue.name if col.queue else col.queue_id }}</span>
+                  <strong class="text-dark">{{ col.label or col.field_key }}</strong>
+                  <span class="text-muted small ms-2">Posição: {{ col.sort_order }}</span>
+                </div>
+                <form method="post" class="m-0">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="kind" value="queue_column">
+                  <input type="hidden" name="id" value="{{ col.id }}">
+                  <button class="btn btn-action-icon btn-light text-danger"><i class="fa-solid fa-trash"></i></button>
+                </form>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+      </div>{# end tab-content #}
+    </div>
+  </div>
+</div>
+
+{# Modal preview template #}
+<div class="modal fade" id="previewTemplateModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      <div class="modal-header bg-light border-0 py-3">
+        <h5 class="modal-title fw-bold text-dark"><i class="fa-regular fa-envelope me-2 text-primary"></i> Preview do E-mail</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4 bg-white">
+        <div class="mb-4 bg-light rounded-3 p-3">
+          <small class="text-muted text-uppercase fw-bold d-block mb-1">Assunto da Mensagem</small>
+          <div id="previewSubject" class="fs-5 text-dark fw-semibold">Carregando assunto...</div>
+        </div>
+        <div class="border border-2 rounded-4 p-4 shadow-sm" id="previewBody" style="min-height: 200px;">
+          <div class="d-flex justify-content-center py-5">
+            <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Restore active tab from hash or localStorage
+  var activeTab = window.location.hash || localStorage.getItem('activeAdminTab');
+  if (activeTab && activeTab.indexOf('#tab-') === 0) {
+    var tabTrigger = document.querySelector('#admin-tabs button[data-bs-target="' + activeTab + '"]');
+    if (tabTrigger) {
+      var tab = new bootstrap.Tab(tabTrigger);
+      tab.show();
+    }
+  }
+
+  // Persist the active tab
+  var tabTriggers = document.querySelectorAll('#admin-tabs button[data-bs-toggle="pill"]');
+  tabTriggers.forEach(function(trigger) {
+    trigger.addEventListener('shown.bs.tab', function(event) {
+      var target = event.target.getAttribute('data-bs-target');
+      localStorage.setItem('activeAdminTab', target);
+      if (history.replaceState) {
+        history.replaceState(null, null, target);
+      } else {
+        window.location.hash = target;
+      }
+    });
+  });
+});
+
+function previewTemplate(templateId, csrfToken) {
+  const modal = new bootstrap.Modal(document.getElementById('previewTemplateModal'));
+  document.getElementById('previewSubject').textContent = 'Carregando assunto...';
+  document.getElementById('previewBody').innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+  modal.show();
+  fetch('/tickets/api/templates/' + templateId + '/preview', {
+    method: 'POST',
+    headers: {'X-CSRFToken': csrfToken, 'Content-Type': 'application/json'},
+    body: JSON.stringify({})
+  }).then(r => r.ok ? r.json() : Promise.reject(r))
+    .then(data => {
+      document.getElementById('previewSubject').textContent = data.subject || '';
+      document.getElementById('previewBody').innerHTML = data.body_html || '<div class="text-muted text-center py-5"><em>Sem conteúdo</em></div>';
+    }).catch(() => {
+      document.getElementById('previewBody').innerHTML = '<div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation me-2"></i>Erro ao carregar preview do template. Verifique se a variável está correta.</div>';
+    });
+}
+</script>
+{% endblock %}

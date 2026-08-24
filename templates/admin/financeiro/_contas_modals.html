@@ -1,0 +1,339 @@
+﻿<!-- Modal Adicionar Conta -->
+<div class="modal sollus-modal fade" id="modalAdicionarConta" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('financeiro_bp.contas_receber_adicionar') }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Adicionar conta a receber</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">CNPJ</label>
+              <input type="text" class="form-control" id="cadastro-cnpj" name="cnpj" required>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Cliente</label>
+              <input type="text" class="form-control" id="cadastro-cliente" name="cliente" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Contrato</label>
+              <input type="text" class="form-control" name="contrato" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">E-mail</label>
+              <input type="email" class="form-control" name="email">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Software</label>
+              <select class="form-select" name="software" required>
+                <option value="">Selecione um software</option>
+                <option value="VELTI PONTO">VELTI PONTO</option>
+                <option value="HENR PONTO">HENR PONTO</option>
+                <option value="RHID">RHID</option>
+                <option value="Secullum Acesso">Secullum Acesso</option>
+                <option value="Secullum Ponto">Secullum Ponto</option>
+                <option value="Smart Control">SmartControl</option>
+                <option value="STPWIN">STPWIN</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Data da pendência</label>
+              <input type="date" class="form-control" name="data_primeira_pendencia" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Valor</label>
+              <input type="text" class="form-control" name="valor" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Empresa responsável</label>
+              <select class="form-select" name="empresa_responsavel" required>
+                <option value="">Selecione uma empresa</option>
+                <option value="Sollus Tecnologia">Sollus Tecnologia</option>
+                <option value="Technosollus RJ">Technosollus RJ</option>
+                <option value="Sollus Campos">Sollus Campos</option>
+                <option value="Technosollus ES">Technosollus ES</option>
+                <option value="Sollus SP">Sollus SP</option>
+                <option value="Sollus PR">Sollus PR</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Adicionar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Subpendencia -->
+<div class="modal sollus-modal fade" id="modalSubpendencia" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('financeiro_bp.contas_receber_subpendencia') }}" id="formSubpendencia">
+        <div class="modal-header">
+          <h5 class="modal-title">Adicionar subpendência</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="id_pai" id="sub-id-pai">
+          <div class="mb-2">
+            <label class="form-label">Cliente</label>
+            <input type="text" class="form-control" id="sub-cliente" name="cliente" readonly>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">CNPJ</label>
+            <input type="text" class="form-control" id="sub-cnpj" name="cnpj" readonly>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Contrato</label>
+            <input type="text" class="form-control" id="sub-contrato" name="contrato" readonly>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Software</label>
+            <input type="text" class="form-control" id="sub-software" name="software" readonly>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Data da pendência</label>
+            <input type="date" class="form-control" id="sub-data-pendencia" name="data_pendencia" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Valor</label>
+            <input type="text" class="form-control" id="sub-valor" name="valor" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Informações</label>
+            <textarea class="form-control" id="sub-informacoes" name="informacoes" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Adicionar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Lista Subpendencias -->
+<div class="modal sollus-modal fade" id="modalSubpendenciasLista" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+          <h5 class="modal-title">Subpendências de <span id="subpendencias-cliente"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>CNPJ</th>
+                <th>Contrato</th>
+                <th>Unidade</th>
+                <th>Software</th>
+                <th>Data</th>
+                <th>Valor</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="subpendencias-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar Conta -->
+<div class="modal sollus-modal fade" id="modalEditarConta" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('financeiro_bp.contas_receber_editar') }}" id="formEditarConta">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar conta</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="id" id="edit-id">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Cliente</label>
+              <input type="text" class="form-control" id="edit-cliente" name="cliente">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">CNPJ</label>
+              <input type="text" class="form-control" id="edit-cnpj" name="cnpj">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Contrato</label>
+              <input type="text" class="form-control" id="edit-contrato" name="contrato">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Empresa responsável</label>
+              <input type="text" class="form-control" id="edit-unidade" name="empresa_responsavel">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Software</label>
+              <input type="text" class="form-control" id="edit-software" name="software">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Data pendência</label>
+              <input type="date" class="form-control" id="edit-data-pendencia" name="data_primeira_pendencia">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Qt. pendências</label>
+              <input type="number" class="form-control" id="edit-qt-pendencias" name="qt_pendencias">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Valor</label>
+              <input type="text" class="form-control" id="edit-valor" name="valor">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar Subconta -->
+<div class="modal sollus-modal fade" id="modalEditarSubConta" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('financeiro_bp.contas_receber_editar_sub') }}" id="formEditarSubConta">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar subconta</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="id" id="edit-sub-id">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Cliente</label>
+              <input type="text" class="form-control" id="edit-sub-cliente" name="cliente">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">CNPJ</label>
+              <input type="text" class="form-control" id="edit-sub-cnpj" name="cnpj">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Contrato</label>
+              <input type="text" class="form-control" id="edit-sub-contrato" name="contrato">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Unidade</label>
+              <input type="text" class="form-control" id="edit-sub-unidade" name="unidade">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Software</label>
+              <input type="text" class="form-control" id="edit-sub-software" name="software">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Data pendência</label>
+              <input type="date" class="form-control" id="edit-sub-data" name="data_primeira_pendencia">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Qt. pendências</label>
+              <input type="number" class="form-control" id="edit-sub-qt" name="qt_pendencias">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Valor</label>
+              <input type="text" class="form-control" id="edit-sub-valor" name="valor">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Atualizar Informacoes -->
+<div class="modal sollus-modal fade" id="modalAtualizarInfo" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formAtualizarInfo">
+        <div class="modal-header">
+          <h5 class="modal-title">Nova informação</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="id" id="info-id">
+          <label class="form-label">Descrição</label>
+          <textarea class="form-control" id="info-text" name="new_info" rows="4" required></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Historico -->
+<div class="modal sollus-modal fade" id="modalHistorico" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+          <h5 class="modal-title">Histórico de informações</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body" id="historico-content">
+        <p class="text-muted">Carregando...</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Adicionar Valor -->
+<div class="modal sollus-modal fade" id="modalAdicionarValor" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formAdicionarValor">
+        <div class="modal-header">
+          <h5 class="modal-title">Adicionar valor</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" id="valor-id" name="id">
+          <div class="mb-2">
+            <label class="form-label">Valor atual</label>
+            <input type="text" class="form-control" id="valor-atual" readonly>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Valor a adicionar</label>
+            <input type="text" class="form-control" id="valor-adicionar" name="valor" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

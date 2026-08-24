@@ -1,0 +1,143 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Relatórios Sollus{% endblock %}
+{% block content %}
+{% set hero_tips = [
+  'Use a “Evolução Mensal” para entender tendência e sazonalidade dos últimos 12 meses.',
+  'Compare status e prioridade nos gráficos para equilibrar filas, recursos e SLAs.',
+  'Em “Top atendentes”, veja quem fecha mais chamados e use “Ver finalizados” para revisar qualidade.'
+] %}
+{{ page_hero(
+  title='Relatórios visuais',
+  subtitle='Compare status, prioridades e desempenho ao longo do tempo para priorizar ações.',
+  eyebrow='Chamados TI',
+  help_tips=hero_tips,
+  help_intro='Dicas rápidas para usar os gráficos.'
+) }}
+
+<div class="row g-3">
+  <div class="col-12 col-xl-8">
+    <div class="card h-100">
+      <div class="card-header"><strong>Evolução Mensal (últimos 12 meses)</strong></div>
+      <div class="card-body">
+        <canvas id="chartMonthly" height="130"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-4">
+    <div class="card h-100">
+      <div class="card-header"><strong>Chamados por Status</strong></div>
+      <div class="card-body">
+        <canvas id="chartStatus" height="160"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-4">
+    <div class="card h-100">
+      <div class="card-header"><strong>Chamados por Prioridade</strong></div>
+      <div class="card-body">
+        <canvas id="chartPriority" height="160"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-8">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <strong>Top Atendentes (por fechamentos)</strong>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('tickets.closed_list') }}">
+          Ver finalizados
+        </a>
+      </div>
+      <div class="card-body">
+        {% if top_agents %}
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Atendente</th>
+                  <th class="text-end">Finalizados</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for a in top_agents %}
+                  <tr>
+                    <td>{{ a.name }}</td>
+                    <td class="text-end">{{ a.count }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-muted">Ainda não há chamados finalizados.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // Dados vindos do Flask
+  const monthLabels = {{ month_labels|tojson }};
+  const monthValues = {{ month_values|tojson }};
+
+  const statusLabels = {{ chart_status_labels|tojson }};
+  const statusValues = {{ chart_status_values|tojson }};
+
+  const priorLabels = {{ chart_prior_labels|tojson }};
+  const priorValues = {{ chart_prior_values|tojson }};
+
+  // Linha mensal
+  new Chart(document.getElementById('chartMonthly'), {
+    type: 'line',
+    data: {
+      labels: monthLabels,
+      datasets: [{
+        label: 'Chamados (ms)',
+        data: monthValues,
+        tension: .25,
+        fill: false
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision:0 } } }
+    }
+  });
+
+  // Barras por Status
+  new Chart(document.getElementById('chartStatus'), {
+    type: 'bar',
+    data: {
+      labels: statusLabels,
+      datasets: [{ label: 'Qtd', data: statusValues }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision:0 } } }
+    }
+  });
+
+  // Pizza por Prioridade
+  new Chart(document.getElementById('chartPriority'), {
+    type: 'doughnut',
+    data: {
+      labels: priorLabels,
+      datasets: [{ data: priorValues }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom' } },
+      cutout: '60%'
+    }
+  });
+</script>
+{% endblock %}

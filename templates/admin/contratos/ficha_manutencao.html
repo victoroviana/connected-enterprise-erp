@@ -1,0 +1,303 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+	table{
+		border-collapse: collapse;
+		border: 1px solid #000000;
+		margin: auto;
+		clear: both;
+	}
+	table tr th{
+		color: #000000;
+		text-align: left;
+		padding-left: 5px;
+		font-weight: bold;
+		font-family: arial;
+		font-size: 10px;
+		border: 1px solid #000000;
+	}
+	table tr th.titulo{
+		background: #666666;
+		color: #FFFFFF;
+		text-align: center;
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+	}
+	table tr td{
+		padding: 5px;
+		font-family: arial;
+		font-size: 10px;
+		border: 1px solid #000000;
+	}
+	@page{
+	    margin-top: 0.5cm;
+	    margin-bottom:  0.5cm;
+	    margin-left:  0.5cm;
+	    margin-right:  0.5cm
+	}
+	@media print {
+	    .pagebreak {
+	        clear: both;
+	        page-break-after: always;
+	    }
+	}
+</style>
+<title>Relatório</title>
+</head>
+<body>
+<div id="brk_yuan"></div>
+{% for ficha in fichas %}
+<!--CABEÇALHO-->
+<table width="909">
+  <tbody><tr>
+    <td rowspan="2"><img src="{{ url_for('static', filename='images/logo_sollus.jpg') }}" width="100" height="100"><br>www.sollustecnologia.com</td>
+    <td colspan="2" style="text-align: center">SOLLUS COMÉRCIO E TECNOLOGIA EM CONTROLE DE PONTO E ACESSO</td>
+    <td rowspan="2" style="font-size: 12px; color: red; text-align: center">
+      FICHA DE MANUTENÇÃO<br>
+      <span style="font-size: 18px">{{ ficha.id_pk }}</span><br>
+      REFERÊNCIA<br>
+      <span style="font-size: 18px">{{ ficha.referencia or '' }}</span>
+    </td>
+  </tr>
+  <tr>
+    <td><strong>MATRIZ</strong><br>
+      Av. Paulista - 1000 - Bela Vista<br>
+      São Paulo - SP - CEP: 01310-100<br>
+      Telefone: (11) 3000-0000<br>
+    E-mail: contato@empresa.com.br</td>
+    <td><strong>FILIAL</strong><br>
+      Av. Rio Branco - 500 - Centro<br>
+      Rio de Janeiro - RJ - CEP: 20040-002<br>
+      Telefone : (21) 3000-0000<br>
+    E-mail: filial.rj@empresa.com.br</td>
+  </tr>
+</tbody></table>
+
+<!--DADOS DO CLIENTE / FATURAMENTO-->
+<table width="909">
+  <tbody><tr>
+    <th colspan="4" class="titulo">DADOS DO CLIENTE / FATURAMENTO</th>
+  </tr>
+  <tr>
+    <th>RAZÃO SOCIAL</th>
+    <td colspan="3">{{ ficha.razao_social }}</td>
+  </tr>
+  <tr>
+    <th width="92">ENDEREÇO</th>
+    <td colspan="3">{{ ficha.cliente_endereco_completo or '' }}</td>
+  </tr>
+  <tr>
+    <th>BAIRRO</th>
+    <td width="380">{{ ficha.cliente_bairro or '' }}</td>
+    <th width="97">CIDADE</th>
+    <td width="311">{{ ficha.cliente_cidade or '' }}</td>
+  </tr>
+  <tr>
+    <th>CEP</th>
+    <td>{{ ficha.cliente_cep or '' }}</td>
+    <th>ESTADO</th>
+    <td>{{ ficha.cliente_estado or '' }}</td>
+  </tr>
+  <tr>
+    <th>CNPJ / CPF</th>
+    <td>{{ ficha.cliente_cnpj_cpf or '' }}</td>
+    <th>INSC. EST.</th>
+    <td>{{ ficha.cliente_ie or '' }}</td>
+  </tr>
+  <tr>
+    <th>CONTATO</th>
+    <td>{{ ficha.cliente_contato or '' }}</td>
+    <th>SETOR</th>
+    <td>{{ ficha.cliente_contato_setor or '' }}</td>
+  </tr>
+  <tr>
+    <th>E-MAIL</th>
+    <td>{{ ficha.cliente_email or '' }}</td>
+    <th>TELEFONE</th>
+    <td>{{ ficha.cliente_telefone or '' }}</td>
+  </tr>
+</tbody></table>
+
+<!--ENDEREÇO DE INSTALAÇÃO-->
+<table width="909">
+  <tbody><tr>
+    <th colspan="4" class="titulo">ENDEREÇO DE INSTALAÇÃO</th>
+  </tr>
+  <tr>
+    <th width="92">ENDEREÇO</th>
+    <td colspan="3">{{ ficha.inst_endereco_completo or '' }}</td>
+  </tr>
+  <tr>
+    <th>BAIRRO</th>
+    <td width="380">{{ ficha.inst_bairro or '' }}</td>
+    <th width="97">CIDADE</th>
+    <td width="311">{{ ficha.inst_cidade or '' }}</td>
+  </tr>
+  <tr>
+    <th>CEP</th>
+    <td>{{ ficha.inst_cep or '' }}</td>
+    <th>ESTADO</th>
+    <td>{{ ficha.inst_estado or '' }}</td>
+  </tr>
+  <tr>
+    <th>CONTATO</th>
+    <td>{{ ficha.inst_contato or '' }}</td>
+    <th>SETOR</th>
+    <td>{{ ficha.inst_contato_setor or '' }}</td>
+  </tr>
+  <tr>
+    <th>E-MAIL</th>
+    <td>{{ ficha.inst_email or '' }}</td>
+    <th>TELEFONE</th>
+    <td>{{ ficha.inst_telefone or '' }}</td>
+  </tr>
+</tbody></table>
+
+<!--DADOS DO EQUIPAMENTO-->
+<table width="909">
+  <tbody><tr>
+    <th colspan="6" class="titulo">DADOS DO EQUIPAMENTO</th>
+  </tr>
+  <tr>
+    <th colspan="2">MARCA</th>
+    <th colspan="2">MODELO</th>
+    <th colspan="2">Nº DE SÉRIE</th>
+  </tr>
+  {% for eq in ficha.equipamentos %}
+  <tr>
+    <td colspan="2">{{ eq.marca or '' }}</td>
+    <td colspan="2">{{ eq.modelo or '' }}</td>
+    <td colspan="2">{{ eq.numero_serie or '' }}</td>
+  </tr>
+  {% else %}
+  <tr>
+    <td colspan="2">-</td>
+    <td colspan="2">-</td>
+    <td colspan="2">-</td>
+  </tr>
+  {% endfor %}
+  <tr>
+    <th width="132">TIPO DE ATENDIMENTO</th>
+    <td width="171">{{ ficha.tipo_atendimento_label }}</td>
+    <th width="167">CATEGORIA DO ATENDIMENTO</th>
+    <td width="136">{{ ficha.categoria_atendimento }}</td>
+    <th width="112">TIPO DO CONTRATO</th>
+    <td width="191">{{ ficha.tipo_contrato }}</td>
+  </tr>
+</tbody></table>
+
+<!--DADOS DA VISITA-->
+<table width="909">
+  <tbody><tr>
+    <th width="228" height="25">TÉCNICO</th>
+    <th width="227">DATA</th>
+    <th width="227">HORA ENTRADA</th>
+    <th width="227">HORA SAÍDA</th>
+  </tr>
+  <tr>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+  </tr>
+</tbody></table>
+
+<!--LISTA DE PRODUTOS E SERVIÇOS-->
+<table width="909">
+  <tbody><tr>
+    <th colspan="8" class="titulo">PRODUTOS / SERVIÇOS</th>
+  </tr>
+  <tr>
+    <th width="27">ITEM</th>
+    <th width="31">CÓD.</th>
+    <th width="578">ESPECIFICAÇÃO DE PRODUTOS E SERVIÇOS</th>
+    <th width="33">UNID.</th>
+    <th width="23">QT.</th>
+    <th width="35">DESC.</th>
+    <th width="39">VALOR</th>
+    <th width="94">VALOR TOTAL</th>
+  </tr>
+  {% for idx in range(9) %}
+  <tr>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+  </tr>
+  {% endfor %}
+  <tr>
+    <th colspan="3" class="titulo">DEFEITO</th>
+    <td colspan="5" rowspan="4">
+    
+    <table style="width: 100%; height: 100%">
+      <tbody><tr>
+        <th width="64%">VALOR PRODUTOS</th>
+        <td width="36%">&nbsp;</td>
+      </tr>
+      <tr>
+        <th>VALOR SERVIÇOS</th>
+        <td>&nbsp;</td>
+      </tr>
+      <tr>
+        <th>VALOR DESCONTO</th>
+        <td>&nbsp;</td>
+      </tr>
+      <tr>
+        <th>TAXA DE<br>
+          DESLOCAMENTO</th>
+        <td>&nbsp;</td>
+      </tr>
+      <tr>
+        <th>VALOR TOTAL</th>
+        <td>&nbsp;</td>
+      </tr>
+    </tbody></table>
+    
+    </td>
+  </tr>
+  <tr>
+    <td height="50" colspan="3">&nbsp;</td>
+  </tr>
+  <tr>
+    <th colspan="3" class="titulo">DIAGNOSTICO</th>
+  </tr>
+  <tr>
+    <td height="50" colspan="3">&nbsp;</td>
+  </tr>
+  <tr>
+    <td height="50" colspan="8">OBSERVAÇÃO:</td>
+  </tr>
+  <tr>
+    <td colspan="8">DECLARO QUE OS VALORES ACIMA DISCRIMINADOS, TAXA DE DESLOCAMENTO, PRODUTOS, SERVIÇOS E TEMPO GASTO, FORAM CONFERIDOS E ACEITOS.</td>
+  </tr>
+</tbody></table>
+
+<table width="909">
+  <tbody><tr>
+    <th width="140">DATA</th>
+    <td width="269">&nbsp;</td>
+    <th width="191">ASSINATURA / CARIMBO</th>
+    <td width="284">&nbsp;</td>
+  </tr>
+  <tr>
+    <th colspan="4">NÃO É VÁLIDO COMO DOCUMENTO FISCAL - FICHA EMITIDA EM {{ date.today().strftime('%d/%m/%Y') }}</th>
+  </tr>
+</tbody></table>
+{% if not loop.last %}
+<div class="pagebreak"></div>
+{% endif %}
+{% endfor %}
+
+{% if not fichas %}
+<div style="text-align: center; font-family: arial; font-size: 14px; margin-top: 50px;">
+  Nenhuma ficha de manutenção selecionada para exibição.
+</div>
+{% endif %}
+</body>
+</html>

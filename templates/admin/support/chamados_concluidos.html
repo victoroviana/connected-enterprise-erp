@@ -1,0 +1,388 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Chamados Concluídos · Sollus Connected{% endblock %}
+
+{% block head %}
+<style>
+  .chamados-card{border:0;border-radius:1.5rem;box-shadow:0 18px 40px rgba(15,35,58,.08);}
+  .chamados-card__head{padding:1.5rem 1.5rem 0;}
+  .chamados-card__body{padding:1.5rem;}
+  .chamados-table thead{background:#f1f4fb;text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:#5a6782;}
+  .table-row-clickable{cursor:pointer;}
+  .table-row-clickable:hover{background:rgba(15,118,255,.04);}
+  .tempo-pill{display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .85rem;border-radius:999px;font-weight:600;font-size:.85rem;}
+  .tempo-pill i{font-size:.9rem;}
+  .tempo-pill--ok{background:rgba(34,197,94,.18);color:#166534;}
+  .tempo-pill--warning{background:rgba(251,191,36,.2);color:#92400e;}
+  .tempo-pill--danger{background:rgba(248,113,113,.22);color:#991b1b;}
+  .tempo-pill--unknown{background:#e2e8f0;color:#475569;}
+  .no-tech-indicator{display:inline-flex;align-items:center;gap:.35rem;font-weight:600;color:#b45309;text-transform:uppercase;font-size:.8rem;letter-spacing:.08em;}
+  .chamado-no-tech{animation:chamadoBlink 2s ease-in-out infinite;}
+  @keyframes chamadoBlink{0%{background-color:transparent;}50%{background-color:rgba(248,113,113,.12);}100%{background-color:transparent;}}
+ </style>
+{% endblock %}
+
+{% block content %}
+{% set bp = (chamados_namespace or 'support_bp') %}
+{% set filter_args = filter_args if filter_args is defined and filter_args else {} %}
+{{ page_hero(
+    title='Chamados Concluídos',
+    subtitle='Consulte os chamados finalizados por unidade e exporte relatórios para auditoria técnica.',
+    eyebrow='Técnica',
+    stats=hero_stats,
+    help_tips=[
+      'Use os filtros de unidade, data, técnico, status e OS para encontrar rapidamente um chamado concluído.',
+      'Clique na linha para ver detalhes do atendimento finalizado e validar tempo/observações registrados.',
+      'Exporte CSV com os filtros aplicados para auditoria técnica ou consolidação de indicadores.'
+    ],
+    help_intro='Dicas específicas para revisar chamados concluídos.'
+) }}
+
+<div class="card chamados-card mb-4">
+  <div class="chamados-card__head">
+    <form class="row g-3" method="get">
+      <div class="col-md-3">
+        <label class="form-label">Unidade</label>
+        {{ form.region(class="form-select") }}
+        <div class="form-text text-muted">Selecione "Todas as unidades" para consolidar a lista.</div>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Data</label>
+        {{ form.data_visita(class="form-control", placeholder="dd/mm/aaaa") }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Técnico</label>
+        {{ form.tecnico(class="form-control", placeholder="Nome") }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Status</label>
+        {{ form.status(class="form-select") }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Ordem de serviço</label>
+        {{ form.ordem_servico(class="form-control", placeholder="Número") }}
+      </div>
+      <div class="col-12 d-flex gap-2 align-items-center">
+        <button type="submit" class="btn btn-primary">Aplicar filtros</button>
+        <a class="btn btn-link text-muted" href="{{ url_for(bp ~ '.chamados_concluidos') }}">Limpar</a>
+        <a class="btn btn-outline-secondary" href="{{ url_for(bp ~ '.exportar_chamados', **filter_args) }}">
+          <i class="bi bi-download"></i> Exportar CSV
+        </a>
+        <a class="btn btn-outline-secondary" href="{{ url_for(bp ~ '.exportar_chamados_pdf', **filter_args) }}" target="_blank">
+          <i class="bi bi-filetype-pdf"></i> Exportar PDF
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card chamados-card">
+  <div class="chamados-card__body">
+    <div class="table-responsive">
+      <table class="table chamados-table align-middle">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Cliente</th>
+            <th>Ordem</th>
+            <th class="text-nowrap">Tempo até conclusão</th>
+            <th>Técnico</th>
+            <th>Status</th>
+            <th>Resumo</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if chamados %}
+            {% for chamado in chamados %}
+            <tr
+              class="table-row-clickable {% if chamado.sem_tecnico %}chamado-no-tech{% endif %}"
+              data-entry-row="1"
+              data-chamado-id="{{ chamado.id or '' }}"
+              data-cliente="{{ (chamado.cliente or '') | e }}"
+              data-tecnico="{{ (chamado.tecnico or '') | e }}"
+              data-os="{{ (chamado.ordem_servico or '') | e }}"
+              data-data-visita="{{ (chamado.data_display or chamado.data or '') | e }}"
+              data-criada="{{ (chamado.data_os_criada_display or chamado.data_os_criada or '') | e }}"
+              data-encerrada="{{ (chamado.data_os_tecnico or chamado.hora_saida or '') | e }}"
+              data-status="{{ (chamado.retorno or chamado.status or '') | e }}"
+              data-region="{{ (chamado.region_label or '') | e }}"
+              data-contrato="{{ (chamado.contrato or '') | e }}"
+              data-cnpj="{{ (chamado.cnpj or '') | e }}"
+              data-email="{{ (chamado.email_responsavel or '') | e }}"
+              data-bairro="{{ (chamado.bairro or '') | e }}"
+              data-quem-atendeu="{{ (chamado.quem_atendeu or '') | e }}"
+              data-descricao="{{ (chamado.descricao or '') | e }}"
+              data-tempo="{{ (chamado.tempo_os_text or chamado.tempo_os_aberta or '') | e }}"
+            >
+              <td class="text-nowrap">
+                {% set data_label = chamado.data_display or chamado.data %}
+                {% if data_label %}{{ data_label }}{% else %}&mdash;{% endif %}
+              </td>
+              <td>
+                <div class="fw-semibold">{{ chamado.cliente or '&mdash;' }}</div>
+                {% if chamado.cnpj %}<div class="small text-muted">CNPJ {{ chamado.cnpj }}</div>{% endif %}
+                {% if chamado.region_label %}<div class="badge bg-light text-dark mt-1">{{ chamado.region_label }}</div>{% endif %}
+              </td>
+              <td>
+                <div class="fw-semibold">{{ chamado.ordem_servico or '&mdash;' }}</div>
+                {% set criada_label = chamado.data_os_criada_display or chamado.data_os_criada %}
+                {% if criada_label %}<div class="small text-muted">Criada em {{ criada_label }}</div>{% endif %}
+              </td>
+              <td>
+                {% set tempo_text = chamado.tempo_os_text or chamado.tempo_os_aberta %}
+                {% if tempo_text %}
+                <span class="tempo-pill tempo-pill--{{ chamado.tempo_os_class or 'unknown' }}"{% if chamado.tempo_os_hint %} title="{{ chamado.tempo_os_hint }}"{% endif %}>
+                  <i class="bi bi-hourglass-split"></i> {{ tempo_text }}
+                </span>
+                {% else %}
+                <span class="tempo-pill tempo-pill--unknown">&mdash;</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if chamado.sem_tecnico %}
+                <span class="no-tech-indicator"><i class="bi bi-exclamation-triangle-fill"></i> Sem técnico</span>
+                {% else %}
+                {{ chamado.tecnico or '&mdash;' }}
+                {% endif %}
+              </td>
+              <td><span class="badge text-bg-light">{{ chamado.retorno or chamado.status or '&mdash;' }}</span></td>
+              <td><div class="small text-muted">{{ (chamado.descricao or '') | truncate(160, True, '…') }}</div></td>
+              <td class="text-end">
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-sm btn-ver-chamado"
+                  data-bs-toggle="modal"
+                  data-bs-target="#modalChamadoConcluido"
+                  title="Ver detalhes"
+                >
+                  <i class="bi bi-eye"></i>
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="8" class="text-center text-muted py-4">Nenhum chamado concluído encontrado.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if pagination.pages > 1 %}
+    {% set pages_to_show = [] %}
+    {% for p in [1, pagination.page, pagination.page + 1, pagination.page + 2, pagination.page + 3, pagination.pages] %}
+      {% if 1 <= p <= pagination.pages and p not in pages_to_show %}
+        {% set _ = pages_to_show.append(p) %}
+      {% endif %}
+    {% endfor %}
+    <nav class="mt-3" aria-label="Paginação de chamados concluídos">
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <ul class="pagination mb-0">
+          <li class="page-item {{ 'disabled' if not pagination.has_prev else '' }}">
+            {% if pagination.has_prev %}
+            <a class="page-link" href="{{ build_url(page=pagination.prev_num) }}">Anterior</a>
+            {% else %}
+            <span class="page-link">Anterior</span>
+            {% endif %}
+          </li>
+          {% for page_num in pages_to_show %}
+          <li class="page-item {{ 'active' if pagination.page == page_num else '' }}">
+            <a class="page-link" href="{{ build_url(page=page_num) }}">{{ page_num }}</a>
+          </li>
+          {% endfor %}
+          <li class="page-item {{ 'disabled' if not pagination.has_next else '' }}">
+            {% if pagination.has_next %}
+            <a class="page-link" href="{{ build_url(page=pagination.next_num) }}">Próximo</a>
+            {% else %}
+            <span class="page-link">Próximo</span>
+            {% endif %}
+          </li>
+        </ul>
+        <form class="d-flex align-items-center gap-2" method="get" action="{{ url_for(bp ~ '.chamados_concluidos') }}">
+          {% for key, value in filter_args.items() %}
+          <input type="hidden" name="{{ key }}" value="{{ value }}">
+          {% endfor %}
+          <label class="small text-muted mb-0" for="chamados-concluidos-page-input">Página</label>
+          <input type="number" min="1" max="{{ pagination.pages }}" class="form-control form-control-sm" id="chamados-concluidos-page-input" name="page" value="{{ pagination.page }}">
+          <button class="btn btn-outline-secondary btn-sm" type="submit">Ir</button>
+        </form>
+      </div>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Modal: detalhes do chamado concluído (somente leitura) -->
+<div class="modal sollus-modal fade" id="modalChamadoConcluido" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalhes do chamado concluído</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Cliente</label>
+            <p class="form-control-plaintext" id="view_cliente">&mdash;</p>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Técnico</label>
+            <p class="form-control-plaintext" id="view_tecnico">&mdash;</p>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Data da visita</label>
+            <p class="form-control-plaintext" id="view_data">&mdash;</p>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Criada em</label>
+            <p class="form-control-plaintext" id="view_criada">&mdash;</p>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Encerrada em</label>
+            <p class="form-control-plaintext" id="view_encerrada">&mdash;</p>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Ordem de serviço</label>
+            <p class="form-control-plaintext" id="view_os">&mdash;</p>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Status</label>
+            <p class="form-control-plaintext" id="view_status">&mdash;</p>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Tempo até conclusão</label>
+            <p class="form-control-plaintext" id="view_tempo">&mdash;</p>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Unidade</label>
+            <p class="form-control-plaintext" id="view_region">&mdash;</p>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">CNPJ</label>
+            <p class="form-control-plaintext" id="view_cnpj">&mdash;</p>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">E-mail responsável</label>
+            <p class="form-control-plaintext" id="view_email">&mdash;</p>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Bairro</label>
+            <p class="form-control-plaintext" id="view_bairro">&mdash;</p>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Contrato</label>
+            <p class="form-control-plaintext" id="view_contrato">&mdash;</p>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Quem atendeu</label>
+            <p class="form-control-plaintext" id="view_quem_atendeu">&mdash;</p>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">ID interno</label>
+            <p class="form-control-plaintext" id="view_id">&mdash;</p>
+          </div>
+        </div>
+
+        <div class="mb-0">
+          <label class="form-label fw-semibold">Descrição</label>
+          <textarea class="form-control" id="view_descricao" rows="5" readonly></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const fields = {
+    id: document.getElementById('view_id'),
+    cliente: document.getElementById('view_cliente'),
+    técnico: document.getElementById('view_técnico'),
+    dataVisita: document.getElementById('view_data'),
+    criada: document.getElementById('view_criada'),
+    encerrada: document.getElementById('view_encerrada'),
+    os: document.getElementById('view_os'),
+    status: document.getElementById('view_status'),
+    tempo: document.getElementById('view_tempo'),
+    region: document.getElementById('view_region'),
+    contrato: document.getElementById('view_contrato'),
+    cnpj: document.getElementById('view_cnpj'),
+    email: document.getElementById('view_email'),
+    bairro: document.getElementById('view_bairro'),
+    quemAtendeu: document.getElementById('view_quem_atendeu'),
+    descricao: document.getElementById('view_descricao'),
+  };
+
+  const setText = (el, value) => {
+    if (!el) return;
+    const clean = (value || '').toString().trim();
+    el.textContent = clean || '—';
+  };
+
+  const setValue = (el, value) => {
+    if (!el) return;
+    el.value = value || '';
+  };
+
+  const fillModal = (ds = {}) => {
+    setText(fields.id, ds.chamadoId);
+    setText(fields.cliente, ds.cliente);
+    setText(fields.técnico, ds.técnico);
+    setText(fields.dataVisita, ds.dataVisita);
+    setText(fields.criada, ds.criada);
+    setText(fields.encerrada, ds.encerrada);
+    setText(fields.os, ds.os);
+    setText(fields.status, ds.status);
+    setText(fields.tempo, ds.tempo);
+    setText(fields.region, ds.region);
+    setText(fields.contrato, ds.contrato);
+    setText(fields.cnpj, ds.cnpj);
+    setText(fields.email, ds.email);
+    setText(fields.bairro, ds.bairro);
+    setText(fields.quemAtendeu, ds.quemAtendeu);
+    setValue(fields.descricao, ds.descricao);
+  };
+
+  document.querySelectorAll('.btn-ver-chamado').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      const row = this.closest('tr[data-entry-row]');
+      const ds = row ? row.dataset : this.dataset;
+      fillModal(ds || {});
+    });
+  });
+
+  document.querySelectorAll('tr[data-entry-row]').forEach(function(row){
+    row.addEventListener('click', function(e){
+      if (e.target.closest('.btn-ver-chamado')) {
+        return;
+      }
+      const btn = this.querySelector('.btn-ver-chamado');
+      if (btn) {
+        btn.click();
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

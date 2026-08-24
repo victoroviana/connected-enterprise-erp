@@ -1,0 +1,514 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Usuários - Sollus Connected{% endblock %}
+
+{% block head %}
+<style>  .users-card{border:0;border-radius:1.25rem;box-shadow:0 12px 30px rgba(15,35,58,.08); background: var(--card); color: var(--text); }  
+  .users-card .card-header{background:transparent;border:0;padding:1.5rem 1.5rem 0;}
+  .users-card .card-body{padding:1.5rem 1.5rem 1.75rem;}
+
+  .users-form label{font-size:.75rem;font-weight:600;text-transform:uppercase;color:var(--muted);letter-spacing:.08rem;}
+  .users-form .form-control,.users-form .form-select{border-radius:.85rem;border-color:rgba(148,163,184,0.3);padding:.75rem 1rem; background: var(--card); color: var(--text); }
+  .users-form .form-control:focus,.users-form .form-select:focus{box-shadow:0 0 0 .2rem rgba(14,93,198,.15);border-color:var(--blue-700); background: var(--card); color: var(--text); }
+
+  .users-table{table-layout:fixed;width:100%; color: var(--text); }
+  .users-table thead{background:rgba(148,163,184,0.1);text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:var(--muted);}
+  .users-table th,.users-table td{white-space:normal;word-break:break-word; border-bottom: 1px solid rgba(148,163,184,0.1); }
+  .users-table tbody tr{transition:transform .18s ease, box-shadow .18s ease;}
+  .users-table tbody tr:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(15,35,58,.08); background: rgba(148,163,184,0.05); }  
+  .users-table .badge-role{text-transform:uppercase;letter-spacing:.05rem;font-size:.65rem;}
+  .users-card .table-responsive{overflow-x:auto;padding-bottom:.5rem;}
+  .users-table .text-break{white-space:normal;}
+
+  .avatar-preview{width:96px;height:96px;border-radius:50%;overflow:hidden;background:rgba(148,163,184,0.1);display:flex;align-items:center;justify-content:center;}
+  .avatar-preview img{width:100%;height:100%;object-fit:cover;}
+  .search-select{position:relative;}
+  .search-select-menu{
+    position:absolute;
+    top:100%;
+    left:0;
+    right:0;
+    z-index:10;
+    background:var(--card);
+    border:1px solid rgba(148,163,184,0.2);
+    border-radius:.75rem;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+    max-height:240px;
+    overflow:auto;
+    display:none;
+    margin-top:.35rem;
+  }
+  .search-select.is-open .search-select-menu{display:block;}
+  .search-select-item{
+    width:100%;
+    border:0;
+    background:transparent;
+    text-align:left;
+    padding:.5rem .75rem;
+    font-size:.95rem;
+    color:var(--text);
+  }
+  .search-select-item:hover,
+  .search-select-item:focus{background:rgba(148,163,184,0.1);}
+  .search-select-empty{padding:.55rem .85rem;color:var(--muted);}
+  .users-filter{display:flex;flex-wrap:wrap;gap:.5rem .75rem;align-items:center;}
+  .users-filter .form-control,
+  .users-filter .form-select{width:auto; background: var(--card); color: var(--text); border-color: rgba(148,163,184,0.3); }
+
+  .users-filter-search{min-width:220px;}
+  .users-filter-select{min-width:140px;}
+  .department-tag-select{display:flex;flex-wrap:wrap;gap:.5rem;padding:.7rem;min-height:3.25rem;border:1px solid rgba(148,163,184,0.3);border-radius:.85rem;background:var(--card);}
+  .department-tag{border:1px solid rgba(14,93,198,.22);border-radius:999px;background:rgba(14,93,198,.06);color:var(--text);padding:.35rem .75rem;font-size:.85rem;font-weight:600;line-height:1.2;transition:background .15s ease,border-color .15s ease,color .15s ease;}
+  .department-tag:hover,.department-tag:focus{border-color:rgba(14,93,198,.55);background:rgba(14,93,198,.12);}
+  .department-tag.is-selected{background:var(--blue-700);border-color:var(--blue-700);color:#fff;}
+  .department-badges{display:flex;flex-wrap:wrap;gap:.35rem;}
+  .department-badge{display:inline-flex;align-items:center;border-radius:999px;padding:.2rem .55rem;background:rgba(14,93,198,.08);color:var(--blue-700);font-size:.72rem;font-weight:700;}
+
+</style>
+{% endblock %}
+
+{% block content %}
+{% set user_stats = [
+  {'label': 'Total de usuários', 'value': total_users}
+] %}
+{% set users_help_tips = [
+  'Use o botão "Novo usuário" para definir login, contato, unidade e tipo; o tipo determina as permissões.',
+  'Preencha "Próx. Nº" para sequenciar as propostas do usuário e inclua telefones extras se precisar de contatos alternativos.',
+  'Na tabela, utilize o lápis para editar ou reativar usuários e a lixeira para remover acessos; revise status e tipo antes de salvar.'
+] %}
+{{ page_hero(
+    title='Gestão de Usuários',
+    subtitle='Controle quem acessa a plataforma Sollus Connected, defina perfis e mantenha os dados sempre atualizados.',
+    eyebrow='Administração',
+    stats=user_stats,
+    help_tips=users_help_tips,
+    help_intro='Passos rápidos para administrar usuários e acessos.'
+) }}
+
+<div class="row g-4">
+  <div class="col-12">
+    <div class="card users-card">
+      <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+          <h2 class="h5 fw-bold mb-1">Usuários cadastrados</h2>
+          <p class="text-muted mb-0">Edite dados, redefina senha ou remova acessos quando necessário.</p>
+        </div>
+        {% if can_manage %}
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoUsuario">
+          <i class="bi bi-plus-lg me-1"></i>Novo usuário
+        </button>
+        {% endif %}
+        <form class="users-filter" method="get" action="{{ url_for('auth_bp.gerenciar_usuarios') }}">
+          {% set selected_user = namespace(label='') %}
+          {% for user in user_options %}
+            {% if user_sel and user.id == user_sel %}
+              {% set selected_user.label = user.nome_completo or user.usuario %}
+            {% endif %}
+          {% endfor %}
+          <label class="small text-muted mb-0" for="usuarios-user-search">Usuário</label>
+          <select class="form-select form-select-sm d-none" id="usuarios-user-select" name="usuario_id">
+            <option value=""></option>
+            {% for user in user_options %}
+              {% set user_label = user.nome_completo or user.usuario %}
+              {% if user.nome_completo and user.usuario and user.usuario not in user.nome_completo %}
+                {% set user_label = user.nome_completo ~ ' (' ~ user.usuario ~ ')' %}
+              {% endif %}
+              <option value="{{ user.id }}" {% if user.id == user_sel %}selected{% endif %}>{{ user_label }}</option>
+            {% endfor %}
+          </select>
+          <div class="search-select users-filter-search" data-search-select>
+            <input type="text"
+                   id="usuarios-user-search"
+                   class="form-control form-control-sm"
+                   data-select-target="usuarios-user-select"
+                   autocomplete="off"
+                   placeholder="Pesquisar usuário"
+                   value="{{ selected_user.label }}">
+            <div class="search-select-menu" data-select-menu></div>
+          </div>
+          <label class="small text-muted mb-0" for="usuarios-status-select">Status</label>
+          <select class="form-select form-select-sm users-filter-select" id="usuarios-status-select" name="status">
+            <option value="active" {{ 'selected' if status_filter == 'active' else '' }}>Ativos</option>
+            <option value="inactive" {{ 'selected' if status_filter == 'inactive' else '' }}>Inativos</option>
+          </select>
+          <button class="btn btn-outline-secondary btn-sm" type="submit">Filtrar</button>
+        </form>
+      </div>
+      {% if not can_manage %}
+      <div class="px-4 pt-3">
+        <div class="alert alert-info mb-0">Você possui acesso de leitura. Solicite permissão de gerenciamento ao administrador para criar ou editar usuários.</div>
+      </div>
+      {% endif %}
+      <div class="table-responsive">
+        <table class="table users-table align-middle mb-0">
+          <colgroup>
+            <col style="width:5%">
+            <col style="width:10%">
+            <col style="width:12%">
+            <col style="width:15%">
+            <col style="width:12%">
+            <col style="width:14%">
+            <col style="width:6%">
+            <col style="width:8%">
+            <col style="width:8%">
+            <col style="width:7%">
+            <col style="width:9%">
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="text-center">ID</th>
+              <th>Usuário</th>
+              <th>Nome</th>
+              <th>Email</th>
+              <th>Departamentos</th>
+              <th>Empresa</th>
+              <th>Ramal</th>
+              <th>Status</th>
+              <th class="text-center">Tipo</th>
+              <th class="text-center">Próx. Nº</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for usuario in usuarios %}
+            <tr>
+              <td class="text-center fw-semibold">{{ usuario.id }}</td>
+              <td class="fw-semibold">{{ usuario.usuario }}</td>
+              <td>{{ usuario.nome_completo }}</td>
+              <td>{{ usuario.email }}</td>
+              <td>
+                {% if usuario.department_names %}
+                  <div class="department-badges">
+                    {% for dept_name in usuario.department_names %}
+                    <span class="department-badge">{{ dept_name }}</span>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </td>
+              <td>{{ issuer_units_map.get(usuario.unit_code, {}).get('name', '') }}</td>
+              <td>{{ usuario.ramal or '' }}</td>
+              <td>
+                {% if usuario.is_active %}
+                  <span class="badge bg-success-subtle text-success">Ativo</span>
+                {% else %}
+                  <span class="badge bg-secondary-subtle text-muted">Inativo</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <span class="badge bg-light text-dark border badge-role">{{ (usuario.tipo or 'Usuário')|title }}</span>
+              </td>
+              <td class="text-center">{{ usuario.prox_num }}</td>
+              <td>
+                {% if can_manage %}
+                <div class="d-flex justify-content-end gap-2">
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="abrirModalEdicaoUsuario({{ usuario.id }})">
+                    <i class="bi bi-pencil-square fs-5"></i>
+                  </button>
+                  <form method="post" action="{{ url_for('auth_bp.excluir_usuario', id=usuario.id) }}" onsubmit="return confirm('Confirma a remoção deste usuário?');">
+                    {{ form.csrf_token }}
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                      <i class="bi bi-trash fs-5"></i>
+                    </button>
+                  </form>
+                </div>
+                {% else %}
+                <span class="text-muted"></span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          {% if not usuarios %}
+            <tr>
+              <td colspan="11" class="text-center text-muted py-4">Nenhum usuário cadastrado.</td>
+            </tr>
+          {% endif %}
+          </tbody>
+        </table>
+        {% if pagination.pages > 1 %}
+        {% set _candidates = [1, pagination.page, pagination.page + 1, pagination.page + 2, pagination.page + 3, pagination.pages] %}
+        {% set pages_to_show = [] %}
+        {% for p in _candidates %}
+          {% if 1 <= p <= pagination.pages and p not in pages_to_show %}
+            {% set _ = pages_to_show.append(p) %}
+          {% endif %}
+        {% endfor %}
+        <nav class="mt-3">
+          <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
+            <ul class="pagination mb-0 justify-content-end">
+              <li class="page-item {{ 'disabled' if not pagination.has_prev else '' }}">
+                <a class="page-link" href="{{ url_for('auth_bp.gerenciar_usuarios', page=pagination.prev_num, status=status_filter, usuario_id=user_sel) }}">Anterior</a>
+              </li>
+              {% for page_num in pages_to_show %}
+                  <li class="page-item {{ 'active' if page_num == pagination.page else '' }}">
+                    <a class="page-link" href="{{ url_for('auth_bp.gerenciar_usuarios', page=page_num, status=status_filter, usuario_id=user_sel) }}">{{ page_num }}</a>
+                  </li>
+              {% endfor %}
+              <li class="page-item {{ 'disabled' if not pagination.has_next else '' }}">
+                <a class="page-link" href="{{ url_for('auth_bp.gerenciar_usuarios', page=pagination.next_num, status=status_filter, usuario_id=user_sel) }}">Próximo</a>
+              </li>
+            </ul>
+            <form class="d-flex align-items-center gap-2" method="get" action="{{ url_for('auth_bp.gerenciar_usuarios') }}">
+              <label class="small text-muted mb-0" for="usuarios-page-input">Página</label>
+              <input type="number" min="1" max="{{ pagination.pages }}" class="form-control form-control-sm" id="usuarios-page-input" name="page" value="{{ pagination.page }}">
+              <input type="hidden" name="status" value="{{ status_filter }}">
+              {% if user_sel %}<input type="hidden" name="usuario_id" value="{{ user_sel }}">{% endif %}
+              <button class="btn btn-outline-secondary btn-sm" type="submit">Ir</button>
+            </form>
+          </div>
+        </nav>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if can_manage %}
+<!-- Modal: cadastro de usuário -->
+<div class="modal sollus-modal fade" id="modalNovoUsuario" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <form method="post" class="users-form" id="formNovoUsuario">
+        <div class="modal-header">
+          <h5 class="modal-title">Novo usuário</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          {{ form.hidden_tag() }}
+          <div class="row g-3">
+            <div class="col-md-6">
+              {{ form.usuario.label(class="form-label") }}
+              {{ form.usuario(class="form-control", placeholder="jose.silva", autocomplete="off") }}
+              {% if form.usuario.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.usuario.errors %}
+                    <div>{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              {{ form.nome_completo.label(class="form-label") }}
+              {{ form.nome_completo(class="form-control", placeholder="Nome completo") }}
+              {% if form.nome_completo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.nome_completo.errors %}
+                    <div>{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              {{ form.email.label(class="form-label") }}
+              {{ form.email(class="form-control", placeholder="seu.email@sollus.com") }}
+              {% if form.email.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.email.errors %}
+                    <div>{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              {{ form.phone.label(class="form-label") }}
+              {{ form.phone(class="form-control", placeholder="21 2413-3203") }}
+              {% if form.phone.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.phone.errors %}
+                    <div>{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="col-12">
+              {% with extra_phones_list=[], wrapper_id='createExtraPhones' %}
+              {% include 'auth/_extra_phone_fields.html' %}
+              {% endwith %}
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="create_department_ids">Departamentos</label>
+              <select class="form-select d-none" id="create_department_ids" name="department_ids" multiple data-tag-select>
+                <option value="0">Sem departamento</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}">{{ dept.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              {{ form.unit_code.label(class="form-label") }}
+              {{ form.unit_code(class="form-select") }}
+              {% if form.unit_code.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.unit_code.errors %}
+                    <div>{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              {{ form.ramal.label(class="form-label") }}
+              {{ form.ramal(class="form-control", placeholder="Ramal interno") }}
+              {% if form.ramal.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.ramal.errors %}
+                    <div>{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              {{ form.tipo.label(class="form-label") }}
+              {{ form.tipo(class="form-select") }}
+              {% if form.tipo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.tipo.errors %}
+                    <div>{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              {{ form.prox_num.label(class="form-label") }}
+              {{ form.prox_num(class="form-control", min="1") }}
+              {% if form.prox_num.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.prox_num.errors %}
+                    <div>{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              {{ form.senha.label(class="form-label") }}
+              {{ form.senha(class="form-control", placeholder="Defina uma senha inicial") }}
+              {% if form.senha.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.senha.errors %}
+                    <div>{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="col-md-6 d-flex align-items-center">
+              <div class="form-check form-switch mt-3">
+                {{ form.is_active(class="form-check-input", id="form_is_active") }}
+                <label class="form-check-label" for="form_is_active">Usuário ativo?</label>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4">
+            <small class="text-muted d-block">As permissões são definidas automaticamente pelo tipo selecionado.</small>
+            <a class="small" href="{{ url_for('auth_bp.gerenciar_permissoes') }}">Gerenciar tipos e permissões</a>
+          </div>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+          <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar usuário</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Modal: edição de usuário -->
+<div class="modal sollus-modal fade" id="modalEdicaoUsuario" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form id="formEdicaoUsuario" class="users-form">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar usuário</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+                  <div class="modal-body">
+            <input type="hidden" id="usuario_id" name="id">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="text-center mb-4">
+              <div class="avatar-preview mx-auto mb-2">
+                <img id="edit_avatar_preview" src="{{ url_for('static', filename='images/sollus_logo.png') }}" data-placeholder="{{ url_for('static', filename='images/sollus_logo.png') }}" alt="Foto do usuário" class="w-100 h-100">
+              </div>
+              <small id="edit_avatar_caption" class="text-muted d-block">Sem foto cadastrada</small>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Usuário</label>
+                <input type="text" class="form-control" id="edit_usuario" name="usuario" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Nome completo</label>
+                <input type="text" class="form-control" id="edit_nome_completo" name="nome_completo">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">E-mail</label>
+                <input type="email" class="form-control" id="edit_email" name="email">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" id="edit_tipo" name="tipo">
+                  {% for role in roles %}
+                  <option value="{{ role.name }}">{{ role.label }}</option>
+                  {% endfor %}
+                </select>
+                <small id="edit_tipo_label" class="text-muted"></small>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Próx. nº proposta</label>
+                <input type="number" min="1" class="form-control" id="edit_prox_num" name="prox_num">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Telefone</label>
+                <input type="text" class="form-control" id="edit_phone" name="phone" placeholder="21 2413-3203">
+              </div>
+              <div class="col-12">
+                {% with extra_phones_list=[], wrapper_id='editExtraPhones' %}
+                {% include 'auth/_extra_phone_fields.html' %}
+                {% endwith %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Ramal</label>
+                <input type="text" class="form-control" id="edit_ramal" name="ramal" placeholder="000">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Departamentos</label>
+                <select class="form-select d-none" id="edit_department_ids" name="department_ids" multiple data-tag-select>
+                  <option value="0">Sem departamento</option>
+                  {% for dept in departments %}
+                  <option value="{{ dept.id }}">{{ dept.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Empresa</label>
+                <select class="form-select" id="edit_unit_code" name="unit_code" data-default-unit="{{ issuer_units[0][0] if issuer_units else '' }}">
+                  {% for code, label in issuer_units %}
+                  <option value="{{ code }}">{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6 d-flex align-items-center">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
+                  <label class="form-check-label" for="edit_is_active">Usuário ativo?</label>
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Nova senha (opcional)</label>
+                <input type="password" class="form-control" id="edit_senha" name="senha">
+              </div>
+            </div>
+            <div class="mt-4">
+            </div>
+          </div>
+        <div class="modal-footer d-flex justify-content-between">
+          <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/admin_usuarios.js') }}" defer></script>
+{% endblock %}

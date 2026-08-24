@@ -1,0 +1,299 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recibo de Entrega de Crachá</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+
+    .print-container {
+      width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      position: relative;
+    }
+
+    .logo-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo-container img {
+      max-width: 150px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    p {
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .signature {
+      margin-top: 50px;
+    }
+
+    .signature-line {
+      border-top: 1px solid #000;
+      margin-top: 5px;
+      position: relative;
+    }
+
+    .signature-label {
+      position: absolute;
+      top: -20px;
+      left: 0;
+      background-color: #fff;
+      padding: 0 5px;
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      font-size: 10px;
+      color: #666;
+    }
+
+    .footer a {
+      color: #666;
+      text-decoration: none;
+      margin-right: 10px;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    .social-icons {
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .social-icons a {
+      color: #666;
+      text-decoration: none;
+      margin-right: 10px;
+    }
+
+    .social-icons a:hover {
+      color: #333;
+    }
+
+    #generate-pdf {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #generate-pdf:hover {
+      background-color: #0056b3;
+    }
+
+    @media print {
+      body {
+        background-color: #fff;
+      }
+
+      .print-container {
+        width: 100%;
+        border: none;
+        box-shadow: none;
+      }
+
+      #generate-pdf {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <br>
+  <br>
+  <br>
+  <div class="print-container">
+    <div class="logo-container">
+      <img src="{{ url_for('static', filename='images/recibo_logo.png') }}" alt="Logo da Empresa">
+    </div>
+    <br>
+
+    <div class="container">
+      <h1>RECIBO DE ENTREGA Nº {{ recibo.numero_recibo }}</h1>
+      <p>Declaramos para os devidos fins que entregamos a empresa: <strong>{{ recibo.cliente }}</strong>, situado na
+        {{ recibo.endereco }}, inscrito no CNPJ sob o número {{ recibo.cnpj }}, a quantidade de
+        <strong>{{ recibo.quantidade_entregue }} ({{ recibo.quantidade_entregue_extenso }})</strong> unidades de crachá
+        personalizado com frente colorida e verso monocromático, modelo {{ recibo.tipo_cracha }}.</p>
+      <p>O cliente está ciente do recebimento da quantidade de <strong>{{ recibo.quantidade_entregue }}
+        ({{ recibo.quantidade_entregue_extenso }})</strong> unidades de crachá que foram debitadas do total de
+        <strong>{{ recibo.quantidade_entregue }} ({{ recibo.quantidade_entregue_extenso }})</strong> unidades, restando
+        assim a quantidade contratada de <strong>{{ recibo.quantidade_restante }}
+        ({{ recibo.quantidade_restante_extenso }})</strong> unidades, conforme o pedido nº {{ recibo.pedido }} de
+        {{ recibo.data_pedido_br }}.</p>
+      <br>
+      <br>
+      <div class="signature">
+        <div class="signature-line">
+          <span class="signature-label">Nome</span>
+        </div>
+      </div>
+      <br>
+      <div class="signature">
+        <div class="signature-line">
+          <span class="signature-label">RG</span>
+        </div>
+      </div>
+      <br>
+      <div class="signature">
+        <div class="signature-line">
+          <span class="signature-label">Data</span>
+        </div>
+      </div>
+      <br>
+      <div class="signature">
+        <div class="signature-line">
+          <span class="signature-label">Assinatura</span>
+        </div>
+      </div>
+      <br>
+      <div class="signature">
+        <div class="signature-line">
+          <span class="signature-label">Técnico</span>
+        </div>
+      </div>
+      <br>
+      <div class="footer">
+        <p class="pull-right" style="text-align: center;">
+          Empresa Tecnologia e Soluções LTDA<br>
+          Av. Paulista, 1000 - Bela Vista - São Paulo - SP - CEP: 01310-100.<br>
+          Telefone: (11) 3000-0000 - www.empresa.com.br<br>
+        </p>
+      </div>
+    </div>
+    <button id="generate-pdf">Gerar PDF</button>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search || '');
+    const isEmbed = params.get('embed') === '1';
+    const auto = params.get('auto') === '1' || isEmbed;
+    const requestId = params.get('request_id') || null;
+    const generatePdfButton = document.getElementById('generate-pdf');
+
+    function sanitizeFilename(value) {
+      return String(value || 'recibo')
+        .replace(/[\\/:*?"<>|]+/g, '-')
+        .replace(/\s+/g, '-')
+        .trim();
+    }
+
+    const pdfFilename = sanitizeFilename(`recibo-{{ recibo.numero_recibo }}`) + '.pdf';
+
+    async function generatePdfBlob() {
+      const element = document.querySelector('.print-container');
+      if (!element) {
+        throw new Error('Conteúdo do recibo não encontrado.');
+      }
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: pdfFilename,
+        image: {
+          type: 'jpeg',
+          quality: 1
+        },
+        html2canvas: {
+          scale: 2,
+          useCORS: true
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait'
+        }
+      };
+      return html2pdf().set(opt).from(element).output('blob');
+    }
+
+    async function sendPdfToParent(blob) {
+      if (!window.parent || window.parent === window) return;
+      const origin = window.location.origin;
+      try {
+        const buffer = await blob.arrayBuffer();
+        window.parent.postMessage({
+          type: 'recibo-pdf',
+          success: true,
+          request_id: requestId,
+          filename: pdfFilename,
+          buffer: buffer
+        }, origin, [buffer]);
+      } catch (err) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          window.parent.postMessage({
+            type: 'recibo-pdf',
+            success: true,
+            request_id: requestId,
+            filename: pdfFilename,
+            dataUrl: reader.result
+          }, origin);
+        };
+        reader.readAsDataURL(blob);
+      }
+    }
+
+    async function handleGeneratePdf() {
+      try {
+        generatePdfButton.disabled = true;
+        const blob = await generatePdfBlob();
+        await sendPdfToParent(blob);
+      } catch (err) {
+        console.error('Erro ao gerar PDF do recibo:', err);
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({
+            type: 'recibo-pdf',
+            success: false,
+            request_id: requestId,
+            error: err.message || 'Erro ao gerar PDF.'
+          }, window.location.origin);
+        }
+      } finally {
+        generatePdfButton.disabled = false;
+      }
+    }
+
+    if (generatePdfButton) {
+      generatePdfButton.addEventListener('click', handleGeneratePdf);
+    }
+
+    if (auto) {
+      window.addEventListener('load', () => {
+        setTimeout(handleGeneratePdf, 300);
+      });
+    }
+  </script>
+</body>
+
+</html>

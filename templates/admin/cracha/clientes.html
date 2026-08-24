@@ -1,0 +1,427 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Crachá | Clientes{% endblock %}
+
+{% block head %}
+<style>
+  .clientes-card{border:0;border-radius:1.1rem;box-shadow:0 10px 24px rgba(15,35,58,.08);}
+  .clientes-card .card-header{background:transparent;border:0;padding:1.25rem 1.5rem 0;}
+  .clientes-card .card-body{padding:1.25rem 1.5rem 1.5rem;}
+  .clientes-table th,.clientes-table td{vertical-align:middle;}
+  .clientes-table thead{background:#f3f6fb;text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:#5a6782;}
+  .clientes-table tbody tr:hover{background:rgba(148,163,184,.08);}
+  .status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:.4rem;}
+  .status-dot.active{background:#22c55e;}
+  .status-dot.inactive{background:#ef4444;}
+  
+  .nav-tabs-custom {
+    border-bottom: 2px solid #f1f5f9;
+  }
+  .nav-tabs-custom .nav-link {
+    border: none;
+    color: #64748b;
+    padding: 0.75rem 1.25rem;
+    position: relative;
+    background: transparent;
+    transition: color 0.15s ease-in-out;
+  }
+  .nav-tabs-custom .nav-link:hover {
+    color: #0f172a;
+    border: none;
+  }
+  .nav-tabs-custom .nav-link.active {
+    color: #2563eb;
+    background: transparent;
+    border: none;
+  }
+  .nav-tabs-custom .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #2563eb;
+  }
+  .cursor-pointer {
+    cursor: pointer;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set hero_stats = [
+  {'label': 'Clientes', 'value': pagination.total, 'hint': 'registros'},
+  {'label': 'Ativos', 'value': total_ativos, 'hint': 'em uso'}
+] %}
+{% set hero_help_tips = [
+  'Use a busca para localizar por nome fantasia, razão social, CNPJ ou CPF.',
+  'Atualize os contatos para manter os dados de faturamento completos.',
+  'O status ativo determina a disponibilidade em contratos e crachás.'
+] %}
+{% call page_hero(
+  title='Clientes'|safe,
+  subtitle='Cadastre, organize e mantenha os dados completos dos clientes.',
+  eyebrow='Crachá'|safe,
+  stats=hero_stats,
+  help_tips=hero_help_tips,
+  help_intro='Dicas rápidas para agilizar o cadastro.'
+) %}
+  <div class="page-hero__actions">
+    <button class="btn btn-light" type="button" data-bs-toggle="modal" data-bs-target="#modalNovoCliente">
+      <i class="fa-solid fa-user-plus me-1"></i> Novo cliente
+    </button>
+  </div>
+{% endcall %}
+
+<div class="card clientes-card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-lg-8">
+        <label class="form-label">Nome fantasia, Razão social, CNPJ ou CPF</label>
+        <input type="text" name="search" class="form-control" placeholder="Digite para buscar" value="{{ search }}">
+      </div>
+      <div class="col-lg-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">Buscar</button>
+        <a class="btn btn-outline-secondary w-100" href="{{ url_for('cracha_bp.clientes') }}">Limpar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card clientes-card">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <div>
+      <h2 class="h6 fw-bold mb-1">Registros</h2>
+      <p class="text-muted mb-0">{{ pagination.total }} cliente(s) encontrado(s).</p>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover clientes-table">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Nome fantasia</th>
+            <th>Razão social</th>
+            <th>CNPJ</th>
+            <th>CPF</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in clientes %}
+          <tr>
+            <td>
+              <span class="status-dot {{ 'active' if row.ativo else 'inactive' }}"></span>
+              {{ 'Ativo' if row.ativo else 'Inativo' }}
+            </td>
+            <td class="fw-semibold">{{ row.nome_fantasia or '-' }}</td>
+            <td>{{ row.razao_social or '-' }}</td>
+            <td>{{ row.cnpj or '-' }}</td>
+            <td>{{ row.cpf or '-' }}</td>
+            <td class="text-end">
+              <div class="d-flex justify-content-end gap-2">
+                <a class="btn btn-outline-primary btn-sm" href="{{ url_for('cracha_bp.clientes_editar', cliente_id=row.id_pk) }}">
+                  <i class="fa-solid fa-pen me-1"></i> Editar
+                </a>
+                <form method="post" action="{{ url_for('cracha_bp.clientes_excluir', cliente_id=row.id_pk) }}" onsubmit="return confirm('Deseja excluir este cliente?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="fa-solid fa-trash me-1"></i> Excluir
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not clientes %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">Nenhum cliente encontrado.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <nav class="mt-3">
+      <ul class="pagination justify-content-end mb-0">
+        <li class="page-item {{ 'disabled' if not pagination.has_prev else '' }}">
+          <a class="page-link" href="{{ build_url('cracha_bp.clientes', page=pagination.prev_num) }}">Anterior</a>
+        </li>
+        {% for p in range(1, pagination.pages + 1) %}
+        {% if p == 1 or p == pagination.pages or (p >= pagination.page - 1 and p <= pagination.page + 1) %}
+        <li class="page-item {{ 'active' if p == pagination.page else '' }}">
+          <a class="page-link" href="{{ build_url('cracha_bp.clientes', page=p) }}">{{ p }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+        <li class="page-item {{ 'disabled' if not pagination.has_next else '' }}">
+          <a class="page-link" href="{{ build_url('cracha_bp.clientes', page=pagination.next_num) }}">Próxima</a>
+        </li>
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Modal Novo Cliente -->
+<div class="modal sollus-modal fade" id="modalNovoCliente" tabindex="-1" aria-labelledby="modalNovoClienteLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      <form method="post" action="{{ url_for('cracha_bp.clientes_novo') }}" id="formNovoCliente">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="origin" value="list">
+        
+        <div class="modal-header border-0 bg-light p-4">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-primary text-white p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+              <i class="fa-solid fa-user-plus fs-5"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold text-dark mb-0" id="modalNovoClienteLabel">Novo Cliente</h5>
+              <p class="text-muted mb-0 small">Preencha os dados cadastrais e de acesso do novo cliente.</p>
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        
+        <div class="modal-body p-4 bg-white">
+          <!-- Abas / Tabs para organizar o formulário extenso -->
+          <ul class="nav nav-tabs nav-tabs-custom mb-4" id="modalNovoClienteTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active fw-semibold" id="dados-tab" data-bs-toggle="tab" data-bs-target="#tab-dados" type="button" role="tab" aria-controls="tab-dados" aria-selected="true">
+                <i class="fa-solid fa-address-card me-2"></i>1. Dados do Cliente
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link fw-semibold" id="contato-tab" data-bs-toggle="tab" data-bs-target="#tab-contato" type="button" role="tab" aria-controls="tab-contato" aria-selected="false">
+                <i class="fa-solid fa-phone me-2"></i>2. Contato & Endereço
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link fw-semibold" id="acesso-tab" data-bs-toggle="tab" data-bs-target="#tab-acesso" type="button" role="tab" aria-controls="tab-acesso" aria-selected="false">
+                <i class="fa-solid fa-key me-2"></i>3. Usuário de Acesso
+              </button>
+            </li>
+          </ul>
+          
+          <div class="tab-content" id="modalNovoClienteTabContent">
+            <!-- TAB 1: DADOS DO CLIENTE -->
+            <div class="tab-pane fade show active" id="tab-dados" role="tabpanel" aria-labelledby="dados-tab">
+              <div class="row g-3">
+                <div class="col-md-12">
+                  <label class="form-label fw-semibold text-muted small mb-2">TIPO DE CLIENTE</label>
+                  <div class="d-flex flex-wrap gap-4">
+                    <label class="form-check cursor-pointer">
+                      <input class="form-check-input" type="radio" name="radTipo" value="1">
+                      <span class="form-check-label fw-medium text-dark">Pessoa Física</span>
+                    </label>
+                    <label class="form-check cursor-pointer">
+                      <input class="form-check-input" type="radio" name="radTipo" value="2" checked>
+                      <span class="form-check-label fw-medium text-dark">Pessoa Jurídica</span>
+                    </label>
+                  </div>
+                </div>
+                
+                <div class="col-md-6">
+                  <label class="form-label"><span class="text-danger">*</span> Nome Fantasia</label>
+                  <input type="text" class="form-control" name="txtNomeFantasia" required>
+                </div>
+                
+                <div class="col-md-6">
+                  <label class="form-label">Razão Social</label>
+                  <input type="text" class="form-control" name="txtRazaoSocial">
+                </div>
+                
+                <div class="col-md-6 p-juridica-modal">
+                  <label class="form-label">CNPJ</label>
+                  <input type="text" class="form-control" name="txtCNPJ" placeholder="00.000.000/0000-00">
+                </div>
+                
+                <div class="col-md-6 p-juridica-modal">
+                  <label class="form-label">Inscrição Estadual</label>
+                  <input type="text" class="form-control" name="txtInscricaoEstadual">
+                </div>
+                
+                <div class="col-md-6 p-fisica-modal" style="display: none;">
+                  <label class="form-label">CPF</label>
+                  <input type="text" class="form-control" name="txtCPF" placeholder="000.000.000-00">
+                </div>
+                
+                <div class="col-md-6 p-fisica-modal" style="display: none;">
+                  <label class="form-label">RG</label>
+                  <input type="text" class="form-control" name="txtRG">
+                </div>
+                
+                <div class="col-md-6">
+                  <label class="form-label">Contato Responsável</label>
+                  <input type="text" class="form-control" name="txtContato">
+                </div>
+                
+                <div class="col-md-6">
+                  <label class="form-label">Setor / Departamento</label>
+                  <input type="text" class="form-control" name="txtContatoSetor">
+                </div>
+                
+                <div class="col-md-4">
+                  <label class="form-label"><span class="text-danger">*</span> Localidade</label>
+                  <select class="form-select" name="selLocalidade" required>
+                    <option value="" disabled selected>Selecione a localidade</option>
+                    {% for loc in localidades %}
+                    <option value="{{ loc.id_pk }}">{{ loc.localidade }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                
+                <div class="col-md-4">
+                  <label class="form-label"><span class="text-danger">*</span> Empresa Vincular</label>
+                  <select class="form-select" name="selEmpresa" required>
+                    <option value="" disabled selected>Selecione a empresa</option>
+                    {% for emp in empresas %}
+                    <option value="{{ emp.id_pk }}">{{ emp.nome }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                
+                <div class="col-md-4">
+                  <label class="form-label">Status do Cadastro</label>
+                  <select class="form-select" name="radAtivo">
+                    <option value="t" selected>Sim (Ativo)</option>
+                    <option value="f">Não (Inativo)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <!-- TAB 2: CONTATO E ENDEREÇO -->
+            <div class="tab-pane fade" id="tab-contato" role="tabpanel" aria-labelledby="contato-tab">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label">Telefone 1</label>
+                  <input type="text" class="form-control" name="txtTelefone1" placeholder="(00) 0000-0000">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Telefone 2</label>
+                  <input type="text" class="form-control" name="txtTelefone2">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Telefone 3</label>
+                  <input type="text" class="form-control" name="txtTelefone3">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Telefone 4</label>
+                  <input type="text" class="form-control" name="txtTelefone4">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Fax</label>
+                  <input type="text" class="form-control" name="txtFAX">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">E-mail Principal</label>
+                  <input type="email" class="form-control" name="txtEmail" placeholder="cliente@email.com">
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label">Website</label>
+                  <input type="text" class="form-control" name="txtWebSite" placeholder="https://">
+                </div>
+                
+                <hr class="my-4 text-muted opacity-25">
+                
+                <div class="col-md-6">
+                  <label class="form-label">Endereço (Logradouro)</label>
+                  <input type="text" class="form-control" name="txtEndereco">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">Número</label>
+                  <input type="text" class="form-control" name="txtEnderecoNumero">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Complemento</label>
+                  <input type="text" class="form-control" name="txtEnderecoComplemento">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Bairro</label>
+                  <input type="text" class="form-control" name="txtEnderecoBairro">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Município</label>
+                  <input type="text" class="form-control" name="txtEnderecoMunicipio">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">UF</label>
+                  <select class="form-select" name="selUFS">
+                    <option value="" selected>UF</option>
+                    {% for uf in ufs %}
+                    <option value="{{ uf.sigla }}">{{ uf.sigla }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">CEP</label>
+                  <input type="text" class="form-control" name="txtEnderecoCEP" placeholder="00000-000">
+                </div>
+              </div>
+            </div>
+            
+            <!-- TAB 3: USUÁRIO DE ACESSO -->
+            <div class="tab-pane fade" id="tab-acesso" role="tabpanel" aria-labelledby="acesso-tab">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label"><span class="text-danger">*</span> Nome do Usuário</label>
+                  <input type="text" class="form-control" name="txtNomeUsuario" required>
+                  <span class="text-muted small">Nome do contato de acesso à plataforma.</span>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label"><span class="text-danger">*</span> Login</label>
+                  <input type="text" class="form-control" name="txtLoginUsuario" required autocomplete="off">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label"><span class="text-danger">*</span> Senha</label>
+                  <input type="password" class="form-control" name="txtSenhaUsuario" required autocomplete="new-password">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label"><span class="text-danger">*</span> E-mail do Usuário</label>
+                  <input type="email" class="form-control" name="txtEmailUsuario" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">CNPJ para segunda senha (Opcional)</label>
+                  <input type="password" class="form-control" name="txtCNPJSenha2" autocomplete="off">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-footer border-0 bg-light p-3 gap-2">
+          <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary rounded-3 px-4">Salvar Cliente</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const tipoInputs = document.querySelectorAll('#modalNovoCliente input[name="radTipo"]');
+    const juridicaFields = document.querySelectorAll('#modalNovoCliente .p-juridica-modal');
+    const fisicaFields = document.querySelectorAll('#modalNovoCliente .p-fisica-modal');
+
+    function applyTipoModal() {
+      const selected = document.querySelector('#modalNovoCliente input[name="radTipo"]:checked');
+      const tipo = selected ? selected.value : '2';
+      juridicaFields.forEach((el) => {
+        el.style.display = tipo === '2' ? '' : 'none';
+      });
+      fisicaFields.forEach((el) => {
+        el.style.display = tipo === '1' ? '' : 'none';
+      });
+    }
+
+    tipoInputs.forEach((input) => input.addEventListener('change', applyTipoModal));
+    applyTipoModal();
+  });
+</script>
+{% endblock %}

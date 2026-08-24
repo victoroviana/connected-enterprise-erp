@@ -1,0 +1,1849 @@
+<!-- templates/central_conhecimento/board.html -->
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Central de Conhecimento{% endblock %}
+
+{% block head %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+/* ---------- Central de Conhecimento básico ---------- */
+/* ---------- Central de Conhecimento Trello-Style ---------- */
+.central_conhecimento-canvas{ 
+  background: var(--central_conhecimento-bg, linear-gradient(135deg, #0f172a 0%, #1e293b 100%)); 
+  min-height: calc(100vh - 300px); 
+  padding: 1.5rem; 
+  border-radius: 16px; 
+  overflow-x: auto;
+  position: relative;
+  transition: background 0.3s ease;
+}
+:root:not([data-theme="dark"]) .central_conhecimento-canvas{
+  --central_conhecimento-bg: #f1f2f4;
+  background: #f1f2f4; /* solid light grey like real trello when not dark */
+  border: 1px solid #dfe1e6;
+}
+:root:not([data-theme="dark"]) .add-list-wrapper{
+  background: rgba(9, 30, 66, 0.08);
+}
+:root:not([data-theme="dark"]) .add-list-wrapper .label{
+  color: #172b4d;
+}
+.central_conhecimento-wrap{ 
+  display: flex; 
+  align-items: flex-start; 
+  gap: 1.25rem; 
+  padding-bottom: 1rem;
+}
+.central_conhecimento-col{ 
+  background: var(--bg); 
+  border: 1px solid var(--flow-border);
+  border-radius: 12px; 
+  width: 300px; 
+  min-width: 300px; 
+  display: flex; 
+  flex-direction: column; 
+  max-height: calc(100vh - 340px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.central_conhecimento-col header{ 
+  padding: 0.75rem 1rem; 
+  font-weight: 700; 
+  color: var(--text); 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  cursor: default;
+}
+.central_conhecimento-col header .title{ font-size: 0.9rem; }
+.central_conhecimento-col .list{ 
+  padding: 0.5rem; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 0.5rem; 
+  overflow-y: auto; 
+  flex-grow: 1;
+}
+.task-card{ 
+  background: var(--card); 
+  border-radius: 8px; 
+  padding: 0.6rem 0.75rem; 
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12); 
+  cursor: pointer; 
+  border: 1px solid var(--flow-border);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.task-card:hover{ transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+.task-card.dragging{ opacity: 0.5; transform: rotate(3deg); }
+.task-title{ font-size: 0.88rem; color: var(--text); margin-bottom: 0.25rem; line-height: 1.4; }
+.task-meta{ font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: 0.5rem; }
+.task-badges{ display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.5rem; }
+.task-badges .badge{ font-size: 0.65rem; padding: 0.2rem 0.4rem; border-radius: 4px; }
+
+.btn-add-card{
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+.btn-add-card:hover{ background: rgba(0,0,0,0.05); color: var(--text); }
+
+.add-list-wrapper{
+  min-width: 270px;
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(4px);
+  border-radius: 12px;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.add-list-wrapper:hover{ background: rgba(255,255,255,0.3); }
+.add-list-wrapper .label{ color: #fff; font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; }
+
+.task-card:hover .task-actions-hover{ opacity: 1; }
+.task-actions-hover{ opacity: 0; transition: opacity 0.2s; }
+.op-0{ opacity: 0; }
+
+/* Inline Creators */
+.inline-list-form, .inline-card-form {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.inline-card-form { margin-top: 0.5rem; border: 1px solid var(--flow-border); }
+.inline-card-form textarea {
+  width: 100%;
+  border: none;
+  background: transparent;
+  resize: none;
+  font-size: 0.88rem;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+  min-height: 60px;
+}
+.inline-card-form textarea:focus { outline: none; }
+
+/* ---------- Comments ---------- */
+.comment-list{ display:flex; flex-direction:column; gap:.75rem; max-height:46vh; overflow:auto; padding-right:.25rem; }
+.comment-card{ border:1px solid rgba(16,24,40,.12); border-radius:12px; padding:.6rem .75rem; background:var(--bg); }
+.comment-meta{ font-size:.78rem; color:var(--muted); display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+.comment-body{ margin-top:.35rem; white-space:pre-wrap; }
+.comment-actions{ display:flex; gap:.35rem; }
+.comment-images{ display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.5rem; }
+.comment-image{ position:relative; }
+.comment-image img{ width:90px; height:90px; object-fit:cover; border-radius:10px; border:1px solid rgba(16,24,40,.12); }
+.comment-image button{ position:absolute; top:-6px; right:-6px; width:22px; height:22px; border-radius:50%; border:0; background:#ef4444; color:#fff; font-size:.7rem; display:grid; place-items:center; }
+.comment-empty{ color:var(--muted); font-size:.85rem; }
+
+/* ---------- Flow Studio ---------- */
+.flow-studio{
+  --flow-bg: #0b1020; --flow-fg: #eef2ff; --flow-panel: rgba(15,20,40,.6);
+  --flow-border: rgba(199,210,254,.25); --flow-accent: #7c3aed; --flow-muted: #c7d2fe;
+  --flow-node-bg: #11182e; --flow-node-border: rgba(199,210,254,.18);
+  --flow-edge-stroke: #64748b; --flow-edge-arrow: #64748b;
+  position:fixed; inset:0; background:var(--flow-bg); color:var(--flow-fg); z-index:1050; display:none;
+}
+.flow-studio.light{
+  --flow-bg: #f7f9fc; --flow-fg: #0b1020; --flow-panel: rgba(255,255,255,.92);
+  --flow-border: rgba(0,0,0,.12); --flow-accent: #6d28d9; --flow-muted: #334155;
+  --flow-node-bg: #ffffff; --flow-node-border: rgba(0,0,0,.12);
+  --flow-edge-stroke: #6b7280; --flow-edge-arrow: #6b7280;
+}
+.flow-studio.open{ display:block; }
+
+/* topbar/botoes */
+.flow-topbar{
+  position:absolute; left:50%; transform:translateX(-50%); top:8px; padding:6px 10px; border-radius:10px;
+  background:var(--flow-panel); border:1px solid var(--flow-border); backdrop-filter: blur(6px);
+  font-weight:700; box-shadow:0 6px 22px rgba(0,0,0,.18); z-index:3;
+}
+.flow-save{
+  position:absolute; right:18px; top:14px; background:var(--flow-accent); color:#fff; border:none;
+  border-radius:10px; padding:.55rem 1rem; font-weight:800; box-shadow:0 10px 24px rgba(0,0,0,.25);
+  z-index:3; cursor:pointer;
+}
+.flow-close{
+  position:absolute; left:18px; top:14px; background:var(--flow-panel); color:var(--flow-fg);
+  border:1px solid var(--flow-border); border-radius:10px; padding:.45rem .8rem; font-weight:700; z-index:3; cursor:pointer;
+}
+
+/* canvas layers */
+.flow-canvas-wrap{ position:absolute; inset:0; overflow:hidden; z-index:1; }
+.flow-grid{
+  position:absolute; inset:0; background:
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,.06) 1px, transparent 1.2px) 0 0/24px 24px,
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,.03) 1px, transparent 1.2px) 0 0/120px 120px;
+}
+.flow-studio.light .flow-grid{
+  background:
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,.08) 1px, transparent 1.2px) 0 0/24px 24px,
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,.04) 1px, transparent 1.2px) 0 0/120px 120px;
+}
+
+/* edges */
+.flow-edges{ position:absolute; inset:0; pointer-events:none; z-index:2; overflow:visible; }
+.flow-edges path{ stroke:var(--flow-edge-stroke); stroke-width:3; fill:none; opacity:.95; vector-effect: non-scaling-stroke; }
+
+/* node */
+.node{
+  position:absolute; width:280px; min-height:92px; border-radius:12px;
+  background:var(--flow-node-bg); border:1px solid var(--flow-node-border);
+  box-shadow:0 10px 22px rgba(0,0,0,.15); color:var(--flow-fg); user-select:none;
+}
+.flow-studio.light .node{ color:#0f172a; }
+.node header{ padding:.5rem .6rem; font-weight:800; display:flex; align-items:center; gap:.5rem; }
+.node header .title{ display:inline-block; max-width:160px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.node header .title[contenteditable="true"]{ outline:2px dashed transparent; }
+.node header .title[contenteditable="true"]:focus{ outline:2px dashed var(--flow-accent); background:rgba(124,58,237,.08) }
+.node .body{ padding:.25rem .75rem .45rem; font-size:.95rem; white-space:pre-wrap; min-height:38px; }
+.node .body[contenteditable="true"]{ outline:2px dashed transparent; transition:.15s }
+.node .body[contenteditable="true"]:focus{ outline:2px dashed var(--flow-accent); background:rgba(124,58,237,.08) }
+.node footer{ padding:0 .75rem .55rem; font-size:.78rem; opacity:.8; }
+
+/* ports */
+.node .ports{ position:absolute; inset: -8px; pointer-events:none; }
+.port{
+  position:absolute; width:12px; height:12px; border-radius:50%; background:var(--flow-accent); border:2px solid var(--flow-bg); pointer-events:auto; cursor:crosshair;
+}
+.port.out{ right:-8px; top:50%; transform:translateY(-50%); }
+.port.in{ left:-8px; top:50%; transform:translateY(-50%); background:#22d3ee; }
+.port.selected{ box-shadow:0 0 0 3px rgba(124,58,237,.35); }
+
+.node.dragging{ opacity:.85; outline:2px dashed color-mix(in oklab, var(--flow-accent) 60%, transparent); }
+
+/* toolbox/zoom/fab/minimap */
+.toolbox{ position:absolute; left:18px; top:64px; display:flex; gap:.4rem; z-index:3; }
+.toolbox .btn{ border-radius:8px; border:1px solid var(--flow-border); background:var(--flow-panel); color:var(--flow-fg); padding:.35rem .6rem; cursor:pointer; }
+.btn.active{ outline:2px solid var(--flow-accent); }
+.zoomctl{ position:absolute; left:18px; bottom:86px; display:flex; flex-direction:column; gap:.35rem; z-index:3; }
+.zoomctl .btn{ width:38px; height:38px; border-radius:12px; background:var(--flow-panel); color:var(--flow-fg); border:1px solid var(--flow-border); cursor:pointer; }
+.fab{ position:absolute; left:18px; bottom:24px; width:46px; height:46px; border-radius:50%;
+  background:#1d4ed8; color:#fff; display:grid; place-items:center; font-size:22px; cursor:pointer;
+  box-shadow:0 12px 26px rgba(29,78,216,.35); z-index:3; }
+.minimap{
+  position:absolute; right:18px; bottom:18px; width:220px; height:140px; background:var(--flow-panel); border:1px solid var(--flow-border);
+  border-radius:12px; overflow:hidden; box-shadow:0 10px 22px rgba(0,0,0,.15); display:grid; place-items:center; z-index:3; }
+.minimap svg{ width:100%; height:100%; }
+.minimap rect{ fill:#33415533; stroke:#94a3b8; stroke-width:.4; }
+
+.k-pill{ font-size:.7rem; background:rgba(255,255,255,.08); padding:.1rem .4rem; border-radius:999px; border:1px solid rgba(255,255,255,.12) }
+.flow-studio.light .k-pill{ background:rgba(0,0,0,.06); border-color:rgba(0,0,0,.08); color:#0f172a; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set hero_help_tips = [
+  'Use o formulário rápido para criar tarefas com título, vencimento e responsável direto na lista escolhida.',
+  'Escolha o setor e defina se a tarefa é pública para o time ou privada para você.',
+  'Crie listas por setor e arraste os cartões entre eles para reorganizar.'
+] %}
+{{ page_hero(
+  title='Central de Conhecimento',
+  subtitle='Organize conhecimentos, tópicos e fluxos da equipe em um só lugar.',
+  eyebrow='Conhecimento',
+  help_tips=hero_help_tips,
+  help_intro='Dicas rápidas para usar o quadro.'
+) }}
+{% if not can_create %}
+  <div class="alert alert-warning">Você não tem permissão de setor para criar tarefas no Central de Conhecimento.</div>
+{% endif %}
+
+<div class="d-flex align-items-end gap-2 mb-3 quick-form">
+  <div class="flex-grow-1">
+    <label class="form-label mb-1">Título</label>
+    <input class="form-control" name="q_title" placeholder="Ex.: Atualizar servidor de arquivos" {{ 'disabled' if not can_create else '' }}>
+  </div>
+  <div style="width:200px">
+    <label class="form-label mb-1">Vencimento</label>
+    <input type="date" class="form-control" name="q_due" {{ 'disabled' if not can_create else '' }}>
+  </div>
+  <div style="width:220px">
+    <label class="form-label mb-1">Setor</label>
+    <select class="form-select" name="q_scope" {{ 'disabled' if not can_create else '' }}>
+      {% if scope_options %}
+        {% for scope in scope_options %}
+          <option value="{{ scope.key }}" {{ 'selected' if scope.key == default_scope else '' }}>{{ scope.label }}</option>
+        {% endfor %}
+      {% else %}
+        <option value="">Sem setores disponíveis</option>
+      {% endif %}
+    </select>
+  </div>
+  <div style="width:200px">
+    <label class="form-label mb-1">Visibilidade</label>
+    <select class="form-select" name="q_visibility" {{ 'disabled' if not can_create else '' }}>
+      <option value="public_all">Pública (todos)</option>
+      <option value="public" selected>Pública (setor)</option>
+      <option value="private">Privada (somente eu)</option>
+    </select>
+  </div>
+  <div style="width:220px">
+    <label class="form-label mb-1">Lista</label>
+    <select class="form-select" name="q_column" {{ 'disabled' if not can_create else '' }}>
+      <option value="">Selecione</option>
+    </select>
+  </div>
+  <div style="width:260px">
+    <label class="form-label mb-1">Responsável</label>
+    <select class="form-select" name="q_assignee" {{ 'disabled' if not can_create else '' }}>
+      <option value=""> Ninguém </option>
+      {% for u in agents %}
+        <option value="{{ u.id }}">{{ u.name or u.email }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button id="btnQuickAdd" class="btn btn-primary" {{ 'disabled' if not can_create else '' }}>
+    <i class="bi bi-plus-lg"></i> Adicionar na lista
+  </button>
+</div>
+
+<div class="alert alert-info py-2 px-3 d-inline-flex align-items-center gap-2 mb-3">
+  <i class="bi bi-info-circle text-primary"></i>
+  <span>Ao concluir um item, ele sai do quadro e vai para o <a class="text-decoration-underline" href="{{ url_for('central_conhecimento.history') }}">Histórico</a>.</span>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <div class="text-muted small">Organize o conhecimento da equipe através de listas e cartões.</div>
+  <button id="btnAddColumn" class="btn btn-outline-primary btn-sm" {{ 'disabled' if not can_create else '' }}>
+    <i class="bi bi-layout-three-columns me-1"></i> Nova lista
+  </button>
+</div>
+
+<div class="central_conhecimento-canvas">
+  <div id="central_conhecimentoColumns" class="central_conhecimento-wrap"></div>
+  <div id="central_conhecimentoEmpty" class="central_conhecimento-empty d-none">Nenhuma lista criada. Clique em “Nova lista” para começar.</div>
+</div>
+
+<!-- Modal Nova tarefa -->
+<div class="modal sollus-modal fade" id="modalCentralConhecimentoTask" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form novalidate>
+        <div class="modal-header">
+          <h5 class="modal-title">Novo cartão</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="alert alert-danger d-none" id="central_conhecimentoTaskError"></div>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Título</label>
+              <input type="text" class="form-control" name="task_title">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Descrição</label>
+              <textarea class="form-control" name="task_description" rows="3" placeholder="Detalhes da tarefa (opcional)"></textarea>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Vencimento</label>
+              <input type="date" class="form-control" name="task_due">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Visibilidade</label>
+              <select class="form-select" name="task_visibility">
+                <option value="public_all">Pública (todos)</option>
+                <option value="public" selected>Pública (setor)</option>
+                <option value="private">Privada (somente eu)</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Setor</label>
+              <select class="form-select" name="task_scope">
+                {% if scope_options %}
+                  {% for scope in scope_options %}
+                    <option value="{{ scope.key }}" {{ 'selected' if scope.key == default_scope else '' }}>{{ scope.label }}</option>
+                  {% endfor %}
+                {% else %}
+                  <option value="">Sem setores disponíveis</option>
+                {% endif %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Lista</label>
+              <select class="form-select" name="task_column">
+                <option value="">Selecione</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Responsável</label>
+              <select class="form-select" name="task_assignee">
+                <option value="">Ninguém</option>
+                {% for u in agents %}
+                  <option value="{{ u.id }}">{{ u.name or u.email }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar cartão</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Novo bloco -->
+<div class="modal sollus-modal fade" id="modalCentralConhecimentoColumn" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form novalidate>
+        <div class="modal-header">
+          <h5 class="modal-title">Nova lista</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="alert alert-danger d-none" id="central_conhecimentoColumnError"></div>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Título</label>
+              <input type="text" class="form-control" name="column_title">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Setor</label>
+              <select class="form-select" name="column_scope">
+                {% if scope_options %}
+                  {% for scope in scope_options %}
+                    <option value="{{ scope.key }}" {{ 'selected' if scope.key == default_scope else '' }}>{{ scope.label }}</option>
+                  {% endfor %}
+                {% else %}
+                  <option value="">Sem setores disponíveis</option>
+                {% endif %}
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Criar lista</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Comentarios -->
+<div class="modal sollus-modal fade" id="modalCentralConhecimentoDetails" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title w-100" id="detailsTaskTitle">Título do Cartão</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body pt-2">
+        <div class="row">
+          <div class="col-lg-8">
+            <!-- Descrição -->
+            <div class="mb-4">
+              <h6 class="fw-bold mb-2"><i class="bi bi-justify-left me-2"></i>Descrição</h6>
+              <div id="detailsTaskDesc" class="p-2 border rounded shadow-sm" style="min-height: 48px; cursor: pointer; background: var(--bg);"></div>
+            </div>
+
+            <!-- Checklists (Subtasks) -->
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold m-0"><i class="bi bi-check2-square me-2"></i>Checklist</h6>
+                <button class="btn btn-sm btn-outline-secondary" id="btnAddSubtask" title="Adicionar item"><i class="bi bi-plus"></i></button>
+              </div>
+              <div id="subtaskList" class="mb-2"></div>
+              <div id="subtaskForm" class="d-none">
+                <input type="text" class="form-control form-control-sm mb-1" id="inputNewSubtask" placeholder="Novo item...">
+                <div class="d-flex gap-1 justify-content-end">
+                  <button class="btn btn-sm btn-outline-secondary" id="btnCancelSubtask">Cancelar</button>
+                  <button class="btn btn-sm btn-primary" id="btnSaveSubtask">Salvar</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Comentários -->
+            <div class="mb-4">
+              <h6 class="fw-bold mb-3"><i class="bi bi-chat-dots me-2"></i>Comentários</h6>
+              <div id="commentList" class="comment-list mb-3"></div>
+              <form id="central_conhecimentoCommentForm" novalidate>
+                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                 <textarea class="form-control mb-2" name="comment_body" rows="2" placeholder="Escreva um comentário..."></textarea>
+                 <div class="d-flex justify-content-between align-items-center">
+                    <input type="file" class="form-control form-control-sm w-auto" name="comment_images" accept="image/*" multiple>
+                    <button type="submit" class="btn btn-primary btn-sm px-4">Postar</button>
+                 </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="col-lg-4 border-start">
+            <h6 class="fw-bold mb-3">Ações</h6>
+            <div class="d-grid gap-2 mb-4">
+              <button class="btn btn-outline-secondary btn-sm text-start" id="btnDetailsEdit"><i class="bi bi-pencil me-2"></i>Editar Campos</button>
+              <button class="btn btn-outline-secondary btn-sm text-start" id="btnDetailsComplete"><i class="bi bi-check2-circle me-2"></i>Concluir Cartão</button>
+              <button class="btn btn-outline-danger btn-sm text-start" id="btnDetailsDelete"><i class="bi bi-trash me-2"></i>Excluir</button>
+            </div>
+
+            <h6 class="fw-bold mb-2">Atividade</h6>
+            <div id="logList" class="small" style="max-height: 300px; overflow-y: auto;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Flow Studio fullscreen -->
+<div id="flowStudio" class="flow-studio" aria-hidden="true">
+  <button class="flow-close" id="flowClose">&larr; Voltar</button>
+  <div class="flow-topbar">
+    <span id="flowTitle">Fluxo</span>
+    <span class="k-pill ms-2" id="flowSubtaskName"></span>
+  </div>
+  <button class="flow-save" id="flowSave">SALVAR</button>
+
+  <div class="toolbox">
+    <button class="btn" id="btnConnect" title="Dica visual (conexões por clique)"><i class="bi bi-node-plus"></i> Ligar</button>
+    <button class="btn" id="btnSnap" title="Encaixar e criar ligações em sequência"><i class="bi bi-magic"></i> Auto</button>
+  </div>
+
+  <div class="flow-canvas-wrap" id="canvasWrap">
+    <div class="flow-grid"></div>
+    <svg class="flow-edges" id="edgesSvg"></svg>
+    <div class="flow-canvas" id="flowCanvas"></div>
+  </div>
+
+  <div class="zoomctl">
+    <button class="btn" id="zoomIn">+</button>
+    <button class="btn" id="zoomOut"></button>
+    <button class="btn" id="zoomFit"></button>
+  </div>
+
+  <div class="fab" id="fabPlus" title="Novo nó">+</div>
+
+  <div class="minimap" id="minimap">
+    <svg id="miniSvg"></svg>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+  window.__showJSerr = function(e){
+    console.error('[Conhecimento/Flow JS]', e);
+    try{
+      if(!window.__jsErrShown){
+        window.__jsErrShown = true;
+        var msg = (e && e.message) ? e.message : String(e);
+        alert('Erro de script na Central de Conhecimento/Fluxo:\\n' + msg + '\\nVeja o console para detalhes.');
+      }
+    }catch(_){}
+  };
+
+  try{
+    const csrf = (document.querySelector('meta[name="csrf-token"]')||{}).getAttribute ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '';
+
+    /* URLs */
+    const API_LIST   = "{{ url_for('central_conhecimento.api_list_tasks') }}";
+    const API_CREATE = "{{ url_for('central_conhecimento.api_create_task') }}";
+    const API_UPDATE = id => "{{ url_for('central_conhecimento.api_update_task', task_id=0) }}".replace('/0','/'+id);
+    const API_MOVE   = id => "{{ url_for('central_conhecimento.api_move_task', task_id=0) }}".replace('/0','/'+id);
+    const API_DELETE = id => "{{ url_for('central_conhecimento.api_delete_task', task_id=0) }}".replace('/0','/'+id);
+    const API_COMPLETE = id => "{{ url_for('central_conhecimento.api_complete_task', task_id=0) }}".replace('/0','/'+id);
+    const API_COMMENTS_LIST = tid => "{{ url_for('central_conhecimento.api_list_comments', task_id=0) }}".replace('/0','/'+tid);
+    const API_COMMENTS_CREATE = tid => "{{ url_for('central_conhecimento.api_create_comment', task_id=0) }}".replace('/0','/'+tid);
+    const API_COMMENTS_UPDATE = cid => "{{ url_for('central_conhecimento.api_update_comment', comment_id=0) }}".replace('/0','/'+cid);
+    const API_COMMENTS_DELETE = cid => "{{ url_for('central_conhecimento.api_delete_comment', comment_id=0) }}".replace('/0','/'+cid);
+    const API_COMMENT_ATTACHMENT_DELETE = aid => "{{ url_for('central_conhecimento.api_delete_comment_attachment', attachment_id=0) }}".replace('/0','/'+aid);
+    const API_COL_CREATE = "{{ url_for('central_conhecimento.api_create_column') }}";
+    const API_COL_DELETE = id => "{{ url_for('central_conhecimento.api_delete_column', column_id=0) }}".replace('/0','/'+id);
+
+    const API_SUB_LIST   = tid => "{{ url_for('central_conhecimento.api_list_subtasks',   task_id=0) }}".replace('/0','/'+tid);
+    const API_SUB_CREATE = tid => "{{ url_for('central_conhecimento.api_create_subtask', task_id=0) }}".replace('/0','/'+tid);
+    const API_SUB_UPDATE = sid => "{{ url_for('central_conhecimento.api_update_subtask', subtask_id=0) }}".replace('/0','/'+sid);
+    const API_SUB_DELETE = sid => "{{ url_for('central_conhecimento.api_delete_subtask', subtask_id=0) }}".replace('/0','/'+sid);
+    const API_LOGS_LIST  = tid => "{{ url_for('central_conhecimento.api_list_logs', task_id=0) }}".replace('/0','/'+tid);
+
+    const API_FLOW_NODES = sid => "{{ url_for('central_conhecimento.api_flow_nodes_list', subtask_id=0) }}".replace('/0','/'+sid); // GET/POST
+    const API_FLOW_EDGES = sid => "{{ url_for('central_conhecimento.api_flow_edges_list', subtask_id=0) }}".replace('/0','/'+sid); // GET/POST
+    const API_NODE_UPD   = nid => "{{ url_for('central_conhecimento.api_flow_nodes_update', node_id=0) }}".replace('/0','/'+nid);   // PUT
+    const API_NODE_DEL   = nid => "{{ url_for('central_conhecimento.api_flow_nodes_delete', node_id=0) }}".replace('/0','/'+nid);   // DELETE
+    const API_EDGE_DEL   = eid => "{{ url_for('central_conhecimento.api_flow_edges_delete', edge_id=0) }}".replace('/0','/'+eid);   // DELETE
+
+    const columnsWrap = document.getElementById('central_conhecimentoColumns');
+    const emptyState = document.getElementById('central_conhecimentoEmpty');
+    const scopeSelect = document.querySelector('[name="q_scope"]');
+    const columnSelect = document.querySelector('[name="q_column"]');
+    const CURRENT_USER_ID = {{ current_user.id if current_user.is_authenticated else 'null' }};
+    const IS_ADMIN = {{ 'true' if is_admin else 'false' }};
+    const CAN_CREATE = {{ 'true' if can_create else 'false' }};
+    const visSelect = document.querySelector('[name="q_visibility"]');
+    const PUBLIC_SCOPE_KEY = "{{ public_scope_key }}";
+    let lastScope = scopeSelect ? scopeSelect.value : '';
+    const modalTaskEl = document.getElementById('modalCentralConhecimentoTask');
+    const modalTask = (modalTaskEl && window.bootstrap && window.bootstrap.Modal)
+      ? window.bootstrap.Modal.getOrCreateInstance(modalTaskEl)
+      : null;
+    const modalTaskForm = modalTaskEl ? modalTaskEl.querySelector('form') : null;
+    const taskTitleInput = modalTaskEl ? modalTaskEl.querySelector('[name="task_title"]') : null;
+    const taskDescInput = modalTaskEl ? modalTaskEl.querySelector('[name="task_description"]') : null;
+    const taskDueInput = modalTaskEl ? modalTaskEl.querySelector('[name="task_due"]') : null;
+    const taskVisibilitySelect = modalTaskEl ? modalTaskEl.querySelector('[name="task_visibility"]') : null;
+    const taskScopeSelect = modalTaskEl ? modalTaskEl.querySelector('[name="task_scope"]') : null;
+    const taskColumnSelect = modalTaskEl ? modalTaskEl.querySelector('[name="task_column"]') : null;
+    const taskAssigneeSelect = modalTaskEl ? modalTaskEl.querySelector('[name="task_assignee"]') : null;
+    const taskErrorEl = modalTaskEl ? modalTaskEl.querySelector('#central_conhecimentoTaskError') : null;
+    const modalColumnEl = document.getElementById('modalCentralConhecimentoColumn');
+    const modalColumn = (modalColumnEl && window.bootstrap && window.bootstrap.Modal)
+      ? window.bootstrap.Modal.getOrCreateInstance(modalColumnEl)
+      : null;
+    const modalColumnForm = modalColumnEl ? modalColumnEl.querySelector('form') : null;
+    const columnTitleInput = modalColumnEl ? modalColumnEl.querySelector('[name="column_title"]') : null;
+    const columnScopeSelect = modalColumnEl ? modalColumnEl.querySelector('[name="column_scope"]') : null;
+    const columnErrorEl = modalColumnEl ? modalColumnEl.querySelector('#central_conhecimentoColumnError') : null;
+    const modalDetailsEl = document.getElementById('modalCentralConhecimentoDetails');
+    const modalDetails = (modalDetailsEl && window.bootstrap && window.bootstrap.Modal)
+      ? window.bootstrap.Modal.getOrCreateInstance(modalDetailsEl)
+      : null;
+    const commentForm = modalDetailsEl ? modalDetailsEl.querySelector('#central_conhecimentoCommentForm') : null;
+    const commentList = modalDetailsEl ? modalDetailsEl.querySelector('#commentList') : null;
+    const subtaskList = modalDetailsEl ? modalDetailsEl.querySelector('#subtaskList') : null;
+    const logList = modalDetailsEl ? modalDetailsEl.querySelector('#logList') : null;
+    const commentBody = modalDetailsEl ? modalDetailsEl.querySelector('[name="comment_body"]') : null;
+    const commentImages = modalDetailsEl ? modalDetailsEl.querySelector('[name="comment_images"]') : null;
+    const detailsTaskTitle = modalDetailsEl ? modalDetailsEl.querySelector('#detailsTaskTitle') : null;
+    const detailsTaskDesc = modalDetailsEl ? modalDetailsEl.querySelector('#detailsTaskDesc') : null;
+
+    let currentDetailTask = null;
+    let currentColumns = [];
+    let modalLastScope = '';
+    let commentTask = null;
+
+    /* ===== Central de Conhecimento ===== */
+    function taskCard(t){
+      const el = document.createElement('div');
+      el.className = 'task-card';
+      el.draggable = true;
+      el.dataset.id = t.id; el.dataset.columnId = t.column_id;
+      
+      const scopeBadge = t.scope_label ? `<span class="badge bg-light text-dark border">${t.scope_label}</span>` : '';
+      const subtaskBadge = t.subtask_total > 0
+        ? `<span class="badge ${t.subtask_done === t.subtask_total ? 'bg-success' : 'bg-secondary-subtle text-secondary'} border">
+             <i class="bi bi-check2-square me-1"></i>${t.subtask_done}/${t.subtask_total}
+           </span>`
+        : '';
+      const isGlobal = (t.scope_key || '') === PUBLIC_SCOPE_KEY;
+      const visBadge = (t.visibility === 'private')
+        ? '<span class="badge bg-warning-subtle text-warning"><i class="bi bi-lock-fill me-1"></i>Privada</span>'
+        : (isGlobal
+          ? '<span class="badge bg-info-subtle text-info"><i class="bi bi-globe2 me-1"></i>Pública</span>'
+          : '<span class="badge bg-success-subtle text-success"><i class="bi bi-people-fill me-1"></i>Setor</span>');
+
+      el.innerHTML = `
+        <div class="task-title">${t.title||''}</div>
+        <div class="task-meta">
+          ${t.assignee_name ? `<span><i class="bi bi-person"></i> ${t.assignee_name}</span>` : ''}
+          ${t.due_date ? `<span><i class="bi bi-calendar3"></i> ${t.due_date}</span>` : ''}
+        </div>
+        <div class="task-badges">${scopeBadge}${visBadge}${commentBadge}${subtaskBadge}</div>
+        <div class="mt-2 text-end op-0 task-actions-hover">
+             <button class="btn btn-link btn-sm p-0 text-secondary btn-comments" title="Comentarios"><i class="bi bi-chat-left-text"></i></button>
+             <button class="btn btn-link btn-sm p-0 text-success btn-complete" title="Concluir"><i class="bi bi-check2-circle"></i></button>
+             <button class="btn btn-link btn-sm p-0 text-secondary btn-flow" title="Fluxo"><i class="bi bi-diagram-3"></i></button>
+             <button class="btn btn-link btn-sm p-0 text-secondary btn-edit" title="Editar"><i class="bi bi-pencil"></i></button>
+             <button class="btn btn-link btn-sm p-0 text-danger btn-del" title="Excluir"><i class="bi bi-trash"></i></button>
+        </div>
+      `;
+
+      el.addEventListener('dragstart', ev=>{
+        ev.dataTransfer.setData('text/plain', String(t.id));
+        setTimeout(()=> el.classList.add('dragging'), 0);
+      });
+      el.addEventListener('dragend', ()=> el.classList.remove('dragging'));
+
+      el.addEventListener('click', (ev) => {
+          if (ev.target.closest('button')) return;
+          openDetailsModal(t);
+      });
+
+      el.querySelector('.btn-edit').addEventListener('click', async (ev)=>{
+        ev.stopPropagation();
+        const newTitle = prompt('Título:', t.title||'');
+        if (newTitle === null) return;
+        const res = await fetch(API_UPDATE(t.id), { method:'PUT', headers:{'Content-Type':'application/json','X-CSRFToken':csrf}, body: JSON.stringify({title:newTitle}) });
+        if (res.ok){ t.title = newTitle; el.querySelector('.task-title').textContent = newTitle; }
+        else alert('Falha ao editar.');
+      });
+
+      el.querySelector('.btn-complete').addEventListener('click', async (ev)=>{
+        ev.stopPropagation();
+        if (!confirm('Concluir este cartão?')) return;
+        const res = await fetch(API_COMPLETE(t.id), { method:'POST', headers:{'X-CSRFToken': csrf} });
+        if (res.ok){ el.remove(); }
+        else alert('Falha ao concluir.');
+      });
+
+      el.querySelector('.btn-del').addEventListener('click', async (ev)=>{
+        ev.stopPropagation();
+        if (!confirm('Excluir este cartão?')) return;
+        const res = await fetch(API_DELETE(t.id), { method:'DELETE', headers:{'X-CSRFToken': csrf} });
+        if (res.ok){ el.remove(); reorder(el.parentElement); }
+        else {
+          let txt = ''; try{ txt = await res.text(); }catch(_){}
+          alert('Falha ao excluir.\n'+txt);
+        }
+      });
+
+      el.querySelector('.btn-flow').addEventListener('click', (ev)=> {
+          ev.stopPropagation();
+          openFlowStudio(t);
+      });
+      el.querySelector('.btn-comments').addEventListener('click', (ev)=> {
+          ev.stopPropagation();
+          openDetailsModal(t);
+      });
+      return el;
+    }
+
+    function setCommentError(message){
+      if (!commentError) return;
+      if (message){
+        commentError.textContent = message;
+        commentError.classList.remove('d-none');
+      } else {
+        commentError.textContent = '';
+        commentError.classList.add('d-none');
+      }
+    }
+
+    function updateCommentBadge(taskId, count){
+      const card = document.querySelector(`.task-card[data-id="${taskId}"]`);
+      if (!card) return;
+      const wrap = card.querySelector('.task-badges');
+      if (!wrap) return;
+      const existing = wrap.querySelector('.badge-comment');
+      if (count > 0){
+        if (existing){
+          const txt = existing.querySelector('.comment-count');
+          if (txt){ txt.textContent = String(count); }
+          else { existing.innerHTML = `<i class="bi bi-chat-left-text me-1"></i><span class="comment-count">${count}</span>`; }
+        } else {
+          const span = document.createElement('span');
+          span.className = 'badge badge-comment bg-secondary-subtle text-secondary';
+          span.innerHTML = `<i class="bi bi-chat-left-text me-1"></i><span class="comment-count">${count}</span>`;
+          wrap.appendChild(span);
+        }
+      } else if (existing){
+        existing.remove();
+      }
+    }
+
+    function renderComments(items){
+      if (!commentList) return;
+      commentList.innerHTML = '';
+      if (!items || !items.length){
+        commentList.innerHTML = '<div class="text-muted small p-2">Sem comentários.</div>';
+        return;
+      }
+      items.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'p-2 rounded border mb-2 shadow-sm small';
+        el.style.background = 'var(--bg)';
+        
+        let atts = '';
+        if (item.attachments && item.attachments.length){
+          atts = '<div class="d-flex gap-1 flex-wrap mt-1">';
+          item.attachments.forEach(a => {
+            atts += `<a href="${a.url}" target="_blank" class="d-block border rounded overflow-hidden" style="width:50px; height:50px;"><img src="${a.url}" style="width:100%; height:100%; object-fit:cover;"></a>`;
+          });
+          atts += '</div>';
+        }
+
+        el.innerHTML = `
+          <div class="d-flex justify-content-between mb-1">
+            <b class="text-primary">${item.author_name || 'Usuário'}</b>
+            <span class="text-muted" style="font-size:0.65rem">${fmtDate(item.created_at)}</span>
+          </div>
+          <div>${item.body || ''}</div>
+          ${atts}
+        `;
+        commentList.appendChild(el);
+      });
+    }
+
+    async function loadComments(taskId){
+      const res = await fetch(API_COMMENTS_LIST(taskId));
+      if (res.ok){
+        const items = await res.json();
+        renderComments(items);
+        updateCommentBadge(taskId, items.length);
+      }
+    }
+
+    function renderSubtasks(items){
+      if (!subtaskList) return;
+      subtaskList.innerHTML = '';
+      if (!items || !items.length){
+        subtaskList.innerHTML = '<div class="text-muted small px-2">Nenhum item no checklist.</div>';
+        return;
+      }
+      items.forEach(s => {
+        const el = document.createElement('div');
+        el.className = 'd-flex align-items-center gap-2 p-1 hover-bg-light rounded';
+        const checked = s.status === 'done' ? 'checked' : '';
+        el.innerHTML = `
+          <input type="checkbox" class="form-check-input mt-0" ${checked}>
+          <span class="flex-grow-1 small ${checked ? 'text-decoration-line-through text-muted' : ''}">${s.title}</span>
+          <button class="btn btn-link btn-sm text-danger p-0 op-0 btn-del-sub"><i class="bi bi-trash"></i></button>
+        `;
+        
+        el.querySelector('input').addEventListener('change', async (ev) => {
+          const newStatus = ev.target.checked ? 'done' : 'open';
+          const res = await fetch(API_SUB_UPDATE(s.id), {
+            method:'PUT',
+            headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
+            body: JSON.stringify({ status: newStatus })
+          });
+          if (res.ok) {
+             s.status = newStatus;
+             el.querySelector('span').className = `flex-grow-1 small ${newStatus === 'done' ? 'text-decoration-line-through text-muted' : ''}`;
+          }
+        });
+
+        el.querySelector('.btn-del-sub').addEventListener('click', async () => {
+          if (!confirm('Remover este item?')) return;
+          const res = await fetch(API_SUB_DELETE(s.id), { method:'DELETE', headers:{'X-CSRFToken':csrf} });
+          if (res.ok) el.remove();
+        });
+
+        el.addEventListener('mouseenter', () => el.querySelector('.btn-del-sub').style.opacity = '1');
+        el.addEventListener('mouseleave', () => el.querySelector('.btn-del-sub').style.opacity = '0');
+
+        subtaskList.appendChild(el);
+      });
+    }
+
+    async function loadSubtasks(taskId){
+      const res = await fetch(API_SUB_LIST(taskId));
+      if (res.ok){
+        renderSubtasks(await res.json());
+      }
+    }
+
+    function renderLogs(items){
+      if (!logList) return;
+      logList.innerHTML = '';
+      if (!items || !items.length) return;
+      items.forEach(log => {
+        const d = document.createElement('div');
+        d.className = 'mb-2 pb-1 border-bottom border-light';
+        d.innerHTML = `
+          <div class="d-flex justify-content-between mb-1" style="font-size:0.7rem">
+            <b>${log.author_name}</b>
+            <span class="text-muted">${fmtDate(log.created_at)}</span>
+          </div>
+          <div class="text-muted">${log.note}</div>
+        `;
+        logList.appendChild(d);
+      });
+    }
+
+    async function loadLogs(taskId){
+      const res = await fetch(API_LOGS_LIST(taskId));
+      if (res.ok){
+        renderLogs(await res.json());
+      }
+    }
+
+    async function openDetailsModal(task){
+      currentDetailTask = task;
+      commentTask = task; // For legacy compatibility with comment forms
+      
+      if (detailsTaskTitle) detailsTaskTitle.textContent = task.title || 'Sem título';
+      if (detailsTaskDesc) {
+        detailsTaskDesc.innerHTML = task.description ? task.description.replace(/\n/g, '<br>') : '<span class="text-muted">Adicionar uma descrição mais detalhada...</span>';
+      }
+
+      if (commentBody) commentBody.value = '';
+      if (commentImages) commentImages.value = '';
+
+      if (modalDetails) modalDetails.show();
+
+      loadComments(task.id);
+      loadSubtasks(task.id);
+      loadLogs(task.id);
+    }
+
+    function updateColumnSelect(columns){
+      if (!columnSelect) return;
+      columnSelect.innerHTML = '<option value="">Selecione</option>';
+      (columns || []).forEach(col=>{
+        const opt = document.createElement('option');
+        opt.value = col.id;
+        opt.textContent = col.title;
+        columnSelect.appendChild(opt);
+      });
+      if (!columns || !columns.length){
+        columnSelect.setAttribute('disabled', 'disabled');
+      }else{
+        columnSelect.removeAttribute('disabled');
+      }
+      syncModalColumns();
+    }
+
+    function setTaskError(message){
+      if (!taskErrorEl) return;
+      if (message){
+        taskErrorEl.textContent = message;
+        taskErrorEl.classList.remove('d-none');
+      }else{
+        taskErrorEl.textContent = '';
+        taskErrorEl.classList.add('d-none');
+      }
+    }
+
+    function setColumnError(message){
+      if (!columnErrorEl) return;
+      if (message){
+        columnErrorEl.textContent = message;
+        columnErrorEl.classList.remove('d-none');
+      }else{
+        columnErrorEl.textContent = '';
+        columnErrorEl.classList.add('d-none');
+      }
+    }
+
+    function normalizeVisibility(value){
+      return (value === 'private') ? 'private' : 'public';
+    }
+
+    function syncModalColumns(selectedId){
+      if (!taskColumnSelect) return;
+      const desired = (selectedId !== undefined && selectedId !== null && selectedId !== '')
+        ? String(selectedId)
+        : (taskColumnSelect.value || '');
+      taskColumnSelect.innerHTML = '<option value="">Selecione</option>';
+      (currentColumns || []).forEach(col=>{
+        const opt = document.createElement('option');
+        opt.value = col.id;
+        opt.textContent = col.title;
+        taskColumnSelect.appendChild(opt);
+      });
+      if (!currentColumns || !currentColumns.length){
+        taskColumnSelect.setAttribute('disabled', 'disabled');
+      }else{
+        taskColumnSelect.removeAttribute('disabled');
+      }
+      if (desired){
+        taskColumnSelect.value = desired;
+      }
+    }
+
+    function openTaskModal(defaults){
+      if (!modalTask || !modalTaskForm) return;
+      const data = defaults || {};
+      if (taskTitleInput) taskTitleInput.value = data.title || '';
+      if (taskDescInput) taskDescInput.value = data.description || '';
+      if (taskDueInput) taskDueInput.value = data.due_date || '';
+      if (taskAssigneeSelect) taskAssigneeSelect.value = data.assignee_id ? String(data.assignee_id) : '';
+      const visValue = data.visibility || (visSelect ? visSelect.value : 'public');
+      if (taskVisibilitySelect) taskVisibilitySelect.value = visValue;
+      const scopeValue = data.scope || (scopeSelect ? scopeSelect.value : '');
+      if (taskScopeSelect) taskScopeSelect.value = scopeValue;
+      modalLastScope = taskScopeSelect ? taskScopeSelect.value : '';
+      if (taskVisibilitySelect && taskScopeSelect && taskVisibilitySelect.value === 'public_all'){
+        if (taskScopeSelect.value !== PUBLIC_SCOPE_KEY){
+          modalLastScope = taskScopeSelect.value || modalLastScope;
+          taskScopeSelect.value = PUBLIC_SCOPE_KEY;
+        }
+      }
+      const colValue = (data.column_id !== undefined && data.column_id !== null && data.column_id !== '')
+        ? data.column_id
+        : (columnSelect ? columnSelect.value : '');
+      syncModalColumns(colValue);
+      setTaskError('');
+      modalTask.show();
+      if (taskTitleInput) taskTitleInput.focus();
+    }
+
+    function openColumnModal(defaults){
+      if (!modalColumn || !modalColumnForm) return;
+      const data = defaults || {};
+      if (columnTitleInput) columnTitleInput.value = data.title || '';
+      const scopeValue = data.scope || (scopeSelect ? scopeSelect.value : '');
+      if (columnScopeSelect) columnScopeSelect.value = scopeValue;
+      setColumnError('');
+      modalColumn.show();
+      if (columnTitleInput) columnTitleInput.focus();
+    }
+
+    const badgePalette = ['#0ea5e9','#22c55e','#f97316','#a855f7','#ef4444','#14b8a6','#f59e0b'];
+    function pickBadgeColor(name){
+      let h = 0; const s = String(name || '');
+      for (let i = 0; i < s.length; i++){ h = (h * 31 + s.charCodeAt(i)) >>> 0; }
+      return badgePalette[h % badgePalette.length];
+    }
+    function renderCreatorBadge(col){
+      if (!col || !col.author_name || !col.author_id || !CURRENT_USER_ID) return '';
+      if (parseInt(col.author_id, 10) === parseInt(CURRENT_USER_ID, 10)) return '';
+      const color = pickBadgeColor(col.author_name);
+      return `<span class="creator-badge" style="background:${color}">${col.author_name}</span>`;
+    }
+
+    function renderBoard(data){
+      const cols = (data && data.columns) ? data.columns : [];
+      currentColumns = cols;
+      if (columnsWrap) columnsWrap.innerHTML = '';
+      if (!cols.length){
+        if (emptyState) emptyState.classList.remove('d-none');
+        updateColumnSelect([]);
+        return;
+      }
+      if (emptyState) emptyState.classList.add('d-none');
+      
+      cols.forEach(col=>{
+        const section = document.createElement('section');
+        section.className = 'central_conhecimento-col';
+        section.dataset.colId = col.id;
+        const creatorBadge = renderCreatorBadge(col);
+        const canDelete = IS_ADMIN || (col.author_id && CURRENT_USER_ID && parseInt(col.author_id, 10) === parseInt(CURRENT_USER_ID, 10));
+        
+        section.innerHTML = `
+          <header>
+            <div class="d-flex align-items-center gap-2">
+              <span class="title">${col.title}</span>
+              ${creatorBadge}
+            </div>
+            <div class="actions">
+              ${canDelete ? '<button class="btn btn-link btn-sm text-danger btn-del-col p-0" title="Excluir lista"><i class="bi bi-trash"></i></button>' : ''}
+              <span class="badge rounded-pill bg-secondary-subtle text-secondary" style="font-size:0.7rem">${(col.tasks||[]).length}</span>
+            </div>
+          </header>
+          <div class="list dropzone" data-col-id="${col.id}"></div>
+          <footer class="p-2">
+            <button class="btn-add-card" ${CAN_CREATE ? '' : 'disabled'}>
+              <i class="bi bi-plus-lg"></i> Adicionar um cartão
+            </button>
+          </footer>
+        `;
+        
+        const list = section.querySelector('.list');
+        (col.tasks || []).forEach(t=> list.appendChild(taskCard(t)));
+        columnsWrap.appendChild(section);
+
+        section.querySelector('.btn-add-card')?.addEventListener('click', (ev)=>{
+          if (!CAN_CREATE) return;
+          const footer = ev.currentTarget.parentElement;
+          footer.innerHTML = `
+            <div class="inline-card-form">
+              <textarea placeholder="Insira o título para este cartão..." autofocus></textarea>
+              <div class="d-flex gap-2">
+                <button class="btn btn-primary btn-sm btn-save-inline">Adicionar cartão</button>
+                <button class="btn btn-light btn-sm btn-cancel-inline"><i class="bi bi-x-lg"></i></button>
+              </div>
+            </div>
+          `;
+          const textarea = footer.querySelector('textarea');
+          textarea.focus();
+          textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); footer.querySelector('.btn-save-inline').click(); }
+            if (e.key === 'Escape') footer.querySelector('.btn-cancel-inline').click();
+          });
+          footer.querySelector('.btn-cancel-inline').addEventListener('click', () => {
+            loadBoard(); // Simple way to revert state
+          });
+          footer.querySelector('.btn-save-inline').addEventListener('click', async () => {
+            const val = textarea.value.trim();
+            if (!val) return;
+            const payload = {
+              title: val,
+              status: 'todo',
+              column_id: col.id,
+              scope_key: scopeSelect?.value || '',
+              visibility: visSelect?.value || 'public'
+            };
+            const res = await fetch(API_CREATE, {
+              method:'POST',
+              headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
+              body: JSON.stringify(payload)
+            });
+            if (res.ok) await loadBoard();
+            else alert('Falha ao criar cartão.');
+          });
+        });
+
+        section.querySelector('.btn-del-col')?.addEventListener('click', async ()=>{
+          if (!confirm('Excluir esta lista e todos os seus cartões?')) return;
+          const res = await fetch(API_COL_DELETE(col.id), { method:'DELETE', headers:{'X-CSRFToken':csrf} });
+          if (!res.ok){
+            let msg = 'Falha ao excluir lista.';
+            try{ const err = await res.json(); if (err && err.error) msg += ' ' + err.error; }catch(_){}
+            alert(msg); return;
+          }
+          await loadBoard();
+        });
+      });
+
+      // Add "Add another list" button at the end
+      if (CAN_CREATE) {
+        const addListWrap = document.createElement('div');
+        addListWrap.className = 'add-list-wrapper';
+        addListWrap.innerHTML = `<div class="label"><i class="bi bi-plus-lg"></i> Adicionar outra lista</div>`;
+        addListWrap.addEventListener('click', () => {
+          addListWrap.innerHTML = `
+            <div class="inline-list-form">
+              <input type="text" class="form-control form-control-sm mb-2" placeholder="Insira o título da lista..." autofocus>
+              <div class="d-flex gap-2">
+                <button class="btn btn-primary btn-sm btn-save-list">Adicionar lista</button>
+                <button class="btn btn-light btn-sm btn-cancel-list"><i class="bi bi-x-lg"></i></button>
+              </div>
+            </div>
+          `;
+          const input = addListWrap.querySelector('input');
+          input.focus();
+          input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addListWrap.querySelector('.btn-save-list').click();
+            if (e.key === 'Escape') addListWrap.querySelector('.btn-cancel-list').click();
+          });
+          addListWrap.querySelector('.btn-cancel-list').addEventListener('click', (e) => {
+            e.stopPropagation();
+            loadBoard();
+          });
+          addListWrap.querySelector('.btn-save-list').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const val = input.value.trim();
+            if (!val) return;
+            const payload = {
+              title: val,
+              scope_key: scopeSelect?.value || ''
+            };
+            const res = await fetch(API_COL_CREATE, {
+              method:'POST',
+              headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
+              body: JSON.stringify(payload)
+            });
+            if (res.ok) await loadBoard();
+            else alert('Falha ao criar lista.');
+          });
+        });
+        columnsWrap.appendChild(addListWrap);
+      }
+
+      updateColumnSelect(cols);
+      attachDnD();
+    }
+
+    function attachDnD(){
+      document.querySelectorAll('.dropzone').forEach(zone=>{
+        zone.addEventListener('dragover', ev=>{
+          ev.preventDefault(); zone.classList.add('dragover');
+          const after = getAfter(zone, ev.clientY);
+          const dragging = document.querySelector('.dragging');
+          if (!dragging) return;
+          if (!after) zone.appendChild(dragging); else zone.insertBefore(dragging, after);
+        });
+        zone.addEventListener('dragleave', ()=> zone.classList.remove('dragover'));
+        zone.addEventListener('drop', async ev=>{
+          ev.preventDefault(); zone.classList.remove('dragover');
+          const id = +ev.dataTransfer.getData('text/plain') || 0; if (!id) return;
+          const items = [...zone.querySelectorAll('.task-card')];
+          const newPos = items.findIndex(i => +i.dataset.id === id) + 1;
+          const newColumnId = parseInt(zone.closest('.central_conhecimento-col').dataset.colId || zone.parentElement.getAttribute('data-col-id') || '0', 10);
+          const res = await fetch(API_MOVE(id), { method:'PUT', headers:{'Content-Type':'application/json','X-CSRFToken':csrf}, body: JSON.stringify({column_id:newColumnId, position:newPos}) });
+          if (!res.ok) alert('Falha ao mover.');
+          reorder(zone);
+        });
+      });
+    }
+    function reorder(zone){
+      [...zone.querySelectorAll('.task-card')].forEach((el,i)=>{
+        el.dataset.position = i+1;
+        el.dataset.columnId = zone.dataset.colId || zone.parentElement.getAttribute('data-col-id');
+      });
+    }
+    function getAfter(container,y){
+      const els = [...container.querySelectorAll('.task-card:not(.dragging)')];
+      return els.reduce((closest,child)=>{
+        const box = child.getBoundingClientRect(); const offset = y - box.top - box.height/2;
+        if (offset < 0 && offset > closest.offset) return {offset, element:child};
+        else return closest;
+      }, {offset:-Infinity}).element;
+    }
+
+    document.getElementById('btnQuickAdd')?.addEventListener('click', ()=>{
+      if (!CAN_CREATE) return;
+      const t = document.querySelector('[name="q_title"]')?.value?.trim() || '';
+      const dd = document.querySelector('[name="q_due"]')?.value?.trim() || '';
+      const scope = document.querySelector('[name="q_scope"]')?.value?.trim() || '';
+      const vis = document.querySelector('[name="q_visibility"]')?.value?.trim() || 'public';
+      const col = document.querySelector('[name="q_column"]')?.value?.trim() || '';
+      const asg = document.querySelector('[name="q_assignee"]')?.value?.trim() || '';
+      openTaskModal({
+        title: t,
+        due_date: dd,
+        scope: scope,
+        visibility: vis,
+        column_id: col,
+        assignee_id: asg
+      });
+    });
+
+    async function loadBoard(){
+      const useGlobal = visSelect && visSelect.value === 'public_all';
+      const scope = useGlobal ? PUBLIC_SCOPE_KEY : (scopeSelect ? scopeSelect.value : '');
+      const url = scope ? `${API_LIST}?scope_key=${encodeURIComponent(scope)}` : API_LIST;
+      const res = await fetch(url, {headers:{'X-Requested-With':'fetch'}});
+      if (!res.ok){ alert('Falha ao carregar a Central de Conhecimento'); return; }
+      renderBoard(await res.json() || {columns:[]});
+    }
+    loadBoard();
+    setInterval(loadBoard, 60000);
+
+    // Modal Detalhes: Checklist
+    document.getElementById('btnAddSubtask')?.addEventListener('click', () => {
+      document.getElementById('subtaskForm')?.classList.remove('d-none');
+      document.getElementById('inputNewSubtask')?.focus();
+    });
+    document.getElementById('btnCancelSubtask')?.addEventListener('click', () => {
+      document.getElementById('subtaskForm')?.classList.add('d-none');
+      const input = document.getElementById('inputNewSubtask');
+      if (input) input.value = '';
+    });
+    document.getElementById('btnSaveSubtask')?.addEventListener('click', async () => {
+      const input = document.getElementById('inputNewSubtask');
+      const title = input?.value?.trim();
+      if (!title || !currentDetailTask) return;
+      const res = await fetch(API_SUB_CREATE(currentDetailTask.id), {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
+        body: JSON.stringify({ title: title })
+      });
+      if (res.ok) {
+        input.value = '';
+        document.getElementById('subtaskForm')?.classList.add('d-none');
+        loadSubtasks(currentDetailTask.id);
+      }
+    });
+
+    // Modal Detalhes: Ações Laterais
+    document.getElementById('btnDetailsEdit')?.addEventListener('click', () => {
+      if (!currentDetailTask) return;
+      modalDetails.hide();
+      openTaskModal(currentDetailTask);
+    });
+    document.getElementById('btnDetailsComplete')?.addEventListener('click', async () => {
+      if (!currentDetailTask || !confirm('Concluir este cartão?')) return;
+      const res = await fetch(API_COMPLETE(currentDetailTask.id), { method:'POST', headers:{'X-CSRFToken': csrf} });
+      if (res.ok) {
+        modalDetails.hide();
+        loadBoard();
+      }
+    });
+    document.getElementById('btnDetailsDelete')?.addEventListener('click', async () => {
+      if (!currentDetailTask || !confirm('Excluir este cartão?')) return;
+      const res = await fetch(API_DELETE(currentDetailTask.id), { method:'DELETE', headers:{'X-CSRFToken': csrf} });
+      if (res.ok) {
+        modalDetails.hide();
+        loadBoard();
+      }
+    });
+
+    // Modal Detalhes: Descrição Editável
+    detailsTaskDesc?.addEventListener('click', () => {
+      if (!currentDetailTask) return;
+      const old = currentDetailTask.description || '';
+      const next = prompt('Editar descrição:', old);
+      if (next === null) return;
+      fetch(API_UPDATE(currentDetailTask.id), {
+        method:'PUT',
+        headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
+        body: JSON.stringify({ description: next })
+      }).then(r => {
+        if (r.ok) {
+          currentDetailTask.description = next;
+          detailsTaskDesc.innerHTML = next ? next.replace(/\n/g, '<br>') : '<span class="text-muted">Adicionar uma descrição mais detalhada...</span>';
+        }
+      });
+    });
+
+    // Modal Detalhes: Comentários
+    commentForm?.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      if (!currentDetailTask) return;
+      const fd = new FormData(commentForm);
+      const res = await fetch(API_COMMENTS_CREATE(currentDetailTask.id), {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrf },
+        body: fd
+      });
+      if (res.ok) {
+        commentForm.reset();
+        loadComments(currentDetailTask.id);
+      } else {
+        alert('Falha ao postar comentário.');
+      }
+    });
+
+    scopeSelect?.addEventListener('change', () => {
+      if (visSelect && visSelect.value !== 'public_all') {
+        lastScope = scopeSelect.value;
+      }
+      loadBoard();
+    });
+
+    visSelect?.addEventListener('change', () => {
+      if (!scopeSelect) return;
+      if (visSelect.value === 'public_all') {
+        if (scopeSelect.value !== PUBLIC_SCOPE_KEY) {
+          lastScope = scopeSelect.value || lastScope;
+          scopeSelect.value = PUBLIC_SCOPE_KEY;
+        }
+      } else if (scopeSelect.value === PUBLIC_SCOPE_KEY && lastScope) {
+        scopeSelect.value = lastScope;
+      }
+      loadBoard();
+    });
+
+    document.getElementById('btnAddColumn')?.addEventListener('click', ()=>{
+      if (!CAN_CREATE) return;
+      openColumnModal({
+        scope: scopeSelect ? scopeSelect.value : ''
+      });
+    });
+
+    taskVisibilitySelect?.addEventListener('change', () => {
+      if (!taskScopeSelect) return;
+      if (taskVisibilitySelect.value === 'public_all') {
+        if (taskScopeSelect.value !== PUBLIC_SCOPE_KEY) {
+          modalLastScope = taskScopeSelect.value || modalLastScope;
+          taskScopeSelect.value = PUBLIC_SCOPE_KEY;
+        }
+      } else if (taskScopeSelect.value === PUBLIC_SCOPE_KEY && modalLastScope) {
+        taskScopeSelect.value = modalLastScope;
+      }
+    });
+
+    taskScopeSelect?.addEventListener('change', () => {
+      if (taskVisibilitySelect && taskVisibilitySelect.value !== 'public_all') {
+        modalLastScope = taskScopeSelect.value;
+      }
+    });
+
+    modalTaskForm?.addEventListener('submit', async (ev)=>{
+      ev.preventDefault();
+      if (!CAN_CREATE) return;
+      const title = taskTitleInput?.value?.trim() || '';
+      const columnId = taskColumnSelect?.value?.trim() || '';
+      if (!title){
+        setTaskError('Informe um título.');
+        return;
+      }
+      if (!columnId){
+        setTaskError('Selecione uma lista.');
+        return;
+      }
+      const visibilityRaw = taskVisibilitySelect?.value?.trim() || 'public';
+      const scopeFallback = (taskScopeSelect?.value?.trim() || '') || (scopeSelect ? scopeSelect.value : '');
+      const scopeKey = (visibilityRaw === 'public_all') ? PUBLIC_SCOPE_KEY : (scopeFallback || null);
+      const dueDate = taskDueInput?.value?.trim() || null;
+      const assigneeRaw = taskAssigneeSelect?.value?.trim() || '';
+      const assigneeId = assigneeRaw ? parseInt(assigneeRaw, 10) : null;
+      const payload = {
+        title: title,
+        description: taskDescInput?.value?.trim() || null,
+        due_date: dueDate || null,
+        assignee_id: assigneeId,
+        status: 'todo',
+        scope_key: scopeKey,
+        column_id: parseInt(columnId, 10),
+        visibility: normalizeVisibility(visibilityRaw)
+      };
+      const res = await fetch(API_CREATE, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok){
+        let msg = 'Falha ao criar tarefa.';
+        try{
+          const err = await res.json();
+          if (err && err.error){ msg += ' ' + err.error; }
+        }catch(_){}
+        setTaskError(msg);
+        return;
+      }
+      if (modalTask) modalTask.hide();
+      modalTaskForm.reset();
+      syncModalColumns();
+      await loadBoard();
+      const qTitle = document.querySelector('[name="q_title"]');
+      const qDue = document.querySelector('[name="q_due"]');
+      const qAssignee = document.querySelector('[name="q_assignee"]');
+      if (qTitle) qTitle.value = '';
+      if (qDue) qDue.value = '';
+      if (qAssignee) qAssignee.value = '';
+    });
+
+    modalColumnForm?.addEventListener('submit', async (ev)=>{
+      ev.preventDefault();
+      if (!CAN_CREATE) return;
+      const title = columnTitleInput?.value?.trim() || '';
+      const scopeKey = columnScopeSelect?.value?.trim() || '';
+      if (!title){
+        setColumnError('Informe um título.');
+        return;
+      }
+      if (!scopeKey){
+        setColumnError('Selecione um setor.');
+        return;
+      }
+      const payload = { title: title, scope_key: scopeKey };
+      const res = await fetch(API_COL_CREATE, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok){
+        let msg = 'Falha ao criar lista.';
+        try{
+          const err = await res.json();
+          if (err && err.error){ msg += ' ' + err.error; }
+        }catch(_){}
+        setColumnError(msg);
+        return;
+      }
+      if (modalColumn) modalColumn.hide();
+      modalColumnForm.reset();
+      await loadBoard();
+    });
+
+    commentForm?.addEventListener('submit', async (ev)=>{
+      ev.preventDefault();
+      if (!commentTask) return;
+      setCommentError('');
+      const body = commentBody?.value?.trim() || '';
+      const files = commentImages?.files ? Array.from(commentImages.files) : [];
+      if (!body && !files.length){
+        setCommentError('Informe um comentario ou envie uma imagem.');
+        return;
+      }
+      const formData = new FormData();
+      if (body) formData.append('body', body);
+      files.forEach(f => formData.append('images', f));
+      const res = await fetch(API_COMMENTS_CREATE(commentTask.id), {
+        method:'POST',
+        headers:{'X-CSRFToken':csrf},
+        body: formData
+      });
+      if (!res.ok){
+        let msg = 'Falha ao enviar comentario.';
+        try{
+          const err = await res.json();
+          if (err && err.error){ msg = err.error; }
+        }catch(_){}
+        setCommentError(msg);
+        return;
+      }
+      if (commentBody) commentBody.value = '';
+      if (commentImages) commentImages.value = '';
+      await loadComments();
+    });
+
+    /* ===== Flow ===== */
+    const studio = document.getElementById('flowStudio');
+    const flowCanvas = document.getElementById('flowCanvas');
+    const edgesSvg   = document.getElementById('edgesSvg');
+    const flowTitle  = document.getElementById('flowTitle');
+    const flowSubtaskName = document.getElementById('flowSubtaskName');
+
+    const state = {
+      open:false, task:null, subtask:null,
+      nodes:[], edges:[], nodesMap:new Map(),
+      scale:1, offsetX:200, offsetY:140,
+      dirty:false
+    };
+
+    // Conexo por clique
+    let connectFromId = null;
+    let connectFromEl = null;
+    const edgeExists = (a,b)=> state.edges.some(e=> e.from_id===a && e.to_id===b);
+
+    // Tema
+    function isLightTheme(){
+      const a = (document.documentElement.getAttribute('data-bs-theme')||document.body.getAttribute('data-bs-theme')||'').toLowerCase();
+      if (a) return a==='light';
+      const b = (document.documentElement.getAttribute('data-theme')||document.body.getAttribute('data-theme')||'').toLowerCase();
+      if (b) return b==='light';
+      const cls = (document.documentElement.className+' '+document.body.className).toLowerCase();
+      if (/\blight\b/.test(cls) && !/\bdark\b/.test(cls)) return true;
+      try{
+        const bg = getComputedStyle(document.body).backgroundColor;
+        const m = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+        if (m){ const r=+m[1], g=+m[2], b=+m[3]; const L=(0.2126*r+0.7152*g+0.0722*b)/255; return L>0.6; }
+      }catch(_){}
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+    }
+    function syncTheme(){ studio.classList.toggle('light', isLightTheme()); }
+    const mo1 = new MutationObserver(syncTheme);
+    mo1.observe(document.documentElement, { attributes:true });
+    mo1.observe(document.body, { attributes:true });
+    setInterval(syncTheme, 1200);
+
+    // Datas (ISO sem TZ -> UTC, exibe local)
+    const parseIsoAssumingUTC = s => !s ? null : new Date(/[zZ]|[+\-]\d{2}:?\d{2}$/.test(s) ? s : s+'Z');
+    function fmtDate(dtIso){
+      const d = parseIsoAssumingUTC(dtIso);
+      if (!d || isNaN(d.getTime())) return dtIso || '';
+      const p = n => (n<10?'0':'')+n;
+      return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+
+    function toCanvasXY(clientX, clientY){
+      const rect = flowCanvas.getBoundingClientRect();
+      return { x:(clientX-rect.left-state.offsetX)/state.scale, y:(clientY-rect.top-state.offsetY)/state.scale };
+    }
+    function applyTransform(){
+      flowCanvas.style.transform = `translate(${state.offsetX}px, ${state.offsetY}px) scale(${state.scale})`;
+      edgesSvg.style.transform   = `translate(${state.offsetX}px, ${state.offsetY}px) scale(${state.scale})`;
+      edgesSvg.style.transformOrigin = '0 0';
+      requestAnimationFrame(()=>{ drawEdges(); drawMinimap(); }); // desenha aps o layout aplicar a transform
+    }
+
+    async function openFlowStudio(task){
+      syncTheme();
+      const listRes = await fetch(API_SUB_LIST(task.id));
+      let subs = listRes.ok ? await listRes.json() : [];
+      if (!Array.isArray(subs)) subs = [];
+      let sub = subs[0];
+      if (!sub){
+        const cr = await fetch(API_SUB_CREATE(task.id), { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf}, body: JSON.stringify({title:'Fluxo', status:'open'}) });
+        sub = cr.ok ? await cr.json() : null;
+      }
+      if (!sub){ alert('Não foi possível abrir o fluxo'); return; }
+
+      state.task = task; state.subtask = sub; state.open = true; studio.classList.add('open');
+      flowTitle.textContent = task.title; flowSubtaskName.textContent = sub.title;
+      await loadFlow(sub.id);
+      requestAnimationFrame(applyTransform);
+    }
+    function closeFlowStudio(){
+      studio.classList.remove('open'); state.open=false;
+      if (connectFromEl){ connectFromEl.classList.remove('selected'); }
+      connectFromId = null; connectFromEl = null;
+    }
+    document.getElementById('flowClose').addEventListener('click', closeFlowStudio);
+    window.addEventListener('keydown', ev=>{ if (ev.key === 'Escape' && state.open) closeFlowStudio(); });
+
+    async function loadFlow(subtaskId){
+      const nr = await fetch(API_FLOW_NODES(subtaskId));
+      state.nodes = nr.ok ? await nr.json() : [];
+      state.nodesMap = new Map(state.nodes.map(n=> [n.id,n]));
+      const er = await fetch(API_FLOW_EDGES(subtaskId));
+      state.edges = er.ok ? await er.json() : [];
+      flowCanvas.innerHTML = '';
+      state.nodes.forEach(n=> flowCanvas.appendChild(nodeEl(n)));
+      drawEdges(); drawMinimap(); state.dirty=false;
+    }
+
+    const safe = txt => String(txt||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+    function nodeEl(n){
+      const el = document.createElement('div');
+      el.className = 'node'; el.dataset.id = n.id;
+      el.style.left = (n.x||0)+'px'; el.style.top = (n.y||0)+'px';
+
+      const created = n.created_at ? fmtDate(n.created_at) : '';
+      el.innerHTML = `
+        <header>
+          <div class="title" contenteditable="true" title="Duplo-clique para editar título">${safe(n.title)||'Título'}</div>
+          <div class="ms-auto d-flex gap-1">
+            <button class="btn btn-sm btn-light"  data-act="rename" title="Editar título"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-danger" data-act="del"    title="Excluir nó"><i class="bi bi-x-lg"></i></button>
+          </div>
+        </header>
+        <div class="body" contenteditable="true" title="Escreva a descrição aqui...">${safe(n.body)||''}</div>
+        <footer><span class="text-muted">Criado em:</span> <span class="created-at">${created}</span></footer>
+        <div class="ports">
+          <div class="port in"   data-port="in"></div>
+          <div class="port out"  data-port="out"></div>
+        </div>`;
+
+      // título
+      const titleEl = el.querySelector('.title'); let tSaveTimer=null;
+      const persistTitleNow = ()=>{
+        const txt = titleEl.innerText.trim();
+        fetch(API_NODE_UPD(n.id), { method:'PUT', headers:{'Content-Type':'application/json','X-CSRFToken':csrf}, body: JSON.stringify({title: txt}) })
+          .then(()=>{ n.title = txt; state.dirty=true; }).catch(()=>{});
+      };
+      const scheduleTitleSave = ()=>{ clearTimeout(tSaveTimer); tSaveTimer=setTimeout(persistTitleNow, 500); };
+      titleEl.addEventListener('input', scheduleTitleSave);
+      el.querySelector('[data-act="rename"]').addEventListener('click', ()=>{
+        const t = prompt('Título do nó:', n.title||'') || '';
+        titleEl.innerText = t; persistTitleNow();
+      });
+
+      // descrição
+      const bodyEl = el.querySelector('.body'); let bSaveTimer=null;
+      const persistBodyNow = ()=>{
+        const txt = bodyEl.innerText;
+        fetch(API_NODE_UPD(n.id), { method:'PUT', headers:{'Content-Type':'application/json','X-CSRFToken':csrf}, body: JSON.stringify({body: txt}) })
+          .then(()=>{ n.body = txt; state.dirty=true; }).catch(()=>{});
+      };
+      const scheduleBodySave = ()=>{ clearTimeout(bSaveTimer); bSaveTimer=setTimeout(persistBodyNow, 600); };
+      bodyEl.addEventListener('input', scheduleBodySave);
+
+      // mover
+      let dragging=false, sx=0, sy=0, ox=0, oy=0;
+      el.addEventListener('mousedown', ev=>{
+        if (ev.target.closest('button') || ev.target.closest('.body') || ev.target.closest('.title')) return;
+        if (ev.button!==0) return;
+        dragging=true; el.classList.add('dragging');
+        sx=ev.clientX; sy=ev.clientY; ox=n.x||0; oy=n.y||0; ev.preventDefault();
+      });
+      window.addEventListener('mousemove', ev=>{
+        if (!dragging) return;
+        const dx=(ev.clientX-sx)/state.scale, dy=(ev.clientY-sy)/state.scale;
+        n.x=Math.round(ox+dx); n.y=Math.round(oy+dy);
+        el.style.left=n.x+'px'; el.style.top=n.y+'px';
+        drawEdges(); state.dirty=true;
+      });
+      window.addEventListener('mouseup', async ()=>{
+        if (!dragging) return; dragging=false; el.classList.remove('dragging');
+        await fetch(API_NODE_UPD(n.id), { method:'PUT', headers:{'Content-Type':'application/json','X-CSRFToken':csrf}, body: JSON.stringify({x:n.x,y:n.y}) });
+      });
+
+      // excluir
+      el.querySelector('[data-act="del"]').addEventListener('click', async ()=>{
+        if (!confirm('Excluir nó e conexões?')) return;
+        const r = await fetch(API_NODE_DEL(n.id), { method:'DELETE', headers:{'X-CSRFToken':csrf} });
+        if (r.ok){
+          flowCanvas.removeChild(el);
+          state.nodes = state.nodes.filter(x=> x.id!==n.id);
+          state.nodesMap.delete(n.id);
+          state.edges = state.edges.filter(e=> e.from_id!==n.id && e.to_id!==n.id);
+          drawEdges(); drawMinimap(); state.dirty=true;
+        } else alert('Falha ao excluir o nó.');
+      });
+
+      // conexão por clique
+      el.querySelector('.port.out').addEventListener('click', ev=>{
+        ev.stopPropagation(); ev.preventDefault();
+        if (connectFromEl && connectFromEl !== ev.currentTarget) connectFromEl.classList.remove('selected');
+        if (connectFromId === n.id){ connectFromId=null; connectFromEl=null; ev.currentTarget.classList.remove('selected'); return; }
+        connectFromId=n.id; connectFromEl=ev.currentTarget; ev.currentTarget.classList.add('selected'); syncConnectHint();
+      });
+      el.querySelector('.port.in').addEventListener('click', async ev=>{
+        ev.stopPropagation(); ev.preventDefault();
+        if (!connectFromId || connectFromId === n.id){
+          if (connectFromEl) connectFromEl.classList.remove('selected');
+          connectFromId=null; connectFromEl=null; syncConnectHint(); return;
+        }
+        if (edgeExists(connectFromId, n.id)){
+          if (connectFromEl) connectFromEl.classList.remove('selected');
+          connectFromId=null; connectFromEl=null; syncConnectHint(); return;
+        }
+        try{
+          const payload = { from_id: connectFromId, to_id: n.id, subtask_id: state.subtask.id, label: null };
+          const r = await fetch(API_FLOW_EDGES(state.subtask.id), { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf}, body: JSON.stringify(payload) });
+          if (r.ok){ const e = await r.json(); state.edges.push(e); drawEdges(); state.dirty=true; }
+          else alert('Não foi possível criar a ligação.');
+        } finally {
+          if (connectFromEl) connectFromEl.classList.remove('selected');
+          connectFromId=null; connectFromEl=null; syncConnectHint();
+        }
+      });
+
+      return el;
+    }
+
+    /* ===== ARESTAS: usa matriz do SVG para converter coordenadas de tela (fix do zoom) ===== */
+    function drawEdges(){
+      edgesSvg.innerHTML = '';
+
+      // converte coordenadas client (px de tela) para o sistema local do edgesSvg
+      function clientToSvg(x, y){
+        const pt = edgesSvg.createSVGPoint();
+        pt.x = x; pt.y = y;
+        const inv = edgesSvg.getScreenCTM().inverse();
+        const sp = pt.matrixTransform(inv);
+        return { x: sp.x, y: sp.y };
+      }
+
+      // centro da bolinha (porta) em coordenadas do edgesSvg
+      function portCenter(portEl){
+        if (!portEl) return null;
+        const r = portEl.getBoundingClientRect();
+        return clientToSvg(r.left + r.width/2, r.top + r.height/2);
+      }
+
+      const mkCurve = (x1,y1,x2,y2)=>{
+        const dx = Math.max(60, Math.abs(x2-x1)*0.5);
+        return `M ${x1} ${y1} C ${x1+dx} ${y1}, ${x2-dx} ${y2}, ${x2} ${y2}`;
+      };
+
+      state.edges.forEach(e=>{
+        const fromEl = flowCanvas.querySelector(`.node[data-id="${e.from_id}"] .port.out`);
+        const toEl   = flowCanvas.querySelector(`.node[data-id="${e.to_id}"] .port.in`);
+        if (!fromEl || !toEl) return;
+
+        const a = portCenter(fromEl);
+        const b = portCenter(toEl);
+        if (!a || !b) return;
+
+        const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+        p.setAttribute('d', mkCurve(a.x, a.y, b.x, b.y));
+        p.setAttribute('data-id', e.id);
+
+        p.addEventListener('click', async (ev)=>{
+          if (!ev.shiftKey) return;
+          if (!confirm('Remover ligação?')) return;
+          const rr = await fetch(API_EDGE_DEL(e.id), { method:'DELETE', headers:{'X-CSRFToken':csrf} });
+          if (rr.ok){ state.edges = state.edges.filter(x=> x.id!==e.id); drawEdges(); }
+        });
+
+        edgesSvg.appendChild(p);
+      });
+      // a transform  aplicada em applyTransform; aqui no precisa dividir por scale/offset
+    }
+
+    // zoom/pan
+    const wrap = document.getElementById('canvasWrap');
+    wrap.addEventListener('wheel', ev=>{
+      if (!ev.ctrlKey){
+        state.offsetY -= ev.deltaY*0.3; state.offsetX -= ev.deltaX*0.3; applyTransform();
+        return;
+      }
+      ev.preventDefault();
+      const factor = ev.deltaY < 0 ? 1.08 : 0.92;
+      const rect = flowCanvas.getBoundingClientRect();
+      const cx = (ev.clientX - rect.left - state.offsetX)/state.scale;
+      const cy = (ev.clientY - rect.top  - state.offsetY)/state.scale;
+      state.scale = Math.min(2.2, Math.max(0.35, state.scale * factor));
+      state.offsetX = ev.clientX - rect.left - cx*state.scale;
+      state.offsetY = ev.clientY - rect.top  - cy*state.scale;
+      applyTransform();
+    }, {passive:false});
+
+    let panning=false, psx=0, psy=0, pox=0, poy=0;
+    wrap.addEventListener('mousedown', ev=>{
+      if (!ev.target.closest('.node') && (ev.button===1 || ev.shiftKey || (ev.buttons===1 && ev.target===wrap))){
+        panning=true; psx=ev.clientX; psy=ev.clientY; pox=state.offsetX; poy=state.offsetY; wrap.style.cursor='grabbing';
+      }
+    });
+    window.addEventListener('mousemove', ev=>{
+      if (!panning) return;
+      state.offsetX = pox + (ev.clientX-psx);
+      state.offsetY = poy + (ev.clientY-psy);
+      applyTransform();
+    });
+    window.addEventListener('mouseup', ()=>{ panning=false; wrap.style.cursor='default'; });
+
+    // zoom controls
+    document.getElementById('zoomIn').onclick = ()=>{ state.scale=Math.min(2.2,state.scale*1.12); applyTransform(); };
+    document.getElementById('zoomOut').onclick= ()=>{ state.scale=Math.max(0.35,state.scale*0.88); applyTransform(); };
+    document.getElementById('zoomFit').onclick = ()=>{ fitToContent(); };
+
+    function fitToContent(){
+      if (!state.nodes.length){ state.scale=1; state.offsetX=200; state.offsetY=140; return applyTransform(); }
+      const xs = state.nodes.map(n=> n.x), ys = state.nodes.map(n=> n.y);
+      const minX=Math.min(...xs)-80, minY=Math.min(...ys)-80;
+      const theMaxX=Math.max(...xs)+300, theMaxY=Math.max(...ys)+180;
+      const w = wrap.clientWidth, h = wrap.clientHeight;
+      const scaleX = w/(theMaxX-minX), scaleY = h/(theMaxY-minY);
+      state.scale = Math.min(1.6, Math.max(0.35, Math.min(scaleX, scaleY)));
+      state.offsetX = -minX*state.scale + 40;
+      state.offsetY = -minY*state.scale + 40;
+      applyTransform();
+    }
+
+    // toolbar
+    const btnConnect = document.getElementById('btnConnect');
+    const syncConnectHint = ()=> btnConnect.classList.toggle('active', !!connectFromId);
+    btnConnect.onclick = ()=> btnConnect.classList.toggle('active');
+
+    document.getElementById('btnSnap').onclick = async ()=>{
+      state.nodes.forEach(n=>{
+        n.x = Math.round((n.x||0)/24)*24; n.y = Math.round((n.y||0)/24)*24;
+        const el2 = flowCanvas.querySelector(`.node[data-id="${n.id}"]`);
+        if (el2){ el2.style.left=n.x+'px'; el2.style.top=n.y+'px'; }
+      });
+      drawEdges(); state.dirty=true;
+
+      const ordered = state.nodes.slice().sort((a,b)=> (a.x===b.x) ? (a.y-b.y) : (a.x-b.x));
+      for (let i=0;i<ordered.length-1;i++){
+        const A = ordered[i], B = ordered[i+1];
+        if (!edgeExists(A.id, B.id)){
+          try{
+            const r = await fetch(API_FLOW_EDGES(state.subtask.id), {
+              method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
+              body: JSON.stringify({ from_id:A.id, to_id:B.id, subtask_id: state.subtask.id, label:null })
+            });
+            if (r.ok){ const e = await r.json(); state.edges.push(e); }
+          }catch(_){}
+        }
+      }
+      drawEdges();
+    };
+
+    // FAB novo nó
+    const fab = document.getElementById('fabPlus');
+    fab.onclick = async ()=>{
+      if (!state.subtask) return;
+      const rect = wrap.getBoundingClientRect();
+      const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+      const cxy = toCanvasXY(cx, cy);
+      const payload = { subtask_id: state.subtask.id, title: 'Novo nó', shape: 'rect', color: '#e5e7eb', x: Math.round(cxy.x), y: Math.round(cxy.y), body: '' };
+      const r = await fetch(API_FLOW_NODES(state.subtask.id), { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf}, body: JSON.stringify(payload) });
+      const nowIso = (new Date()).toISOString();
+      if (r.ok){
+        const n = await r.json();
+        if (!n.created_at) n.created_at = nowIso;
+        if (typeof n.body === 'undefined') n.body = '';
+        state.nodes.push(n); state.nodesMap.set(n.id,n);
+        const el = nodeEl(n); flowCanvas.appendChild(el);
+        drawMinimap(); state.dirty=true; drawEdges();
+      } else { alert('Falha ao criar o nó do fluxo.'); }
+    };
+
+    // salvar (visual)
+    document.getElementById('flowSave').onclick = ()=>{
+      state.dirty=false;
+      const btn = document.getElementById('flowSave');
+      btn.textContent='SALVO '; setTimeout(()=> btn.textContent='SALVAR', 1200);
+    };
+
+    // minimapa
+    const miniSvg = document.getElementById('miniSvg');
+    function drawMinimap(){
+      miniSvg.innerHTML='';
+      if (!state.nodes.length) return;
+      const xs=state.nodes.map(n=> n.x), ys=state.nodes.map(n=> n.y);
+      const minX=Math.min(...xs)-60, minY=Math.min(...ys)-60;
+      const maxX=Math.max(...xs)+280, maxY=Math.max(...ys)+140;
+      const W = miniSvg.clientWidth||220, H = miniSvg.clientHeight||140;
+      const scale = Math.min(W/(maxX-minX), H/(maxY-minY));
+      state.nodes.forEach(n=>{
+        const r = document.createElementNS('http://www.w3.org/2000/svg','rect');
+        r.setAttribute('x', (n.x-minX)*scale); r.setAttribute('y',(n.y-minY)*scale);
+        r.setAttribute('width', 280*scale); r.setAttribute('height', 100*scale);
+        miniSvg.appendChild(r);
+      });
+      const vx0 = (-state.offsetX/state.scale - minX)*scale;
+      const vy0 = (-state.offsetY/state.scale - minY)*scale;
+      const vw  = (wrap.clientWidth/state.scale)*scale;
+      const vh  = (wrap.clientHeight/state.scale)*scale;
+      const vp = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      vp.setAttribute('x',vx0); vp.setAttribute('y',vy0); vp.setAttribute('width',vw); vp.setAttribute('height',vh); vp.setAttribute('class','viewport');
+      miniSvg.appendChild(vp);
+    }
+
+  } catch(e){ __showJSerr(e); }
+})();
+</script>
+{% endblock %}

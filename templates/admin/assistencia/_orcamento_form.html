@@ -1,0 +1,597 @@
+<form method="post" class="proposal-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="orcamento_id" id="orcamento_id" value="{{ editing_orcamento.id if editing_orcamento else '' }}">
+    <div class="row g-4">
+      {% if editing_orcamento %}
+        <div class="col-12">
+          <div class="alert alert-info border-0 shadow-sm">
+            Você está editando o orçamento #{{ editing_orcamento.id }}.
+            <a class="ms-2" href="{{ url_for('assist_bp.assistencia_orcamentos', view='historico') }}#orcamentos-historico">Voltar ao histórico</a>
+          </div>
+        </div>
+      {% endif %}
+      <div class="col-12 col-xxl-8">
+        <div class="card section-card shadow-sm border-0 mb-4">
+          <div class="card-header">
+            <h2 class="section-title h5 mb-1">Configuração do orçamento</h2>
+            <p class="section-subtitle text-muted mb-0">Selecione a OS e o tipo do orçamento técnico.</p>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">OS vinculada</label>
+                <div class="input-group">
+                  <select id="orcamento-os" name="tarefa_id" class="form-select">
+                    <option value="">Selecione a OS (Opcional)</option>
+                    {% for tarefa in tarefas %}
+                      <option value="{{ tarefa.id }}"
+                        data-empresa="{{ tarefa.nome|e }}"
+                        data-cnpj="{{ tarefa.cnpj|e }}"
+                        data-os="{{ tarefa.OS|e }}"
+                        data-unidade="{{ tarefa.unidade|e }}"
+                        data-departamento="{{ tarefa.departamento_responsavel|e }}"
+                        data-tecnico="{{ tarefa.usuario_designado|e }}"
+                        data-descricao="{{ tarefa.descricao|e }}"
+                        data-data="{{ tarefa.data_criacao | local('%d/%m/%Y') if tarefa.data_criacao else '' }}"
+                        {% if selected_tarefa_id == tarefa.id %}selected{% endif %}>
+                        OS {{ tarefa.OS }} - {{ tarefa.nome }} - {{ tarefa.unidade }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                  <button type="button" class="btn btn-outline-primary" id="btnBuscarOS" data-bs-toggle="modal" data-bs-target="#modalPesquisaOS" title="Pesquisar OS">
+                    <i class="bi bi-search"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-md-4" id="divNumeroOrcamento">
+                <label class="form-label" for="numero_orcamento">Número do Orçamento <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light text-muted"><i class="bi bi-hash"></i></span>
+                  <input type="text" class="form-control font-monospace fw-bold" name="numero_orcamento" id="numero_orcamento" required placeholder="Aguardando filial...">
+                </div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Tipo de orçamento</label>
+                <div class="input-group">
+                  <select id="orcamento-tipo" name="tipo" class="form-select">
+                    {% for value, label in tipo_options %}
+                      <option value="{{ value }}" {% if selected_tipo == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                  <button type="button" class="btn btn-outline-danger" id="btnExcluirTipoOrcamento" title="Excluir este tipo de orçamento">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                  <button type="button" class="btn btn-outline-primary" id="btnNovoTipoOrcamento"
+                    data-bs-toggle="modal" data-bs-target="#modalNovoTipoOrcamento"
+                    title="Criar novo tipo de orçamento">
+                    <i class="bi bi-plus-lg"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="issuer-preview" id="os-details">
+                  <div class="issuer-title">Resumo da OS</div>
+                  <div class="issuer-line"><strong>Empresa:</strong> <span data-field="empresa">-</span></div>
+                  <div class="issuer-line"><strong>CNPJ:</strong> <span data-field="cnpj">-</span></div>
+                  <div class="issuer-line"><strong>OS:</strong> <span data-field="os">-</span></div>
+                  <div class="issuer-line"><strong>Unidade:</strong> <span data-field="unidade">-</span></div>
+                  <div class="issuer-line"><strong>Departamento:</strong> <span data-field="departamento">-</span></div>
+                  <div class="issuer-line"><strong>Técnico:</strong> <span data-field="tecnico">-</span></div>
+                  <div class="issuer-line"><strong>Data:</strong> <span data-field="data">-</span></div>
+                  <div class="issuer-line muted"><strong>Descrição:</strong> <span data-field="descricao">-</span></div>
+                </div>
+              </div>
+
+              <div class="col-12" id="manual-details" style="display: none;">
+                <div class="issuer-preview">
+                  <div class="issuer-title text-primary"><i class="bi bi-pencil-square me-2"></i>Dados do Cliente / Empresa (Manual)</div>
+                  <div class="row g-3">
+                    <!-- Tipo de documento -->
+                    <div class="col-12">
+                      <label class="form-label text-uppercase small fw-semibold text-muted mb-2">Tipo de documento</label>
+                      <div class="doc-type-group btn-group w-100 flex-wrap" role="group" aria-label="Tipo de documento">
+                        <input type="radio" class="btn-check" name="manual_document_type" id="manualDocType_cnpj" value="cnpj" checked autocomplete="off">
+                        <label class="btn btn-outline-primary" for="manualDocType_cnpj">CNPJ</label>
+                        <input type="radio" class="btn-check" name="manual_document_type" id="manualDocType_cpf" value="cpf" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="manualDocType_cpf">CPF</label>
+                      </div>
+                    </div>
+                    <!-- Documento -->
+                    <div class="col-md-6">
+                      <label class="form-label" for="manual_cnpj" id="manualDocumentLabel">CNPJ do Cliente</label>
+                      <input type="text" class="form-control" name="manual_cnpj" id="manual_cnpj" placeholder="00.000.000/0000-00">
+                    </div>
+                    <!-- Empresa (CNPJ) -->
+                    <div class="col-md-6" id="divManualCompany">
+                      <label class="form-label" for="manual_empresa">Empresa</label>
+                      <input type="text" class="form-control" name="manual_empresa" id="manual_empresa" placeholder="Nome da empresa">
+                    </div>
+                    <!-- Nome do Cliente -->
+                    <div class="col-md-6">
+                      <label class="form-label" for="manual_client_name" id="manualClientNameLabel">Nome do Cliente</label>
+                      <input type="text" class="form-control" name="manual_client_name" id="manual_client_name" placeholder="Ex: João Silva">
+                    </div>
+                    <!-- E-mail -->
+                    <div class="col-md-6">
+                      <label class="form-label" for="manual_email">E-mail do Cliente</label>
+                      <input type="email" class="form-control" name="manual_email" id="manual_email" placeholder="Ex: cliente@sollus.com">
+                    </div>
+                    <!-- Telefone -->
+                    <div class="col-md-6">
+                      <label class="form-label" for="manual_telefone">Telefone do Cliente</label>
+                      <input type="text" class="form-control" name="manual_telefone" id="manual_telefone" placeholder="Ex: (21) 99999-9999">
+                    </div>
+                    <!-- Unidade (Filial) -->
+                    <div class="col-md-6">
+                      <label class="form-label" for="manual_unidade">Selecionar Filial</label>
+                      <select class="form-select" name="manual_unidade" id="manual_unidade">
+                        <option value="">Selecione a Filial</option>
+                        {% for unidade in unidades %}
+                          <option value="{{ unidade }}">{{ unidade }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+
+                    <!-- Campos Opcionais -->
+                    <div class="col-md-6">
+                      <label class="form-label" for="manual_descricao">Descrição / Equipamento <span class="text-muted small">(Opcional)</span></label>
+                      <input type="text" class="form-control" name="manual_descricao" id="manual_descricao" placeholder="Modelo do equipamento ou defeito relatado">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="manual_tecnico">Técnico <span class="text-muted small">(Opcional)</span></label>
+                      <select class="form-select" name="manual_tecnico" id="manual_tecnico">
+                        <option value="">Sem técnico</option>
+                        {% for tecnico in tecnicos %}
+                          <option value="{{ tecnico }}">{{ tecnico }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="manual_os">Ordem de Serviço <span class="text-muted small">(Opcional)</span></label>
+                      <input type="text" class="form-control" name="manual_os" id="manual_os" placeholder="Ex: 1234 OS">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="manual_departamento">Departamento <span class="text-muted small">(Opcional)</span></label>
+                      <select class="form-select" name="manual_departamento" id="manual_departamento">
+                        {% for dept in departamentos %}
+                          <option value="{{ dept }}" {% if dept == 'ASSISTENCIA TECNICA' %}selected{% endif %}>{{ dept }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section-card shadow-sm border-0 mb-4">
+          <div class="card-header">
+            <h2 class="section-title h5 mb-1">Itens do orçamento</h2>
+            <p class="section-subtitle text-muted mb-0">Selecione itens do estoque e ajuste quantidade, valores unitários e descontos por item.</p>
+          </div>
+          <div class="card-body">
+            {% for tipo, label in tipo_options %}
+              {% set meta = orcamento_defs[tipo] %}
+              <div class="orc-section{% if selected_tipo == tipo %} active{% endif %}" data-orcamento-section data-tipo="{{ tipo }}">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                  <div>
+                    <h6 class="mb-1">{{ meta.table_title }}</h6>
+                    <p class="text-muted small mb-0">{{ meta.label }}</p>
+                  </div>
+                  <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <div class="input-group input-group-sm w-auto flex-grow-1" style="min-width: 250px;">
+                      <select class="form-select form-select-sm" data-equip-select>
+                        <option value="">Selecione um item do estoque</option>
+                        {% for eq in equipments %}
+                          <option value="{{ eq.id }}"
+                            data-name="{{ eq.name|e }}"
+                            data-description="{{ (eq.description or '')|replace('\n',' ')|e }}"
+                            data-price="{{ '%.2f'|format(eq.unit_price or 0) }}"
+                            data-quantity="{{ eq.quantity or 0 }}">
+                            {{ eq.name }} ({{ eq.quantity or 0 }} em estoque)
+                          </option>
+                        {% endfor %}
+                      </select>
+                      <button type="button" class="btn btn-outline-primary" data-buscar-item data-bs-toggle="modal" data-bs-target="#modalPesquisaItem" title="Pesquisar Item">
+                        <i class="bi bi-search"></i>
+                      </button>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-add-row>
+                      <i class="bi bi-plus-lg"></i> Adicionar item
+                    </button>
+                  </div>
+                </div>
+                <div class="table-responsive">
+                  <table class="table align-middle orc-table" data-tipo="{{ tipo }}" data-next-index="{{ meta['items']|length }}">
+                    <thead>
+                      <tr>
+                        <th>Descrição</th>
+                        <th class="text-center">Qtd.</th>
+                        <th class="text-center">Valor unitário</th>
+                        <th class="text-center">Desc. %</th>
+                        <th class="text-center">Total</th>
+                        <th class="text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for item in meta['items'] %}
+                        <tr data-item-row="true" data-equip-id="default_{{ loop.index0 }}">
+                          <td>
+                            <input type="hidden" name="equip_{{ tipo }}_{{ loop.index0 }}" value="">
+                            <textarea class="form-control form-control-sm" name="desc_{{ tipo }}_{{ loop.index0 }}" rows="2" style="resize: vertical; min-width: 200px;">{{ item.description }}</textarea>
+                          </td>
+                          <td class="text-center">
+                            <input type="number" min="0" step="1" class="form-control form-control-sm" name="qty_{{ tipo }}_{{ loop.index0 }}" value="{{ item.default_qty or 0 }}" data-qty>
+                          </td>
+                          <td class="text-center">
+                            <input type="text" class="form-control form-control-sm" name="unit_{{ tipo }}_{{ loop.index0 }}" value="R$ {{ '%.2f'|format(item.unit_price or 0)|replace('.', ',') }}" data-unit>
+                          </td>
+                          <td class="text-center">
+                            <input type="number" min="0" step="0.01" class="form-control form-control-sm" name="disc_{{ tipo }}_{{ loop.index0 }}" value="0" data-discount>
+                          </td>
+                          <td class="text-center">
+                            <span class="fw-semibold" data-line-total>R$ 0,00</span>
+                          </td>
+                          <td class="text-center">
+                            <button type="button" class="btn btn-link text-danger p-0" data-remove-row>Remover</button>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                  <div class="text-muted small">Preencha as quantidades e ajuste valores quando necessário.</div>
+                  <div class="orc-total">Total do orçamento: <span data-total-label>R$ 0,00</span></div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="card section-card shadow-sm border-0 mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <h2 class="section-title h5 mb-1">Condições, observação e aceite</h2>
+              <p class="section-subtitle text-muted mb-0">Revise condições, observação e aceite antes de gerar o PDF.</p>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#orcamentoConfigModal">
+              <i class="bi bi-sliders"></i> Editar conteúdo
+            </button>
+          </div>
+          <div class="card-body">
+            {% for tipo, label in tipo_options %}
+              {% set meta = orcamento_defs[tipo] %}
+              <div class="orc-section{% if selected_tipo == tipo %} active{% endif %}" data-orcamento-conditions data-tipo="{{ tipo }}">
+                <div class="row g-3">
+                  {% if meta.condicoes %}
+                    {% for cond_label, cond_value in meta.condicoes %}
+                    <div class="col-md-6">
+                      <div class="cond-item">
+                        <strong>{{ cond_label }}</strong>
+                        <span data-cond-index="{{ loop.index0 }}">{{ cond_value }}</span>
+                      </div>
+                    </div>
+                    {% endfor %}
+                  {% else %}
+                    <div class="text-muted small">Sem condições cadastradas para este tipo.</div>
+                  {% endif %}
+                </div>
+                <div class="subcard p-3 mt-3">
+                  <strong class="d-block mb-2">Observação</strong>
+                  <span data-observacao>{{ meta.observacao or '-' }}</span>
+                </div>
+                <div class="subcard p-3 mt-3">
+                  <strong class="d-block mb-2">Aceite</strong>
+                  <div class="d-flex flex-column gap-1" data-aceite>
+                    {% if meta.aceite %}
+                      {% for item in meta.aceite %}
+                        <span>- {{ item }}</span>
+                      {% endfor %}
+                    {% else %}
+                      <span>-</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="proposal-actions">
+          <button type="submit" class="btn btn-primary btn-elevated">
+            <i class="bi bi-file-earmark-pdf"></i>
+            <span data-orcamento-submit-label>Gerar orçamento</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="col-12 col-xxl-4 proposal-aside">
+        <div class="card shadow-sm border-0 position-sticky top-0" style="top:calc(var(--nav-h) + 1.5rem);">
+          <div class="card-body p-4">
+            <h2 class="h6 fw-bold text-uppercase text-muted mb-3">Dicas rápidas</h2>
+            <ul class="small text-muted">
+              <li>Use o botão "Adicionar item" para incluir peças e serviços do estoque.</li>
+              <li>Descontos percentuais são aplicados por item no cálculo automático.</li>
+              <li>Revise condições, observação e aceite no modal antes de gerar o PDF.</li>
+              <li>O orçamento fica registrado no histórico para consultas futuras.</li>
+            </ul>
+            <hr class="my-4">
+            <div class="d-flex align-items-center gap-3">
+              <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width:52px;height:52px;"><i class="bi bi-lightning-charge-fill"></i></div>
+              <div class="small text-muted">O PDF segue o layout comercial e mantém o vínculo 1:1 com a OS selecionada.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="orcamentoConfigModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+          <h5 class="modal-title">Editar condições, observação e aceite</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            {% for tipo, label in tipo_options %}
+            {% set meta = orcamento_defs[tipo] %}
+            <div class="orc-modal-fields" data-tipo="{{ tipo }}">
+              <div class="mb-3">
+                <label class="form-label">Condições comerciais</label>
+                {% if meta.condicoes %}
+                  {% for cond_label, cond_value in meta.condicoes %}
+                  <div class="input-group mb-2">
+                    <span class="input-group-text">{{ cond_label }}</span>
+                    <input type="text" class="form-control" name="cond_value_{{ tipo }}_{{ loop.index0 }}" value="{{ cond_value }}" data-cond-index="{{ loop.index0 }}">
+                  </div>
+                  {% endfor %}
+                {% else %}
+                  <div class="text-muted small">Sem condições cadastradas para este tipo.</div>
+                {% endif %}
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Observação</label>
+                <textarea class="form-control" name="observacao_{{ tipo }}" rows="3">{{ meta.observacao or '' }}</textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Aceite</label>
+                <textarea class="form-control" name="aceite_{{ tipo }}" rows="3">{% if meta.aceite %}{{ meta.aceite|join('\n') }}{% endif %}</textarea>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="orcamentoConfigApply" data-bs-dismiss="modal">Aplicar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Novo Tipo de Orçamento -->
+    <div class="modal fade" id="modalNovoTipoOrcamento" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">
+              <i class="bi bi-plus-circle me-2 text-primary"></i>Novo Tipo de Orçamento
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label fw-medium">Nome de exibição <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="novoTipo_label" placeholder="ex: Orçamento Premium">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-medium">Chave interna <span class="text-danger">*</span></label>
+              <input type="text" class="form-control font-monospace" id="novoTipo_chave" placeholder="ex: orcamento_premium">
+              <div class="form-text">Gerado automaticamente a partir do nome. Apenas letras minúsculas e underscore.</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-medium">Título na tabela do PDF</label>
+              <input type="text" class="form-control" id="novoTipo_table_title" placeholder="ex: OPÇÃO | ORÇAMENTO PREMIUM">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-medium d-flex justify-content-between align-items-center mb-2">
+                <span>Campos / Condições Comerciais</span>
+                <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2" id="btnAdicionarCondicaoModal">
+                  <i class="bi bi-plus-lg"></i> Adicionar Campo
+                </button>
+              </label>
+              <div id="containerCondicoesModal" class="d-flex flex-column gap-2">
+                <!-- Dynamic fields will be added here -->
+              </div>
+            </div>
+            <div id="novoTipoErro" class="alert alert-danger d-none py-2"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary px-4" id="btnSalvarNovoTipo">
+              <i class="bi bi-check-lg me-1"></i>Criar tipo
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    // Helper para adicionar linhas de condições no modal
+    function addConditionRowToModal(label = '', value = '') {
+        const container = document.getElementById('containerCondicoesModal');
+        if (!container) return;
+        const row = document.createElement('div');
+        row.className = 'input-group input-group-sm align-items-center condition-row';
+        row.innerHTML = `
+            <input type="text" class="form-control" placeholder="Nome do campo (ex: Garantia)" value="${label}" data-cond-label>
+            <input type="text" class="form-control" placeholder="Valor padrão (ex: 90 dias)" value="${value}" data-cond-val>
+            <button type="button" class="btn btn-outline-danger" onclick="this.parentElement.remove()" title="Remover campo">
+                <i class="bi bi-trash"></i>
+            </button>
+        `;
+        container.appendChild(row);
+    }
+
+    // Inicializa condições padrão ao carregar
+    document.addEventListener('DOMContentLoaded', () => {
+        addConditionRowToModal("Condições de Pagamento", "14 DD");
+        addConditionRowToModal("Validade da Proposta", "20 dias");
+        addConditionRowToModal("Prazo de Entrega", "Imediato");
+        addConditionRowToModal("Garantia", "90 dias");
+    });
+
+    document.getElementById('btnAdicionarCondicaoModal').addEventListener('click', () => {
+        addConditionRowToModal('', '');
+    });
+
+    // Gera chave interna automaticamente a partir do nome
+    document.getElementById('novoTipo_label').addEventListener('input', function () {
+        const chaveInput = document.getElementById('novoTipo_chave');
+        if (!chaveInput.dataset.manual) {
+            chaveInput.value = this.value
+                .toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9\s_]/g, '')
+                .trim()
+                .replace(/\s+/g, '_');
+        }
+    });
+
+    document.getElementById('novoTipo_chave').addEventListener('input', function () {
+        this.dataset.manual = this.value ? '1' : '';
+    });
+
+    document.getElementById('btnSalvarNovoTipo').addEventListener('click', async function () {
+        const btn = this;
+        const label = document.getElementById('novoTipo_label').value.trim();
+        const chave = document.getElementById('novoTipo_chave').value.trim();
+        const tableTitle = document.getElementById('novoTipo_table_title').value.trim();
+        const erroEl = document.getElementById('novoTipoErro');
+
+        erroEl.classList.add('d-none');
+        erroEl.textContent = '';
+
+        if (!label || !chave) {
+            erroEl.textContent = 'Nome e Chave são obrigatórios.';
+            erroEl.classList.remove('d-none');
+            return;
+        }
+        if (!/^[a-z0-9_]+$/.test(chave)) {
+            erroEl.textContent = 'Chave deve conter apenas letras minúsculas, números e underscore.';
+            erroEl.classList.remove('d-none');
+            return;
+        }
+
+        const condicoes = [];
+        document.querySelectorAll('#containerCondicoesModal .condition-row').forEach(row => {
+            const labelInput = row.querySelector('[data-cond-label]');
+            const valInput = row.querySelector('[data-cond-val]');
+            if (labelInput && valInput) {
+                const lbl = labelInput.value.trim();
+                const val = valInput.value.trim();
+                if (lbl) {
+                    condicoes.push([lbl, val]);
+                }
+            }
+        });
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
+
+        try {
+            const resp = await fetch("{{ url_for('assist_bp.salvar_orcamento_template') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    chave: chave,
+                    label: label,
+                    table_title: tableTitle || label.toUpperCase(),
+                    ativo: true,
+                    items: [],
+                    condicoes: condicoes,
+                    aceite: ["OPÇÃO: " + label.toUpperCase()],
+                    observacao: ''
+                })
+            });
+            const data = await resp.json();
+            if (data.ok) {
+                // Adiciona o novo tipo ao select e seleciona ele
+                const select = document.getElementById('orcamento-tipo');
+                const opt = new Option(label, chave, true, true);
+                select.appendChild(opt);
+                // Dispara change para atualizar seções do orçamento
+                select.dispatchEvent(new Event('change'));
+                
+                // Fecha o modal
+                bootstrap.Modal.getInstance(document.getElementById('modalNovoTipoOrcamento')).hide();
+                // Limpa campos
+                document.getElementById('novoTipo_label').value = '';
+                document.getElementById('novoTipo_chave').value = '';
+                document.getElementById('novoTipo_table_title').value = '';
+                delete document.getElementById('novoTipo_chave').dataset.manual;
+
+                // Recarrega a página para reconstruir todos os blocos no backend
+                const url = new URL(window.location.href);
+                url.searchParams.set('tipo', chave);
+                window.location.href = url.toString();
+            } else {
+                erroEl.textContent = data.message || 'Erro ao criar tipo.';
+                erroEl.classList.remove('d-none');
+            }
+        } catch (e) {
+            erroEl.textContent = 'Erro de conexão. Tente novamente.';
+            erroEl.classList.remove('d-none');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Criar tipo';
+        }
+    });
+
+    // Exclusão do Tipo de Orçamento selecionado
+    document.getElementById('btnExcluirTipoOrcamento').addEventListener('click', async function() {
+        const select = document.getElementById('orcamento-tipo');
+        if (!select) return;
+        const selectedChave = select.value;
+        const selectedLabel = select.options[select.selectedIndex]?.text || selectedChave;
+        
+        if (!selectedChave) {
+            alert('Selecione um tipo de orçamento válido para excluir.');
+            return;
+        }
+        
+        if (!confirm(`Deseja realmente excluir o tipo de orçamento "${selectedLabel}"? Todos os orçamentos que utilizam este tipo continuarão existindo no histórico, mas você não poderá mais gerar novos orçamentos com este tipo.`)) {
+            return;
+        }
+        
+        const btnExcluir = this;
+        btnExcluir.disabled = true;
+        try {
+            const resp = await fetch("/assistencia/orcamento-templates/excluir-por-chave/" + selectedChave, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                }
+            });
+            const data = await resp.json();
+            if (data.ok) {
+                alert('Tipo de orçamento excluído com sucesso.');
+                // Redireciona para recarregar sem o tipo
+                window.location.href = "{{ url_for('assist_bp.assistencia_orcamentos_gerar') }}";
+            } else {
+                alert(data.message || 'Erro ao excluir o tipo de orçamento.');
+            }
+        } catch (e) {
+            alert('Erro de conexão ao tentar excluir.');
+        } finally {
+            btnExcluir.disabled = false;
+        }
+    });
+    </script>
+  </form>

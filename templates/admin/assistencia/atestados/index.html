@@ -1,0 +1,296 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Atestados | Assistência Técnica{% endblock %}
+
+{% block head %}
+<style>
+  .atestados-card{border:0;border-radius:1.2rem;box-shadow:0 12px 30px rgba(15,35,58,.08);background:var(--card);}
+  .atestados-table thead{background:#f1f4fb;text-transform:uppercase;font-size:.7rem;letter-spacing:.06rem;color:#5a6782;}
+  .atestados-table tbody tr:hover{background:#f8fafc;}
+  .atestados-actions .btn{padding:.35rem .55rem;}
+  .badge-email{display:inline-flex;align-items:center;padding:.15rem .55rem;border-radius:999px;background:#e2e8f0;color:#334155;font-size:.72rem;font-weight:600;margin-right:.35rem;margin-bottom:.35rem;}
+  .filters-row .form-control{height:42px;}
+  .atestados-tabs{display:flex;gap:.5rem;flex-wrap:wrap;}
+  .atestados-tab-btn{border:1px solid #d0d7e2;background:#f8fafc;font-weight:700;color:#1f2937;display:flex;align-items:center;gap:.35rem;padding:.35rem .75rem;border-radius:999px;transition:all .2s;cursor:pointer;text-decoration:none;}
+  .atestados-tab-btn .count{font-size:.8rem;color:#6b7280;}
+  .atestados-tab-btn.active{background:#0d6efd;color:#fff;border-color:#0d6efd;}
+  .atestados-tab-btn.active .count{color:#e8f1ff;}
+</style>
+{% endblock %}
+
+{% block content %}
+{{ page_hero(
+  title='Atestados registrados',
+  subtitle='Gerencie arquivos DOCX, listas de e-mails e o envio automatizado de atestados.',
+  eyebrow='Assistência técnica',
+  stats=stats
+) }}
+
+<div class="atestados-tabs mb-3">
+  <a class="atestados-tab-btn {% if active_tab == 'anexos' %}active{% endif %}" href="{{ url_for('atestados_bp.index') }}">
+    Anexos <span class="count">{{ nav_counts.anexos }}</span>
+  </a>
+  <a class="atestados-tab-btn {% if active_tab == 'historico' %}active{% endif %}" href="{{ url_for('atestados_bp.historico_envios') }}">
+    Histórico <span class="count">{{ nav_counts.historico }}</span>
+  </a>
+  <a class="atestados-tab-btn {% if active_tab == 'envios' %}active{% endif %}" href="{{ url_for('atestados_bp.enviar') }}">
+    Envios <span class="count">{{ nav_counts.envios }}</span>
+  </a>
+</div>
+
+<div class="card atestados-card mb-3">
+  <div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+      <h6 class="mb-0">Filtros e ações</h6>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-primary" href="{{ url_for('atestados_bp.upload') }}"><i class="bi bi-plus-lg"></i> Novo atestado</a>
+        <a class="btn btn-outline-primary" href="{{ url_for('atestados_bp.enviar') }}"><i class="bi bi-send"></i> Enviar</a>
+        <a class="btn btn-outline-secondary" href="{{ url_for('atestados_bp.historico_envios') }}"><i class="bi bi-clock-history"></i> Histórico</a>
+      </div>
+    </div>
+
+    <form method="get" class="row g-3 align-items-end filters-row">
+      <div class="col-lg-5 col-md-6">
+        <label class="form-label">Nome do arquivo</label>
+        <input type="text" name="nome" class="form-control" value="{{ nome_filter }}" placeholder="Filtrar por nome">
+      </div>
+      <div class="col-lg-5 col-md-6">
+        <label class="form-label">E-mail</label>
+        <input type="text" name="email" class="form-control" value="{{ email_filter }}" placeholder="Filtrar por e-mail">
+      </div>
+      <div class="col-lg-2 d-flex gap-2">
+        <button class="btn btn-primary w-100" type="submit"><i class="bi bi-search"></i> Filtrar</button>
+        <a class="btn btn-outline-secondary w-100" href="{{ url_for('atestados_bp.index') }}">Limpar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">{% if message %}{{ message }}{% endif %}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="card atestados-card">
+  <div class="table-responsive">
+    <table class="table atestados-table mb-0">
+      <thead>
+        <tr>
+          <th style="width:80px">ID</th>
+          <th>Arquivo</th>
+          <th>E-mails</th>
+          <th style="width:140px">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for arquivo in arquivos.items %}
+        <tr
+          data-arquivo-id="{{ arquivo.id }}"
+          data-arquivo-nome="{{ arquivo.nome | e }}"
+          data-arquivo-emails="{{ arquivo.emails | map(attribute='endereco') | join(', ') | e }}"
+        >
+          <td>{{ arquivo.id }}</td>
+          <td>{{ arquivo.nome }}</td>
+          <td>
+            {% if arquivo.emails %}
+              {% for email in arquivo.emails %}
+                <span class="badge-email">{{ email.endereco }}</span>
+              {% endfor %}
+            {% else %}
+              <span class="text-muted">Sem e-mails</span>
+            {% endif %}
+          </td>
+          <td class="atestados-actions">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary"
+              data-bs-toggle="modal"
+              data-bs-target="#modalEditarAtestado"
+              data-arquivo-id="{{ arquivo.id }}"
+              data-arquivo-nome="{{ arquivo.nome | e }}"
+              data-arquivo-emails="{{ arquivo.emails | map(attribute='endereco') | join(', ') | e }}"
+              data-editar-url="{{ url_for('atestados_bp.editar', arquivo_id=arquivo.id) }}"
+              data-remover-url="{{ url_for('atestados_bp.remover', arquivo_id=arquivo.id) }}"
+              data-converter-url="{{ url_for('atestados_bp.converter_pdf', arquivo_id=arquivo.id) }}"
+              data-excel-url="{{ url_for('atestados_bp.baixar_excel', arquivo_id=arquivo.id) }}"
+            >
+              <i class="bi bi-pencil"></i> Editar
+            </button>
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="4" class="text-center text-muted">Nenhum atestado encontrado.</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<nav aria-label="Paginação" class="mt-3">
+  <ul class="pagination justify-content-center">
+    {% if arquivos.has_prev %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('atestados_bp.index', page=arquivos.prev_num, nome=nome_filter, email=email_filter) }}">Anterior</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+    {% endif %}
+
+    {% for page_num in arquivos.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+      {% if page_num %}
+        {% if page_num == arquivos.page %}
+          <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+        {% else %}
+          <li class="page-item">
+            <a class="page-link" href="{{ url_for('atestados_bp.index', page=page_num, nome=nome_filter, email=email_filter) }}">{{ page_num }}</a>
+          </li>
+        {% endif %}
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">...</span></li>
+      {% endif %}
+    {% endfor %}
+
+    {% if arquivos.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('atestados_bp.index', page=arquivos.next_num, nome=nome_filter, email=email_filter) }}">Próximo</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Próximo</span></li>
+    {% endif %}
+  </ul>
+</nav>
+
+<div class="modal sollus-modal fade" id="modalEditarAtestado" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" enctype="multipart/form-data" id="atestados-edit-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar atestado</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Nome do arquivo</label>
+              <input type="text" class="form-control" id="edit-nome" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Substituir arquivo (opcional)</label>
+              <input type="file" class="form-control" id="edit-arquivo" name="arquivo" accept=".docx">
+            </div>
+            <div class="col-12">
+              <label class="form-label">E-mails (separados por vírgula)</label>
+              <input type="text" class="form-control" id="edit-emails" name="emails" required>
+            </div>
+            <div class="col-12 d-flex flex-wrap gap-2">
+              <a class="btn btn-outline-primary btn-sm" id="edit-converter-link" href="#"><i class="bi bi-filetype-pdf"></i> Converter PDF</a>
+              <a class="btn btn-outline-warning btn-sm" id="edit-excel-link" href="#"><i class="bi bi-file-earmark-spreadsheet"></i> Baixar Excel</a>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+          <button type="submit" class="btn btn-danger" form="atestados-delete-form">Remover</button>
+        </div>
+      </form>
+      <form method="post" id="atestados-delete-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalVerAtestado" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalhes do atestado</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body" id="ver-atestado-body">
+        <div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('modalEditarAtestado');
+    const editForm = document.getElementById('atestados-edit-form');
+    const deleteForm = document.getElementById('atestados-delete-form');
+    const nameInput = document.getElementById('edit-nome');
+    const emailsInput = document.getElementById('edit-emails');
+    const fileInput = document.getElementById('edit-arquivo');
+    const converterLink = document.getElementById('edit-converter-link');
+    const excelLink = document.getElementById('edit-excel-link');
+
+    if (modal) {
+      modal.addEventListener('show.bs.modal', event => {
+        const trigger = event.relatedTarget;
+        if (!trigger) return;
+        if (editForm) editForm.action = trigger.getAttribute('data-editar-url') || '';
+        if (deleteForm) deleteForm.action = trigger.getAttribute('data-remover-url') || '';
+        if (nameInput) nameInput.value = trigger.getAttribute('data-arquivo-nome') || '';
+        if (emailsInput) emailsInput.value = trigger.getAttribute('data-arquivo-emails') || '';
+        if (fileInput) fileInput.value = '';
+        if (converterLink) converterLink.href = trigger.getAttribute('data-converter-url') || '#';
+        if (excelLink) excelLink.href = trigger.getAttribute('data-excel-url') || '#';
+      });
+    }
+
+    if (deleteForm) {
+      deleteForm.addEventListener('submit', event => {
+        if (!confirm('Remover este arquivo e os e-mails associados?')) {
+          event.preventDefault();
+        }
+      });
+    }
+
+    const tableBody = document.querySelector('.atestados-table tbody');
+    const viewModalEl = document.getElementById('modalVerAtestado');
+    const viewBody = document.getElementById('ver-atestado-body');
+
+    if (tableBody && viewModalEl && viewBody) {
+      tableBody.addEventListener('click', event => {
+        if (event.target.closest('a, button, input, select, textarea, .btn, .btn-group')) {
+          return;
+        }
+        const row = event.target.closest('tr[data-arquivo-id]');
+        if (!row) return;
+
+        const arquivoId = row.getAttribute('data-arquivo-id') || '';
+        const arquivoNome = row.getAttribute('data-arquivo-nome') || '';
+        const emailsRaw = row.getAttribute('data-arquivo-emails') || '';
+        const emails = emailsRaw
+          ? emailsRaw.split(',').map(item => item.trim()).filter(Boolean)
+          : [];
+        const emailsHtml = emails.length
+          ? emails.map(email => `<span class="badge-email">${email}</span>`).join('')
+          : '<span class="text-muted">Sem e-mails</span>';
+
+        viewBody.innerHTML = `
+          <div class="row g-3">
+            <div class="col-md-4"><strong>ID:</strong> ${arquivoId}</div>
+            <div class="col-md-8"><strong>Arquivo:</strong> ${arquivoNome}</div>
+            <div class="col-12"><strong>E-mails:</strong><div class="mt-2">${emailsHtml}</div></div>
+          </div>
+        `;
+
+        const modal = bootstrap.Modal.getOrCreateInstance(viewModalEl);
+        modal.show();
+      });
+    }
+  });
+</script>
+{% endblock %}

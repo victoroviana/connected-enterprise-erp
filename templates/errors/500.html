@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block title %}Erro interno no servidor | Sollus Connected{% endblock %}
+
+{% block content %}
+<section class="page-hero mb-4">
+  <div class="page-hero__inner">
+    <div class="page-hero__content">
+      <div class="page-hero__eyebrow">Erro 500</div>
+      <h1 class="page-hero__title">Erro interno no servidor</h1>
+      <p class="page-hero__subtitle">
+        Desculpe, ocorreu um erro inesperado no servidor. Nossa equipe técnica já foi notificada.
+      </p>
+      <div class="page-hero__toolbar">
+        <a class="btn btn-light fw-semibold" href="{{ url_for('index') }}">Voltar ao início</a>
+        <button class="btn btn-outline-light fw-semibold" type="button" onclick="history.back()">
+          Voltar
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body">
+    <p class="mb-0 text-muted">
+      Se o problema persistir ao tentar realizar a mesma operação, por favor entre em contato com o suporte do sistema.
+    </p>
+  </div>
+</div>
+{% endblock %}

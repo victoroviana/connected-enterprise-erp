@@ -1,0 +1,714 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% set hero_title = hero_title|default('Controle de equipamentos') %}
+{% set hero_subtitle = hero_subtitle|default('Acompanhe as OS internas e externas, envie para fábrica quando necessário e registre retornos sem perder o histórico do legado.') %}
+{% set hero_eyebrow = hero_eyebrow|default('Assistência técnica') %}
+{% set page_title = page_title|default(hero_title ~ ' - Sollus Connected') %}
+{% set default_status = default_status|default('') %}
+{% set hide_tabs = hide_tabs|default(false) %}
+{% set hero_help_tips = hero_help_tips|default([
+  'Entrada -> Em progresso cobre consertos internos; use Fábrica/Aguardando para envios externos.',
+  'Clientes com contrato seguem fast-track: conserto interno direto e envio para fábrica sem orçamento.',
+  'Use OS e CNPJ para localizar rapidamente; anexos e respostas ficam centralizados.'
+]) %}
+{% set hero_help_intro = hero_help_intro|default('Fluxo validado: chegada -> decisão interno/fábrica -> orçamento/contrato -> devolução.') %}
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block head %}
+<style>
+  .assist-card{border:0;border-radius:1.25rem;box-shadow:0 14px 35px rgba(15,35,58,.08);background:#fff;}
+  .assist-table thead{background:#f1f4fb;text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:#5a6782;}
+  .assist-table tbody tr:hover{background:#f8fafc;}
+  .assist-table tbody tr{cursor:pointer;}
+  .badge-status{border-radius:999px;padding:.35rem .9rem;font-weight:700;letter-spacing:.02em;font-size:.8rem;text-transform:capitalize;}
+  .badge-status[data-status="Entrada"]{background:rgba(59,130,246,.12);color:#1d4ed8;}
+  .badge-status[data-status="em progresso"]{background:rgba(14,165,233,.14);color:#0369a1;}
+  .badge-status[data-status="aguardando"]{background:rgba(245,158,11,.14);color:#b45309;}
+  .badge-status[data-status="fabrica"]{background:rgba(236,72,153,.14);color:#9d174d;}
+  .badge-status[data-status="concluído"],.badge-status[data-status="concluído"]{background:rgba(34,197,94,.14);color:#15803d;}
+  .badge-status[data-status="devolucao_sem_reparo"]{background:rgba(245,158,11,.18);color:#92400e;}
+  .badge-status[data-status="descarte"]{background:rgba(75,85,99,.16);color:#374151;}
+  .badge-status[data-status="retorno"]{background:rgba(99,102,241,.14);color:#4f46e5;}
+  .due-pill{display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .65rem;border-radius:999px;font-weight:600;font-size:.82rem;}
+  .due-pill.ok{background:rgba(34,197,94,.14);color:#166534;}
+  .due-pill.warning{background:rgba(251,191,36,.2);color:#92400e;}
+  .due-pill.danger{background:rgba(248,113,113,.22);color:#b91c1c;}
+  .due-pill.muted{background:#e2e8f0;color:#475569;}
+  .assist-chip{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .7rem;border-radius:10px;background:#f1f5f9;color:#334155;font-weight:600;font-size:.82rem;margin-right:.25rem;margin-bottom:.3rem;}
+  .assist-chip i{color:#6b7280;}
+  .assist-actions .btn{padding:.4rem .55rem;}
+  .status-badges{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center;}
+  .assist-tabs{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;}
+  .assist-tab-btn{
+    border:1px solid #d0d7e2;
+    background:#f8fafc;
+    font-weight:700;
+    color:#1f2937;
+    display:flex;
+    align-items:center;
+    gap:.35rem;
+    padding:.4rem 1rem;
+    border-radius:999px;
+    transition:all .2s;
+    cursor:pointer;
+    text-decoration:none;
+  }
+  .assist-tab-btn.active{background:#0d6efd;color:#fff;border-color:#0d6efd;}
+  .assist-tab-btn.active .count{color:#e8f1ff;}
+  .assist-tab-group{display:flex;flex-direction:column;gap:.75rem;}
+  .assist-tab-toggle{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem;}
+  .assist-tab-toggle-btn{border:1px solid #d0d7e2;background:#ffffff;color:#1f2937;font-weight:700;padding:.45rem 1.4rem;border-radius:999px;transition:all .2s;}
+  .assist-tab-toggle-btn.active{background:#0d6efd;color:#fff;border-color:#0d6efd;}
+  .assist-tab-dropdown{position:relative;}
+  .assist-tab-menu{position:absolute;top:calc(100% + .5rem);left:0;min-width:240px;background:#fff;border-radius:.85rem;box-shadow:0 18px 40px rgba(15,35,58,.12);padding:.5rem;display:flex;flex-direction:column;gap:.2rem;z-index:20;}
+  .assist-tab-item{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.45rem .75rem;border-radius:.65rem;color:#1f2937;text-decoration:none;font-weight:600;}
+  .assist-tab-item:hover{background:#eef4ff;}
+  .assist-tab-item.active{background:#0d6efd;color:#fff;}
+  .assist-alert-dot{width:.5rem;height:.5rem;border-radius:999px;display:inline-block;box-shadow:0 0 0 2px rgba(255,255,255,.7);}
+  .assist-alert-dot.warning{background:#f59e0b;}
+  .assist-alert-dot.danger{background:#ef4444;}
+  .assist-tab-title{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:#64748b;font-weight:700;}
+  .assist-tab-shell{display:flex;flex-direction:column;gap:1rem;}
+  .assist-tab-shell .card{border:0;border-radius:1.25rem;box-shadow:0 14px 30px rgba(15,35,58,.08);}
+  @keyframes blink-animation { 50% { opacity: 0; } }
+  .blink { animation: blink-animation 1s infinite; }
+  .loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; z-index: 10; border-radius: 1.25rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set base_url = url_for('assist_bp.assistencia_controle') %}
+{% set current_status = request.args.get('status', '') %}
+{% set current_orcamento = request.args.get('orcamento_status', '') %}
+{% set current_fabrica_scope = request.args.get('fabrica_scope', '') %}
+{% set current_group = request.args.get('status_group', '') %}
+{% if not current_group and current_status == 'devolucao_sem_reparo' %}
+  {% set current_group = 'closed' %}
+{% endif %}
+{% if not current_group %}
+  {% if current_orcamento or current_status in ['concluido', 'concluído', 'descarte'] %}
+    {% set current_group = 'closed' %}
+  {% else %}
+    {% set current_group = 'open' %}
+  {% endif %}
+{% endif %}
+
+{% set open_tabs = [
+  {'label': 'Entrada', 'status': 'Entrada', 'group': 'open'},
+  {'label': 'Conserto interno', 'status': 'em progresso', 'group': 'open'},
+  {'label': 'Aguardando retorno/aprova\u00e7\u00e3o', 'status': 'aguardando', 'group': 'open'},
+  {'label': 'Envio f\u00e1brica', 'status': 'fabrica', 'group': 'open', 'fabrica_scope': 'envio'},
+  {'label': 'Equipamentos na f\u00e1brica', 'status': 'fabrica', 'group': 'open', 'fabrica_scope': 'na_fabrica'},
+  {'label': 'Retorno', 'status': 'retorno', 'group': 'open'}
+] %}
+{% set closed_tabs = [
+  {'label': 'Retorno/testes finais', 'status': 'concluido', 'group': 'closed'},
+  {'label': 'Devolu\u00e7\u00e3o sem reparo', 'status': 'devolucao_sem_reparo', 'group': 'closed'},
+  {'label': 'Descarte', 'status': 'descarte', 'group': 'closed'},
+  {'label': 'Conclu\u00eddos', 'status': '', 'group': 'closed'},
+  {'label': 'Cliente n\u00e3o respondeu', 'status': '', 'group': 'closed', 'orcamento_status': 'AGUARDANDO RESPOSTA DO CLIENTE'}
+] %}
+
+{{ page_hero(
+  title=hero_title,
+  subtitle=hero_subtitle,
+  eyebrow=hero_eyebrow,
+  stats=[],
+  help_tips=hero_help_tips,
+  help_intro=hero_help_intro
+) }}
+
+{% if not hide_tabs %}
+<div class="assist-tab-shell mb-3">
+  <div class="card assist-card">
+    <div class="card-body">
+      <div class="assist-tab-toggle">
+        <div class="assist-tab-dropdown" data-assist-menu-wrapper>
+          <button
+            type="button"
+            class="assist-tab-toggle-btn {{ 'active' if current_group == 'open' else '' }}"
+            data-assist-menu-button="open"
+          >Em aberto <i class="bi bi-chevron-down"></i></button>
+          <div class="assist-tab-menu d-none" data-assist-menu="open">
+            {% for tab in open_tabs %}
+              {% set is_active = (current_group == 'open' and current_status == tab.status and current_fabrica_scope == (tab.fabrica_scope or '')) %}
+              {% set alert_key = tab.status %}
+              <a
+                class="assist-tab-item {{ 'active' if is_active else '' }}"
+                {% if alert_key %}data-alert-key="{{ alert_key }}"{% endif %}
+                href="{{ base_url }}?status={{ tab.status | urlencode }}&status_group={{ tab.group }}{% if tab.fabrica_scope %}&fabrica_scope={{ tab.fabrica_scope }}{% endif %}"
+              >
+                <span>{{ tab.label }}</span>
+                <span class="assist-alert-dot blink d-none" data-alert-dot aria-hidden="true"></span>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="assist-tab-dropdown" data-assist-menu-wrapper>
+          <button
+            type="button"
+            class="assist-tab-toggle-btn {{ 'active' if current_group == 'closed' else '' }}"
+            data-assist-menu-button="closed"
+          >Conclu&iacute;dos <i class="bi bi-chevron-down"></i></button>
+          <div class="assist-tab-menu d-none" data-assist-menu="closed">
+            {% for tab in closed_tabs %}
+              {% set is_active = (current_group == 'closed' and current_status == (tab.status or '') and current_orcamento == (tab.orcamento_status or '')) %}
+              {% set alert_key = tab.status %}
+              {% if not alert_key and not tab.orcamento_status %}
+                {% set alert_key = 'concluido' %}
+              {% endif %}
+              <a
+                class="assist-tab-item {{ 'active' if is_active else '' }}"
+                {% if alert_key %}data-alert-key="{{ alert_key }}"{% endif %}
+                href="{{ base_url }}?status={{ tab.status | urlencode }}&status_group={{ tab.group }}{% if tab.orcamento_status %}&orcamento_status={{ tab.orcamento_status | urlencode }}{% endif %}"
+              >
+                <span>{{ tab.label }}</span>
+                <span class="assist-alert-dot blink d-none" data-alert-dot aria-hidden="true"></span>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="card assist-card mb-3">
+  <div class="card-body">
+    <form id="filter-form" class="row g-3 align-items-end">
+      <input type="hidden" name="status" id="filter-status" value="{{ request.args.get('status', default_status) }}">
+      <input type="hidden" name="status_group" id="filter-status-group" value="{{ request.args.get('status_group', current_group) }}">
+      <input type="hidden" name="fabrica_scope" id="filter-fabrica-scope" value="{{ request.args.get('fabrica_scope', '') }}">
+      <input type="hidden" name="orcamento_status" id="filter-orcamento-status" value="{{ request.args.get('orcamento_status', orcamento_filter or '') }}">
+      <div class="col-lg-3 col-md-6">{{ filtro_form.unidade.label(class="form-label") }}{{ filtro_form.unidade(class="form-select") }}</div>
+      <div class="col-lg-3 col-md-6">{{ filtro_form.departamento.label(class="form-label") }}{{ filtro_form.departamento(class="form-select") }}</div>
+      <div class="col-lg-3 col-md-6">{{ filtro_form.contrato.label(class="form-label") }}{{ filtro_form.contrato(class="form-select") }}</div>
+      <div class="col-lg-3 col-md-6">{{ filtro_form.tipo_entrada.label(class="form-label") }}{{ filtro_form.tipo_entrada(class="form-select") }}</div>
+      <div class="col-lg-3 col-md-6">{{ filtro_form.os_codigo.label(class="form-label") }}{{ filtro_form.os_codigo(class="form-control", placeholder="Número da OS") }}</div>
+      <div class="col-lg-3 col-md-6"><label class="form-label">Busca (empresa / OS / CNPJ)</label>{{ filtro_form.cliente(class="form-control", placeholder="Digite para buscar") }}</div>
+      <div class="col-lg-3 col-md-6"><label class="form-label">Período</label><div class="d-flex gap-2">{{ filtro_form.data_inicial(class="form-control", placeholder="De") }}{{ filtro_form.data_final(class="form-control", placeholder="Até") }}</div></div>
+      <div class="col-lg-3 col-md-6 d-flex justify-content-end gap-2">
+        <button class="btn btn-link text-muted" type="reset" onclick="resetFilters()">Limpar</button>
+        <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Buscar</button>
+        <button class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#modalNova"><i class="bi bi-plus-lg"></i></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card assist-card position-relative">
+  <div id="table-loading" class="loading-overlay d-none">
+    <div class="spinner-border text-primary" role="status"></div>
+  </div>
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="mb-0">Ordens de Serviço</h6>
+      <span id="results-count" class="text-muted small">Carregando...</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table align-middle assist-table">
+        <thead>
+          <tr><th>Status</th><th>Empresa / CNPJ</th><th>Dados</th><th>Criado por</th><th>Datas</th><th>Anexos</th><th class="text-end">Ações</th></tr>
+        </thead>
+        <tbody id="assist-table-body">
+          <tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></td></tr>
+        </tbody>
+      </table>
+
+      <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+        <div id="pagination-info" class="text-muted small"></div>
+        <div id="pagination-controls"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Alerta de Tarefas Vencidas -->
+<div class="modal sollus-modal fade" id="overdueTasksModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-danger">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Aten&ccedil;&atilde;o: Tarefas Vencidas</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Existem tarefas vencidas ou próximas do vencimento no seu departamento:</p>
+        <ul class="list-group" id="overdue-tasks-list"></ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include "admin/assistencia/modals.html" %}
+
+{% set _role = (current_user.tipo or session.get('tipo', ''))|lower %}
+{% set _can_delete = _role in ['admin', 'gestor'] %}
+
+<div class="modal sollus-modal fade" id="assistDeleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Excluir OS</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">Deseja realmente excluir esta OS? Essa ação não pode ser desfeita.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <form method="post" id="assistDeleteForm">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-danger">Excluir</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_ENDPOINT = "{{ api_endpoint }}";
+const DEFAULT_STATUS = "{{ default_status }}";
+const DEFAULT_STATUS_GROUP = "{{ current_group }}";
+const DEFAULT_FABRICA_SCOPE = "{{ request.args.get('fabrica_scope', '') }}";
+const DEFAULT_ORCAMENTO_STATUS = "{{ orcamento_filter or '' }}";
+const STATUS_LABEL_MAP = {{ status_label_map|tojson }};
+const CAN_DELETE = {{ 'true' if _can_delete else 'false' }};
+let currentData = { items: [], pagination: {}, status_counts: [] };
+let overdueShown = false;
+const assistTaskMap = new Map();
+
+async function loadDashboard(page = 1) {
+    const form = document.getElementById('filter-form');
+    const formData = new FormData(form);
+    const params = new URLSearchParams(formData);
+    params.set('page', page);
+
+    document.getElementById('table-loading').classList.remove('d-none');
+
+      try {
+          const response = await fetch(`${API_ENDPOINT}?${params.toString()}`);
+          const data = await response.json();
+          currentData = data;
+          renderTable(data.items);
+          updateStatusAlerts(data.status_counts);
+          renderPagination(data.pagination);
+          checkOverdue(data.items);
+      } catch (error) {
+          console.error('Erro ao carregar dashboard:', error);
+          document.getElementById('assist-table-body').innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Erro ao carregar dados.</td></tr>';
+    } finally {
+        document.getElementById('table-loading').classList.add('d-none');
+    }
+}
+
+function renderTable(items) {
+    const tbody = document.getElementById('assist-table-body');
+    assistTaskMap.clear();
+    if (!items || items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Nenhuma OS encontrada.</td></tr>';
+        document.getElementById('results-count').textContent = '0 resultados';
+        return;
+    }
+
+    document.getElementById('results-count').textContent = `${items.length} de ${currentData.pagination.total} resultados`;
+
+    tbody.innerHTML = items.map(task => {
+        const statusKey = task.status || 'Entrada';
+        const statusLabel = STATUS_LABEL_MAP[statusKey] || statusKey;
+        const dueLabel = getDueLabel(task.due_days);
+        assistTaskMap.set(String(task.id), task);
+
+        return `
+            <tr data-status="${statusKey}" data-task-id="${task.id}">
+              <td>
+                <div class="status-badges">
+                  <span class="badge-status" data-status="${statusKey}">${statusLabel}</span>
+                  <span class="due-pill ${task.due_class || 'muted'}"><i class="bi bi-hourglass-split"></i> ${dueLabel}</span>
+                </div>
+              </td>
+              <td>
+                <div class="fw-bold">${task.nome}</div>
+                <div class="text-muted small">${task.cnpj || '-'}</div>
+                <div class="assist-meta"><span class="label">Unidade:</span>${task.unidade_label || task.unidade || '-'}</div>
+                <div class="assist-meta"><span class="label">Depto:</span>${task.departamento_label || task.departamento_responsavel || '-'}</div>
+                ${task.usuário_designado ? `<div class="assist-meta"><span class="label">Técnico:</span>${task.usuário_designado}</div>` : ''}
+              </td>
+              <td style="min-width:260px;">
+                <div class="assist-chip"><i class="bi bi-upc-scan"></i>OS ${task.os}</div>
+                <div class="assist-chip"><i class="bi bi-shield-check"></i>${task.contrato === 'sim' ? 'Com contrato' : 'Sem contrato'}</div>
+                ${task.orçamento ? `<div class="assist-chip"><i class="bi bi-clipboard-data"></i>${task.orçamento}</div>` : ''}
+                <div class="log-note mt-2"><strong>Entrada:</strong> ${task.descricao || 'Sem descrição'}${task.atualizações ? `<br><strong>Atualizações:</strong> ${task.atualizações}` : ''}</div>
+              </td>
+              <td>
+                <div class="fw-semibold">${task.criado_por || '-'}</div>
+              </td>
+              <td>
+                <div class="assist-meta"><span class="label">Entrada:</span>${task.data_criacao ? task.data_criacao.substring(0,10) : '-'}</div>
+                <div class="assist-meta"><span class="label">Limite:</span>${task.data_fim ? task.data_fim.substring(0,10) : '-'}</div>
+                <div class="assist-meta"><span class="label">Envio fábrica:</span>${task.data_envio ? task.data_envio.substring(0,10) : '-'}</div>
+                <div class="assist-meta"><span class="label">Retorno:</span>${task.data_retorno ? task.data_retorno.substring(0,10) : '-'}</div>
+              </td>
+              <td>
+                ${renderAnexos(task)}
+                ${task.resposta_name ? `<div class="mt-2"><a class="btn btn-outline-success btn-sm" href="/assistencia/resposta/${task.id}/download"><i class="bi bi-download"></i> OS sa\u00edda</a></div>` : ''}
+              </td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm assist-actions">
+                  <button type="button" class="btn btn-outline-secondary" data-bs-toggle="tooltip" data-bs-placement="top" title="Ver detalhes" onclick='openModal("detalhes", ${JSON.stringify(task).replace(/'/g, "&apos;")})'><i class="bi bi-eye"></i></button>
+                  <button type="button" class="btn btn-outline-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Editar OS" onclick='openModal("editar", ${JSON.stringify(task).replace(/'/g, "&apos;")})'><i class="bi bi-pencil"></i></button>
+                  <button type="button" class="btn btn-outline-warning" data-bs-toggle="tooltip" data-bs-placement="top" title="Enviar para fábrica" onclick='openModal("fabrica", ${JSON.stringify(task).replace(/'/g, "&apos;")})'><i class="bi bi-building-gear"></i></button>
+                  <button type="button" class="btn btn-outline-success" data-bs-toggle="tooltip" data-bs-placement="top" title="Anexar resposta" onclick='openModal("resposta", ${JSON.stringify(task).replace(/'/g, "&apos;")})'><i class="bi bi-paperclip"></i></button>
+                  ${CAN_DELETE ? `<button type="button" class="btn btn-outline-danger" data-bs-toggle="tooltip" data-bs-placement="top" title="Excluir OS" data-delete-url="/assistencia/${task.id}/excluir"><i class="bi bi-trash"></i></button>` : ''}
+                </div>
+              </td>
+            </tr>
+        `;
+    }).join('');
+    initTooltips(tbody);
+    bindDeleteButtons(tbody);
+}
+
+  function getDueLabel(days) {
+      if (days === null || days === undefined) return 'Sem prazo';
+      if (days < 0) return `${Math.abs(days)}d em atraso`;
+      if (days === 0) return 'vence hoje';
+      if (days === 1) return 'vence em 1 dia';
+      return `vence em ${days} dias`;
+  }
+
+  function canonicalStatusKey(value) {
+      const raw = (value || '').toString().toLowerCase();
+      const normalized = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (normalized.includes('entrada')) return 'entrada';
+      if (normalized.includes('progresso')) return 'em_progresso';
+      if (normalized.includes('aguard')) return 'aguardando';
+      if (normalized.includes('fabrica')) return 'fabrica';
+      if (normalized.includes('conclu')) return 'concluido';
+      if (normalized.includes('devolucao_sem_reparo') || normalized.includes('devolucaosemreparo')) return 'devolucao_sem_reparo';
+      if (normalized.includes('descarte')) return 'descarte';
+      return normalized.replace(/[^a-z0-9]/g, '');
+  }
+
+  function updateStatusAlerts(statusCounts) {
+      const totals = {};
+      const items = Array.isArray(statusCounts) ? statusCounts : [];
+      items.forEach((entry) => {
+          const key = canonicalStatusKey(entry.key || entry.label);
+          if (!key) return;
+          if (!totals[key]) totals[key] = { danger: 0, warning: 0 };
+          totals[key].danger += Number(entry.danger || 0);
+          totals[key].warning += Number(entry.warning || 0);
+      });
+
+      document.querySelectorAll('[data-alert-key]').forEach((link) => {
+          const key = canonicalStatusKey(link.dataset.alertKey);
+          const dot = link.querySelector('[data-alert-dot]');
+          if (!dot || !key) return;
+          const counts = totals[key] || { danger: 0, warning: 0 };
+          dot.classList.add('d-none');
+          dot.classList.remove('danger', 'warning');
+          if (counts.danger > 0) {
+              dot.classList.remove('d-none');
+              dot.classList.add('danger');
+          } else if (counts.warning > 0) {
+              dot.classList.remove('d-none');
+              dot.classList.add('warning');
+          }
+      });
+  }
+
+
+function renderAnexos(task) {
+    const anexos = Array.isArray(task.anexos) ? task.anexos : [];
+    const entradaHtml = anexos.length
+        ? `<ul class="mb-1 list-unstyled">` + anexos.map(a => `
+            <li class="d-flex align-items-center gap-2 mb-1">
+              <span class="small text-muted">${a.nome}</span>
+              <a href="/assistencia/anexos/${a.id}" class="btn btn-outline-primary btn-sm" title="Download">
+                <i class="bi bi-download"></i>
+              </a>
+            </li>
+          `).join('') + `</ul>`
+        : '<div class="text-muted small">Sem OS de entrada</div>';
+    const saidaHtml = task.resposta_name
+        ? `<a href="/assistencia/resposta/${task.id}/download" class="btn btn-outline-success btn-sm" title="Download"><i class="bi bi-download"></i></a>`
+        : '<span class="text-muted small">Sem OS de sa\u00edda</span>';
+    return `
+      <div class="small"><strong>OS de entrada</strong></div>
+      ${entradaHtml}
+      <div class="small mt-1"><strong>OS de sa\u00edda:</strong> ${saidaHtml}</div>
+    `;
+}
+
+function initTooltips(container) {
+    if (!window.bootstrap || !window.bootstrap.Tooltip) return;
+    const scope = container || document;
+    scope.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
+        if (window.bootstrap.Tooltip.getInstance(el)) return;
+        new window.bootstrap.Tooltip(el);
+    });
+}
+
+function bindDeleteButtons(container) {
+    if (!CAN_DELETE) return;
+    const modalEl = document.getElementById('assistDeleteModal');
+    const form = document.getElementById('assistDeleteForm');
+    if (!modalEl || !form || !window.bootstrap) return;
+    const modal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+    container.querySelectorAll('[data-delete-url]').forEach((btn) => {
+        if (btn.dataset.bound === 'true') return;
+        btn.dataset.bound = 'true';
+        btn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const url = btn.getAttribute('data-delete-url');
+            if (!url) return;
+            form.setAttribute('action', url);
+            modal.show();
+        });
+    });
+}
+
+function renderPagination(p) {
+    const info = document.getElementById('pagination-info');
+    const controls = document.getElementById('pagination-controls');
+
+    info.textContent = `P\u00e1gina ${p.page} de ${p.pages} - ${p.total} OS no total`;
+    if (!p.pages || p.pages <= 1) {
+        controls.innerHTML = '';
+        return;
+    }
+
+    const pages = buildPageList(p.page, p.pages);
+    controls.innerHTML = `
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item ${!p.has_prev ? 'disabled' : ''}">
+              <a class="page-link" href="#" data-page="${p.prev_num || 1}">Anterior</a>
+            </li>
+            ${pages.map(pageNum => `
+              <li class="page-item ${pageNum === p.page ? 'active' : ''}">
+                <a class="page-link" href="#" data-page="${pageNum}">${pageNum}</a>
+              </li>
+            `).join('')}
+            <li class="page-item ${!p.has_next ? 'disabled' : ''}">
+              <a class="page-link" href="#" data-page="${p.next_num || p.pages}">Pr\u00f3ximo</a>
+            </li>
+          </ul>
+          <form class="d-flex align-items-center gap-2" id="assist-page-jump">
+            <label class="small text-muted mb-0" for="assist-page-input">P\u00e1gina</label>
+            <input type="number" min="1" class="form-control form-control-sm" id="assist-page-input" placeholder="P\u00e1gina">
+            <button class="btn btn-outline-secondary btn-sm" type="submit">Ir</button>
+          </form>
+        </div>
+    `;
+    controls.querySelectorAll('a[data-page]').forEach(link => {
+        link.addEventListener('click', event => {
+            event.preventDefault();
+            if (link.closest('.disabled')) return;
+            const page = parseInt(link.dataset.page, 10);
+            if (!Number.isNaN(page)) loadDashboard(page);
+        });
+    });
+    const jumpForm = controls.querySelector('#assist-page-jump');
+    const jumpInput = controls.querySelector('#assist-page-input');
+    if (jumpInput) {
+        jumpInput.max = p.pages;
+        jumpInput.value = p.page;
+    }
+    if (jumpForm && jumpInput) {
+        jumpForm.addEventListener('submit', event => {
+            event.preventDefault();
+            const page = parseInt(jumpInput.value, 10);
+            if (!Number.isNaN(page)) loadDashboard(page);
+        });
+    }
+}
+
+function buildPageList(current, total) {
+    const pages = [];
+    const candidates = [1, current, current + 1, current + 2, current + 3, total];
+    candidates.forEach(page => {
+        if (page >= 1 && page <= total && !pages.includes(page)) {
+            pages.push(page);
+        }
+    });
+    return pages;
+}
+
+function setStatus(status) {
+    document.getElementById('filter-status').value = status;
+    const groupField = document.getElementById('filter-status-group');
+    const fabricaField = document.getElementById('filter-fabrica-scope');
+    const orcamentoField = document.getElementById('filter-orcamento-status');
+    if (groupField) groupField.value = '';
+    if (fabricaField) fabricaField.value = '';
+    if (orcamentoField) orcamentoField.value = '';
+    loadDashboard(1);
+}
+
+function resetFilters() {
+    document.getElementById('filter-form').reset();
+    document.getElementById('filter-status').value = DEFAULT_STATUS;
+    const groupField = document.getElementById('filter-status-group');
+    const fabricaField = document.getElementById('filter-fabrica-scope');
+    const orcamentoField = document.getElementById('filter-orcamento-status');
+    if (groupField) groupField.value = DEFAULT_STATUS_GROUP;
+    if (fabricaField) fabricaField.value = DEFAULT_FABRICA_SCOPE;
+    if (orcamentoField) orcamentoField.value = DEFAULT_ORCAMENTO_STATUS;
+    loadDashboard(1);
+}
+
+function initAssistTabMenu() {
+    const buttons = Array.from(document.querySelectorAll('[data-assist-menu-button]'));
+    const menus = Array.from(document.querySelectorAll('[data-assist-menu]'));
+    if (!buttons.length || !menus.length) return;
+
+    const closeMenus = () => {
+        menus.forEach((menu) => menu.classList.add('d-none'));
+    };
+
+    const toggleMenu = (group) => {
+        menus.forEach((menu) => {
+            const shouldOpen = menu.dataset.assistMenu === group;
+            menu.classList.toggle('d-none', !shouldOpen);
+        });
+    };
+
+    buttons.forEach((btn) => {
+        btn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const group = btn.dataset.assistMenuButton;
+            const menu = menus.find((item) => item.dataset.assistMenu === group);
+            if (!menu) return;
+            if (menu.classList.contains('d-none')) {
+                closeMenus();
+                toggleMenu(group);
+            } else {
+                closeMenus();
+            }
+        });
+    });
+    menus.forEach((menu) => {
+        menu.addEventListener('click', (event) => {
+            const link = event.target.closest('a');
+            if (link) closeMenus();
+        });
+    });
+
+    document.addEventListener('click', (event) => {
+        if (event.target.closest('[data-assist-menu-wrapper]')) return;
+        closeMenus();
+    });
+}
+function openModal(type, task) {
+    const modalId = {
+        detalhes: 'modalDetalhes',
+        editar: 'modalEditar',
+        fabrica: 'modalFabrica',
+        resposta: 'modalResposta'
+    }[type];
+    const modalEl = document.getElementById(modalId);
+    if (!modalEl || !window.bootstrap) return;
+
+    const setValue = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value ?? '';
+    };
+
+    if (type === 'detalhes') {
+        const body = document.getElementById('detalhes-body');
+        if (body) {
+            body.innerHTML = `
+                <div class="row">
+                  <div class="col-md-6 mb-2"><strong>Cliente:</strong> ${task.nome || '-'}</div>
+                  <div class="col-md-6 mb-2"><strong>CNPJ:</strong> ${task.cnpj || '-'}</div>
+                  <div class="col-md-6 mb-2"><strong>OS:</strong> ${task.os || '-'}</div>
+                  <div class="col-md-6 mb-2"><strong>Status:</strong> ${task.status || '-'}</div>
+                  <div class="col-md-6 mb-2"><strong>Departamento:</strong> ${task.departamento_label || task.departamento_responsavel || '-'}</div>
+                  <div class="col-12 mb-3"><strong>Descricao:</strong><p class="text-muted bg-light p-2 rounded">${task.descricao || 'Sem descricao'}</p></div>
+                  <div class="col-12 mb-3"><strong>Atualizacoes:</strong><p class="text-muted bg-light p-2 rounded">${task.atualizacoes || 'Nenhuma atualizacao'}</p></div>
+                  <div class="col-md-6 mb-2"><strong>Data Entrada:</strong> ${task.data_criacao ? task.data_criacao.substring(0,10) : '-'}</div>
+                  <div class="col-md-6 mb-2"><strong>Previsao Fim:</strong> ${task.data_fim ? task.data_fim.substring(0,10) : '-'}</div>
+                </div>
+            `;
+        }
+    } else if (type === 'editar') {
+        const form = document.getElementById('edit-form');
+        if (form) form.action = `/assistencia/${task.id}/editar`;
+        setValue('edit-tarefa-id', task.id);
+        setValue('edit-nome', task.nome);
+        setValue('edit-status', task.status);
+        setValue('edit-cnpj', task.cnpj || '');
+        setValue('edit-atualizacoes', '');
+        setValue('edit-orcamento', task.orcamento || '');
+        setValue('edit-cep', task.cep || '');
+        setValue('edit-bairro', task.bairro || '');
+        setValue('edit-unidade', task.unidade || '');
+        setValue('edit-departamento', task.departamento_responsavel || '');
+        setValue('edit-usuario', task.usuario_designado || '');
+        setValue('edit-tipo-entrada', task.tipo_entrada || '');
+        setValue('edit-tipo-atendimento', task.tipo_atendimento || '');
+        setValue('edit-contrato', task.contrato || '');
+        setValue('edit-os-codigo', task.os || '');
+        setValue('edit-descricao', task.descricao || '');
+        setValue('edit-notificacao', task.notificacao || 'nao');
+        if (task.data_criacao) setValue('edit-data-criacao', task.data_criacao.substring(0, 10));
+        if (task.data_fim) setValue('edit-data-fim', task.data_fim.substring(0, 10));
+    } else if (type === 'fabrica') {
+        const form = document.getElementById('fabrica-form');
+        if (form) form.action = `/assistencia/${task.id}/fabrica`;
+        setValue('fabrica-id', task.id);
+    } else if (type === 'resposta') {
+        const form = document.getElementById('resposta-form');
+        if (form) form.action = `/assistencia/${task.id}/resposta`;
+        setValue('resposta-id', task.id);
+    }
+
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+
+function checkOverdue(items) {
+    if (overdueShown) return;
+    const overdue = items.filter(t => t.due_class === 'danger' || t.due_class === 'warning');
+    if (overdue.length > 0) {
+        const list = document.getElementById('overdue-tasks-list');
+        list.innerHTML = overdue.map(t => `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span><strong>${t.nome}</strong> (OS: ${t.os})</span>
+              <span class="badge ${t.due_class === 'danger' ? 'bg-danger' : 'bg-warning'} rounded-pill">${getDueLabel(t.due_days)}</span>
+            </li>
+        `).join('');
+        new bootstrap.Modal(document.getElementById('overdueTasksModal')).show();
+        overdueShown = true;
+    }
+}
+
+document.getElementById('filter-form').addEventListener('submit', e => {
+    e.preventDefault();
+    loadDashboard(1);
+});
+
+const assistTableBody = document.getElementById('assist-table-body');
+if (assistTableBody) {
+    assistTableBody.addEventListener('click', event => {
+        if (event.target.closest('a, button, input, select, textarea, form, .btn, .btn-group, .assist-actions')) return;
+        const row = event.target.closest('tr[data-task-id]');
+        if (!row) return;
+        const task = assistTaskMap.get(row.getAttribute('data-task-id'));
+        if (!task) return;
+        openModal('detalhes', task);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initAssistTabMenu();
+    loadDashboard(1);
+});
+</script>
+
+{% endblock %}

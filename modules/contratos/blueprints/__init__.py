@@ -1,0 +1,1 @@
+"""Contratos blueprints package."""

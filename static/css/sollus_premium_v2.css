@@ -1,0 +1,226 @@
+/* ==============================================================================
+   SOLLUS CONNECTED - PREMIUM DESIGN SYSTEM V2 (VISUAL IMPROVEMENTS)
+   SAFE VERSION — Sem transform/backdrop-filter que interferem com Bootstrap Modal.
+   Elevação via box-shadow apenas.
+   ============================================================================== */
+
+/* --- 1. Card Elevation & Hover Micro-Interactions (somente box-shadow, sem transform) --- */
+.card,
+.stat-card,
+.admin-card,
+.dashboard-card,
+.info-card,
+.metric-card {
+  transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s ease !important;
+  border-radius: 12px !important;
+}
+
+.card:hover,
+.stat-card:hover,
+.admin-card:hover,
+.dashboard-card:hover,
+.info-card:hover,
+.metric-card:hover {
+  /* SEM transform: translateY — evita criar stacking context que quebra position:fixed do modal */
+  box-shadow: 0 14px 28px -6px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(13, 110, 253, 0.08) !important;
+}
+
+/* Cards dentro de modal não devem ter nenhum efeito hover de elevação */
+.modal .card:hover,
+.modal-body .card:hover,
+.modal-content .card:hover {
+  box-shadow: none !important;
+}
+
+/* --- 2. Live Status Pulse Indicators --- */
+.status-pulse {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+  position: relative;
+}
+
+.status-pulse.online,
+.status-pulse.success,
+.status-pulse.ativo {
+  background-color: #10b981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulse-green 2s infinite;
+}
+
+.status-pulse.warning,
+.status-pulse.pending,
+.status-pulse.pendente {
+  background-color: #f59e0b;
+  box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+  animation: pulse-yellow 2s infinite;
+}
+
+.status-pulse.danger,
+.status-pulse.offline,
+.status-pulse.atrasado,
+.status-pulse.inativo {
+  background-color: #ef4444;
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+@keyframes pulse-yellow {
+  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* --- 3. Modal: apenas border-radius e box-shadow (SEM backdrop-filter nem transform) --- */
+/* backdrop-filter no .modal-backdrop causa flickering severo no Chrome/Edge
+   quando combinado com animações Bootstrap. Usamos só opacidade. */
+.modal-backdrop.show {
+  background-color: rgba(15, 23, 42, 0.5) !important;
+}
+
+.modal-content {
+  /* SEM backdrop-filter — cria novo stacking context e causa artefatos visuais */
+  background: #fff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.2) !important;
+}
+
+html[data-theme="dark"] .modal-content {
+  background: #1e2535 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+}
+
+/* --- 4. Soft Modern Badges --- */
+.badge {
+  border-radius: 8px !important;
+  padding: 5px 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.2px;
+}
+
+.badge-soft-primary,
+.bg-primary-soft {
+  background-color: rgba(13, 110, 253, 0.12) !important;
+  color: #0b5ed7 !important;
+  border: 1px solid rgba(13, 110, 253, 0.2) !important;
+}
+
+.badge-soft-success,
+.bg-success-soft {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+  color: #059669 !important;
+  border: 1px solid rgba(16, 185, 129, 0.2) !important;
+}
+
+.badge-soft-warning,
+.bg-warning-soft {
+  background-color: rgba(245, 158, 11, 0.12) !important;
+  color: #d97706 !important;
+  border: 1px solid rgba(245, 158, 11, 0.2) !important;
+}
+
+.badge-soft-danger,
+.bg-danger-soft {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+  color: #dc2626 !important;
+  border: 1px solid rgba(239, 68, 68, 0.2) !important;
+}
+
+.badge-soft-secondary,
+.bg-secondary-soft {
+  background-color: rgba(100, 116, 139, 0.12) !important;
+  color: #475569 !important;
+  border: 1px solid rgba(100, 116, 139, 0.2) !important;
+}
+
+/* --- 5. Buttons — SEM transform:translateY (causa stacking context) --- */
+.btn {
+  border-radius: 8px !important;
+  transition: box-shadow 0.2s ease, opacity 0.2s ease !important;
+}
+
+.btn-primary,
+.btn-gradient-primary {
+  background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.22);
+}
+
+.btn-primary:hover,
+.btn-gradient-primary:hover {
+  /* SEM transform — box-shadow mais intenso como indicador de hover */
+  box-shadow: 0 6px 20px rgba(13, 110, 253, 0.38) !important;
+  opacity: 0.95;
+}
+
+.btn-success,
+.btn-gradient-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.22);
+}
+
+.btn-success:hover,
+.btn-gradient-success:hover {
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.38) !important;
+  opacity: 0.95;
+}
+
+/* --- 6. Smooth Table Row Hover (SEM transform) --- */
+.table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(13, 110, 253, 0.03) !important;
+}
+
+/* --- 7. Toast Slide-In Animation (SEM transform no keyframe = sem stacking context) --- */
+.alert-dismissible {
+  animation: fadeInAlert 0.3s ease forwards;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.1) !important;
+}
+
+@keyframes fadeInAlert {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* --- 8. Skeleton Shimmer Loader --- */
+.skeleton-loader {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 37%, #f1f5f9 63%);
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}

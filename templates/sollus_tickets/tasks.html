@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Tarefas Sollus Tickets{% endblock %}
+
+{% block content %}
+{{ page_hero(
+  title='Tarefas internas',
+  subtitle='Acompanhe tarefas vinculadas aos tickets.',
+  eyebrow='Sollus Tickets',
+  stats=[{'label': 'Tarefas', 'value': tasks|length}]
+) }}
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <form class="row g-2 align-items-end" method="get">
+      <div class="col-12 col-md-3">
+        <label class="form-label small text-muted">Status</label>
+        <select class="form-select" name="status">
+          <option value="" {{ 'selected' if not filters.status else '' }}>Todos</option>
+          <option value="open" {{ 'selected' if filters.status == 'open' else '' }}>Abertas</option>
+          <option value="closed" {{ 'selected' if filters.status == 'closed' else '' }}>Fechadas</option>
+        </select>
+      </div>
+      <div class="col-12 col-md-4">
+        <label class="form-label small text-muted">Responsavel</label>
+        <select class="form-select" name="assignee_id">
+          <option value="">Todos</option>
+          <option value="me" {{ 'selected' if filters.assignee_id == 'me' else '' }}>Minhas</option>
+          {% for agent in agents %}
+            <option value="{{ agent.id }}" {{ 'selected' if filters.assignee_id == agent.id|string else '' }}>{{ agent.name or agent.email }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-2 d-grid">
+        <button class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Tarefa</th>
+          <th>Ticket</th>
+          <th>Responsavel</th>
+          <th>Status</th>
+          <th>Prazo</th>
+          <th>Atualizada</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for task in tasks %}
+          <tr>
+            <td>
+              <a class="fw-semibold text-decoration-none" href="{{ url_for('sollus_tickets.detail', ticket_id=task.ticket_id) }}">{{ task.number or ('#' ~ task.id) }}</a>
+              <div class="small text-muted">{{ task.title }}</div>
+            </td>
+            <td>{{ task.ticket.number or task.ticket_id if task.ticket else task.ticket_id }}</td>
+            <td>{{ task.assignee.name or task.assignee.email if task.assignee else '-' }}</td>
+            <td><span class="badge text-bg-{{ 'success' if task.status_key == 'closed' else 'primary' }}">{{ task.status_key }}</span></td>
+            <td class="text-muted small">{{ task.due_at | local('%d/%m/%Y %H:%M') if task.due_at else '-' }}</td>
+            <td class="text-muted small">{{ task.updated_at | local('%d/%m/%Y %H:%M') if task.updated_at else '-' }}</td>
+          </tr>
+        {% else %}
+          <tr><td class="text-center text-muted py-4" colspan="6">Nenhuma tarefa encontrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

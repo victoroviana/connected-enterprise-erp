@@ -1,0 +1,259 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Crachá | Extratos{% endblock %}
+
+{% block head %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+  .extratos-card{border:0;border-radius:1.1rem;box-shadow:0 10px 24px rgba(15,35,58,.08);}
+  .extratos-card .card-header{background:transparent;border:0;padding:1.25rem 1.5rem 0;}
+  .extratos-card .card-body{padding:1.25rem 1.5rem 1.5rem;}
+  .extratos-table th,.extratos-table td{vertical-align:middle;}
+  .extratos-table thead{background:#f3f6fb;text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:#5a6782;}
+  .extratos-table tbody tr:hover{background:rgba(148,163,184,.08);}
+  .extratos-table .btn{white-space:nowrap;}
+  html[data-theme="dark"] .extratos-card{
+    background:#0f172a;
+    border:1px solid rgba(148,163,184,.18);
+  }
+  html[data-theme="dark"] .extratos-table thead{
+    background:rgba(148,163,184,.18);
+    color:#e2e8f0;
+  }
+  html[data-theme="dark"] .extratos-table thead th{
+    color:#e2e8f0;
+  }
+  html[data-theme="dark"] .extratos-table tbody tr:hover{
+    background:rgba(148,163,184,.14);
+  }
+
+  /* Select2 Custom Premium Styling */
+  .select2-container--default .select2-selection--single {
+    display: flex;
+    align-items: center;
+    height: 42px;
+    border-radius: 0.85rem;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background-color: var(--card, #fff);
+    color: var(--text, #000);
+  }
+  .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--text, #000);
+    line-height: normal;
+    padding-left: 0.75rem;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 40px;
+    right: 10px;
+  }
+  .select2-dropdown {
+    background-color: var(--card, #fff);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.85rem;
+    box-shadow: 0 10px 24px rgba(15,35,58,.08);
+  }
+  .select2-container--default .select2-search--dropdown .select2-search__field {
+    background-color: var(--card, #fff);
+    color: var(--text, #000);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.75rem;
+  }
+  .select2-container--default .select2-results__option {
+    color: var(--text, #000);
+    padding: 0.5rem 0.75rem;
+  }
+  .select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: rgba(15, 123, 200, 0.15);
+    color: var(--text, #000);
+  }
+  .select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #0E5DC6 !important;
+    color: #fff !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set hero_stats = [
+  {'label': 'Total', 'value': pagination.total, 'hint': 'extratos'}
+] %}
+{% set hero_help_tips = [
+  'Busque por nome fantasia ou razão social para localizar clientes.',
+  'Acesse lançamentos para registrar entradas e saídas.',
+  'Monitore o saldo atual antes de criar novos registros.'
+] %}
+{% call page_hero(
+  title='Extratos de Crachá'|safe,
+  subtitle='Acompanhe saldo por cliente e produto.',
+  eyebrow='Crachá'|safe,
+  stats=hero_stats,
+  help_tips=hero_help_tips,
+  help_intro='Dicas rápidas para analisar extratos.'
+) %}
+  <div class="page-hero__actions">
+    <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#modalCriarExtrato">
+      <i class="fa-solid fa-plus me-1"></i> Novo extrato
+    </button>
+  </div>
+{% endcall %}
+
+<div class="card extratos-card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-lg-6">
+        <label class="form-label">Nome fantasia / Razão social</label>
+        <input type="text" name="search" class="form-control" value="{{ search_value }}" placeholder="Digite para buscar">
+      </div>
+      <div class="col-lg-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">Buscar</button>
+        <a class="btn btn-outline-secondary w-100" href="{{ url_for('cracha_bp.extratos') }}">Limpar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card extratos-card">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <div>
+      <h2 class="h6 fw-bold mb-1">Registros</h2>
+      <p class="text-muted mb-0">{{ pagination.total }} extrato(s) encontrado(s).</p>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover extratos-table">
+        <thead>
+          <tr>
+            <th>Nome fantasia</th>
+            <th>Razão social</th>
+            <th>Produto</th>
+            <th class="text-end">Saldo atual</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in extratos %}
+          <tr>
+            <td class="fw-semibold">{{ row.nome_fantasia }}</td>
+            <td>{{ row.razao_social }}</td>
+            <td>{{ row.produto }}</td>
+            <td class="text-end">{{ row.saldo }}</td>
+            <td class="text-end">
+              {% if row.can_lancamentos %}
+              <a class="btn btn-outline-primary btn-sm" href="{{ url_for('cracha_bp.extratos_lancamentos', cliente_id=row.idclientes_fk, produto_id=row.idprodutos_fk) }}">
+                <i class="fa-solid fa-pen me-1"></i> Lançamentos
+              </a>
+              {% else %}
+              <span class="text-muted">Sem lançamentos</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not extratos %}
+          <tr>
+            <td colspan="5" class="text-center text-muted py-4">Nenhum extrato encontrado.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <nav class="mt-3">
+      <ul class="pagination justify-content-end mb-0">
+        <li class="page-item {{ 'disabled' if not pagination.has_prev else '' }}">
+          <a class="page-link" href="{{ build_url(page=pagination.prev_num) }}">Anterior</a>
+        </li>
+        {% for p in range(1, pagination.pages + 1) %}
+        {% if p == 1 or p == pagination.pages or (p >= pagination.page - 1 and p <= pagination.page + 1) %}
+        <li class="page-item {{ 'active' if p == pagination.page else '' }}">
+          <a class="page-link" href="{{ build_url(page=p) }}">{{ p }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+        <li class="page-item {{ 'disabled' if not pagination.has_next else '' }}">
+          <a class="page-link" href="{{ build_url(page=pagination.next_num) }}">Próxima</a>
+        </li>
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Modal Criar Extrato -->
+<div class="modal sollus-modal fade" id="modalCriarExtrato" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="border: 0; border-radius: 1.5rem; box-shadow: 0 18px 40px rgba(15,35,58,.08); background: var(--card); color: var(--text);">
+      <div class="modal-header border-0 pb-0" style="padding: 1.5rem 1.5rem 0.5rem;">
+        <h5 class="modal-title fw-bold" style="font-size: 1.25rem;"><i class="fa-solid fa-plus-circle text-primary me-2"></i>Novo extrato</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <form method="post" action="{{ url_for('cracha_bp.extratos_novo') }}">
+        <div class="modal-body" style="padding: 1.5rem;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <label class="form-label small text-muted fw-bold text-uppercase">Cliente</label>
+              <select name="cliente_id" id="selectCliente" class="form-select" required style="width: 100%;">
+                <option value="">Selecione</option>
+                {% for cliente in clientes %}
+                  <option value="{{ cliente.id_pk }}">{{ cliente.nome_fantasia }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-lg-6">
+              <label class="form-label small text-muted fw-bold text-uppercase">Produto</label>
+              <select name="produto_id" id="selectProduto" class="form-select" required style="width: 100%;">
+                <option value="">Selecione</option>
+                {% for produto in produtos %}
+                  <option value="{{ produto.id_pk }}">{{ produto.produto }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-lg-6">
+              <label class="form-label small text-muted fw-bold text-uppercase">Quantidade Inicial</label>
+              <input type="number" name="quantidade" class="form-control" required style="border-radius: 0.85rem; background: var(--card); color: var(--text); border-color: rgba(148,163,184,0.3);">
+            </div>
+            <div class="col-lg-6">
+              <label class="form-label small text-muted fw-bold text-uppercase">Data</label>
+              <input type="date" name="data" id="inputDataExtrato" class="form-control" required style="border-radius: 0.85rem; background: var(--card); color: var(--text); border-color: rgba(148,163,184,0.3);">
+            </div>
+            <div class="col-12">
+              <label class="form-label small text-muted fw-bold text-uppercase">Descrição</label>
+              <input type="text" name="descricao" class="form-control" value="Saldo inicial" required style="border-radius: 0.85rem; background: var(--card); color: var(--text); border-color: rgba(148,163,184,0.3);">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0" style="padding: 0.5rem 1.5rem 1.5rem;">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" style="border-radius: 0.85rem;">Cancelar</button>
+          <button type="submit" class="btn btn-primary" style="border-radius: 0.85rem;">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+  $(document).ready(function() {
+    // Define a data de hoje como padrão se vazia
+    const today = new Date().toISOString().split('T')[0];
+    const dataInput = document.getElementById('inputDataExtrato');
+    if (dataInput && !dataInput.value) {
+      dataInput.value = today;
+    }
+
+    // Inicializa Select2 para Cliente e Produto no modal
+    $('#selectCliente').select2({
+      dropdownParent: $('#modalCriarExtrato')
+    });
+    $('#selectProduto').select2({
+      dropdownParent: $('#modalCriarExtrato')
+    });
+  });
+</script>
+{% endblock %}
+{% endblock %}

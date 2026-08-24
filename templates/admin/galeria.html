@@ -1,0 +1,164 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+
+{% block title %}Galeria{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+  .gallery-admin .upload-card,
+  .gallery-admin .gallery-list-card{
+    border:0;
+    border-radius:1.2rem;
+    box-shadow:0 18px 40px rgba(15,35,58,.08);
+  }
+
+  .gallery-admin .upload-card h5{
+    font-weight:700;
+    margin-bottom:.6rem;
+  }
+
+  .gallery-admin .upload-card .form-text{
+    color:#5a6c84;
+  }
+
+  .gallery-admin .gallery-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+    gap:1rem;
+    margin-top:1.1rem;
+  }
+
+  .gallery-item{
+    background:#f4f7fc;
+    border-radius:1rem;
+    overflow:hidden;
+    box-shadow:0 10px 24px rgba(15,35,58,.08);
+    display:flex;
+    flex-direction:column;
+    height:100%;
+  }
+
+  .gallery-item img{
+    width:100%;
+    height:140px;
+    object-fit:cover;
+    display:block;
+  }
+
+  .gallery-item__footer{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:.5rem;
+    padding:.65rem .75rem;
+    background:#fff;
+  }
+
+  .gallery-item__footer .file-name{
+    font-size:.75rem;
+    color:#5a6c84;
+    max-width:120px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .gallery-empty{
+    background:#f4f7fc;
+    border-radius:1rem;
+    padding:2rem;
+    text-align:center;
+    color:#5a6c84;
+    margin-top:1.2rem;
+  }
+
+  @media (max-width: 767px){
+    .gallery-item img{height:180px;}
+    .gallery-item__footer{flex-direction:column;align-items:flex-start;}
+    .gallery-item__footer .file-name{max-width:100%;}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set images = gallery_images or [] %}
+<div class="gallery-admin py-4">
+  {% set help_tips = [
+    'Use o formulario para adicionar novas fotos ao carrossel da tela inicial.',
+    'Clique em "Remover" para excluir imagens antigas ou duplicadas.',
+    'Evite arquivos muito pesados para manter a home leve.'
+  ] %}
+  {{ page_hero(
+    title='Galeria de fotos',
+    subtitle='Adicione ou remova imagens exibidas no carrossel da home.',
+    eyebrow='Administração',
+    stats=[{'label': 'Fotos salvas', 'value': total_images or images|length, 'hint': 'Atualizadas em tempo real'}],
+    help_tips=help_tips,
+    help_intro='Dicas rápidas para organizar as fotos.'
+  ) }}
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card upload-card">
+        <div class="card-body">
+          <h5>Adicionar fotos</h5>
+          <p class="text-muted small">Use JPG, PNG, WebP ou GIF. As imagens aparecem no carrossel da home.</p>
+          <form method="post" action="{{ url_for('admin_tools_bp.galeria_upload') }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+              <label class="form-label">Selecionar arquivos</label>
+              <input class="form-control" type="file" name="photos" multiple accept="image/jpeg,image/png,image/webp,image/gif">
+              <div class="form-text">Você pode enviar várias fotos de uma vez.</div>
+            </div>
+            <div class="d-grid">
+              <button class="btn btn-primary" type="submit">Enviar fotos</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card upload-card mt-3">
+        <div class="card-body">
+          <h6 class="fw-semibold">Boas práticas</h6>
+          <ul class="text-muted small mb-0">
+            <li>Prefira imagens horizontais para o carrossel.</li>
+            <li>Evite arquivos muito pesados para acelerar o carregamento.</li>
+            <li>Não publique imagens com informações sensíveis.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card gallery-list-card">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <h5 class="mb-0">Fotos cadastradas</h5>
+            <span class="badge bg-primary-subtle text-primary">{{ images|length }}</span>
+          </div>
+          {% if images %}
+          <div class="gallery-grid">
+            {% for filename in images %}
+            <div class="gallery-item">
+              <img src="{{ url_for('serve_fotos', filename=filename) }}" alt="Foto {{ loop.index }}">
+              <div class="gallery-item__footer">
+                <span class="file-name">{{ filename }}</span>
+                <form method="post" action="{{ url_for('admin_tools_bp.galeria_excluir') }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="filename" value="{{ filename }}">
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Remover</button>
+                </form>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="gallery-empty">Nenhuma foto cadastrada ainda.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

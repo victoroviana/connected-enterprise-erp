@@ -1,0 +1,201 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Enviar Atestados | Assistência Técnica{% endblock %}
+
+{% block head %}
+<style>
+  .send-card{border:0;border-radius:1.2rem;box-shadow:0 12px 30px rgba(15,35,58,.08);background:var(--card);}
+  .file-list{max-height:320px;overflow:auto;border:1px solid rgba(148,163,184,.35);border-radius:.9rem;padding:1rem;background:#fff;}
+  .progress{height:22px;}
+  .atestados-tabs{display:flex;gap:.5rem;flex-wrap:wrap;}
+  .atestados-tab-btn{border:1px solid #d0d7e2;background:#f8fafc;font-weight:700;color:#1f2937;display:flex;align-items:center;gap:.35rem;padding:.35rem .75rem;border-radius:999px;transition:all .2s;cursor:pointer;text-decoration:none;}
+  .atestados-tab-btn .count{font-size:.8rem;color:#6b7280;}
+  .atestados-tab-btn.active{background:#0d6efd;color:#fff;border-color:#0d6efd;}
+  .atestados-tab-btn.active .count{color:#e8f1ff;}
+</style>
+{% endblock %}
+
+{% block content %}
+{{ page_hero(
+  title='Enviar atestados',
+  subtitle='Selecione arquivos, defina o mês/ano e acompanhe o progresso de envio.',
+  eyebrow='Assistência técnica'
+) }}
+
+<div class="atestados-tabs mb-3">
+  <a class="atestados-tab-btn {% if active_tab == 'anexos' %}active{% endif %}" href="{{ url_for('atestados_bp.index') }}">
+    Anexos <span class="count">{{ nav_counts.anexos }}</span>
+  </a>
+  <a class="atestados-tab-btn {% if active_tab == 'historico' %}active{% endif %}" href="{{ url_for('atestados_bp.historico_envios') }}">
+    Histórico <span class="count">{{ nav_counts.historico }}</span>
+  </a>
+  <a class="atestados-tab-btn {% if active_tab == 'envios' %}active{% endif %}" href="{{ url_for('atestados_bp.enviar') }}">
+    Envios <span class="count">{{ nav_counts.envios }}</span>
+  </a>
+</div>
+
+<div class="card send-card">
+  <div class="card-body">
+    <form id="enviar-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <label class="form-label">Texto original</label>
+          <input type="text" class="form-control" name="texto_original" value="MES/ANO" readonly>
+        </div>
+        <div class="col-lg-4">
+        <label class="form-label">Novo texto (ex.: SETEMBRO/2024)</label>
+        <input type="text" class="form-control" name="novo_texto" required>
+      </div>
+        <div class="col-lg-4">
+          <label class="form-label">Data limite (ex.: 10/09/2024)</label>
+          <input type="text" class="form-control" name="data_limite" required>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <label class="form-label">Selecionar arquivos</label>
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="select_all">
+          <label class="form-check-label" for="select_all">Selecionar todos</label>
+        </div>
+        <div class="file-list">
+          {% for arquivo in arquivos %}
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="arquivo_ids" value="{{ arquivo.id }}" id="arquivo_{{ arquivo.id }}">
+            <label class="form-check-label" for="arquivo_{{ arquivo.id }}">{{ arquivo.nome }}</label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i> Enviar</button>
+        <a class="btn btn-outline-secondary" href="{{ url_for('atestados_bp.index') }}">Voltar</a>
+      </div>
+    </form>
+
+    <div id="progress-container" class="mt-4" style="display:none;">
+      <div class="progress mb-2">
+        <div id="progress-bar" class="progress-bar" role="progressbar" style="width:0%;">0%</div>
+      </div>
+      <button id="cancel-button" class="btn btn-danger btn-sm">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const selectAll = document.getElementById('select_all');
+  selectAll.addEventListener('change', () => {
+    document.querySelectorAll('input[name="arquivo_ids"]').forEach(cb => cb.checked = selectAll.checked);
+  });
+
+  const csrfToken = (document.querySelector('meta[name="csrf-token"]')||{}).getAttribute
+    ? document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    : '';
+
+  function setFormDisabled(disabled) {
+    document.querySelectorAll('#enviar-form input, #enviar-form button').forEach(el => el.disabled = disabled);
+  }
+
+  function resetProgress() {
+    document.getElementById('progress-container').style.display = 'none';
+    const bar = document.getElementById('progress-bar');
+    bar.style.width = '0%';
+    bar.textContent = '0%';
+    setFormDisabled(false);
+  }
+
+  async function pollProgress(taskId) {
+    try {
+      const res = await fetch(`{{ url_for('atestados_bp.task_status', task_id='__id__') }}`.replace('__id__', taskId));
+      if (!res.ok) throw new Error('Falha ao obter status');
+      const data = await res.json();
+      const bar = document.getElementById('progress-bar');
+      bar.style.width = (data.progress || 0) + '%';
+      bar.textContent = (data.progress || 0) + '%';
+
+      if (data.status === 'completed') {
+        if (data.error) {
+          alert(data.error);
+        } else {
+          alert('Envio concluído com sucesso.');
+        }
+        localStorage.removeItem('atestadosTaskId');
+        window.location.href = '{{ url_for('atestados_bp.enviar') }}';
+      } else if (data.status === 'failed') {
+        alert('Envio falhou: ' + (data.error || 'erro desconhecido'));
+        localStorage.removeItem('atestadosTaskId');
+        resetProgress();
+      } else if (data.status === 'cancelled') {
+        alert('Envio cancelado.');
+        localStorage.removeItem('atestadosTaskId');
+        resetProgress();
+      } else {
+        setTimeout(() => pollProgress(taskId), 1000);
+      }
+    } catch (err) {
+      alert('Erro ao consultar status.');
+      resetProgress();
+    }
+  }
+
+  document.getElementById('enviar-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = document.getElementById('enviar-form');
+    const formData = new FormData(form);
+
+    setFormDisabled(true);
+    document.getElementById('progress-container').style.display = 'block';
+
+    try {
+      const res = await fetch('{{ url_for("atestados_bp.enviar") }}', {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrfToken},
+        body: formData
+      });
+      if (res.status === 202) {
+        const data = await res.json();
+        localStorage.setItem('atestadosTaskId', data.task_id);
+        pollProgress(data.task_id);
+      } else {
+        const txt = await res.text();
+        alert('Erro ao iniciar envio: ' + txt);
+        resetProgress();
+      }
+    } catch (err) {
+      alert('Erro na comunicação com o servidor.');
+      resetProgress();
+    }
+  });
+
+  document.getElementById('cancel-button').addEventListener('click', async () => {
+    const taskId = localStorage.getItem('atestadosTaskId');
+    if (!taskId) return;
+    try {
+      const res = await fetch(`{{ url_for('atestados_bp.cancel_task', task_id='__id__') }}`.replace('__id__', taskId), {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrfToken}
+      });
+      if (res.ok) {
+        alert('Envio cancelado.');
+        localStorage.removeItem('atestadosTaskId');
+        resetProgress();
+      } else {
+        alert('Erro ao cancelar a tarefa.');
+      }
+    } catch (err) {
+        alert('Erro na comunicação com o servidor.');
+    }
+  });
+
+  window.addEventListener('load', () => {
+    const taskId = localStorage.getItem('atestadosTaskId');
+    if (taskId) {
+      setFormDisabled(true);
+      document.getElementById('progress-container').style.display = 'block';
+      pollProgress(taskId);
+    }
+  });
+</script>
+{% endblock %}

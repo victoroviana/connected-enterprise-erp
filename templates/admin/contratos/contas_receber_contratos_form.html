@@ -1,0 +1,78 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Contratos | Contas a Receber{% endblock %}
+
+{% block head %}
+<style>
+  .conta-form-card{border:0;border-radius:1.1rem;box-shadow:0 10px 24px rgba(15,35,58,.08);}
+  .conta-form-card .card-body{padding:1.5rem;}
+  .conta-form-card .form-label span{color:#ef4444;}
+</style>
+{% endblock %}
+
+{% block content %}
+{% call page_hero(
+  title='Contas a Receber (Contratos)'|safe,
+  subtitle=subtitle|safe,
+  eyebrow='Contratos'|safe
+) %}
+  <div class="page-hero__actions">
+    <a class="btn btn-light" href="{{ back_url }}">
+      <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+{% endcall %}
+
+<div class="card conta-form-card">
+  <div class="card-body">
+    <form method="post" action="{{ action_url }}" class="row g-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="txtID" value="{{ conta.id_pk if conta else '' }}">
+      <div class="col-md-6">
+        <label class="form-label"><span>*</span> Cliente</label>
+        <select class="form-select" id="selCliente" name="selCliente" required>
+          <option value=""></option>
+          {% for cliente in clientes %}
+          <option value="{{ cliente.id_pk }}" {{ 'selected' if conta and conta.idclientes_fk == cliente.id_pk else '' }}>{{ cliente.nome_fantasia }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label"><span>*</span> Nº Contrato</label>
+        <select class="form-select" id="selNumeroContratos" name="selNumeroContratos" data-selected="{{ conta.idcontrato_locacao_manutencao_fk if conta else '' }}" required>
+          <option value=""></option>
+          {% for contrato in contratos %}
+          <option value="{{ contrato.id_pk }}" {{ 'selected' if conta and conta.idcontrato_locacao_manutencao_fk == contrato.id_pk else '' }}>{{ contrato.contrato_numero }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label"><span>*</span> Data vencimento</label>
+        <input type="text" class="form-control" name="txtDataVencimento" value="{{ conta.data_vencimento_br if conta else '' }}" placeholder="dd/mm/aaaa" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label"><span>*</span> Valor</label>
+        <input type="text" class="form-control" name="txtValor" value="{{ conta.valor_cobrado if conta else '' }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Data pagamento</label>
+        <input type="text" class="form-control" name="txtDataPagamento" value="{{ conta.data_pagamento_br if conta else '' }}" placeholder="dd/mm/aaaa">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Valor pago</label>
+        <input type="text" class="form-control" name="txtValorPago" value="{{ conta.valor_pago if conta else '' }}">
+      </div>
+      <div class="col-12 d-flex justify-content-end gap-2">
+        <button type="submit" class="btn btn-primary" name="save" value="1">Salvar</button>
+        {% if allow_more %}
+        <button type="submit" class="btn btn-outline-primary" name="save_more" value="1">Salvar +</button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/contratos_contas_receber.js') }}" defer></script>
+{% endblock %}

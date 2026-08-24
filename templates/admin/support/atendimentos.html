@@ -1,0 +1,483 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+
+{% block title %}Atendimentos Suporte · Sollus Connected{% endblock %}
+
+{% block head %}
+<style>
+  .support-card { border: 0; border-radius: 1.5rem; box-shadow: 0 18px 40px rgba(15,35,58,.08); background:#fff; }
+  .support-card__head { padding: 1.5rem 1.5rem 0; }
+  .support-card__body { padding: 1.5rem; }
+  .support-nav .nav-link { border-radius: 999px; font-weight: 600; cursor: pointer; }
+  .support-nav .nav-link .count { font-size: .75rem; margin-left: .35rem; opacity: .85; }
+  .support-table thead { background: #f1f4fb; text-transform: uppercase; font-size: .7rem; letter-spacing: .08rem; color: #5a6782; }
+  .support-table tbody tr { transition: background .15s ease; }
+  .support-table tbody tr:hover { background: #f7f9ff; }
+  .status-badge { font-size: .75rem; border-radius: 999px; padding: .25rem .8rem; font-weight: 600; }
+  .support-row { cursor: pointer; }
+  .support-type { display: flex; align-items: center; gap: .4rem; font-weight: 600; }
+  .support-type i { color: var(--blue-700); }
+  .support-cell-label { font-size: .65rem; text-transform: uppercase; letter-spacing: .04em; color: #94a3b8; font-weight: 600; }
+  .support-dual-stack { display: flex; flex-direction: column; gap: .9rem; }
+  .support-cell-block { display: flex; flex-direction: column; gap: .35rem; }
+  .loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; z-index: 10; border-radius: 1.5rem; }
+  .agenda-alert { border-left: 4px solid #f59e0b; background: #fff7ed; }
+  .agenda-alert__icon { width: 42px; height: 42px; border-radius: 12px; background: #fdba74; color: #7c2d12; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; }
+  .agenda-alert__title { font-weight: 700; color: #7c2d12; }
+  .agenda-alert__subtitle { color: #9a3412; font-size: .9rem; }
+  .agenda-alert__list { display: flex; flex-wrap: wrap; gap: .6rem; }
+  .agenda-alert__chip { background: #fff; border: 1px solid #fed7aa; border-radius: .85rem; padding: .6rem .8rem; min-width: 200px; text-decoration: none; color: inherit; display: block; transition: transform .15s ease, box-shadow .15s ease; }
+  .agenda-alert__chip:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(15,35,58,.12); }
+  .agenda-alert__name { font-weight: 700; color: #7c2d12; }
+  .agenda-alert__meta { font-size: .85rem; color: #9a3412; }
+  .agenda-alert__obs { font-size: .82rem; color: #7c2d12; margin-top: .25rem; }
+  html[data-theme="dark"] .agenda-alert { background: rgba(120, 53, 15, .18); border-left-color: #f97316; }
+  html[data-theme="dark"] .agenda-alert__chip { background: rgba(15, 23, 42, .65); border-color: rgba(251, 146, 60, .35); }
+  html[data-theme="dark"] .agenda-alert__title { color: #fdba74; }
+  html[data-theme="dark"] .agenda-alert__subtitle { color: rgba(253, 186, 116, .8); }
+  html[data-theme="dark"] .agenda-alert__name { color: #fdba74; }
+  html[data-theme="dark"] .agenda-alert__meta,
+  html[data-theme="dark"] .agenda-alert__obs { color: rgba(253, 186, 116, .75); }
+
+  .overdue-item {
+    background: var(--card);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+    margin-bottom: 0.5rem;
+  }
+  html[data-theme="dark"] .overdue-item {
+    background: rgba(30, 41, 59, 0.5);
+    border-color: rgba(148, 163, 184, 0.15);
+  }
+  .overdue-title {
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--text);
+  }
+  .overdue-os {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .overdue-badge {
+    background-color: #ef4444;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.78rem;
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    white-space: nowrap;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{{ page_hero(
+    title='Atendimentos Suporte',
+    subtitle='Organize e acompanhe os atendimentos em tempo real, atribuindo responsáveis e acompanhando o status de cada cliente.',
+    eyebrow='Suporte',
+    stats=[],
+    help_tips=[
+      'Use as abas de status para navegar entre filas; cada aba traz o contador de atendimentos naquela etapa.',
+      'Filtre por tecnico, data de entrada, OS ou empresa para localizar um atendimento especifico rapidamente.',
+      'Clique em uma linha para abrir detalhes, atribuir responsavel, registrar andamento ou finalizar o atendimento.'
+    ],
+    help_intro='Dicas especificas para acompanhar atendimentos.'
+) }}
+
+{% if agenda_absences %}
+<div class="card support-card mb-3 agenda-alert">
+  <div class="support-card__body">
+    <div class="d-flex align-items-start gap-3 flex-wrap">
+      <div class="agenda-alert__icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+      <div>
+        <div class="agenda-alert__title">Aten&ccedil;&atilde;o: t&eacute;cnicos indispon&iacute;veis hoje ({{ agenda_date }})</div>
+        <div class="agenda-alert__subtitle">Informa&ccedil;&otilde;es registradas na agenda t&eacute;cnica.</div>
+      </div>
+    </div>
+    <div class="agenda-alert__list mt-3">
+      {% for item in agenda_absences %}
+      <a class="agenda-alert__chip" href="{{ item.agenda_url }}">
+        <div class="agenda-alert__name">{{ item.tecnico }}</div>
+        <div class="agenda-alert__meta">{{ item.periodo }} &middot; {{ item.unidade }}</div>
+        {% if item.obs_short %}<div class="agenda-alert__obs">{{ item.obs_short }}</div>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+
+
+<div class="card support-card mb-4">
+  <div class="support-card__head">
+    <ul class="nav nav-pills support-nav flex-wrap gap-2" id="status-tabs">
+      {% for key, label in status_labels.items() %}
+      <li class="nav-item">
+        <a class="nav-link" data-status="{{ key }}" onclick="setStatus('{{ key }}')">
+          {{ label }} <span class="count" id="count-{{ key }}">(0)</span>
+        </a>
+      </li>
+      {% endfor %}
+      <li class="nav-item ms-auto">
+        <a class="nav-link" data-status="todos" onclick="setStatus('todos')">
+          Todos <span class="count" id="count-todos">(0)</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+  <div class="support-card__body">
+    <form class="row g-3 align-items-end" id="filter-form">
+      <input type="hidden" name="status" id="filter-status" value="entrada">
+      <div class="col-12 col-md-3">
+        <label class="form-label">Técnico responsável</label>
+        {{ form.usuario_designado(class="form-select") }}
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label">Data de entrada</label>
+        {{ form.data_entrada(class="form-control", placeholder="AAAA-MM-DD") }}
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label">OS de entrada</label>
+        {{ form.os_entrada(class="form-control", placeholder="Número da OS") }}
+      </div>
+      <div class="col-12 col-md-3">
+        <label class="form-label">Empresa</label>
+        {{ form.empresa(class="form-control", placeholder="Cliente") }}
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Aplicar filtros</button>
+      </div>
+      <div class="col-auto">
+        <button type="button" class="btn btn-link text-muted" onclick="resetFilters()">Limpar</button>
+      </div>
+      <div class="col-auto ms-auto">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoAtendimento">
+          <i class="bi bi-plus-lg"></i> Novo atendimento
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card support-card position-relative">
+  <div id="table-loading" class="loading-overlay d-none">
+    <div class="spinner-border text-primary" role="status"></div>
+  </div>
+  <div class="support-card__body">
+    <div class="table-responsive">
+      <table class="table align-middle support-table">
+        <thead>
+          <tr>
+            <th>Empresa</th>
+            <th class="text-nowrap">Datas de Atendimento</th>
+            <th class="text-nowrap">Tipo Atendimento</th>
+            <th>Status</th>
+            <th class="w-25">Descrição</th>
+            <th>Ordens de Serviço</th>
+            <th>Técnico Responsável</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="atendimentos-table-body">
+          <tr><td colspan="8" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <nav class="mt-3" aria-label="Paginação de atendimentos">
+      <div class="d-flex justify-content-center align-items-center gap-2 flex-wrap">
+        <ul class="pagination mb-0 justify-content-center" id="atendimentos-pagination"></ul>
+        <form class="d-flex align-items-center gap-2" id="atendimentos-page-jump">
+          <label class="small text-muted mb-0" for="atendimentos-page-input">Página</label>
+          <input type="number" min="1" class="form-control form-control-sm" id="atendimentos-page-input" placeholder="Página">
+          <button class="btn btn-outline-secondary btn-sm" type="submit">Ir</button>
+        </form>
+      </div>
+    </nav>
+  </div>
+</div>
+
+<!-- Modal de Atendimentos Atrasados -->
+{% if overdue_calls %}
+<div class="modal sollus-modal fade" id="overdueSupportModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Atenção: Tarefas Vencidas</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">Existem tarefas vencidas ou próximas do vencimento no seu departamento:</p>
+        <div style="max-height: 350px; overflow-y: auto; padding-right: 5px;">
+          <div class="d-flex flex-column gap-2">
+            {% for call in overdue_calls %}
+            <div class="overdue-item">
+              <div class="pe-2">
+                <span class="overdue-title">{{ call.cliente | upper }}</span>
+                <span class="overdue-os d-block mt-1">(OS: {{ call.os }})</span>
+              </div>
+              <span class="overdue-badge">
+                {{ call.delay_days }}d em atraso
+              </span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% include 'admin/support/_modals.html' %}
+
+<script>
+const API_ATENDIMENTOS = "{{ api_endpoint }}";
+const CSRF_TOKEN = "{{ csrf_token() }}";
+const jumpForm = document.getElementById('atendimentos-page-jump');
+const jumpInput = document.getElementById('atendimentos-page-input');
+
+async function loadAtendimentos(page = 1) {
+    const form = document.getElementById('filter-form');
+    const formData = new FormData(form);
+    const params = new URLSearchParams(formData);
+    params.set('page', page);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetId = urlParams.get('atendimento_id');
+    if (targetId) {
+        params.set('atendimento_id', targetId);
+    }
+
+    document.getElementById('table-loading').classList.remove('d-none');
+
+    try {
+        const response = await fetch(`${API_ATENDIMENTOS}?${params.toString()}`);
+        const data = await response.json();
+
+        renderTable(data.items);
+        renderPagination(data.pagination);
+        updateCounters(data.counters);
+        updateActiveTab(data.status_key);
+
+        if (targetId) {
+            const btn = document.querySelector(`button.js-edit-support[data-entry-id="${targetId}"]`);
+            if (btn) {
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+                btn.click();
+            }
+        }
+
+    } catch (error) {
+        console.error('Erro ao carregar atendimentos:', error);
+        document.getElementById('atendimentos-table-body').innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">Erro ao carregar dados.</td></tr>';
+    } finally {
+        document.getElementById('table-loading').classList.add('d-none');
+    }
+}
+
+function renderTable(items) {
+    const tbody = document.getElementById('atendimentos-table-body');
+    if (!items || items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-5">Nenhum atendimento encontrado.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = items.map(item => {
+        const tecnicoLabel = item.tecnico || item.usuario_designado_label || 'Não atribuído';
+        const badgeClass = {
+            'Entrada': 'bg-primary-subtle text-primary',
+            'Atencao': 'bg-warning-subtle text-warning',
+            'Concluído': 'bg-success-subtle text-success'
+        }[item.status] || 'bg-secondary-subtle text-secondary';
+
+        return `
+            <tr class="support-row" data-entry-id="${item.id}" data-details-url="${item.json_url}">
+              <td>
+                <div class="fw-semibold">${item.cliente}</div>
+                ${item.cnpj ? `<div class="small text-muted">CNPJ ${item.cnpj}</div>` : ''}
+                ${item.observacoes_alerta ? `<div class="badge bg-danger-subtle text-danger mt-1">Alerta</div>` : ''}
+              </td>
+              <td>
+                <div class="support-dual-stack">
+                  <div class="support-cell-block">
+                    <span class="support-cell-label">Agendada</span>
+                    <span class="text-nowrap">${item.data_entrada ? new Date(item.data_entrada).toLocaleString('pt-BR') : '—'}</span>
+                  </div>
+                  <div class="support-cell-block">
+                    <span class="support-cell-label">Realizada</span>
+                    <span class="text-nowrap">${item.data_atendimento ? new Date(item.data_atendimento).toLocaleString('pt-BR') : '—'}</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="support-type">
+                  <i class="${item.tipo_icon}" aria-hidden="true"></i>
+                  <span>${item.tipo_atendimento || '—'}</span>
+                </span>
+              </td>
+              <td><span class="status-badge ${badgeClass}">${item.status_label}</span></td>
+              <td>
+                <div class="small text-muted">${(item.resumo_atendimento || item.descricao || 'Sem descrição').substring(0, 160)}...</div>
+                ${item.observacoes ? `<div class="small mt-1"><strong>Obs:</strong> ${item.observacoes.substring(0, 140)}...</div>` : ''}
+              </td>
+              <td>
+                <div class="support-dual-stack">
+                  <div class="support-cell-block">
+                    <span class="support-cell-label">Entrada</span>
+                    <div class="fw-semibold">${item.os_entrada || '—'}</div>
+                    ${item.download_entrada ? `<div class="mt-1"><a class="btn btn-link btn-sm p-0" href="${item.download_entrada}"><i class="bi bi-paperclip"></i> Arquivo</a></div>` : ''}
+                  </div>
+                  <div class="support-cell-block">
+                    <span class="support-cell-label">Saída</span>
+                    <div class="fw-semibold">${item.os_saida || '—'}</div>
+                    ${item.download_saida ? `<div class="mt-1"><a class="btn btn-link btn-sm p-0" href="${item.download_saida}"><i class="bi bi-paperclip"></i> Arquivo</a></div>` : ''}
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="fw-semibold">${tecnicoLabel}</div>
+                ${item.unit_code ? `<div class="small text-muted">${item.unit_code}</div>` : ''}
+              </td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                  <button type="button"
+                          class="btn btn-outline-primary js-edit-support"
+                          data-entry-id="${item.id}"
+                          data-fetch-url="${item.json_url}"
+                          data-update-url="${item.update_url}"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalEditarAtendimento">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button type="button"
+                          class="btn btn-outline-info"
+                          data-logs-url="${item.logs_url}"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalLogsAtendimento">
+                    <i class="bi bi-clock-history"></i>
+                  </button>
+                  <button type="button"
+                          class="btn btn-outline-warning"
+                          data-entry-id="${item.id}"
+                          data-current-tech="${item.tecnico_id || 0}"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalDesignarTecnico">
+                    <i class="bi bi-person-plus"></i>
+                  </button>
+                  <form method="post" action="/admin/suporte/atendimentos/${item.id}/excluir" class="d-inline" onsubmit="return confirm('Confirma a exclusão?');">
+                    <input type="hidden" name="csrf_token" value="${CSRF_TOKEN}">
+                    <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderPagination(p) {
+    const el = document.getElementById('atendimentos-pagination');
+    if (p.pages <= 1) {
+        el.innerHTML = '';
+        if (jumpForm) jumpForm.classList.add('d-none');
+        return;
+    }
+    const pages = buildPageList(p.page, p.pages);
+    let html = `
+        <li class="page-item ${!p.has_prev ? 'disabled' : ''}">
+          <a class="page-link" href="#" data-page="${p.prev_num || 1}">Anterior</a>
+        </li>
+    `;
+    pages.forEach(pageNum => {
+        html += `
+          <li class="page-item ${pageNum === p.page ? 'active' : ''}">
+            <a class="page-link" href="#" data-page="${pageNum}">${pageNum}</a>
+          </li>
+        `;
+    });
+    html += `
+        <li class="page-item ${!p.has_next ? 'disabled' : ''}">
+          <a class="page-link" href="#" data-page="${p.next_num || p.pages}">Próximo</a>
+        </li>
+    `;
+    el.innerHTML = html;
+    el.querySelectorAll('a[data-page]').forEach(link => {
+        link.addEventListener('click', (event) => {
+            event.preventDefault();
+            if (link.closest('.disabled')) return;
+            const page = parseInt(link.dataset.page, 10);
+            if (!Number.isNaN(page)) loadAtendimentos(page);
+        });
+    });
+    if (jumpForm && jumpInput) {
+        jumpForm.classList.remove('d-none');
+        jumpInput.max = p.pages;
+        jumpInput.value = p.page;
+    }
+}
+
+function buildPageList(current, total) {
+    const pages = [];
+    const candidates = [1, current, current + 1, current + 2, current + 3, total];
+    candidates.forEach(page => {
+        if (page >= 1 && page <= total && !pages.includes(page)) {
+            pages.push(page);
+        }
+    });
+    return pages;
+}
+
+function updateCounters(counters) {
+    for (const [key, val] of Object.entries(counters)) {
+        const el = document.getElementById(`count-${key}`);
+        if (el) el.textContent = `(${val})`;
+    }
+}
+
+function updateActiveTab(status) {
+    document.querySelectorAll('#status-tabs .nav-link').forEach(link => {
+        link.classList.toggle('active', link.dataset.status === status);
+    });
+}
+
+function setStatus(status) {
+    document.getElementById('filter-status').value = status;
+    loadAtendimentos(1);
+}
+
+function resetFilters() {
+    document.getElementById('filter-form').reset();
+    loadAtendimentos(1);
+}
+
+document.getElementById('filter-form').addEventListener('submit', e => { e.preventDefault(); loadAtendimentos(1); });
+if (jumpForm && jumpInput) {
+    jumpForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const page = parseInt(jumpInput.value, 10);
+        if (!Number.isNaN(page)) loadAtendimentos(page);
+    });
+}
+document.addEventListener('DOMContentLoaded', () => {
+    loadAtendimentos(1);
+    {% if overdue_calls %}
+    const modalEl = document.getElementById('overdueSupportModal');
+    if (modalEl && window.bootstrap) {
+        new bootstrap.Modal(modalEl).show();
+    }
+    {% endif %}
+});
+</script>
+<script src="{{ url_for('static', filename='js/admin_support.js') }}" defer></script>
+{% endblock %}
+

@@ -1,0 +1,884 @@
+{% extends "layout.html" %}
+
+
+
+{% from "components/page_hero.html" import page_hero %}
+
+
+
+{% block title %}Parâmetros da Proposta{% endblock %}
+
+
+
+
+
+
+
+{% block head %}
+
+
+
+{{ super() }}
+
+
+
+<style>
+  .params-wrapper{
+    padding-bottom:2rem;
+  }
+
+  .params-card,
+  .params-table-card,
+  .system-selector,
+  .system-form.card{
+    border:0;
+    border-radius:1.25rem;
+    box-shadow:0 12px 30px rgba(15,35,58,.08);
+    background: var(--card);
+    color: var(--text);
+  }
+
+  .params-card .card-header,
+  .params-table-card .card-header,
+  .system-form .card-header{
+    background:transparent;
+    border:0;
+    padding:1.5rem 1.5rem 0;
+  }
+
+  .params-card .card-body,
+  .params-table-card .card-body,
+  .system-form .card-body{
+    padding:1.5rem 1.5rem 1.75rem;
+  }
+
+  .params-form label,
+  .system-selector label,
+  .system-form label{
+    font-size:.75rem;
+    font-weight:600;
+    text-transform:uppercase;
+    color:var(--muted);
+    letter-spacing:.08rem;
+  }
+
+  .params-form .form-control,
+  .params-form .form-select,
+  .system-selector .form-select,
+  .system-form .form-control{
+    border-radius:.85rem;
+    border-color:rgba(148,163,184,0.3);
+    padding:.75rem 1rem;
+    background: var(--card);
+    color: var(--text);
+  }
+
+  .params-form .form-control:focus,
+  .params-form .form-select:focus,
+  .system-selector .form-select:focus,
+  .system-form .form-control:focus{
+    box-shadow:0 0 0 .2rem rgba(14,93,198,.15);
+    border-color:var(--blue-700);
+    background: var(--card);
+    color: var(--text);
+  }
+
+  .params-form .btn,
+  .system-form .btn{
+    border-radius:.85rem;
+    font-weight:600;
+  }
+
+  .params-table{
+    table-layout:fixed;
+    width:100%;
+    color: var(--text);
+  }
+
+  .params-table thead{
+    background:rgba(148,163,184,0.1);
+    text-transform:uppercase;
+    font-size:.7rem;
+    letter-spacing:.08rem;
+    color:var(--muted);
+  }
+
+  .params-table th,
+  .params-table td{
+    white-space:normal;
+    word-break:break-word;
+    border-bottom: 1px solid rgba(148,163,184,0.1);
+  }
+
+  .params-table tbody tr{
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+
+  .params-table tbody tr:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 20px rgba(15,35,58,.08);
+    background: rgba(148,163,184,0.05);
+  }
+
+  .system-selector .card-body{
+    padding:1.5rem;
+  }
+
+  .system-form .card-header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:1rem;
+    flex-wrap:wrap;
+  }
+
+  .system-form .card-footer{
+    background:transparent;
+    border:0;
+    padding:0 1.5rem 1.5rem;
+  }
+
+  .system-form .badge{
+    font-size:.65rem;
+    letter-spacing:.06rem;
+  }
+
+  .system-delete-btn{
+    white-space:nowrap;
+  }
+
+  @media (max-width: 991px){
+    .params-card .card-header,
+    .params-table-card .card-header,
+    .system-form .card-header{
+      padding:1.35rem 1.25rem 0;
+    }
+
+    .params-card .card-body,
+    .params-table-card .card-body,
+    .system-form .card-body{
+      padding:1.35rem 1.25rem 1.6rem;
+    }
+
+    .system-form .card-footer{
+      padding:0 1.25rem 1.25rem;
+    }
+  }
+</style>
+
+
+
+{% endblock %}
+
+
+
+
+
+
+
+{% block content %}
+
+
+
+{% set friendly = {
+
+
+
+  'PAGTO_EQUIP'  : 'Condições de pagamento (equipamento)',
+
+
+
+  'PRAZO_ENTREGA': 'Prazo de entrega',
+
+
+
+  'FRETE'        : 'Frete',
+
+
+
+  'VALIDADE'     : 'Validade da proposta',
+
+
+
+  'GARANTIA_EQ'  : 'Garantia do equipamento',
+
+
+
+  'GARANTIA_SYS' : 'Garantia do sistema',
+
+
+
+  'SISTEMA_PONTO': 'Sistema de ponto'
+
+
+
+} %}
+
+
+
+
+
+
+
+<div class="params-wrapper py-4">
+
+
+
+  {% set parameter_stats = [
+
+
+
+    {'label': 'Parâmetros ativos', 'value': parametros|length, 'hint': 'Itens que aparecem nos documentos'}
+
+
+
+  ] %}
+  {% set param_help_tips = [
+    'Use o formulário da esquerda para escolher a categoria e cadastrar o texto que entrará automaticamente nas propostas (pagamento, prazos, frete, garantias etc.).',
+    'Na tabela, revise quem criou cada parâmetro e use a lixeira para remover entradas desatualizadas antes de gerar novos documentos.',
+    'Na seção "Sistema de ponto", selecione o kit e edite descrições/imagens específicas; salve cada formulário antes de trocar de kit.'
+  ] %}
+
+
+
+  {{ page_hero(
+
+
+
+      title='Parâmetros da proposta',
+
+
+
+      subtitle='Configure textos padrão, condições comerciais e materiais utilizados na geração das propostas comerciais.',
+
+
+
+      eyebrow='Propostas',
+
+
+
+      stats=parameter_stats,
+      help_tips=param_help_tips,
+      help_intro='Guia rápido para configurar os parâmetros usados nas propostas.'
+
+
+
+  ) }}
+
+
+
+
+
+
+
+  <div class="row g-4">
+
+
+
+    <div class="col-12">
+
+
+
+      <div class="card params-table-card h-100">
+
+
+
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+
+
+
+          <div>
+
+
+
+            <h2 class="h5 fw-bold mb-1">Parametros cadastrados</h2>
+
+
+
+            <p class="text-muted mb-0">Remova entradas que não fazem mais sentido para manter as propostas atualizadas.</p>
+
+
+
+          </div>
+
+
+
+          <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNovoParametro">Cadastrar novo parametro</button>
+
+
+
+        </div>
+
+
+
+        <div class="card-body">
+
+
+
+          <div class="table-responsive">
+
+
+
+            <table class="table align-middle mb-0 params-table">
+
+
+
+              <thead>
+
+
+
+                <tr>
+
+
+
+                  <th>Categoria</th>
+
+
+
+                  <th>Valor</th>
+
+
+
+                  <th>Criado por</th>
+
+
+
+                  <th class="text-end">Ações</th>
+
+
+
+                </tr>
+
+
+
+              </thead>
+
+
+
+              <tbody>
+
+
+
+                {% for p in parametros %}
+
+
+
+                <tr>
+
+
+
+                  <td class="text-capitalize">{{ friendly.get(p.category.name, p.category.name.replace('_', ' ').title()) }}</td>
+
+
+
+                  <td>{{ p.label }}</td>
+
+
+
+                  <td>{{ p.created_by.nome_completo if p.created_by else '-' }}</td>
+
+
+
+                  <td class="text-end">
+
+
+
+                    <form method="POST" action="{{ url_for('parametros_bp.deletar_parametro', id=p.id) }}" class="d-inline" onsubmit="return confirm('Excluir {{ p.label }}?')">
+
+
+
+                      {{ form.csrf_token }}
+
+
+
+                      <button class="btn btn-outline-danger btn-sm">Excluir</button>
+
+
+
+                    </form>
+
+
+
+                  </td>
+
+
+
+                </tr>
+
+
+
+                {% endfor %}
+
+
+
+              </tbody>
+
+
+
+            </table>
+
+
+
+          </div>
+
+
+
+        </div>
+
+
+
+      </div>
+
+
+
+    </div>
+
+
+
+  </div>
+
+
+
+
+
+
+
+  <div class="card system-selector mt-4">
+
+
+
+    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+
+
+
+      <div>
+
+
+
+        <h2 class="h5 fw-bold mb-1">Editar sistema de ponto</h2>
+
+
+
+        <p class="text-muted mb-0">Selecione o sistema abaixo para ajustar descrição e imagem.</p>
+
+
+
+      </div>
+
+
+
+      <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNovoSistema">Adicionar sistema de ponto</button>
+
+
+
+    </div>
+
+
+
+    <div class="card-body">
+
+
+
+      <div class="row g-3 align-items-end">
+
+
+
+        <div class="col-md-6 col-lg-4">
+
+
+
+          <label for="systemOptionSelect" class="form-label">Sistema de ponto</label>
+
+
+
+          <select id="systemOptionSelect" class="form-select">
+
+            {% for card in system_cards %}
+
+              <option value="{{ card.option.key }}">{{ card.option.label }}</option>
+
+            {% endfor %}
+
+          </select>
+          {% if system_cards %}
+          <form id="systemDeleteForm"
+                method="POST"
+                action="{{ url_for('parametros_bp.deletar_sistema_de_ponto', key=system_cards[0].option.key) }}"
+                data-action-template="{{ url_for('parametros_bp.deletar_sistema_de_ponto', key='__KEY__') }}"
+                class="mt-2">
+            {{ form.csrf_token }}
+            <button class="btn btn-outline-danger btn-sm system-delete-btn"
+                    onclick="return confirm('Excluir o sistema selecionado?')">
+              Excluir sistema selecionado
+            </button>
+          </form>
+          {% endif %}
+
+
+
+        </div>
+
+
+
+        <div class="col-md-6 col-lg-4">
+
+
+
+          <p class="small text-muted mb-0">Escolha qual kit deseja editar. O conteúdo é exibido na proposta sempre que o cliente escolhe o sistema correspondente.</p>
+
+
+
+        </div>
+
+
+
+      </div>
+
+
+
+    </div>
+
+
+
+  </div>
+
+
+
+
+
+
+
+  <div id="systemFormsWrapper" class="mt-4 d-grid gap-4">
+
+
+
+    {% for card in system_cards %}
+
+
+
+    <form class="card system-form d-none" method="POST" enctype="multipart/form-data" action="{{ url_for('parametros_bp.atualizar_sistema_de_ponto', key=card.option.key) }}" data-system="{{ card.option.key }}">
+
+
+
+      {{ card.form.hidden_tag() }}
+
+
+
+      <div class="card-header">
+
+
+
+        <div>
+
+
+
+          <strong>{{ card.option.label }}</strong>
+
+
+
+          <div class="small text-muted">Chave: {{ card.option.key }}</div>
+
+
+
+        </div>
+
+
+
+        <span class="badge rounded-pill text-bg-primary">Kit configurável</span>
+
+
+
+      </div>
+
+
+
+      <div class="card-body">
+
+
+
+        {% if card.image_url %}
+
+
+
+        <div class="mb-3 text-center">
+
+
+
+          <img src="{{ card.image_url }}" alt="Imagem do sistema" class="img-fluid rounded" style="max-height:180px;">
+
+
+
+          <div class="form-text">
+
+
+
+            {% if card.uses_default_image %}Imagem padrão.{% else %}Imagem personalizada em uso.{% endif %}
+
+
+
+          </div>
+
+
+
+        </div>
+
+
+
+        {% endif %}
+
+
+
+        <div class="mb-3">
+
+
+
+          <label class="form-label" for="{{ card.form.description.id }}">Descrição apresentada na proposta</label>
+
+
+
+          {{ card.form.description(class="form-control", rows=4, placeholder="Texto exibido no corpo da proposta") }}
+
+
+
+        </div>
+
+
+
+        <div class="mb-3">
+
+
+
+          <label class="form-label" for="{{ card.form.image.id }}">Imagem ilustrativa</label>
+
+
+
+          {{ card.form.image(class="form-control") }}
+
+
+
+          <div class="form-text">Formatos aceitos: PNG, JPG, JPEG ou WEBP. Utilize 1600 x 900 para melhor resultado.</div>
+
+
+
+        </div>
+
+
+
+        <div class="form-check mb-0">
+
+
+
+          {{ card.form.remove_image(class="form-check-input", id=card.option.key ~ '_remove') }}
+
+
+
+          <label class="form-check-label" for="{{ card.option.key }}_remove">Remover imagem personalizada e voltar à imagem padrão</label>
+
+
+
+        </div>
+
+
+
+      </div>
+
+
+
+      <div class="card-footer text-end">
+
+
+
+        {{ card.form.submit(class="btn btn-primary") }}
+
+
+
+      </div>
+
+
+
+    </form>
+
+
+
+    {% endfor %}
+
+
+
+  </div>
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="modal sollus-modal fade" id="modalNovoParametro" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('parametros_bp.listar_parametros') }}" class="params-form">
+        <div class="modal-header">
+          <h5 class="modal-title">Cadastrar novo parametro</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          {{ form.csrf_token }}
+          <div class="mb-3">
+            <label for="modal_category" class="form-label">Categoria</label>
+            <select id="modal_category" name="category" class="form-select">
+              {% for enum_name, label in friendly.items() if enum_name != 'SISTEMA_PONTO' %}
+                <option value="{{ enum_name }}" {% if form.category.data == enum_name %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            {{ form.label.label(class="form-label") }}
+            {{ form.label(class="form-control", placeholder="Ex.: 30 dias") }}
+          </div>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+          <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+          {{ form.submit(class="btn btn-primary") }}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalNovoSistema" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('parametros_bp.criar_sistema_de_ponto') }}" class="params-form" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title">Adicionar sistema de ponto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          {{ system_create_form.csrf_token }}
+          <div class="row g-3">
+            <div class="col-md-6">
+              {{ system_create_form.label.label(class="form-label") }}
+              {{ system_create_form.label(class="form-control", placeholder="Ex.: Sollus Access") }}
+            </div>
+            <div class="col-md-6">
+              {{ system_create_form.key.label(class="form-label") }}
+              {{ system_create_form.key(class="form-control", placeholder="Opcional. Ex.: sollus_access") }}
+              <div class="form-text">Se vazio, a chave será gerada a partir do nome.</div>
+            </div>
+          </div>
+          <div class="mt-3">
+            {{ system_create_form.description.label(class="form-label") }}
+            {{ system_create_form.description(class="form-control", rows=3, placeholder="Descrição exibida no corpo da proposta") }}
+          </div>
+          <div class="mt-3">
+            {{ system_create_form.image.label(class="form-label") }}
+            {{ system_create_form.image(class="form-control") }}
+            <div class="form-text">Formatos aceitos: PNG, JPG, JPEG ou WEBP.</div>
+          </div>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+          <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+          {{ system_create_form.submit(class="btn btn-primary") }}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+
+
+
+  document.addEventListener('DOMContentLoaded', function() {
+
+
+
+    var select = document.getElementById('systemOptionSelect');
+
+
+
+    var forms = document.querySelectorAll('.system-form');
+
+
+    var deleteForm = document.getElementById('systemDeleteForm');
+
+
+
+    function updateSystemForms() {
+
+
+
+      var value = select ? select.value : null;
+
+
+
+      forms.forEach(function(form) {
+
+
+
+        form.classList.toggle('d-none', form.getAttribute('data-system') !== value);
+
+
+
+      });
+
+
+
+      if (deleteForm && value) {
+
+
+
+        var template = deleteForm.dataset.actionTemplate || '';
+
+
+
+        deleteForm.setAttribute('action', template.replace('__KEY__', value));
+
+
+
+      }
+
+
+
+    }
+
+
+
+    if (select) {
+
+
+
+      select.addEventListener('change', updateSystemForms);
+
+
+
+      updateSystemForms();
+
+
+
+    }
+
+
+
+  });
+
+
+
+</script>
+
+
+
+
+
+
+
+{% endblock %}
+
+
+
+
+
+

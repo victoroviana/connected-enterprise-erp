@@ -1,0 +1,425 @@
+{% extends "layout.html" %}
+
+{% block title %}Auditoria · Sollus Connected{% endblock %}
+
+{% from "components/audit_modal.html" import audit_payload, audit_button_attrs %}
+
+{% block head %}
+{{ super() }}
+<style>
+  .audit-json-trigger { display:inline-flex; align-items:center; justify-content:center; gap:.35rem; font-weight:600; text-decoration:none; white-space:nowrap; }
+  .audit-json-trigger .bi { font-size:1rem; }
+  .audit-json-modal-context { font-size:.85rem; color:#64748b; margin-bottom:.75rem; }
+  .audit-json-modal { color:#0f172a; }
+  .audit-json-modal .text-muted { color:#64748b !important; }
+  .audit-table { table-layout:fixed; width:100%; }
+  .audit-table th, .audit-table td { word-break:break-word; }
+  .audit-json-modal__grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem; }
+  .audit-json-block { background:#f8fafc; border:1px solid rgba(15,29,55,.1); border-radius:.75rem; padding:.75rem; transition:border-color .2s, box-shadow .2s; }
+  .audit-json-block.is-focused { border-color:rgba(14,93,198,.45); box-shadow:0 0 0 2px rgba(14,93,198,.15); }
+  .audit-json-block__header { font-size:.85rem; font-weight:600; color:#0f172a; display:flex; align-items:center; justify-content:space-between; margin-bottom:.5rem; }
+  .audit-json-modal pre { margin:0; font-size:.82rem; font-family:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,monospace; white-space:pre; max-height:60vh; overflow:auto; background:#0b1d3720; border-radius:.5rem; padding:.75rem; }
+  .audit-diff-summary { border:1px solid rgba(14,93,198,.15); background:#e8f1ff; border-radius:.75rem; padding:.75rem 1rem; margin-bottom:1rem; }
+  .audit-diff-summary__header { display:flex; align-items:center; justify-content:space-between; font-size:.85rem; margin-bottom:.5rem; color:#0f172a; }
+  .audit-diff-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.35rem; font-size:.8rem; }
+  .audit-diff-item { display:flex; align-items:center; gap:.35rem; padding:.25rem .35rem; border-radius:.4rem; background:#fff; border:1px solid rgba(15,29,55,.06); flex-wrap:wrap; }
+  .audit-diff-item__key { font-weight:600; color:#0f172a; }
+  .audit-diff-item__values { display:flex; flex-wrap:wrap; gap:.35rem; color:#475569; }
+  .audit-diff-item__badge { font-size:.7rem; text-transform:uppercase; letter-spacing:.04em; }
+  .audit-diff-item code { font-family:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,monospace; font-size:.75rem; background:rgba(15,29,55,.08); border-radius:.3rem; padding:.1rem .35rem; white-space:pre-wrap; }
+  .audit-diff-item.is-added { border-color:rgba(22,163,74,.25); background:#ecfdf5; }
+  .audit-diff-item.is-removed { border-color:rgba(239,68,68,.25); background:#fef2f2; }
+  .audit-diff-item.is-changed { border-color:rgba(245,158,11,.35); background:#fffbeb; }
+
+  /* Estilos para a Visualização Amigável de Auditoria */
+  .audit-friendly-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .audit-friendly-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-bottom: 0.5rem;
+    background: #ffffff;
+    border: 1px solid rgba(15,29,55,.08);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  }
+  .audit-friendly-table td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.82rem;
+    vertical-align: middle;
+  }
+  .audit-friendly-table tr:last-child td {
+    border-bottom: 0;
+  }
+  .audit-friendly-table tr:hover {
+    background-color: #f8fafc;
+  }
+  .audit-friendly-label {
+    font-weight: 600;
+    color: #475569;
+    width: 38%;
+    background: #f8fafc;
+    border-right: 1px solid #f1f5f9;
+  }
+  .audit-friendly-value {
+    color: #0f172a;
+    word-break: break-word;
+  }
+  .audit-friendly-card {
+    background: #ffffff;
+    border: 1px solid rgba(15,29,55,.08);
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+  .audit-friendly-card-header {
+    background: #f8fafc;
+    border-bottom: 1px solid rgba(15,29,55,.08);
+    padding: 0.45rem 0.75rem;
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 0.8rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .audit-friendly-card-body {
+    padding: 0.6rem;
+  }
+  
+  /* Cores de Destaque para Alterações */
+  .audit-row-changed {
+    background-color: #fffbeb !important;
+  }
+  .audit-row-changed td {
+    border-bottom-color: #fde68a !important;
+  }
+  .audit-row-changed .audit-friendly-label {
+    background-color: #fef3c7 !important;
+    color: #b45309 !important;
+    border-right-color: #fde68a !important;
+  }
+  
+  .audit-row-added {
+    background-color: #f0fdf4 !important;
+  }
+  .audit-row-added td {
+    border-bottom-color: #bbf7d0 !important;
+  }
+  .audit-row-added .audit-friendly-label {
+    background-color: #dcfce7 !important;
+    color: #15803d !important;
+    border-right-color: #bbf7d0 !important;
+  }
+  
+  .audit-row-removed {
+    background-color: #fef2f2 !important;
+  }
+  .audit-row-removed td {
+    border-bottom-color: #fecaca !important;
+  }
+  .audit-row-removed .audit-friendly-label {
+    background-color: #fee2e2 !important;
+    color: #b91c1c !important;
+    border-right-color: #fecaca !important;
+  }
+</style>
+<script src="{{ url_for('static', filename='js/audit_diff.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3">
+  <div>
+    <h1 class="h3 mb-1">Auditoria</h1>
+    <p class="text-muted mb-0">Acompanhe inclusões, edições e exclusões em todos os módulos.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-success" href="{{ url_for('audit.export', **filters) }}">
+      <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+    </a>
+    <a class="btn btn-outline-primary" href="{{ url_for('audit.api_list', limit=100) }}" target="_blank" rel="noreferrer">
+      <i class="bi bi-braces"></i> API
+    </a>
+  </div>
+</div>
+
+<form class="row g-2 g-md-3 mb-4" method="get">
+  <div class="col-12 col-sm-6 col-md-3">
+    <label class="form-label mb-1">Entidade</label>
+    <input class="form-control" name="entity_type" value="{{ filters.entity_type }}" placeholder="Ex.: Proposal, Ticket">
+  </div>
+  <div class="col-12 col-sm-6 col-md-3">
+    <label class="form-label mb-1">Ação</label>
+    <input class="form-control" name="action" value="{{ filters.action }}" placeholder="create, update, delete">
+  </div>
+  <div class="col-12 col-sm-6 col-md-3">
+    <label class="form-label mb-1">Tipo de operação</label>
+    <select class="form-select" name="operation">
+      <option value="">Todas</option>
+      {% for group in action_groups %}
+        <option value="{{ group.key }}" {% if filters.operation == group.key %}selected{% endif %}>{{ group.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-12 col-sm-6 col-md-3">
+    <label class="form-label mb-1">Autor (id, e-mail ou nome)</label>
+    <input class="form-control" name="actor" value="{{ filters.actor }}">
+  </div>
+  <div class="col-12 col-sm-8 col-md-6">
+    <label class="form-label mb-1">Mensagem / texto livre</label>
+    <input class="form-control" name="q" value="{{ filters.q }}" placeholder="Buscar em mensagens e detalhes">
+  </div>
+  <div class="col-6 col-sm-4 col-md-2">
+    <label class="form-label mb-1">Por página</label>
+    <input type="number" min="5" max="100" class="form-control" name="per_page" value="{{ filters.per_page }}">
+  </div>
+  <div class="col-12 col-sm-8 col-md-4 d-flex align-items-end gap-2">
+    <button class="btn btn-primary flex-fill"><i class="bi bi-search"></i> Buscar</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('audit.page') }}">Limpar</a>
+  </div>
+</form>
+
+<div class="table-responsive shadow-sm rounded-4 border bg-white">
+  <table class="table table-sm align-middle mb-0 audit-table">
+    <thead class="table-light">
+      <tr>
+        <th style="min-width: 140px; width: 160px;">Quando</th>
+        <th style="min-width: 140px;">Autor</th>
+        <th style="min-width: 130px;">Entidade</th>
+        <th style="min-width: 150px;">Ação</th>
+        <th style="min-width: 240px;">Mensagem</th>
+        <th style="min-width: 180px; width: 200px;">Alterações</th>
+        <th style="min-width: 110px; width: 120px;">IP</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      {% set entity_ref = r.entity_type or 'Registro' %}
+      {% if r.entity_id %}{% set entity_ref = entity_ref ~ ' #' ~ r.entity_id %}{% endif %}
+      {% set before_dom_id = 'audit-json-before-' ~ loop.index0 %}
+      {% set after_dom_id = 'audit-json-after-' ~ loop.index0 %}
+      {% set before_kind = 'payload' if r.before_data is not none else ('raw' if r.before else '') %}
+      {% set after_kind = 'payload' if r.after_data is not none else ('raw' if r.after else '') %}
+      {% set before_label = 'Antes  ' ~ entity_ref %}
+      {% set after_label = 'Depois  ' ~ entity_ref %}
+      <tr>
+        <td class="text-nowrap">{{ r.created_at | local('%d/%m/%Y %H:%M') if r.created_at else '' }}</td>
+        <td>
+          {% if r.actor_name %}<strong>{{ r.actor_name }}</strong>{% endif %}
+          {% if r.actor_email %}<div class="text-muted small">{{ r.actor_email }}</div>{% endif %}
+          {% if r.actor_id %}<div class="text-muted small">id: {{ r.actor_id }}</div>{% endif %}
+        </td>
+        <td class="text-nowrap">{{ r.entity_type }}{% if r.entity_id %} #{{ r.entity_id }}{% endif %}</td>
+        <td class="text-nowrap">
+          <span class="badge text-bg-secondary text-uppercase">{{ r.action }}</span>
+        </td>
+        <td style="max-width: 320px; word-break: break-word;">{{ r.message or '' }}</td>
+        <td>
+          {{ audit_payload(r.before_data, r.before, before_dom_id) }}
+          {{ audit_payload(r.after_data, r.after, after_dom_id) }}
+          <button type="button" class="btn btn-sm btn-outline-primary w-100 audit-json-trigger"
+                  {{ audit_button_attrs(r, loop.index0) }}>
+            <i class="bi bi-eye me-1"></i>Ver alterações
+          </button>
+        </td>
+        <td class="text-nowrap">{{ r.ip or '' }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7" class="text-center text-muted py-4">Nenhum registro encontrado.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/audit_modal.html" %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const modalElement = document.getElementById('auditJsonModal');
+    if (!modalElement) return;
+
+    const titleEl = modalElement.querySelector('.audit-json-modal-title');
+    const contextEl = modalElement.querySelector('#auditJsonModalContext');
+    const beforePre = modalElement.querySelector('#auditJsonModalBefore');
+    const afterPre = modalElement.querySelector('#auditJsonModalAfter');
+    const beforeLabelEl = modalElement.querySelector('#auditJsonBeforeLabel');
+    const afterLabelEl = modalElement.querySelector('#auditJsonAfterLabel');
+    const beforeBlock = modalElement.querySelector('#auditJsonBeforeBlock');
+    const afterBlock = modalElement.querySelector('#auditJsonAfterBlock');
+    const diffSummary = modalElement.querySelector('#auditJsonDiffSummary');
+    const diffListEl = modalElement.querySelector('#auditJsonDiffList');
+    const diffCountEl = modalElement.querySelector('#auditJsonDiffCount');
+    const diffEmptyEl = modalElement.querySelector('#auditJsonDiffEmpty');
+
+    const hasBootstrap = window.bootstrap && window.bootstrap.Modal;
+    const modalInstance = hasBootstrap ? window.bootstrap.Modal.getOrCreateInstance(modalElement) : null;
+
+    const btnFriendly = document.getElementById('btnAuditViewFriendly');
+    const btnJson = document.getElementById('btnAuditViewJson');
+    const friendlyBlocks = [
+      document.getElementById('auditFriendlyModalBefore'),
+      document.getElementById('auditFriendlyModalAfter')
+    ];
+    const jsonPreBlocks = [beforePre, afterPre];
+
+    if (btnFriendly && btnJson) {
+      btnFriendly.addEventListener('click', () => {
+        btnFriendly.classList.add('active');
+        btnJson.classList.remove('active');
+        friendlyBlocks.forEach(el => el && el.classList.remove('d-none'));
+        jsonPreBlocks.forEach(el => el && el.classList.add('d-none'));
+      });
+
+      btnJson.addEventListener('click', () => {
+        btnJson.classList.add('active');
+        btnFriendly.classList.remove('active');
+        friendlyBlocks.forEach(el => el && el.classList.add('d-none'));
+        jsonPreBlocks.forEach(el => el && el.classList.remove('d-none'));
+      });
+    }
+
+    document.addEventListener('click', (event) => {
+      const trigger = event.target.closest('.audit-json-trigger');
+      if (!trigger) return;
+      event.preventDefault();
+
+      const fallbackSelector = trigger.dataset.jsonTarget || '';
+      const fallbackKind = trigger.dataset.jsonKind || '';
+      const beforeSelector = trigger.dataset.beforeTarget || fallbackSelector;
+      const beforeKind = trigger.dataset.beforeKind || fallbackKind;
+      const afterSelector = trigger.dataset.afterTarget || fallbackSelector;
+      const afterKind = trigger.dataset.afterKind || fallbackKind;
+      const focusTarget = trigger.dataset.focus || (afterKind ? 'after' : 'before');
+      const beforeLabel = trigger.dataset.beforeLabel || 'Antes';
+      const afterLabel = trigger.dataset.afterLabel || 'Depois';
+      const title = trigger.dataset.title || 'Detalhes';
+      const context = trigger.dataset.context || '';
+
+      const beforeData = window.AuditDiff.extractData(beforeSelector, beforeKind);
+      const afterData = window.AuditDiff.extractData(afterSelector, afterKind);
+
+      beforePre.textContent = beforeData.text;
+      afterPre.textContent = afterData.text;
+      beforeLabelEl.textContent = beforeLabel;
+      afterLabelEl.textContent = afterLabel;
+      
+      const beforeFriendly = friendlyBlocks[0];
+      const afterFriendly = friendlyBlocks[1];
+
+      // Build diffMap to highlight inline changes in friendly view
+      const diffMap = {};
+      if (beforeData.json && afterData.json) {
+        const diffItems = window.AuditDiff.buildDiff(beforeData.json, afterData.json);
+        diffItems.forEach(item => {
+          diffMap[item.key] = item.status;
+        });
+      }
+
+      if (beforeFriendly) {
+        if (beforeData.json) {
+          beforeFriendly.innerHTML = window.AuditDiff.formatJsonToHtml(beforeData.json, '', diffMap);
+        } else if (beforeData.text && beforeData.text !== 'Sem dados disponveis.') {
+          beforeFriendly.innerHTML = `<pre style="background:transparent;border:0;padding:0;max-height:none;font-size:0.8rem;white-space:pre-wrap;">${beforeData.text}</pre>`;
+        } else {
+          beforeFriendly.innerHTML = `<span class="text-muted">Sem dados anteriores.</span>`;
+        }
+      }
+
+      if (afterFriendly) {
+        if (afterData.json) {
+          afterFriendly.innerHTML = window.AuditDiff.formatJsonToHtml(afterData.json, '', diffMap);
+        } else if (afterData.text && afterData.text !== 'Sem dados disponveis.') {
+          afterFriendly.innerHTML = `<pre style="background:transparent;border:0;padding:0;max-height:none;font-size:0.8rem;white-space:pre-wrap;">${afterData.text}</pre>`;
+        } else {
+          afterFriendly.innerHTML = `<span class="text-muted">Sem dados posteriores.</span>`;
+        }
+      }
+
+      if (btnFriendly && btnJson) {
+        btnFriendly.click();
+      }
+
+      window.AuditDiff.setFocusBlock(focusTarget, { before: beforeBlock, after: afterBlock });
+      window.AuditDiff.renderDiff(beforeData, afterData, {
+        diffSummary, diffListEl, diffCountEl, diffEmptyEl
+      });
+
+      titleEl.textContent = title;
+      contextEl.textContent = context;
+      contextEl.classList.toggle('d-none', !context);
+
+      if (modalInstance) {
+        modalInstance.show();
+      } else {
+        modalElement.classList.add('show');
+        modalElement.style.display = 'block';
+        modalElement.removeAttribute('aria-hidden');
+      }
+    });
+
+    if (!modalInstance) {
+      modalElement.addEventListener('click', (event) => {
+        if (event.target === modalElement || event.target.classList.contains('btn-close')) {
+          modalElement.classList.remove('show');
+          modalElement.style.display = 'none';
+          modalElement.setAttribute('aria-hidden', 'true');
+        }
+      });
+    }
+  });
+</script>
+
+
+
+{% if pagination.pages > 1 %}
+{% set pages_to_show = [] %}
+{% for p in [1, pagination.page, pagination.page + 1, pagination.page + 2, pagination.page + 3, pagination.pages] %}
+  {% if 1 <= p <= pagination.pages and p not in pages_to_show %}
+    {% set _ = pages_to_show.append(p) %}
+  {% endif %}
+{% endfor %}
+<nav class="mt-3">
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <ul class="pagination mb-0">
+      <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+        {% if pagination.has_prev %}
+        <a class="page-link" href="{{ url_for('audit.page', page=pagination.prev_num, **filters) }}">Anterior</a>
+        {% else %}
+        <span class="page-link">Anterior</span>
+        {% endif %}
+      </li>
+      {% for p in pages_to_show %}
+      <li class="page-item {% if p == pagination.page %}active{% endif %}">
+        <a class="page-link" href="{{ url_for('audit.page', page=p, **filters) }}">{{ p }}</a>
+      </li>
+      {% endfor %}
+      <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+        {% if pagination.has_next %}
+        <a class="page-link" href="{{ url_for('audit.page', page=pagination.next_num, **filters) }}">Próximo</a>
+        {% else %}
+        <span class="page-link">Próximo</span>
+        {% endif %}
+      </li>
+    </ul>
+    <form class="d-flex align-items-center gap-2" method="get" action="{{ url_for('audit.page') }}">
+      {% for key, value in filters.items() %}
+      <input type="hidden" name="{{ key }}" value="{{ value }}">
+      {% endfor %}
+      <label class="small text-muted mb-0" for="audit-page-input">Página</label>
+      <input type="number" min="1" max="{{ pagination.pages }}" class="form-control form-control-sm" id="audit-page-input" name="page" value="{{ pagination.page }}">
+      <button class="btn btn-outline-secondary btn-sm" type="submit">Ir</button>
+    </form>
+  </div>
+</nav>
+{% endif %}
+
+{% endblock %}

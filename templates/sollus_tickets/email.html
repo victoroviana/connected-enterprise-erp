@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-BR">
+<body style="font-family:Arial,sans-serif;background:#f4f7fb;padding:24px;color:#172033">
+  <div style="max-width:680px;margin:0 auto;background:#fff;border:1px solid #e5eaf2;border-radius:8px;overflow:hidden">
+    <div style="background:#0b2f5b;color:#fff;padding:18px 22px">
+      <strong>{{ title }}</strong>
+      <div style="font-size:13px;opacity:.85">Sollus Tickets</div>
+    </div>
+    <div style="padding:22px">
+      <h2 style="margin:0 0 8px">{{ ticket.number or ticket.id }} - {{ ticket.subject }}</h2>
+      <p style="margin:0 0 14px;color:#5b667a">{{ body }}</p>
+      <table style="width:100%;font-size:14px;border-collapse:collapse">
+        <tr><td style="padding:6px 0;color:#5b667a">Status</td><td>{{ ticket.status_key }}</td></tr>
+        <tr><td style="padding:6px 0;color:#5b667a">Prioridade</td><td>{{ ticket.priority_key }}</td></tr>
+        <tr><td style="padding:6px 0;color:#5b667a">Solicitante</td><td>{{ ticket.requester_label }}</td></tr>
+        <tr><td style="padding:6px 0;color:#5b667a">Atendente</td><td>{{ ticket.assignee.name or ticket.assignee.email if ticket.assignee else '-' }}</td></tr>
+      </table>
+      {% if link %}
+        <p style="margin-top:22px"><a href="{{ link }}" style="background:#0d6efd;color:#fff;text-decoration:none;padding:10px 14px;border-radius:6px">Abrir ticket</a></p>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,390 @@
+{% extends "layout.html" %}
+{% block title %}Proposta de equipamentos{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+  .proposal-wrapper { padding-bottom: 3rem; }
+  .proposal-hero { background: linear-gradient(130deg, rgba(15,123,200,.95), rgba(0,59,102,.95)); color:#f7fbff; border-radius:1.5rem; padding:2.25rem 2.6rem; box-shadow:0 22px 46px rgba(9,29,54,.28); }
+  .proposal-hero .hero-title { font-weight:700; letter-spacing:.3px; }
+  .proposal-hero .hero-subtitle { color:rgba(240,247,255,.88); max-width:760px; }
+  .hero-icon { display:flex; align-items:center; justify-content:center; width:56px; height:56px; border-radius:18px; background:rgba(255,255,255,.18); font-size:1.9rem; color:#fff; }
+  .section-card { border-radius:1.25rem; }
+  .section-card .card-header { background:transparent; border:0; padding:1.5rem 1.75rem 0; }
+  .section-card .card-body { padding:1.5rem 1.75rem 1.75rem; }
+  .proposal-form .form-label { font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; color:#6c7893; font-weight:600; }
+  .proposal-form .form-control, .proposal-form .form-select { border-radius:.9rem; padding:.75rem 1rem; border-color:#d6deed; }
+  .proposal-wrapper .btn { display:inline-flex; align-items:center; justify-content:center; gap:.55rem; border-radius:1rem; font-weight:600; padding:.75rem 1.4rem; }
+  .proposal-wrapper .btn-primary { background:linear-gradient(135deg,#0f7bc8,#1ba8f0); color:#fff; border:0; }
+  .equip-table thead { background:#f1f4fb; text-transform:uppercase; font-size:.7rem; letter-spacing:.08rem; color:#5a6782; }
+  .equip-table td { vertical-align:middle; }
+  .proposal-total { font-weight:700; font-size:1.1rem; color:#0f2657; }
+  #gerandoModal .modal-dialog { max-width: 420px; }
+  #gerandoModal .modal-content { border: 0; background: transparent; }
+  #pdfPreviewModal .modal-dialog { max-width: 960px; }
+  #pdfPreviewModal .modal-content { border: 0; border-radius: 1.5rem; box-shadow: 0 28px 68px rgba(6,28,56,.28); overflow: hidden; }
+  #pdfPreviewModal .modal-header { padding: 1.4rem 2rem; background: linear-gradient(135deg, rgba(15,123,200,.1), rgba(30,64,175,.08)); border-bottom: 0; }
+  #pdfPreviewModal .modal-title { font-weight: 700; letter-spacing: .02em; color: #0f1c36; }
+  #pdfPreviewModal .modal-body { padding: 0 2rem 2rem; background: #f8fbff; }
+  #pdfPreviewModal .modal-footer { padding: 1.3rem 2rem; background: #eef5ff; border-top: 0; }
+  .pdf-frame-wrapper { border-radius: 1rem; overflow: hidden; border: 1px solid rgba(148,163,184,.25); background: #fff; min-height: 70vh; }
+  .pdf-frame { width: 100%; min-height: 70vh; border: 0; display: block; background: #fff; }
+  .loading-modal { background: linear-gradient(135deg, #0f7bc8, #001b33); color: #f8fafc; padding: 2.4rem 2.6rem; border-radius: 1.75rem; box-shadow: 0 30px 60px rgba(5,26,52,.45); position: relative; overflow: hidden; }
+  .loading-modal::after { content: ''; position: absolute; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.22), transparent 70%); top: -280px; right: -180px; opacity: .6; }
+  .loading-modal > * { position: relative; z-index: 1; }
+  .loading-icon { width: 68px; height: 68px; margin: 0 auto 1.2rem; border-radius: 22px; background: rgba(255,255,255,.16); display: flex; align-items: center; justify-content: center; font-size: 2rem; }
+  .loading-progress { height: .65rem; border-radius: 999px; background: rgba(255,255,255,.16); overflow: hidden; }
+  .loading-progress .progress-bar { background: linear-gradient(90deg,#fff,#9ee8ff); }
+  .loading-footnote, .loading-subtitle { color: rgba(236,248,255,.78); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="proposal-wrapper">
+  <div class="proposal-hero mb-4">
+    <div class="d-flex flex-wrap gap-4 align-items-center justify-content-between">
+      <div class="d-flex flex-column gap-3">
+        <div class="hero-icon"><i class="bi bi-pc-display"></i></div>
+        <div>
+          <h1 class="hero-title h3 mb-2">Proposta de equipamentos</h1>
+          <p class="hero-subtitle mb-0">Gere um PDF comercial somente com equipamentos do estoque, separado por venda ou locação.</p>
+        </div>
+      </div>
+      <a class="btn btn-light btn-sm" href="{{ url_for('assist_bp.assistencia_propostas_equipamentos_historico') }}">
+        <i class="bi bi-clock-history"></i> Histórico
+      </a>
+    </div>
+  </div>
+
+  <form method="post" class="proposal-form" id="equipProposalForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="row g-4">
+      <div class="col-12 col-xl-8">
+        <div class="card section-card shadow-sm border-0 mb-4">
+          <div class="card-header">
+            <h2 class="h5 mb-1">Dados da proposta</h2>
+            <p class="text-muted mb-0">Informe o cliente e a modalidade comercial.</p>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">Modalidade</label>
+                <select class="form-select" name="modalidade" id="modalidade">
+                  <option value="venda">Venda</option>
+                  <option value="locacao">Locação</option>
+                </select>
+              </div>
+              <div class="col-md-8">
+                <label class="form-label">Cliente</label>
+                <input class="form-control" name="cliente" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">CNPJ</label>
+                <input class="form-control" name="cnpj">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Contato</label>
+                <input class="form-control" name="contato">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Telefone</label>
+                <input class="form-control" name="telefone">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">E-mail</label>
+                <input class="form-control" type="email" name="email">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Validade</label>
+                <input class="form-control" name="validade" value="20 dias">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Prazo de entrega</label>
+                <input class="form-control" name="prazo_entrega">
+              </div>
+              <div class="col-12">
+                <label class="form-label">Condições de pagamento</label>
+                <input class="form-control" name="condicoes_pagamento" value="14 DD">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section-card shadow-sm border-0 mb-4">
+          <div class="card-header">
+            <h2 class="h5 mb-1">Equipamentos</h2>
+            <p class="text-muted mb-0">Selecione equipamentos cadastrados no estoque e ajuste valores.</p>
+          </div>
+          <div class="card-body">
+            <div class="d-flex gap-2 flex-wrap mb-3">
+              <select class="form-select" id="equipSelect" style="max-width:520px">
+                <option value="">Selecione um equipamento</option>
+                {% for eq in equipamentos %}
+                  <option value="{{ eq.id }}" data-name="{{ eq.name|e }}" data-description="{{ (eq.description or '')|replace('\n',' ')|e }}" data-price="{{ '%.2f'|format(eq.unit_price or 0) }}" data-stock="{{ eq.quantity or 0 }}">
+                    {{ eq.name }} ({{ eq.quantity or 0 }} em estoque)
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="table-responsive">
+              <table class="table align-middle equip-table" id="equipTable">
+                <thead>
+                  <tr>
+                    <th>Equipamento</th>
+                    <th>Qtd.</th>
+                    <th>Valor unitário</th>
+                    <th>Desconto</th>
+                    <th>Total</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="d-flex justify-content-end proposal-total">
+              Total: <span class="ms-2" id="proposalTotal">R$ 0,00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section-card shadow-sm border-0 mb-4">
+          <div class="card-header">
+            <h2 class="h5 mb-1">Observações</h2>
+          </div>
+          <div class="card-body">
+            <textarea class="form-control" name="observacoes" rows="4"></textarea>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end">
+          <button class="btn btn-primary" type="submit">
+            <i class="bi bi-file-earmark-pdf"></i> Gerar PDF
+          </button>
+        </div>
+      </div>
+
+      <div class="col-12 col-xl-4">
+        <div class="card section-card shadow-sm border-0 position-sticky top-0" style="top:calc(var(--nav-h) + 1.5rem);">
+          <div class="card-body">
+            <h2 class="h6 fw-bold text-uppercase text-muted mb-3">Escopo</h2>
+            <ul class="small text-muted mb-0">
+              <li>Somente equipamentos do estoque.</li>
+              <li>Sem sistema e sem envio automático por e-mail.</li>
+              <li>O PDF fica disponível no histórico.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="modal sollus-modal fade" id="gerandoModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="loading-modal text-center">
+        <div class="loading-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+        <h5>Gerando sua proposta</h5>
+        <p class="loading-subtitle mb-3">Estamos organizando os equipamentos, preparando o documento e aplicando o layout Sollus.</p>
+        <div class="loading-progress mb-2">
+          <div id="gerandoProgress" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%;"></div>
+        </div>
+        <div class="loading-footnote">Isso costuma levar apenas alguns segundos.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="pdfPreviewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title"><i class="bi bi-filetype-pdf me-2 text-primary"></i>Proposta pronta</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body pt-0">
+        <div class="pdf-frame-wrapper">
+          <iframe id="pdfPreviewFrame" class="pdf-frame" title="Visualização da proposta" src="about:blank"></iframe>
+        </div>
+      </div>
+      <div class="modal-footer border-0 justify-content-between flex-wrap gap-3">
+        <div class="d-flex flex-wrap gap-2">
+          <a id="pdfDownloadBtn" class="btn btn-outline-primary" href="#" download>
+            <i class="bi bi-download"></i> Baixar PDF
+          </a>
+          <button id="pdfPrintBtn" type="button" class="btn btn-outline-secondary">
+            <i class="bi bi-printer"></i> Imprimir
+          </button>
+          <a id="pdfHistoryBtn" class="btn btn-outline-secondary" href="{{ url_for('assist_bp.assistencia_propostas_equipamentos_historico') }}">
+            <i class="bi bi-clock-history"></i> Histórico
+          </a>
+        </div>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+          <i class="bi bi-check2-circle"></i> Concluir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+(() => {
+  const form = document.getElementById('equipProposalForm');
+  const select = document.getElementById('equipSelect');
+  const tbody = document.querySelector('#equipTable tbody');
+  const totalEl = document.getElementById('proposalTotal');
+  const gerarModalEl = document.getElementById('gerandoModal');
+  const gerarModal = gerarModalEl ? bootstrap.Modal.getOrCreateInstance(gerarModalEl) : null;
+  const progressBar = document.getElementById('gerandoProgress');
+  const pdfModalEl = document.getElementById('pdfPreviewModal');
+  const pdfModal = pdfModalEl ? bootstrap.Modal.getOrCreateInstance(pdfModalEl) : null;
+  const pdfFrame = document.getElementById('pdfPreviewFrame');
+  const pdfDownloadBtn = document.getElementById('pdfDownloadBtn');
+  const pdfPrintBtn = document.getElementById('pdfPrintBtn');
+  const pdfHistoryBtn = document.getElementById('pdfHistoryBtn');
+  let index = 0;
+  let progressTimer = null;
+  let progressValue = 0;
+  const money = (value) => new Intl.NumberFormat('pt-BR', {style:'currency', currency:'BRL'}).format(value || 0);
+  const parseMoney = (value) => {
+    const clean = String(value || '').replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');
+    return parseFloat(clean) || 0;
+  };
+  const updateTotals = () => {
+    let total = 0;
+    tbody.querySelectorAll('tr').forEach((row) => {
+      const qty = parseInt(row.querySelector('[data-qty]').value || '0', 10) || 0;
+      const unit = parseMoney(row.querySelector('[data-unit]').value);
+      const discount = parseMoney(row.querySelector('[data-discount]').value);
+      const subtotal = Math.max(0, qty * unit - discount);
+      row.querySelector('[data-subtotal]').textContent = money(subtotal);
+      total += subtotal;
+    });
+    totalEl.textContent = money(total);
+  };
+  const addSelectedEquipment = () => {
+    const option = select.options[select.selectedIndex];
+    if (!option || !option.value) return;
+    if (tbody.querySelector(`[data-equipment-id="${option.value}"]`)) {
+      select.value = '';
+      return;
+    }
+    const current = index++;
+    const price = parseFloat(option.dataset.price || '0') || 0;
+    const row = document.createElement('tr');
+    row.dataset.equipmentId = option.value;
+    row.innerHTML = `
+      <td>
+        <div class="fw-semibold">${option.dataset.name || option.textContent}</div>
+        <div class="small text-muted">${option.dataset.description || ''}</div>
+        <input type="hidden" name="equipamento_id_${current}" value="${option.value}">
+      </td>
+      <td><input class="form-control form-control-sm" type="number" min="1" name="quantidade_${current}" value="1" data-qty></td>
+      <td><input class="form-control form-control-sm" name="valor_unitario_${current}" value="${money(price)}" data-unit></td>
+      <td><input class="form-control form-control-sm" name="desconto_${current}" value="R$ 0,00" data-discount></td>
+      <td class="fw-semibold" data-subtotal>R$ 0,00</td>
+      <td class="text-end"><button class="btn btn-link text-danger p-0" type="button" data-remove>Remover</button></td>
+    `;
+    tbody.appendChild(row);
+    select.value = '';
+    updateTotals();
+  };
+  if (select) {
+    select.addEventListener('change', addSelectedEquipment);
+  }
+  tbody.addEventListener('input', updateTotals);
+  tbody.addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-remove]');
+    if (!btn) return;
+    btn.closest('tr').remove();
+    updateTotals();
+  });
+  const setProgress = (value) => {
+    progressValue = Math.max(progressValue, Math.min(100, value));
+    if (progressBar) progressBar.style.width = `${progressValue}%`;
+  };
+  const startProgress = () => {
+    progressValue = 0;
+    setProgress(0);
+    if (progressTimer) clearInterval(progressTimer);
+    progressTimer = setInterval(() => {
+      if (progressValue < 88) setProgress(progressValue + 3);
+    }, 160);
+  };
+  const finishProgress = () => {
+    if (progressTimer) clearInterval(progressTimer);
+    progressTimer = null;
+    setProgress(100);
+  };
+  const showPdfModal = (payload) => {
+    const viewUrl = payload.view_url || payload.download_url;
+    if (!viewUrl) {
+      if (gerarModal) gerarModal.hide();
+      return;
+    }
+    if (pdfDownloadBtn) {
+      pdfDownloadBtn.href = payload.download_url || viewUrl;
+      pdfDownloadBtn.setAttribute('download', payload.download_name || 'proposta_equipamentos.pdf');
+    }
+    if (pdfHistoryBtn && payload.history_url) pdfHistoryBtn.href = payload.history_url;
+    const openPreview = () => {
+      if (openPreview.done) return;
+      openPreview.done = true;
+      if (gerarModal) gerarModal.hide();
+      if (pdfModal) pdfModal.show();
+    };
+    if (pdfFrame) {
+      pdfFrame.addEventListener('load', openPreview, { once: true });
+      pdfFrame.src = viewUrl;
+      setTimeout(openPreview, 20000);
+    } else {
+      openPreview();
+    }
+  };
+  if (pdfPrintBtn) {
+    pdfPrintBtn.addEventListener('click', () => {
+      if (pdfFrame && pdfFrame.contentWindow) {
+        pdfFrame.contentWindow.focus();
+        pdfFrame.contentWindow.print();
+      }
+    });
+  }
+  if (form) {
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!tbody.querySelector('tr')) {
+        alert('Adicione ao menos um equipamento.');
+        return;
+      }
+      if (gerarModal) gerarModal.show();
+      startProgress();
+      try {
+        const response = await fetch(form.action || window.location.href, {
+          method: 'POST',
+          body: new FormData(form),
+          headers: {'X-Requested-With': 'XMLHttpRequest'},
+          credentials: 'same-origin',
+        });
+        const payload = await response.json();
+        finishProgress();
+        if (!payload.ok) {
+          if (gerarModal) setTimeout(() => gerarModal.hide(), 250);
+          alert(payload.message || 'Não foi possível gerar a proposta.');
+          return;
+        }
+        showPdfModal(payload);
+      } catch (error) {
+        console.error(error);
+        finishProgress();
+        if (gerarModal) setTimeout(() => gerarModal.hide(), 250);
+        alert('Falha ao gerar a proposta.');
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

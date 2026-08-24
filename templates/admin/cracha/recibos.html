@@ -1,0 +1,442 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Crachá | Recibos{% endblock %}
+
+{% block head %}
+<style>
+  .recibos-card{border:0;border-radius:1.1rem;box-shadow:0 10px 24px rgba(15,35,58,.08);}
+  .recibos-card .card-header{background:transparent;border:0;padding:1.25rem 1.5rem 0;}
+  .recibos-card .card-body{padding:1.25rem 1.5rem 1.5rem;}
+  .recibos-table th,.recibos-table td{vertical-align:middle;}
+  .recibos-table tbody tr.js-recibo-row{cursor:pointer;}
+  .recibos-table thead{background:#f3f6fb;text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:#5a6782;}
+  .recibos-table .text-muted{font-size:.85rem;}
+  .recibo-upload{background:#f8fafc;border:1px dashed #d6deea;border-radius:.75rem;padding:.5rem;}
+  .recibo-upload.d-none{display:none;}
+  .recibos-tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem;}
+  .recibos-tab-btn{
+    border:1px solid #d0d7e2;
+    background:#f8fafc;
+    font-weight:700;
+    color:#1f2937;
+    display:flex;
+    align-items:center;
+    gap:.45rem;
+    padding:.35rem .8rem;
+    border-radius:999px;
+    transition:all .2s;
+    text-decoration:none;
+    white-space:nowrap;
+  }
+  .recibos-tab-btn .count{font-size:.8rem;color:#6b7280;}
+  .recibos-tab-btn.active{background:#0d6efd;color:#fff;border-color:#0d6efd;}
+  .recibos-tab-btn.active .count{color:#e8f1ff;}
+  #reciboGerandoModal .modal-dialog{max-width:420px;}
+  #reciboGerandoModal .modal-content{border:0;background:transparent;}
+  #reciboPdfModal .modal-dialog{max-width:960px;}
+  #reciboPdfModal .modal-content{border:0;border-radius:1.5rem;box-shadow:0 28px 68px rgba(6,28,56,.28);overflow:hidden;}
+  #reciboPdfModal .modal-header{padding:1.4rem 2rem;background:linear-gradient(135deg,rgba(15,123,200,.1),rgba(30,64,175,.08));border-bottom:0;}
+  #reciboPdfModal .modal-title{font-weight:700;letter-spacing:.02em;color:#0f1c36;}
+  #reciboPdfModal .modal-body{padding:0 2rem 2rem;background:#f8fbff;}
+  #reciboPdfModal .modal-footer{padding:1.3rem 2rem;background:#eef5ff;border-top:0;}
+  .pdf-frame-wrapper{height:70vh;border-radius:1.25rem;overflow:hidden;border:1px solid rgba(15,26,60,.08);background:linear-gradient(135deg,rgba(15,123,200,.06),rgba(99,102,241,.05));box-shadow:inset 0 1px 0 rgba(255,255,255,.4);}
+  .pdf-frame{width:100%;height:100%;border:0;background:#fff;}
+  .pdf-modal-actions{display:flex;flex-wrap:wrap;gap:.75rem;}
+  @media (max-width:768px){
+    .pdf-frame-wrapper{height:60vh;}
+    #reciboPdfModal .modal-body{padding:0 1.25rem 1.5rem;}
+    #reciboPdfModal .modal-footer{padding:1.2rem 1.25rem;}
+  }
+  .loading-modal{background:linear-gradient(135deg,#0f7bc8,#001b33);color:#f8fafc;padding:2.4rem 2.6rem;border-radius:1.75rem;box-shadow:0 30px 60px rgba(5,26,52,.45);position:relative;overflow:hidden;}
+  .loading-modal::after{content:'';position:absolute;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.22),transparent 70%);top:-280px;right:-180px;opacity:.6;}
+  .loading-modal::before{content:'';position:absolute;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.08);bottom:-120px;left:-80px;filter:blur(4px);}
+  .loading-icon{width:78px;height:78px;border-radius:22px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;position:relative;box-shadow:0 15px 35px rgba(7,34,66,.3);}
+  .loading-icon::after{content:'';position:absolute;inset:6px;border-radius:18px;border:2px solid rgba(255,255,255,.25);border-top-color:#38bdf8;animation:loading-spin 1.2s linear infinite;}
+  .loading-icon i{font-size:1.9rem;color:#38bdf8;position:relative;z-index:1;}
+  .loading-modal h5{font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:.35rem;}
+  .loading-modal .loading-subtitle{margin-bottom:1.4rem;color:rgba(236,248,255,.78);}
+  .loading-progress{position:relative;height:10px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden;box-shadow:inset 0 1px 6px rgba(7,34,66,.45);}
+  .loading-progress::before{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(135deg,rgba(96,222,126,.18),rgba(20,83,45,.05));opacity:.6;}
+  .loading-progress .progress-bar{display:block;width:0%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#22c55e,#15803d);box-shadow:0 8px 18px rgba(34,197,94,.45);transition:width .35s ease;position:relative;overflow:hidden;}
+  .loading-progress .progress-bar::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:45%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.45),rgba(255,255,255,0));opacity:.6;transform:skewX(-12deg);animation:progress-sheen 1.4s ease-in-out infinite;}
+  @keyframes progress-sheen{0%{left:-45%;}50%{left:60%;}100%{left:145%;}}
+  .loading-footnote{margin-top:1.2rem;font-size:.85rem;color:rgba(236,248,255,.7);}
+  @keyframes loading-spin{to{transform:rotate(1turn);}}
+  @media (max-width:576px){.loading-modal{padding:2rem 2.2rem;border-radius:1.4rem;}}
+</style>
+{% endblock %}
+
+{% block content %}
+{% set hero_stats = [
+  {'label': 'Total', 'value': total_items, 'hint': 'recibos'},
+  {'label': 'Pendentes', 'value': status_counts.get('nao_assinado', 0), 'hint': 'sem assinatura'},
+  {'label': 'Assinados', 'value': status_counts.get('assinado', 0), 'hint': 'com PDF'}
+] %}
+{% set hero_help_tips = [
+  'Use os filtros por data e pesquisa para localizar recibos rapidamente.',
+  'Clique em qualquer linha para abrir a edição do recibo.',
+  'Envie o PDF assinado ou substitua quando necessário.'
+] %}
+{% call page_hero(
+  title='Recibos de Crachá'|safe,
+  subtitle='Controle entregas, assinaturas e impressões dos recibos.',
+  eyebrow='Crachá'|safe,
+  stats=hero_stats,
+  help_tips=hero_help_tips,
+  help_intro='Dicas rápidas para gerenciar os recibos.'
+) %}
+  <div class="page-hero__actions">
+    <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#modalCriarRecibo">
+      <i class="fa-solid fa-plus me-1"></i> Criar recibo
+    </button>
+  </div>
+{% endcall %}
+
+<div class="card recibos-card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <input type="hidden" name="filtro_status" value="{{ filtros.filtro_status }}">
+      <div class="col-lg-6">
+        <label class="form-label">Pesquisa rápida</label>
+        <input type="text" name="pesquisa" class="form-control" placeholder="Número, cliente ou CNPJ" value="{{ filtros.pesquisa }}">
+      </div>
+      <div class="col-lg-2">
+        <label class="form-label">Data criação (de)</label>
+        <input type="date" name="data_inicio" class="form-control" value="{{ filtros.data_inicio }}">
+      </div>
+      <div class="col-lg-2">
+        <label class="form-label">Até</label>
+        <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim }}">
+      </div>
+      <div class="col-lg-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+        <a class="btn btn-outline-secondary w-100" href="{{ url_for('cracha_bp.recibos') }}">Limpar</a>
+      </div>
+    </form>
+    <div class="recibos-tabs" aria-label="Status dos recibos">
+      {% for tab in status_tabs %}
+        <a class="recibos-tab-btn {{ 'active' if tab.value == status_value else '' }}"
+           href="{{ build_url('cracha_bp.recibos', filtro_status=(tab.value if tab.value else None), page=1) }}">
+          {{ tab.label }}
+          <span class="count">{{ status_counts.get(tab.value, 0) }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="card recibos-card">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <div>
+      <h2 class="h6 fw-bold mb-1">Registros</h2>
+      <p class="text-muted mb-0">{{ total_items }} recibo(s) encontrado(s).</p>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover recibos-table">
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Cliente</th>
+            <th>CNPJ</th>
+            <th>Unidade</th>
+            <th>Qtd. entregue</th>
+            <th>Qtd. restante</th>
+            <th>Data criação</th>
+            <th>Data pedido</th>
+            <th>Tipo</th>
+            <th>Recibo assinado</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in recibos %}
+          <tr class="js-recibo-row" data-id="{{ row.id }}">
+            <td class="fw-semibold">{{ row.numero_recibo }}</td>
+            <td>{{ row.cliente }}</td>
+            <td>{{ row.cnpj }}</td>
+            <td>{{ row.unidade }}</td>
+            <td>{{ row.quantidade_entregue }}</td>
+            <td>{{ row.quantidade_restante }}</td>
+            <td>{{ row.data_criacao_br }}</td>
+            <td>{{ row.data_pedido_br }}</td>
+            <td>{{ row.tipo_cracha }}</td>
+            <td>
+              {% if row.is_signed and row.download_url %}
+                <div class="d-flex flex-column gap-2">
+                  <a class="btn btn-success btn-sm" href="{{ row.download_url }}" target="_blank">
+                    <i class="fa-solid fa-download me-1"></i> Baixar
+                  </a>
+                  <button class="btn btn-outline-secondary btn-sm js-toggle-upload" data-target="#upload-{{ row.id }}">Trocar</button>
+                  <div id="upload-{{ row.id }}" class="recibo-upload d-none">
+                    <form method="post" action="{{ url_for('cracha_bp.assinar_recibo') }}" enctype="multipart/form-data" class="d-flex flex-column gap-2">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="id" value="{{ row.id }}">
+                      <input type="file" name="recibo" class="form-control form-control-sm" accept=".pdf" required>
+                      <input type="password" name="admin_password" class="form-control form-control-sm" placeholder="Senha admin (obrigatória)" required>
+                      <button type="submit" class="btn btn-primary btn-sm">Salvar</button>
+                    </form>
+                  </div>
+                </div>
+              {% else %}
+                <form method="post" action="{{ url_for('cracha_bp.assinar_recibo') }}" enctype="multipart/form-data" class="recibo-upload d-flex flex-column gap-2">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="id" value="{{ row.id }}">
+                  <input type="file" name="recibo" class="form-control form-control-sm" accept=".pdf" required>
+                  <button type="submit" class="btn btn-primary btn-sm">Enviar</button>
+                </form>
+              {% endif %}
+            </td>
+            <td class="text-end">
+                <div class="d-flex justify-content-end gap-2 flex-wrap">
+                <button type="button" class="btn btn-info btn-sm js-recibo-print" data-id="{{ row.id }}">
+                  <i class="fa-solid fa-print me-1"></i> Imprimir
+                </button>
+                <button type="button" class="btn btn-outline-primary btn-sm js-edit-recibo" data-id="{{ row.id }}">
+                  <i class="fa-solid fa-pen me-1"></i> Editar
+                </button>
+                {% if not row.is_signed %}
+                <button type="button" class="btn btn-outline-danger btn-sm js-delete-recibo" data-id="{{ row.id }}" data-numero="{{ row.numero_recibo }}">
+                  <i class="fa-solid fa-trash me-1"></i> Excluir
+                </button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not recibos %}
+          <tr>
+            <td colspan="11" class="text-center text-muted py-4">Nenhum recibo encontrado.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if total_pages > 1 %}
+    <nav class="mt-3">
+      <ul class="pagination justify-content-end mb-0">
+        <li class="page-item {{ 'disabled' if page <= 1 else '' }}">
+          <a class="page-link" href="{{ build_url('cracha_bp.recibos', page=page-1) }}">Anterior</a>
+        </li>
+        {% for p in range(1, total_pages + 1) %}
+        {% if p == 1 or p == total_pages or (p >= page - 1 and p <= page + 1) %}
+        <li class="page-item {{ 'active' if p == page else '' }}">
+          <a class="page-link" href="{{ build_url('cracha_bp.recibos', page=p) }}">{{ p }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+        <li class="page-item {{ 'disabled' if page >= total_pages else '' }}">
+          <a class="page-link" href="{{ build_url('cracha_bp.recibos', page=page+1) }}">Próxima</a>
+        </li>
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="reciboGerandoModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="loading-modal text-center">
+        <div class="loading-icon">
+          <i class="fa-solid fa-file-pdf"></i>
+        </div>
+        <h5>Gerando recibo</h5>
+        <p class="loading-subtitle mb-3">Estamos preparando o PDF do recibo e ajustando o layout.</p>
+        <div class="loading-progress mb-2">
+          <div id="reciboGerandoProgress" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%;"></div>
+        </div>
+        <div class="loading-footnote">Isso costuma levar apenas alguns segundos.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="reciboPdfModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title"><i class="fa-solid fa-file-pdf me-2 text-primary"></i>Recibo pronto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body pt-0">
+        <div class="pdf-frame-wrapper">
+          <iframe id="reciboPdfFrame" class="pdf-frame" title="Visualização do recibo" src="about:blank"></iframe>
+        </div>
+      </div>
+      <div class="modal-footer border-0 justify-content-between flex-wrap gap-3">
+        <div class="pdf-modal-actions">
+          <a id="reciboPdfDownloadBtn" class="btn btn-outline-primary btn-elevated" href="#" download>
+            <i class="fa-solid fa-download"></i>
+            <span>Baixar PDF</span>
+          </a>
+          <button id="reciboPdfPrintBtn" type="button" class="btn btn-outline-secondary btn-elevated">
+            <i class="fa-solid fa-print"></i>
+            <span>Imprimir</span>
+          </button>
+          <button id="reciboPdfOpenBtn" type="button" class="btn btn-outline-dark btn-elevated">
+            <i class="fa-solid fa-up-right-from-square"></i>
+            <span>Abrir em nova janela</span>
+          </button>
+        </div>
+        <button type="button" class="btn btn-primary btn-elevated" data-bs-dismiss="modal">
+          <i class="fa-solid fa-check"></i>
+          <span>Concluir</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalCriarRecibo" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('cracha_bp.criar_recibo') }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Criar recibo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Número do recibo</label>
+              <input type="text" class="form-control" name="numeroRecibo" value="{{ next_recibo_numero }}" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">CNPJ</label>
+              <input type="text" class="form-control" id="cnpj" name="cnpj" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Cliente</label>
+              <input type="text" class="form-control" id="cliente" name="cliente" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Unidade</label>
+              <input type="text" class="form-control" id="unidade" name="unidade" readonly>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">CEP</label>
+              <input type="text" class="form-control" id="cep" name="cep" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Endereço</label>
+              <input type="text" class="form-control" id="endereco" name="endereco" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Total em estoque</label>
+              <input type="number" class="form-control" id="totalEmEstoque" name="totalEmEstoque" readonly>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Quantidade a ser entregue</label>
+              <input type="number" class="form-control" id="quantidadeEntregue" name="quantidadeEntregue" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Tipo de crachá</label>
+              <input type="text" class="form-control" id="tipo_cracha" name="tipo_cracha" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Pedido</label>
+              <input type="number" class="form-control" id="pedido" name="pedido" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Data do pedido</label>
+              <input type="date" class="form-control" id="dataPedido" name="dataPedido" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalEditarRecibo" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('cracha_bp.editar_recibo') }}" id="formEditarRecibo">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar recibo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="id" id="editar_id">
+          <div class="alert alert-warning d-none" id="editar_admin_password_group">
+            <label class="form-label">Senha de Administrador</label>
+            <input type="password" class="form-control" id="editar_admin_password" name="admin_password" placeholder="Obrigatória: este recibo já foi assinado.">
+            <small class="text-muted">A edição de recibos assinados requer autorização.</small>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Número do recibo</label>
+              <input type="text" class="form-control" id="editar_numeroRecibo" name="numeroRecibo" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">CNPJ</label>
+              <input type="text" class="form-control" id="editar_cnpj" name="cnpj" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Cliente</label>
+              <input type="text" class="form-control" id="editar_cliente" name="cliente" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Unidade</label>
+              <select class="form-select" id="editar_unidade" name="unidade" required>
+                {% for unidade in allowed_units %}
+                <option value="{{ unidade }}">{{ unidade }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">CEP (para preencher o endereço)</label>
+              <input type="text" class="form-control" id="editar_cep" placeholder="Somente números">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Endereço</label>
+              <input type="text" class="form-control" id="editar_endereco" name="endereco" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Total em estoque (Qtd. anterior)</label>
+              <input type="number" class="form-control" id="editar_totalEmEstoque" name="totalEmEstoque" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Quantidade a ser entregue</label>
+              <input type="number" class="form-control" id="editar_quantidadeEntregue" name="quantidadeEntregue" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Tipo de crachá</label>
+              <input type="text" class="form-control" id="editar_tipo_cracha" name="tipo_cracha" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Pedido</label>
+              <input type="text" class="form-control" id="editar_pedido" name="pedido" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Data do pedido</label>
+              <input type="date" class="form-control" id="editar_dataPedido" name="dataPedido" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Observações (opcional)</label>
+              <input type="text" class="form-control" id="editar_descricao" name="descricao">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/cracha_recibos.js') }}" defer></script>
+{% endblock %}

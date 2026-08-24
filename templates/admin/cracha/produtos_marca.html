@@ -1,0 +1,98 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Crachá | Produtos Marca{% endblock %}
+
+{% block head %}
+<style>
+  .marca-card{border:0;border-radius:1.1rem;box-shadow:0 10px 24px rgba(15,35,58,.08);}
+  .marca-card .card-body{padding:1.25rem 1.5rem 1.5rem;}
+  .marca-table th,.marca-table td{vertical-align:middle;}
+  .marca-table thead{background:#f3f6fb;text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:#5a6782;}
+  .marca-table tbody tr:hover{background:rgba(148,163,184,.08);}
+</style>
+{% endblock %}
+
+{% block content %}
+{% set hero_stats = [
+  {'label': 'Marcas', 'value': marcas|length, 'hint': 'cadastros'}
+] %}
+{% call page_hero(
+  title='Produtos Marca'|safe,
+  subtitle='Gerencie as marcas usadas para classificar produtos.',
+  eyebrow='Crachá'|safe,
+  stats=hero_stats
+) %}
+  <div class="page-hero__actions">
+    <a class="btn btn-light" href="{{ url_for('cracha_bp.produtos') }}">
+      <i class="fa-solid fa-boxes-stacked me-1"></i> Voltar para produtos
+    </a>
+  </div>
+{% endcall %}
+
+<div class="card marca-card mb-3">
+  <div class="card-body">
+    <form method="post" action="{{ form_action }}" class="row g-3 align-items-end">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="txtID" value="{{ marca.id_pk if marca else '' }}">
+      <div class="col-md-8">
+        <label class="form-label"><span>*</span> Marca</label>
+        <input type="text" class="form-control" name="txtMarca" value="{{ marca.nome if marca else '' }}" required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Ativo</label>
+        <div class="form-check form-switch mt-2">
+          <input class="form-check-input" type="checkbox" name="chkAtivo" value="t" {{ 'checked' if marca and marca.ativo else '' }}>
+        </div>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">{{ 'Atualizar' if marca else 'Salvar' }}</button>
+        {% if marca %}
+        <a class="btn btn-outline-secondary w-100" href="{{ url_for('cracha_bp.produtos_marca') }}">Cancelar</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card marca-card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover marca-table">
+        <thead>
+          <tr>
+            <th>Marca</th>
+            <th>Status</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in marcas %}
+          <tr>
+            <td class="fw-semibold">{{ row.nome }}</td>
+            <td>{{ 'Ativo' if row.ativo else 'Inativo' }}</td>
+            <td class="text-end">
+              <div class="d-flex justify-content-end gap-2">
+                <a class="btn btn-outline-primary btn-sm" href="{{ url_for('cracha_bp.produtos_marca', edit=row.id_pk) }}">
+                  <i class="fa-solid fa-pen me-1"></i> Editar
+                </a>
+                <form method="post" action="{{ url_for('cracha_bp.produtos_marca_excluir', marca_id=row.id_pk) }}" onsubmit="return confirm('Deseja excluir esta marca?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="fa-solid fa-trash me-1"></i> Excluir
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not marcas %}
+          <tr>
+            <td colspan="3" class="text-center text-muted py-4">Nenhuma marca cadastrada.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% set phone_values = extra_phones_list or [''] %}
+<div class="mb-3" data-phone-manager id="{{ wrapper_id or '' }}">
+  <label class="form-label fw-semibold">Telefones adicionais</label>
+  <div class="phone-extra-wrapper mt-2" data-phone-list>
+    {% for value in phone_values %}
+    <div class="input-group input-group-sm mb-2 phone-extra-entry">
+      <input type="text" class="form-control" name="extra_phones[]" value="{{ value }}" placeholder="(00) 00000-0000">
+      <button type="button" class="btn btn-outline-danger" data-remove-phone title="Remover telefone">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    {% endfor %}
+  </div>
+  <button type="button" class="btn btn-outline-primary btn-sm mt-2" data-add-phone>
+    <i class="bi bi-plus-lg me-1"></i>Adicionar telefone
+  </button>
+  <div class="form-text mt-2">Esses telefones adicionais aparecem no contato do consultor das propostas.</div>
+</div>

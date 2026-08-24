@@ -1,0 +1,476 @@
+<!-- Modal Nova OS -->
+<div class="modal sollus-modal fade" id="modalNova" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('assist_bp.assistencia_criar') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Nova Ordem de Serviço</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Empresa / Cliente</label>
+              <input type="text" class="form-control" name="nome" id="novo-nome" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">CNPJ</label>
+              <input type="text" class="form-control js-cnpj-lookup" name="cnpj" id="novo-cnpj" data-target-nome="#novo-nome">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">CEP</label>
+              <div class="input-group">
+                <input type="text" class="form-control js-cep-mask" name="cep" id="novo-cep">
+                <button class="btn btn-outline-secondary js-fetch-cep" type="button" data-target-cep="#novo-cep" data-target-bairro="#novo-bairro" title="Buscar CEP"><i class="bi bi-search"></i></button>
+              </div>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Bairro</label>
+              <input type="text" class="form-control" name="bairro" id="novo-bairro">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Unidade</label>
+              <select class="form-select" name="unidade">
+                <option value="Rio de Janeiro">Rio de Janeiro</option>
+                <option value="Tecnho Rio de Janeiro">Tecnho Rio de Janeiro</option>
+                <option value="Campos">Campos</option>
+                <option value="Espirito Santo">Espírito Santo</option>
+                <option value="Curitiba">Curitiba</option>
+                <option value="Sao Paulo">São Paulo</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Departamento</label>
+              <select class="form-select" name="departamento_responsavel">
+                <option value="SUPORTE">SUPORTE</option>
+                <option value="OFICINA">OFICINA</option>
+                <option value="ESTOQUE">ESTOQUE</option>
+                <option value="ASSISTENCIA TECNICA">ASSISTÊNCIA TÉCNICA</option>
+                <option value="AGUARDANDO">AGUARDANDO</option>
+              </select>
+            </div>
+            <div class="col-md-4 d-none">
+              <label class="form-label">Técnico Responsável</label>
+              {{ create_form.usuario_designado(class="form-select") }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Tipo de Entrada</label>
+              <select class="form-select" name="tipo_entrada">
+                <option value="RETIRADO">Retirado</option>
+                <option value="BALCAO">Balcão</option>
+              </select>
+            </div>
+            <div class="col-md-4 d-none">
+              <label class="form-label">Tipo Atendimento</label>
+              {{ create_form.tipo_atendimento(class="form-select") }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Contrato?</label>
+              <select class="form-select" name="contrato">
+                <option value="nao">Não</option>
+                <option value="sim">Sim</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Fluxo</label>
+              <select class="form-select" name="fluxo_tipo">
+                <option value="interno">Conserto interno</option>
+                <option value="fabrica">Envio para fabrica</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Número da OS</label>
+              <input type="text" class="form-control" name="os_codigo" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Data de Criação</label>
+              <input type="date" class="form-control" name="data_criacao" value="{{ create_form.data_criacao.data }}" readonly>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Data Fim</label>
+              <input type="date" class="form-control" name="data_fim" value="{{ create_form.data_fim.data }}" readonly>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Descrição / Defeito</label>
+              <textarea class="form-control" name="descricao" rows="3"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Anexos (opcional)</label>
+              <input type="file" class="form-control" name="arquivo">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Criar OS</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detalhes -->
+<div class="modal sollus-modal fade" id="modalDetalhes" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalhes da OS</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="detalhes-body">
+        <!-- Preenchido via JS -->
+        <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar -->
+<div class="modal sollus-modal fade" id="modalEditar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('assist_bp.assistencia_editar', tarefa_id=0) }}" enctype="multipart/form-data" id="edit-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="tarefa_id" id="edit-tarefa-id">
+        <input type="hidden" name="notificacao" id="edit-notificacao">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar OS</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <!-- Empresa e CNPJ -->
+            <div class="col-md-6">
+              <label class="form-label">Empresa</label>
+              <input type="text" class="form-control" name="nome" id="edit-nome" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">CNPJ</label>
+              <input type="text" class="form-control js-cnpj-lookup" name="cnpj" id="edit-cnpj" data-target-nome="#edit-nome">
+            </div>
+
+            <!-- CEP e Bairro -->
+            <div class="col-md-4">
+              <label class="form-label">CEP</label>
+              <div class="input-group">
+                <input type="text" class="form-control js-cep-mask" name="cep" id="edit-cep">
+                <button class="btn btn-outline-secondary js-fetch-cep" type="button" data-target-cep="#edit-cep" data-target-bairro="#edit-bairro" title="Buscar CEP"><i class="bi bi-search"></i></button>
+              </div>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Bairro</label>
+              <input type="text" class="form-control" name="bairro" id="edit-bairro">
+            </div>
+
+            <!-- Unidade, Departamento e Tipo de Entrada -->
+            <div class="col-md-4">
+              <label class="form-label">Unidade</label>
+              <select class="form-select" name="unidade" id="edit-unidade">
+                <option value="Rio de Janeiro">Rio de Janeiro</option>
+                <option value="Tecnho Rio de Janeiro">Tecnho Rio de Janeiro</option>
+                <option value="Campos">Campos</option>
+                <option value="Espirito Santo">Espírito Santo</option>
+                <option value="Curitiba">Curitiba</option>
+                <option value="Sao Paulo">São Paulo</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Departamento Responsável</label>
+              <select class="form-select" name="departamento_responsavel" id="edit-departamento">
+                <option value="SUPORTE">SUPORTE</option>
+                <option value="OFICINA">OFICINA</option>
+                <option value="ESTOQUE">ESTOQUE</option>
+                <option value="ASSISTENCIA TECNICA">ASSISTÊNCIA TÉCNICA</option>
+                <option value="AGUARDANDO">AGUARDANDO</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Tipo de Entrada</label>
+              <select class="form-select" name="tipo_entrada" id="edit-tipo-entrada">
+                <option value="RETIRADO">Retirado</option>
+                <option value="BALCAO">Balcão</option>
+              </select>
+            </div>
+
+            <!-- Contrato, Número da OS e Status -->
+            <div class="col-md-4">
+              <label class="form-label">Contrato?</label>
+              <select class="form-select" name="contrato" id="edit-contrato">
+                <option value="nao">Não</option>
+                <option value="sim">Sim</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Número da OS</label>
+              <input type="text" class="form-control" name="os_codigo" id="edit-os-codigo" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Status</label>
+              <select class="form-select" name="status" id="edit-status">
+                <option value="Entrada">Entrada</option>
+                <option value="em progresso">Em progresso</option>
+                <option value="aguardando">Aguardando</option>
+                <option value="fabrica">Fábrica</option>
+                <option value="concluído">Concluído</option>
+                <option value="devolucao_sem_reparo">Devolucao sem reparo</option>
+                <option value="descarte">Descarte</option>
+                <option value="retorno">Retorno</option>
+              </select>
+            </div>
+
+            <!-- Data de Entrada (Criação) e Data Fim (Previsão) -->
+            <div class="col-md-6">
+              <label class="form-label">Data de Entrada</label>
+              <input type="date" class="form-control" name="data_criacao" id="edit-data-criacao" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Data Fim (Previsão)</label>
+              <input type="date" class="form-control" name="data_fim" id="edit-data-fim">
+            </div>
+
+            <!-- Orçamento -->
+            <div class="col-md-12">
+              <label class="form-label">Orçamento</label>
+              <input type="text" class="form-control" name="orcamento" id="edit-orcamento">
+            </div>
+
+            <!-- Descrição / Defeito -->
+            <div class="col-12">
+              <label class="form-label">Descrição / Defeito</label>
+              <textarea class="form-control" name="descricao" id="edit-descricao" rows="3"></textarea>
+            </div>
+
+            <!-- Técnico Designado e Tipo Atendimento (Hidden wrappers as requested by user) -->
+            <div class="col-md-6 d-none">
+              <label class="form-label">Técnico Responsável</label>
+              {{ edit_form.usuario_designado(class="form-select", id="edit-usuario") }}
+            </div>
+            <div class="col-md-6 d-none">
+              <label class="form-label">Tipo Atendimento</label>
+              {{ edit_form.tipo_atendimento(class="form-select", id="edit-tipo-atendimento") }}
+            </div>
+
+            <!-- Atualizações / Observações (Adicionar Nova) -->
+            <div class="col-12">
+              <label class="form-label">Atualizações / Observações (Adicionar Nova)</label>
+              <textarea class="form-control" name="atualizar_tarefa" id="edit-atualizacoes" rows="3" placeholder="Escreva aqui para registrar um novo andamento..."></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Fábrica -->
+<div class="modal sollus-modal fade" id="modalFabrica" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('assist_bp.assistencia_fabrica', tarefa_id=0) }}" id="fabrica-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="tarefa_id" id="fabrica-id">
+        <div class="modal-header">
+          <h5 class="modal-title">Envio/Retorno de Fábrica</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Ação</label>
+            <select class="form-select" name="acao_fabrica" id="fabrica-acao">
+              <option value="envio">Registrar Envio</option>
+              <option value="retorno">Registrar Retorno</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Data</label>
+            <input type="date" class="form-control" name="data_evento" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Observações</label>
+            <textarea class="form-control" name="obs" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Confirmar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Resposta -->
+<div class="modal sollus-modal fade" id="modalResposta" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('assist_bp.assistencia_resposta', tarefa_id=0) }}" enctype="multipart/form-data" id="resposta-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="tarefa_id" id="resposta-id">
+        <div class="modal-header">
+          <h5 class="modal-title">Anexar Resposta / Laudo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Arquivo de Resposta (PDF/Doc)</label>
+            <input type="file" class="form-control" name="arquivo_resposta" required>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="concluir_os" id="checkConcluir">
+            <label class="form-check-label" for="checkConcluir">
+              Marcar OS como Concluída
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Enviar Resposta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Preenche modal de detalhes
+    const modalDetalhes = document.getElementById('modalDetalhes')
+    modalDetalhes.addEventListener('show.bs.modal', event => {
+      const button = event.relatedTarget
+      if (!button || !button.getAttribute('data-task')) return
+      const task = JSON.parse(button.getAttribute('data-task'))
+      const body = document.getElementById('detalhes-body')
+
+      let html = `
+        <div class="row">
+          <div class="col-md-6 mb-2"><strong>Cliente:</strong> ${task.nome}</div>
+          <div class="col-md-6 mb-2"><strong>CNPJ:</strong> ${task.cnpj || '-'}</div>
+          <div class="col-md-6 mb-2"><strong>CEP:</strong> ${task.cep || '-'}</div>
+          <div class="col-md-6 mb-2"><strong>Bairro:</strong> ${task.bairro || '-'}</div>
+          <div class="col-md-6 mb-2"><strong>OS:</strong> ${task.os}</div>
+          <div class="col-md-6 mb-2"><strong>Status:</strong> ${task.status}</div>
+          <div class="col-md-6 mb-2"><strong>Departamento:</strong> ${task.departamento_label || task.departamento_responsavel || '-'}</div>
+          <div class="col-12 mb-3"><strong>Descrição:</strong><p class="text-muted bg-light p-2 rounded">${task.descricao || 'Sem descrição'}</p></div>
+          <div class="col-12 mb-3"><strong>Atualizações:</strong><p class="text-muted bg-light p-2 rounded">${task.atualizacoes || 'Nenhuma atualização'}</p></div>
+          <div class="col-md-6 mb-2"><strong>Data Entrada:</strong> ${task.data_criacao ? task.data_criacao.substring(0,10) : '-'}</div>
+          <div class="col-md-6 mb-2"><strong>Previsão Fim:</strong> ${task.data_fim ? task.data_fim.substring(0,10) : '-'}</div>
+        </div>
+      `
+      body.innerHTML = html
+    })
+
+    // Preenche modal de edição
+    const modalEditar = document.getElementById('modalEditar')
+    modalEditar.addEventListener('show.bs.modal', event => {
+      const button = event.relatedTarget
+      if (!button || !button.getAttribute('data-task')) return
+      const task = JSON.parse(button.getAttribute('data-task'))
+      const form = document.getElementById('edit-form')
+
+      form.action = `{{ url_for('assist_bp.assistencia_editar', tarefa_id=0) }}`.replace('0', task.id)
+      document.getElementById('edit-tarefa-id').value = task.id
+      document.getElementById('edit-nome').value = task.nome
+      document.getElementById('edit-status').value = task.status
+      document.getElementById('edit-atualizacoes').value = ''
+      document.getElementById('edit-orcamento').value = task.orcamento || ''
+      document.getElementById('edit-cep').value = task.cep || ''
+      document.getElementById('edit-bairro').value = task.bairro || ''
+      document.getElementById('edit-unidade').value = task.unidade || ''
+      document.getElementById('edit-departamento').value = task.departamento_responsavel || ''
+      document.getElementById('edit-usuario').value = task.usuario_designado || ''
+      document.getElementById('edit-tipo-entrada').value = task.tipo_entrada || ''
+      if(document.getElementById('edit-tipo-atendimento')) {
+        document.getElementById('edit-tipo-atendimento').value = task.tipo_atendimento || ''
+      }
+      document.getElementById('edit-contrato').value = task.contrato || ''
+      document.getElementById('edit-os-codigo').value = task.os || ''
+      document.getElementById('edit-descricao').value = task.descricao || ''
+      document.getElementById('edit-notificacao').value = task.notificacao || 'nao'
+      if(task.data_criacao) {
+        document.getElementById('edit-data-criacao').value = task.data_criacao.substring(0,10)
+      }
+      if(task.data_fim) {
+        document.getElementById('edit-data-fim').value = task.data_fim.substring(0,10)
+      }
+    })
+
+    // Preenche modal de fábrica
+    const modalFabrica = document.getElementById('modalFabrica')
+    modalFabrica.addEventListener('show.bs.modal', event => {
+      const button = event.relatedTarget
+      if (!button || !button.getAttribute('data-task')) return
+      const task = JSON.parse(button.getAttribute('data-task'))
+      const form = document.getElementById('fabrica-form')
+      form.action = `{{ url_for('assist_bp.assistencia_fabrica', tarefa_id=0) }}`.replace('0', task.id)
+      document.getElementById('fabrica-id').value = task.id
+    })
+
+    // Preenche modal de resposta
+    const modalResposta = document.getElementById('modalResposta')
+    modalResposta.addEventListener('show.bs.modal', event => {
+      const button = event.relatedTarget
+      if (!button || !button.getAttribute('data-task')) return
+      const task = JSON.parse(button.getAttribute('data-task'))
+      const form = document.getElementById('resposta-form')
+      form.action = `{{ url_for('assist_bp.assistencia_resposta', tarefa_id=0) }}`.replace('0', task.id)
+      document.getElementById('resposta-id').value = task.id
+    })
+
+    async function fetchCep(cepValue, targetSelector) {
+      const clean = (cepValue || '').replace(/\D/g, '')
+      if (clean.length !== 8) return
+      const target = document.querySelector(targetSelector)
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${clean}/json/`)
+        const data = await response.json()
+        if (!data || data.erro) return
+        if (target) target.value = data.bairro || ''
+      } catch (error) {
+        console.warn('Falha ao consultar CEP', error)
+      }
+    }
+
+    document.querySelectorAll('.js-fetch-cep').forEach((button) => {
+      button.addEventListener('click', () => {
+        const cepInput = document.querySelector(button.dataset.targetCep || '')
+        fetchCep(cepInput ? cepInput.value : '', button.dataset.targetBairro || '')
+      })
+    })
+
+    document.querySelectorAll('.js-cep-mask').forEach((input) => {
+      input.addEventListener('blur', () => {
+        const button = document.querySelector(`.js-fetch-cep[data-target-cep="#${input.id}"]`)
+        if (button) fetchCep(input.value, button.dataset.targetBairro || '')
+      })
+    })
+
+    async function fetchCnpj(cnpjValue, targetSelector) {
+      const clean = (cnpjValue || '').replace(/\D/g, '')
+      if (clean.length !== 14) return
+      const target = document.querySelector(targetSelector)
+      try {
+        const response = await fetch(`{{ url_for('assist_bp.assistencia_orcamentos_cnpj') }}?cnpj=${encodeURIComponent(clean)}`, {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        const data = await response.json()
+        if (!response.ok || !data || data.error) return
+        if (target && data.cliente) target.value = data.cliente
+      } catch (error) {
+        console.warn('Falha ao consultar CNPJ', error)
+      }
+    }
+
+    document.querySelectorAll('.js-cnpj-lookup').forEach((input) => {
+      input.addEventListener('blur', () => fetchCnpj(input.value, input.dataset.targetNome || ''))
+      input.addEventListener('change', () => fetchCnpj(input.value, input.dataset.targetNome || ''))
+    })
+  })
+</script>

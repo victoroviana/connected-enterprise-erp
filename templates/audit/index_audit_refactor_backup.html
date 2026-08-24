@@ -1,0 +1,535 @@
+{% extends "layout.html" %}
+
+{% block title %}Auditoria  Sollus{% endblock %}
+
+
+
+{% macro render_json(payload, raw, key, label='') %}
+
+  {% if payload %}
+
+    {% set target_id = 'audit-json-' ~ key %}
+
+    <button type="button"
+
+            class="btn btn-link p-0 audit-json-trigger"
+
+            data-json-target="#{{ target_id }}"
+
+            data-json-kind="payload"
+
+            data-title="Detalhes formatados"
+
+            {% if label %}data-context="{{ label }}"{% endif %}>
+
+      Ver detalhes
+
+    </button>
+
+    <script type="application/json" id="{{ target_id }}" class="audit-json-data" hidden>
+
+      {{ payload|tojson }}
+
+    </script>
+
+  {% elif raw %}
+
+    {% set target_id = 'audit-raw-' ~ key %}
+
+    <button type="button"
+
+            class="btn btn-link p-0 audit-json-trigger"
+
+            data-json-target="#{{ target_id }}"
+
+            data-json-kind="raw"
+
+            data-title="Contedo bruto"
+
+            {% if label %}data-context="{{ label }}"{% endif %}>
+
+      Ver bruto
+
+    </button>
+
+    <template id="{{ target_id }}" class="audit-json-data">
+
+      {{ raw|e }}
+
+    </template>
+
+  {% else %}
+
+    <span class="text-muted"></span>
+
+  {% endif %}
+
+{% endmacro %}
+
+{% block content %}
+
+<style>
+
+  .audit-json-trigger {
+
+    font-weight: 600;
+
+    color: #0E5DC6;
+
+    text-decoration: none;
+
+  }
+
+  .audit-json-trigger:hover,
+
+  .audit-json-trigger:focus {
+
+    text-decoration: underline;
+
+  }
+
+  .audit-json-modal-context {
+
+    font-size: 0.85rem;
+
+    color: #64748b;
+
+    margin-bottom: 0.75rem;
+
+  }
+
+  .audit-table {
+
+    table-layout: fixed;
+
+    width: 100%;
+
+  }
+
+  .audit-table th,
+
+  .audit-table td {
+
+    word-wrap: break-word;
+
+  }
+
+  .audit-json-modal pre {
+
+    margin: 0;
+
+    font-size: 0.85rem;
+
+    font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+
+    white-space: pre;
+
+    max-height: 70vh;
+
+    overflow: auto;
+
+    background: #0b1d3720;
+
+    border-radius: 0.5rem;
+
+    padding: 1rem;
+
+  }
+
+</style>
+
+
+
+
+
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3">
+
+  <div>
+
+    <h1 class="h3 mb-1">Auditoria</h1>
+
+    <p class="text-muted mb-0">Acompanhe inclusões, edições e exclusões em todos os módulos.</p>
+
+  </div>
+
+  <div>
+
+    <a class="btn btn-outline-primary" href="{{ url_for('audit.api_list', limit=100) }}" target="_blank" rel="noreferrer">
+
+      <i class="bi bi-braces"></i>
+
+      API
+
+    </a>
+
+  </div>
+
+</div>
+
+
+
+<form class="row g-3 mb-4" method="get">
+
+  <div class="col-md-3">
+
+    <label class="form-label mb-1">Entidade</label>
+
+    <input class="form-control" name="entity_type" value="{{ filters.entity_type }}" placeholder="Ex.: Proposal, Ticket">
+
+  </div>
+
+  <div class="col-md-3">
+
+    <label class="form-label mb-1">Ação</label>
+
+    <input class="form-control" name="action" value="{{ filters.action }}" placeholder="create, update, delete">
+
+  </div>
+
+  <div class="col-md-3">
+
+    <label class="form-label mb-1">Tipo de operação</label>
+
+    <select class="form-select" name="operation">
+
+      <option value="">Todas</option>
+
+      {% for group in action_groups %}
+
+        <option value="{{ group.key }}" {% if filters.operation == group.key %}selected{% endif %}>{{ group.label }}</option>
+
+      {% endfor %}
+
+    </select>
+
+  </div>
+
+  <div class="col-md-3">
+
+    <label class="form-label mb-1">Autor (id, e-mail ou nome)</label>
+
+    <input class="form-control" name="actor" value="{{ filters.actor }}">
+
+  </div>
+
+  <div class="col-md-6">
+
+    <label class="form-label mb-1">Mensagem / texto livre</label>
+
+    <input class="form-control" name="q" value="{{ filters.q }}" placeholder="Buscar em mensagens e detalhes">
+
+  </div>
+
+  <div class="col-md-2">
+
+    <label class="form-label mb-1">Por página</label>
+
+    <input type="number" min="5" max="100" class="form-control" name="per_page" value="{{ filters.per_page }}">
+
+  </div>
+
+  <div class="col-md-4 d-flex align-items-end gap-2">
+
+    <button class="btn btn-primary flex-fill"><i class="bi bi-search"></i> Buscar</button>
+
+    <a class="btn btn-outline-secondary" href="{{ url_for('audit.page') }}">Limpar</a>
+
+  </div>
+
+</form>
+
+
+
+<div class="table-responsive shadow-sm rounded-4 border bg-white">
+
+  <table class="table table-sm align-middle mb-0 audit-table">
+
+    <thead class="table-light">
+
+      <tr>
+
+        <th style="width: 160px;">Quando</th>
+
+        <th>Autor</th>
+
+        <th>Entidade</th>
+
+        <th>Ação</th>
+
+        <th>Mensagem</th>
+
+        <th style="width: 250px;">Antes</th>
+
+        <th style="width: 250px;">Depois</th>
+
+        <th style="width: 120px;">IP</th>
+
+      </tr>
+
+    </thead>
+
+    <tbody>
+
+      {% for r in rows %}
+
+      <tr>
+
+        {% set entity_ref = r.entity_type or 'Registro' %}
+
+        {% if r.entity_id %}{% set entity_ref = entity_ref ~ ' #' ~ r.entity_id %}{% endif %}
+
+        <td class="text-nowrap">{{ r.created_at | local('%d/%m/%Y %H:%M') if r.created_at else '' }}</td>
+
+        <td>
+
+          {% if r.actor_name %}<strong>{{ r.actor_name }}</strong>{% endif %}
+
+          {% if r.actor_email %}<div class="text-muted small">{{ r.actor_email }}</div>{% endif %}
+
+          {% if r.actor_id %}<div class="text-muted small">id: {{ r.actor_id }}</div>{% endif %}
+
+        </td>
+
+        <td class="text-nowrap">{{ r.entity_type }}{% if r.entity_id %} #{{ r.entity_id }}{% endif %}</td>
+
+        <td class="text-nowrap">
+
+          <span class="badge text-bg-secondary text-uppercase">{{ r.action }}</span>
+
+        </td>
+
+        <td style="max-width: 320px; word-break: break-word;">{{ r.message or '' }}</td>
+
+        <td>{{ render_json(r.before_data, r.before, 'before-' ~ loop.index0, 'Antes  ' ~ entity_ref) }}</td>
+
+        <td>{{ render_json(r.after_data, r.after, 'after-' ~ loop.index0, 'Depois  ' ~ entity_ref) }}</td>
+
+        <td class="text-nowrap">{{ r.ip or '' }}</td>
+
+      </tr>
+
+      {% else %}
+
+      <tr>
+
+        <td colspan="8" class="text-center text-muted py-4">Nenhum registro encontrado.</td>
+
+      </tr>
+
+      {% endfor %}
+
+    </tbody>
+
+  </table>
+
+</div>
+
+
+
+<div class="modal sollus-modal fade" id="auditJsonModal" tabindex="-1" aria-hidden="true">
+
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+
+    <div class="modal-content audit-json-modal">
+
+      <div class="modal-header">
+
+        <h5 class="modal-title audit-json-modal-title">Detalhes</h5>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
+      </div>
+
+      <div class="modal-body">
+
+        <div class="audit-json-modal-context d-none" id="auditJsonModalContext"></div>
+
+        <pre class="audit-json-modal__content" id="auditJsonModalContent"></pre>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<script>
+
+  document.addEventListener('DOMContentLoaded', function () {
+
+    const modalElement = document.getElementById('auditJsonModal');
+
+    if (!modalElement) {
+
+      return;
+
+    }
+
+    const contentEl = modalElement.querySelector('.audit-json-modal__content');
+
+    const titleEl = modalElement.querySelector('.audit-json-modal-title');
+
+    const hasBootstrap = window.bootstrap && window.bootstrap.Modal;
+
+    const contextEl = modalElement.querySelector('#auditJsonModalContext');
+
+    const modalInstance = hasBootstrap ? window.bootstrap.Modal.getOrCreateInstance(modalElement) : null;
+
+
+
+    document.addEventListener('click', function (event) {
+
+      const trigger = event.target.closest('.audit-json-trigger');
+
+      if (!trigger) {
+
+        return;
+
+      }
+
+      event.preventDefault();
+
+
+
+      const targetSelector = trigger.dataset.jsonTarget;
+
+      const kind = trigger.dataset.jsonKind || 'raw';
+
+      const title = trigger.dataset.title || 'Detalhes';
+
+      const sourceEl = targetSelector ? document.querySelector(targetSelector) : null;
+
+      let data = '';
+
+      if (sourceEl) {
+
+        data = sourceEl.textContent || '';
+
+      }
+
+      if (kind === 'payload') {
+
+        try {
+
+          data = JSON.stringify(JSON.parse(data), null, 2);
+
+        } catch (err) {
+
+          console.warn('Falha ao formatar JSON da auditoria:', err);
+
+        }
+
+      }
+
+      if (contentEl) {
+
+        contentEl.textContent = data;
+
+      }
+
+      if (titleEl) {
+
+        titleEl.textContent = title;
+
+      }
+
+      const context = trigger.dataset.context || '';
+
+      if (contextEl) {
+
+        contextEl.textContent = context;
+
+        contextEl.classList.toggle('d-none', !context);
+
+      }
+
+      if (modalInstance) {
+
+        modalInstance.show();
+
+      } else {
+
+        modalElement.classList.add('show');
+
+        modalElement.style.display = 'block';
+
+        modalElement.removeAttribute('aria-hidden');
+
+      }
+
+    });
+
+
+
+    if (!modalInstance) {
+
+      modalElement.addEventListener('click', function (event) {
+
+        if (event.target === modalElement || event.target.classList.contains('btn-close')) {
+
+          modalElement.classList.remove('show');
+
+          modalElement.style.display = 'none';
+
+          modalElement.setAttribute('aria-hidden', 'true');
+
+        }
+
+      });
+
+    }
+
+  });
+
+</script>
+
+
+
+{% if pagination.pages > 1 %}
+{% set pages_to_show = [] %}
+{% for p in [1, pagination.page, pagination.page + 1, pagination.page + 2, pagination.page + 3, pagination.pages] %}
+  {% if 1 <= p <= pagination.pages and p not in pages_to_show %}
+    {% set _ = pages_to_show.append(p) %}
+  {% endif %}
+{% endfor %}
+<nav class="mt-3">
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <ul class="pagination mb-0">
+      <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+        {% if pagination.has_prev %}
+        <a class="page-link" href="{{ url_for('audit.page', page=pagination.prev_num, **filters) }}">Anterior</a>
+        {% else %}
+        <span class="page-link">Anterior</span>
+        {% endif %}
+      </li>
+      {% for p in pages_to_show %}
+      <li class="page-item {% if p == pagination.page %}active{% endif %}">
+        <a class="page-link" href="{{ url_for('audit.page', page=p, **filters) }}">{{ p }}</a>
+      </li>
+      {% endfor %}
+      <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+        {% if pagination.has_next %}
+        <a class="page-link" href="{{ url_for('audit.page', page=pagination.next_num, **filters) }}">Próximo</a>
+        {% else %}
+        <span class="page-link">Próximo</span>
+        {% endif %}
+      </li>
+    </ul>
+    <form class="d-flex align-items-center gap-2" method="get" action="{{ url_for('audit.page') }}">
+      {% for key, value in filters.items() %}
+      <input type="hidden" name="{{ key }}" value="{{ value }}">
+      {% endfor %}
+      <label class="small text-muted mb-0" for="audit-page-input-backup">Página</label>
+      <input type="number" min="1" max="{{ pagination.pages }}" class="form-control form-control-sm" id="audit-page-input-backup" name="page" value="{{ pagination.page }}">
+      <button class="btn btn-outline-secondary btn-sm" type="submit">Ir</button>
+    </form>
+  </div>
+</nav>
+{% endif %}
+
+{% endblock %}
+
+

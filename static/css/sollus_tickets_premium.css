@@ -1,0 +1,229 @@
+/* static/css/sollus_tickets_premium.css */
+
+:root {
+    --premium-blue: #0ea5e9;
+    --premium-indigo: #6366f1;
+    --premium-violet: #8b5cf6;
+    --premium-bg-soft: #f8fafc;
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --premium-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.04), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+    --premium-card-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.06), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
+    --premium-transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html[data-theme="dark"] {
+    --premium-bg-soft: #1e293b;
+    --glass-bg: rgba(15, 23, 42, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+/* Global Module Background Override */
+.ticket-premium-container {
+    min-height: calc(100vh - var(--nav-h));
+    margin: -1.5rem -1.5rem -1.5rem -1.5rem; /* Ajuste para preencher o container do layout */
+    padding: 2.5rem !important;
+    background-color: var(--premium-bg-soft);
+    animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Glassmorphism Cards */
+.card-premium {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 1.5rem;
+    box-shadow: var(--premium-card-shadow);
+    transition: var(--premium-transition);
+}
+
+.card-premium:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 25px 30px -5px rgba(15, 23, 42, 0.1);
+}
+
+/* Stats Cards */
+.stat-card {
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    border-radius: 1.25rem;
+    background: var(--card);
+    box-shadow: var(--premium-shadow);
+}
+
+.stat-card .icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+/* Ticket Table Modernization */
+.table-premium {
+    border-collapse: separate;
+    border-spacing: 0 0.5rem;
+}
+
+.table-premium thead th {
+    background: transparent !important;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    border: none;
+    padding: 1rem;
+}
+
+.table-premium tbody tr {
+    background: var(--card);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    transition: all 0.2s ease;
+}
+
+.table-premium tbody tr:hover {
+    background: var(--premium-bg-soft);
+    transform: scale(1.005);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.table-premium td {
+    padding: 1.25rem 1rem;
+    border-top: 1px solid var(--glass-border) !important;
+    border-bottom: 1px solid var(--glass-border) !important;
+}
+
+.table-premium td:first-child {
+    border-left: 1px solid var(--glass-border) !important;
+    border-top-left-radius: 0.75rem;
+    border-bottom-left-radius: 0.75rem;
+}
+
+.table-premium td:last-child {
+    border-right: 1px solid var(--glass-border) !important;
+    border-top-right-radius: 0.75rem;
+    border-bottom-right-radius: 0.75rem;
+}
+
+/* Status & Priority Badges */
+.badge-soft {
+    padding: 0.5em 0.85em;
+    font-weight: 600;
+    border-radius: 6px;
+    letter-spacing: 0.02em;
+}
+
+.badge-soft-primary { background: rgba(14, 165, 233, 0.15); color: #0ea5e9; }
+.badge-soft-secondary { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+.badge-soft-success { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+.badge-soft-warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.badge-soft-danger { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+/* Thread Bubbles */
+.thread-item {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.thread-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 600;
+    border: 3px solid var(--card);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.thread-bubble {
+    background: var(--premium-bg-soft);
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    box-shadow: var(--premium-shadow);
+    border: 1px solid var(--glass-border);
+}
+
+.thread-bubble.staff {
+    background: rgba(14, 165, 233, 0.08);
+    border-color: rgba(14, 165, 233, 0.2);
+}
+
+.thread-bubble.internal {
+    background: rgba(234, 179, 8, 0.08);
+    border-color: rgba(234, 179, 8, 0.2);
+}
+
+/* Forms Modernization */
+.form-premium .form-control, 
+.form-premium .form-select {
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--glass-border);
+    background: var(--card);
+    color: var(--text);
+    transition: all 0.2s ease;
+}
+
+.form-premium .form-control:focus {
+    border-color: var(--premium-blue);
+    background: var(--card);
+    color: var(--text);
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+}
+
+/* Sidebar Sections */
+.sidebar-section-title {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sidebar-section-title::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(148, 163, 184, 0.15);
+}
+
+/* Utility Animations */
+.hover-lift {
+    transition: transform 0.2s ease;
+}
+.hover-lift:hover {
+    transform: translateY(-3px);
+}
+
+.btn-white {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--glass-border);
+}
+.btn-white:hover {
+    background: var(--premium-bg-soft);
+    color: var(--text);
+}
+
+/* Dark Mode Overrides */
+html[data-theme="dark"] .text-dark-mode-white {
+    color: #ffffff !important;
+}

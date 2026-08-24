@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Login - Sollus Tecnologia</title>
+
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}?v=3">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon.png') }}?v=3">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}?v=3">
+
+  <style>
+
+    :root{
+
+      --blue-900:#003B66;
+
+      --blue-800:#0a4f84;
+
+      --blue-700:#0F7BC8;
+
+      --blue-600:#1271b3;
+
+      --blue-500:#4DA0DD;
+
+      --ink:#0d1b2a;
+
+      --muted:#5c6b7a;
+
+      --white:#ffffff;
+
+      --border-color:#d1d9e6;
+
+      --radius-xl:28px;
+
+      --shadow-lg:0 20px 40px rgba(2,20,38,.18);
+
+      --ring:0 0 0 3px rgba(15,123,200,.25);
+
+    }
+
+    *{box-sizing:border-box;}
+
+    html,body{height:100%;}
+
+    body{
+
+      margin:0;
+
+      font-family:'Montserrat',system-ui,sans-serif;
+
+      color:var(--ink);
+
+      background:linear-gradient(145deg,var(--blue-900),var(--blue-700));
+
+      display:flex;
+
+      align-items:center;
+
+      justify-content:center;
+
+      padding:clamp(12px,2vmin,24px);
+
+      min-height:100dvh;
+
+      position:relative;
+
+      overflow:hidden;
+
+    }
+
+    body::before{
+
+      content:"";
+
+      position:absolute;
+
+      inset:-20%;
+
+      background:radial-gradient(circle at 20% 20%,rgba(255,255,255,.12),transparent 52%),radial-gradient(circle at 80% 10%,rgba(255,255,255,.08),transparent 60%);
+
+      filter:blur(12px);
+
+      opacity:.55;
+
+    }
+
+    .container{
+
+      position:relative;
+
+      width:min(96vw,980px);
+
+      min-height:clamp(500px,64svh,620px);
+
+      background:var(--white);
+
+      border-radius:var(--radius-xl);
+
+      box-shadow:var(--shadow-lg);
+
+      display:grid;
+
+      grid-template-columns:1.05fr .95fr;
+
+      overflow:hidden;
+
+      isolation:isolate;
+
+    }
+
+    .pane{padding:clamp(20px,4vw,44px) clamp(24px,4vw,48px);display:flex;flex-direction:column;justify-content:center;}
+
+    .info-section{color:#fff;background:linear-gradient(140deg,var(--blue-900) 0%,var(--blue-700) 100%);position:relative;overflow:hidden;}
+
+    .info-section::before{content:"";position:absolute;inset:-40% -20% -20% -20%;opacity:.1;background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.8) 1px,transparent 1px);background-size:18px 18px;transform:rotate(-12deg);}
+
+    .info-section h3{text-transform:uppercase;letter-spacing:.32em;font-size:.74rem;color:rgba(255,255,255,.7);margin-bottom:12px;}
+
+    .info-section h2{color:#fff;margin:0 0 20px;font-size:clamp(1.5rem,3vw,2.2rem);line-height:1.3;}
+
+    .carousel-container{position:relative;height:130px;overflow:hidden;width:100%;}
+
+    .carousel-content{position:absolute;width:100%;top:0;left:0;opacity:0;transform:translateY(20px);transition:opacity .8s ease,transform .8s ease;}
+
+    .carousel-content.active{opacity:1;transform:translateY(0);}
+
+    .carousel-content h3{font-size:1.3rem;font-weight:700;margin-bottom:8px;color:var(--white);}
+
+    .carousel-content p{font-size:15px;color:rgba(255,255,255,.85);line-height:1.6;margin:0;}
+
+    .info-footer{margin-top:25px;padding-top:16px;border-top:1px solid rgba(255,255,255,.22);font-size:14px;color:rgba(255,255,255,.85);line-height:1.6;}
+
+    .info-footer strong{display:block;font-weight:600;color:var(--white);margin-bottom:4px;}
+
+    .login-section{align-items:center;}
+
+    .brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:24px;text-align:center;}
+
+    .brand img{width:clamp(110px,22vw,150px);}
+
+    h2{margin:0 0 8px;font-weight:700;letter-spacing:.2px;color:var(--blue-900);font-size:clamp(22px,4vw,28px);}
+
+    p.helper{margin:0 0 22px;color:var(--muted);font-size:clamp(13px,2.6vw,14px);}
+
+    .messages{width:100%;max-width:360px;min-height:20px;}
+
+    .messages ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;}
+
+    .messages li{background:#ffe9e9;color:#a40000;border:1px solid #ffc6c6;border-radius:10px;padding:10px 12px;font-size:13px;}
+
+    form#login-form{width:100%;max-width:360px;display:flex;flex-direction:column;gap:20px;}
+
+    .input-group{position:relative;}
+
+    .input-icon{position:absolute;top:50%;left:15px;transform:translateY(-50%);color:var(--muted);pointer-events:none;}
+
+    .input{width:100%;border:1px solid var(--border-color);border-radius:12px;padding:14px 45px;font-size:16px;transition:all .2s ease;font-family:'Montserrat',sans-serif;}
+
+    .input:focus{outline:none;border-color:var(--blue-700);box-shadow:var(--ring);}
+
+    .input-group label{position:absolute;top:15px;left:45px;font-size:16px;color:var(--muted);pointer-events:none;transition:all .2s ease;background:var(--white);padding:0 4px;}
+
+    .input:focus + label,.input:not(:placeholder-shown) + label{top:-8px;left:42px;font-size:12px;color:var(--blue-700);}
+
+    .input::placeholder{color:transparent;}
+
+    #toggle-senha{position:absolute;top:50%;right:12px;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--muted);opacity:.7;transition:all .2s ease;display:grid;place-items:center;}
+
+    #toggle-senha:hover{opacity:1;color:var(--blue-700);}
+
+    .btn-primary{cursor:pointer;border-radius:12px;border:none;padding:14px 18px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;font-size:12px;color:#fff;background:linear-gradient(135deg,var(--blue-500),var(--blue-700));box-shadow:0 10px 20px rgba(15,123,200,.25);transition:transform .2s ease,box-shadow .2s ease;}
+
+    .btn-primary:hover{box-shadow:0 14px 28px rgba(15,123,200,.32);transform:translateY(-2px);}
+
+    .btn-primary:disabled{opacity:.7;cursor:not-allowed;}
+
+    @media (max-width:880px){body{overflow-y:auto;}.container{grid-template-columns:1fr;min-height:auto;}.info-section{order:1;padding:32px 26px;text-align:center;}.login-section{order:-1;padding:35px 28px;}.brand img{width:120px;}form#login-form{gap:16px;max-width:none;}.input{padding-top:11px;padding-bottom:11px;font-size:15px;}.input-group label{top:12px;font-size:15px;}.btn-primary{padding-top:12px;padding-bottom:12px;}.carousel-container{height:110px;}.carousel-content h3{font-size:1.1rem;}.carousel-content p{font-size:13px;}.info-footer{margin-top:20px;font-size:12px;padding-top:12px;}}
+
+  </style>
+
+</head>
+
+<body>
+
+  <div class="container">
+
+    <section class="pane info-section">
+
+      <h3>Seja exclusivo, seja Sollus</h3>
+
+      <h2>Plataforma integrada para proteger e acelerar sua operação.</h2>
+
+      <div class="carousel-container">
+
+        <div class="carousel-content active"><h3>Segurança</h3><p>Plataforma robusta para proteger seus dados e operações críticas.</p></div>
+
+        <div class="carousel-content"><h3>Controle de Acesso</h3><p>Defina permissões precisas e gerencie quem acessa o quê, quando e onde.</p></div>
+
+        <div class="carousel-content"><h3>Produtividade</h3><p>Agilize processos com uma interface intuitiva e centralizada.</p></div>
+
+      </div>
+
+      <div class="info-footer">
+
+        <strong>Não possui um cadastro?</strong>
+
+        <span>Entre em contato com o seu gestor para solicitar acesso ao sistema.</span>
+
+      </div>
+
+    </section>
+
+    <section class="pane login-section">
+
+      <div class="brand">
+
+        <img src="{{ url_for('static', filename='images/sollus_logo.png') }}" alt="Logo Sollus Tecnologia" />
+
+        <h2><span id="bemVindoText">Bem-vindo!</span></h2>
+
+        <p class="helper">Faça login para continuar</p>
+
+      </div>
+
+      <div class="messages">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+
+          {% if messages %}
+
+            <ul>
+
+              {% for category, message in messages %}
+
+                <li>{{ message }}</li>
+
+              {% endfor %}
+
+            </ul>
+
+          {% endif %}
+
+        {% endwith %}
+
+      </div>
+
+      <form id="login-form" method="POST" action="{{ url_for('auth_bp.login') }}" novalidate>
+
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="input-group">
+
+          <span class="input-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span>
+
+          <input class="input" id="usuario" type="text" name="usuario" placeholder="Usuário" autocomplete="username" required />
+
+          <label for="usuario">Usuário</label>
+
+        </div>
+
+        <div class="input-group">
+
+          <span class="input-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>
+
+          <input class="input" id="senha" type="password" name="senha" placeholder="Senha" autocomplete="current-password" required />
+
+          <label for="senha">Senha</label>
+
+          <button type="button" id="toggle-senha" aria-label="Mostrar senha"></button>
+
+        </div>
+
+        <button type="submit" class="btn-primary" id="btnSubmit">Entrar</button>
+
+      </form>
+
+    </section>
+
+  </div>
+
+  <script>
+
+    document.addEventListener('DOMContentLoaded', function(){
+
+      const form = document.getElementById('login-form');
+
+      const btn = document.getElementById('btnSubmit');
+
+      if(form && btn){
+
+        form.addEventListener('submit', function(){
+
+          if(form.checkValidity()){
+
+            btn.disabled = true;
+
+            btn.textContent = 'Entrando';
+
+          }
+
+        });
+
+      }
+
+      const senhaInput = document.getElementById('senha');
+
+      const toggleBtn = document.getElementById('toggle-senha');
+
+      if(senhaInput && toggleBtn){
+
+        const eyeIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+
+        const eyeOffIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+
+        toggleBtn.innerHTML = eyeIcon;
+
+        toggleBtn.addEventListener('click', function(){
+
+          const isPassword = senhaInput.type === 'password';
+
+          senhaInput.type = isPassword ? 'text' : 'password';
+
+          toggleBtn.innerHTML = isPassword ? eyeOffIcon : eyeIcon;
+
+          toggleBtn.setAttribute('aria-label', isPassword ? 'Ocultar senha' : 'Mostrar senha');
+
+        });
+
+      }
+
+      const carouselContents = document.querySelectorAll('.carousel-content');
+
+      if(carouselContents.length){
+
+        let index = 0;
+
+        const show = (i) => {
+
+          carouselContents.forEach(el => el.classList.remove('active'));
+
+          carouselContents[i].classList.add('active');
+
+        };
+
+        const next = () => {
+
+          index = (index + 1) % carouselContents.length;
+
+          show(index);
+
+        };
+
+        show(0);
+
+        setInterval(next, 5000);
+
+      }
+
+
+
+      const greetingEl = document.getElementById('bemVindoText');
+
+      if(greetingEl){
+
+        const greetings = ['Bem-vindo!', 'Bem-vinda!'];
+
+        let i = 0;
+
+        setInterval(() => {
+
+          i = (i + 1) % greetings.length;
+
+          greetingEl.textContent = greetings[i];
+
+        }, 4000);
+
+      }
+
+    });
+
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,116 @@
+{% extends "layout.html" %}
+{% block title %}Ticket em uso | Sollus Connected{% endblock %}
+
+{% block head %}
+<style>
+  .lock-card {
+    border: 0;
+    border-radius: 1.25rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    background: var(--card, #fff);
+    overflow: hidden;
+  }
+  .lock-gradient-header {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    padding: 3rem 2rem;
+    text-align: center;
+    color: #fff;
+    position: relative;
+  }
+  .lock-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    backdrop-filter: blur(4px);
+    animation: lock-pulse 2s infinite ease-in-out;
+  }
+  .lock-icon-wrapper svg {
+    width: 40px;
+    height: 40px;
+    fill: #fff;
+  }
+  .lock-body {
+    padding: 2.5rem;
+  }
+  .lock-owner-badge {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    display: inline-block;
+    margin-bottom: 1.5rem;
+  }
+  .action-btn-group {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 2rem;
+  }
+  @keyframes lock-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card lock-card">
+        <div class="lock-gradient-header">
+          <div class="lock-icon-wrapper">
+            <!-- Padlock SVG -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path d="M12 2C9.24 2 7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5zm-3 5c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9V7zm3 9c-.83 0-1.5-.67-1.5-1.5S11.17 13 12 13s1.5.67 1.5 1.5S12.83 16 12 16z"/>
+            </svg>
+          </div>
+          <h1 class="h3 fw-bold mb-1">Ticket em Uso / Conflito de Edição</h1>
+          <p class="mb-0 opacity-75">O chamado está temporariamente bloqueado para evitar sobreposição de alterações.</p>
+        </div>
+        <div class="lock-body text-center">
+          {% if lock_owner %}
+            <div class="lock-owner-badge">
+              🔒 Bloqueado por: {{ lock_owner }}
+            </div>
+            <p class="text-muted mb-4 lead">
+              O agente <strong>{{ lock_owner }}</strong> está visualizando ou editando este chamado no momento.
+            </p>
+          {% else %}
+            <div class="lock-owner-badge">
+              🔒 Bloqueado por outro agente
+            </div>
+            <p class="text-muted mb-4 lead">
+              Outro agente está com a página de edição ou resposta deste chamado aberta.
+            </p>
+          {% endif %}
+          
+          <div class="alert alert-warning border-0 rounded-3 text-start mb-4" style="background-color: var(--card-light, #fffbeb); color: #b45309;">
+            <h5 class="alert-heading fw-bold h6 mb-2">💡 Como proceder?</h5>
+            <ul class="mb-0 ps-3 small">
+              <li>Aguarde alguns minutos. O bloqueio expira automaticamente (estimado para as <strong>{{ expires_at or 'breve' }}</strong>).</li>
+              <li>Entre em contato com o agente de suporte que está operando o ticket para alinhar as ações.</li>
+              <li>Feche outras abas ou telas onde você mesmo possa ter deixado este chamado aberto.</li>
+            </ul>
+          </div>
+
+          <div class="action-btn-group">
+            <a href="{{ url_for('sollus_tickets.dashboard') }}" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-semibold">
+              Voltar à Fila de Tickets
+            </a>
+            <button onclick="window.location.reload();" class="btn btn-warning text-white px-4 py-2 rounded-pill fw-semibold" style="background-color: #d97706; border-color: #d97706;">
+              Tentar Novamente
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

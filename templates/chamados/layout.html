@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{% block title %}Sollus Connected{% endblock %}</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+<link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}?v=3">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon.png') }}?v=3">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}?v=3">
+
+{% block head %}{% endblock %}
+
+<style>
+:root{
+  --blue-900:#003B66; --blue-800:#0a4f84; --blue-700:#0F7BC8; --blue-600:#1271b3; --blue-500:#4DA0DD;
+  --bg:#f6f8fb; --card:#ffffff; --text:#101828; --muted:#667085;
+  --nav-h:60px; --rail-w:72px; --side-w:260px;
+  --logo-size:72px; --logo-size-collapsed:36px;
+  --footer-h:56px;
+  --bs-primary: var(--blue-700);
+  --bs-primary-rgb: 15,123,200;
+  --bs-link-color: var(--blue-700);
+  --bs-link-hover-color: var(--blue-800);
+  --chart-text: #667085;
+  --chart-grid: #e2e8f0;
+}
+/* Tema escuro (controlado via data-theme no <html>) */
+:root[data-theme="dark"]{
+  --bg:#0b1220; --card:#0e1726; --text:#e7eefc; --muted:#93a2c9;
+  --chart-text: #94a3b8;
+  --chart-grid: rgba(255,255,255,0.1);
+}
+
+*{ box-sizing:border-box }
+html,body{ height:100% }
+html{ scroll-behavior:smooth }
+
+body{
+  font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial,'Noto Sans',sans-serif;
+  background:var(--bg); color:var(--text);
+  overflow-x:hidden;
+  min-height:100dvh; display:flex; flex-direction:column;
+}
+.sollus-modal .modal-content{
+  border:1px solid rgba(148,163,184,.35);
+  border-radius:18px;
+  box-shadow:0 30px 80px rgba(15,23,42,.22);
+  overflow:hidden;
+  background:var(--card);
+}
+.sollus-modal .modal-header{
+  background:linear-gradient(120deg,#0b3b8c,#0bb4d4);
+  color:#fff;
+  border-bottom:0;
+}
+.sollus-modal .modal-title{font-weight:600;letter-spacing:.02em;}
+.sollus-modal .btn-close{filter:invert(1) grayscale(100%);opacity:.9;}
+.sollus-modal .modal-body{
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(14,93,198,.12), rgba(248,250,252,0) 55%),
+    radial-gradient(120% 120% at 100% 100%, rgba(11,180,212,.12), rgba(248,250,252,0) 55%);
+}
+.sollus-modal .modal-footer{
+  background:var(--bg);
+  border-top:1px solid rgba(148,163,184,.2);
+}
+.sollus-modal .form-label{
+  font-size:.75rem;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:#64748b;
+  margin-bottom:.35rem;
+}
+.sollus-modal .form-control,
+.sollus-modal .form-select{
+  border-radius:12px;
+  border-color:rgba(148,163,184,.45);
+  box-shadow:none;
+}
+.sollus-modal .form-control:focus,
+.sollus-modal .form-select:focus{
+  border-color:rgba(14,93,198,.7);
+  box-shadow:0 0 0 .2rem rgba(14,93,198,.15);
+}
+main.content{ flex:1 0 auto; }
+.site-footer{ flex-shrink:0; }
+
+/* NAVBAR */
+.navbar-sollus{
+  height:var(--nav-h);
+  background:linear-gradient(90deg,var(--blue-900),var(--blue-700));
+  box-shadow:0 2px 10px rgba(0,0,0,.12);
+}
+.user-pill{ color:#fff; display:flex; align-items:center; gap:.5rem; font-weight:600; }
+.user-avatar{
+  width:28px; height:28px; border-radius:50%;
+  background:rgba(255,255,255,.25); display:grid; place-items:center; font-size:.85rem;
+}
+
+/* SIDEBAR */
+.sidebar{
+  position: fixed; top: var(--nav-h); left: 0; bottom: 0;
+  width: var(--side-w); background: var(--card);
+  border-right:1px solid rgba(16,24,40,.08);
+  box-shadow: 2px 0 20px rgba(2,8,23,.06);
+  padding:.25rem .75rem .75rem;
+  transition: width .25s ease;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.sidebar .scroll{ overflow-y:auto; overflow-x:hidden; padding-right:.25rem; flex:1 1 auto }
+.sidebar .brand{
+  position: sticky; top:.25rem; z-index:2;
+  display:flex; align-items:center; justify-content:center;
+  margin:.25rem 0 .75rem; background:var(--card);
+}
+.sidebar .brand .logo{
+  width:var(--logo-size); height:var(--logo-size);
+  border-radius:12px; padding:0; display:grid; place-items:center;
+}
+
+/* LOGOS por tema (usa seus arquivos em static/images) */
+.brand-logo{ width:100%; height:100%; object-fit:contain; border-radius:10px; display:block }
+.brand-logo-white{ display:none; }
+:root[data-theme="dark"] .brand-logo-color{ display:none; }
+:root[data-theme="dark"] .brand-logo-white{ display:block; }
+
+.sidebar .section{margin-bottom:.25rem}
+.sidebar .toggle{
+  display:flex; align-items:center; gap:.6rem;
+  padding:.6rem .75rem; border-radius:.75rem; text-decoration:none;
+  color:var(--muted); font-weight:700; transition:background .2s ease, color .2s ease;
+  white-space:normal; line-height:1.2;
+}
+.sidebar .toggle:hover{ background:rgba(15,123,200,.08); color:var(--text) }
+.sidebar .toggle.active{ background:rgba(15,123,200,.15); color:var(--blue-800) }
+.sidebar .submenu{ padding:.25rem 0 .5rem; margin-left:.25rem }
+.sidebar .submenu .nav-link{
+  display:flex; align-items:center; gap:.6rem; padding:.5rem .75rem; margin:.125rem 0;
+  border-radius:.6rem; color:var(--muted); text-decoration:none; font-weight:600;
+  transition: background .2s ease, color .2s ease;
+  white-space:normal; line-height:1.2;
+}
+.sidebar .submenu .nav-link:hover{ background:rgba(15,123,200,.08); color:var(--text) }
+.sidebar .submenu .nav-link.active{ background:rgba(15,123,200,.15); color:var(--blue-800) }
+
+.sidebar .footer{
+  border-top:1px solid rgba(16,24,40,.08);
+  margin-top:auto; padding:.5rem .25rem;
+  display:flex; flex-direction:column; gap:.25rem;
+}
+.sidebar .footer .nav-link{
+  display:flex; align-items:center; gap:.6rem; padding:.5rem .75rem; border-radius:.6rem;
+  color:var(--muted); text-decoration:none; font-weight:700;
+}
+
+/* COLAPSADA: s cones */
+body.sidebar-collapsed .sidebar{ width:var(--rail-w); }
+body.sidebar-collapsed .sidebar .label{ display:none !important; }
+body.sidebar-collapsed .sidebar .toggle{ justify-content:center; }
+body.sidebar-collapsed .sidebar .toggle .chev,
+body.sidebar-collapsed .sidebar .toggle .fa-chevron-down{ display:none !important; }
+body.sidebar-collapsed .sidebar .submenu{ display:none !important; }
+body.sidebar-collapsed .sidebar .brand .logo{
+  width:var(--logo-size-collapsed); height:var(--logo-size-collapsed);
+}
+
+main.content{
+  padding:1rem; padding-top:calc(var(--nav-h) + 1rem); padding-bottom:12px;
+}
+@media (min-width: 992px){
+  main.content{ margin-left:var(--side-w); padding:1.5rem 2rem; padding-top:calc(var(--nav-h) + 1rem); transition: margin-left .25s ease; }
+  body.sidebar-collapsed main.content{ margin-left: var(--rail-w) }
+}
+
+/* FOOTER */
+.site-footer{
+  position: static; background: var(--card); color: var(--muted);
+  border-top:1px solid rgba(16,24,40,.08);
+  padding: 1rem 1.25rem; font-size:.93rem;
+}
+@media (min-width: 992px){
+  .site-footer{ margin-left: var(--side-w); }
+  body.sidebar-collapsed .site-footer{ margin-left: var(--rail-w); }
+}
+
+/* UI base */
+.card{ background:var(--card); color:var(--text); border:1px solid rgba(16,24,40,.08); box-shadow:0 8px 24px rgba(2,20,38,.06); }
+.card-header{ background:linear-gradient(180deg, rgba(13,27,42,.02), transparent); font-weight:700 }
+.table thead th{ background:linear-gradient(180deg, rgba(15,123,200,.08), rgba(15,123,200,.04)); border-bottom-color:rgba(15,123,200,.18) }
+.bg-body{ background:var(--card) !important; color:var(--text) !important; }
+.form-control:focus, .form-select:focus{ border-color:#b5daf6; box-shadow:0 0 0 .2rem rgba(79,178,255,.25) }
+
+/* ===== Tema CLARO: inputs brancos ===== */
+:root:not([data-theme="dark"]) .form-control,
+:root:not([data-theme="dark"]) .form-select,
+:root:not([data-theme="dark"]) .input-group-text,
+:root:not([data-theme="dark"]) textarea.form-control{
+  background-color:#ffffff !important;
+  color:#101828 !important;
+  border-color:#d0d5dd !important;
+}
+:root:not([data-theme="dark"]) .form-control::placeholder{
+  color:#667085 !important;
+}
+
+/* ===== Tema ESCURO: inputs escuros e superfcies ===== */
+:root[data-theme="dark"] .card,
+:root[data-theme="dark"] .modal-content,
+:root[data-theme="dark"] .dropdown-menu,
+:root[data-theme="dark"] .offcanvas-sollus,
+:root[data-theme="dark"] .bg-body{
+  background-color:var(--card) !important;
+  color:var(--text) !important;
+  border-color:rgba(231,238,252,.12) !important;
+}
+:root[data-theme="dark"] .card-header{
+  background:linear-gradient(180deg, rgba(255,255,255,.04), transparent) !important;
+  border-bottom:1px solid rgba(231,238,252,.10) !important;
+}
+:root[data-theme="dark"] .border,
+:root[data-theme="dark"] .list-group-item,
+:root[data-theme="dark"] .table,
+:root[data-theme="dark"] .dropdown-menu{
+  border-color:rgba(231,238,252,.12) !important;
+}
+:root[data-theme="dark"] .text-muted{ color:var(--muted) !important; }
+
+:root[data-theme="dark"] .form-control,
+:root[data-theme="dark"] .form-select,
+:root[data-theme="dark"] .input-group-text,
+:root[data-theme="dark"] textarea.form-control{
+  background-color:#0f1a2b !important;
+  color:var(--text) !important;
+  border-color:rgba(231,238,252,.14) !important;
+}
+:root[data-theme="dark"] .form-control::placeholder{ color:#9fb1d8 !important; }
+:root[data-theme="dark"] .form-control:focus,
+:root[data-theme="dark"] .form-select:focus {
+  border-color:#4fb2ff !important;
+  box-shadow:0 0 0 .2rem rgba(79,178,255,.25) !important;
+}
+
+/* Tabelas no escuro */
+:root[data-theme="dark"] .table{
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--text);
+  color: var(--text);
+}
+:root[data-theme="dark"] .table thead th{
+  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)) !important;
+  border-bottom-color:rgba(231,238,252,.16) !important;
+}
+
+/* Botes outline no escuro */
+:root[data-theme="dark"] .btn-outline-primary{
+  color:var(--bs-primary);
+  border-color:var(--bs-primary);
+}
+:root[data-theme="dark"] .btn-outline-primary:hover{
+  background:var(--bs-primary);
+  color:#fff;
+}
+
+/* Rodap no escuro */
+:root[data-theme="dark"] .site-footer{
+  background:var(--card) !important;
+  color:var(--muted) !important;
+  border-top-color:rgba(231,238,252,.12) !important;
+}
+:root[data-theme="dark"] .site-footer a{ color:var(--muted) !important; }
+
+/* ===== Menu solto (sem grupo) ===== */
+.menu-flat{ padding:.25rem 0 .5rem; margin-left:.25rem; }
+.menu-flat .nav-link{
+  display:flex; align-items:center; gap:.6rem;
+  padding:.5rem .75rem; margin:.125rem 0;
+  border-radius:.6rem; color:var(--muted); text-decoration:none; font-weight:600;
+  transition: background .2s ease, color .2s ease;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.menu-flat .nav-link:hover{ background:rgba(15,123,200,.08); color:var(--text); }
+.menu-flat .nav-link.active{ background:rgba(15,123,200,.15); color:var(--blue-800); }
+
+/* MUITO IMPORTANTE: mesmo colapsada, o .menu-flat continua visvel */
+body.sidebar-collapsed .sidebar .menu-flat{ display:block !important; }
+
+</style>
+</head>
+
+<body>
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top navbar-sollus">
+  <div class="container-fluid">
+    <button id="btnSidebarToggle" class="btn btn-outline-light d-none d-lg-inline-flex me-2" type="button" aria-label="Abrir menu" title="Abrir menu">
+      <i id="btnSidebarToggleIcon" class="bi bi-layout-sidebar-inset"></i>
+    </button>
+
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <button id="btnThemeToggle" class="btn btn-outline-light btn-sm" type="button" title="Alternar tema">
+        <i id="themeIcon" class="bi bi-moon-stars"></i>
+      </button>
+      <span class="user-pill">
+        <span class="user-avatar">
+          {% set name_src = current_user.name or current_user.username or current_user.email or 'U' %}{% set initials = name_src[:2] %}
+          {{ initials|upper }}
+        </span>
+        <span class="d-none d-sm-inline">{{ current_user.name or current_user.username or current_user.email }}</span>
+      </span>
+      <a href="{{ url_for('auth_bp.logout') }}" class="btn btn-light btn-sm">
+        <i class="bi bi-box-arrow-right me-1"></i> Sair
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- SIDEBAR -->
+<aside class="sidebar d-none d-lg-flex" id="sidebar">
+  <div class="scroll w-100">
+    <div class="brand">
+      <a class="logo" href="{{ url_for('tickets.dashboard') }}" title="Home">
+        <!-- duas imagens: colorida (light) e branca (dark) -->
+        <img class="brand-logo brand-logo-color" src="{{ url_for('static', filename='images/sollus_logo.png') }}" alt="Sollus Connected" />
+        <img class="brand-logo brand-logo-white" src="{{ url_for('static', filename='images/sollus_logo_white.png') }}" alt="Sollus Connected (dark)" />
+      </a>
+    </div>
+
+    <!-- ITENS SOLTOS (sem grupo Chamados) -->
+    <div class="menu-flat">
+      <a class="nav-link {{ 'active' if request.endpoint=='tickets.dashboard' else '' }}"
+         href="{{ url_for('tickets.dashboard') }}">
+        <i class="fa-solid fa-table-columns"></i>
+        <span class="label">Dashboard</span>
+      </a>
+
+      <a class="nav-link {{ 'active' if request.endpoint=='tickets.new' else '' }}"
+         href="{{ url_for('tickets.new') }}">
+        <i class="fa-solid fa-plus-circle"></i>
+        <span class="label">Novo Chamado</span>
+      </a>
+
+      <a class="nav-link {{ 'active' if request.endpoint=='tickets.closed_list' else '' }}"
+         href="{{ url_for('tickets.closed_list') }}">
+        <i class="fa-regular fa-circle-check"></i>
+        <span class="label">Finalizados</span>
+      </a>
+
+      <a class="nav-link {{ 'active' if request.endpoint=='tickets.reports_overview' else '' }}"
+         href="{{ url_for('tickets.reports_overview') }}">
+        <i class="fa-solid fa-chart-line"></i>
+        <span class="label">Relatórios</span>
+      </a>
+
+      {# === KANBAN === #}
+      {% set role = (current_user.role or '') %}
+      {% if current_user.is_authenticated and (role in ['admin','gestor','agent']) %}
+      <a class="nav-link {{ 'active' if (request.endpoint and request.endpoint.startswith('kanban.')) else '' }}"
+         href="{{ url_for('kanban.board') }}">
+        <i class="fa-solid fa-book-open"></i>
+        <span class="label">Central de Conhecimento</span>
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- GRUPO: Administração -->
+    {% set role = (current_user.role or '') %}
+    {% if current_user.is_authenticated and (role in ['admin','gestor','agent']) %}
+    <div class="section">
+      <div class="toggle active">
+        <i class="fa-solid fa-user-gear"></i>
+        <span class="label">Administração</span>
+      </div>
+      <div class="submenu">
+        {% if role in ['admin','gestor'] %}
+        <a class="nav-link {{ 'active' if request.endpoint=='admin.users_list' else '' }}" href="{{ url_for('admin.users_list') }}">
+          <i class="fa-solid fa-users-gear"></i> <span class="label">Usuários</span>
+        </a>
+        {% endif %}
+
+        {# === AUDITORIA: visvel apenas para ADMIN === #}
+        {% if role|lower == 'admin' %}
+        <a class="nav-link {{ 'active' if (request.blueprint == 'audit') else '' }}"
+           href="{{ url_for('audit.page') }}">
+          <i class="bi bi-clipboard-data"></i> <span class="label">Auditoria</span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="footer">
+    <a class="nav-link" href="{{ url_for('tickets.dashboard') }}" title="Home">
+      <i class="bi bi-house-door"></i>
+      <span class="label">Home</span>
+    </a>
+    <a class="nav-link" href="{{ url_for('auth_bp.logout') }}" title="Sair">
+      <i class="bi bi-box-arrow-right"></i>
+      <span class="label">Sair</span>
+    </a>
+  </div>
+</aside>
+
+<!-- CONTEDO -->
+<main class="content">
+  <div class="container-fluid">{% block content %}{% endblock %}</div>
+</main>
+
+<footer class="site-footer">
+  <div class="container-fluid d-flex align-items-center justify-content-between gap-2 flex-wrap">
+    <div><strong>Sollus Connected</strong>  <span id="footerYear"></span> &copy; Todos os direitos reservados.</div>
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <a href="mailto:suporte.remoto@sollusgroup.com" class="text-decoration-none"><i class="bi bi-envelope"></i> suporte.remoto@sollusgroup.com</a>
+      <span></span>
+      <a href="https://www.sollusgroup.com/" target="_blank" rel="noopener" class="text-decoration-none"><i class="bi bi-globe2"></i> sollusgroup.com</a>
+      <span></span>
+      <span class="d-flex align-items-center gap-2 flex-wrap">
+        <i class="bi bi-telephone"></i>
+        <a href="tel:+552124133203">RJ (21) 2413-3203</a> 
+        <a href="tel:+552227333722">Campos-RJ (22) 2733-3722</a> 
+        <a href="tel:+552730724863">Vila Velha-ES (27) 3072-4863</a> 
+        <a href="tel:+554137975093">Curitiba-PR (41) 3797-5093</a> 
+        <a href="tel:+551140406767">SP (11) 4040-6767</a>
+      </span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function(){
+  // Sidebar toggle com persistncia
+  const body = document.body;
+  const key  = 'sollus:sidebarCollapsed';
+  const btn  = document.getElementById('btnSidebarToggle');
+  const icn  = document.getElementById('btnSidebarToggleIcon');
+  function isCollapsed(){ return body.classList.contains('sidebar-collapsed'); }
+  function setCollapsed(collapsed){
+    body.classList.toggle('sidebar-collapsed', collapsed);
+    localStorage.setItem(key, collapsed ? '1' : '0');
+    if(icn){ icn.className = isCollapsed() ? 'bi bi-layout-sidebar-inset' : 'bi bi-layout-sidebar'; }
+  }
+  setCollapsed(localStorage.getItem(key) === '1');
+  btn?.addEventListener('click', () => setCollapsed(!isCollapsed()));
+
+  // Ano do footer
+  document.getElementById('footerYear')?.append(new Date().getFullYear());
+
+  // Tema (toggle) com persistncia  usa data-theme no <html>
+  const themeKey = 'sollus:theme';
+  const root = document.documentElement;
+  const btnTheme = document.getElementById('btnThemeToggle');
+  const themeIcon = document.getElementById('themeIcon');
+
+  function applyTheme(t){
+    root.setAttribute('data-theme', t);
+    localStorage.setItem(themeKey, t);
+    if(themeIcon){ themeIcon.className = (t === 'dark') ? 'bi bi-sun' : 'bi bi-moon-stars'; }
+  }
+
+  // Primeiro carregamento: pega do storage ou do sistema
+  let saved = localStorage.getItem(themeKey);
+  if(!saved){
+    saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  applyTheme(saved);
+
+  btnTheme?.addEventListener('click', ()=>{
+    applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+})();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
+

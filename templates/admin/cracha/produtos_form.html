@@ -1,0 +1,140 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Crachá | Produtos{% endblock %}
+
+{% block head %}
+<style>
+  .produtos-form-card{border:0;border-radius:1.1rem;box-shadow:0 10px 24px rgba(15,35,58,.08);}
+  .produtos-form-card .card-body{padding:1.5rem;}
+  .produtos-section{border:1px solid #e2e8f0;border-radius:1rem;padding:1.25rem;}
+  .produtos-section + .produtos-section{margin-top:1.5rem;}
+  .produtos-table th,.produtos-table td{vertical-align:middle;}
+  .produtos-table thead{background:#f3f6fb;text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:#5a6782;}
+  .produtos-table input{min-width:80px;}
+</style>
+{% endblock %}
+
+{% block content %}
+{% call page_hero(
+  title='Produtos'|safe,
+  subtitle=subtitle|safe,
+  eyebrow='Crachá'|safe
+) %}
+  <div class="page-hero__actions">
+    <a class="btn btn-light" href="{{ back_url }}">
+      <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+{% endcall %}
+
+<div class="card produtos-form-card">
+  <div class="card-body">
+    <form method="post" action="{{ action_url }}" class="row g-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="txtID" value="{{ produto.id_pk if produto else '' }}">
+
+      <div class="col-12 produtos-section">
+        <h3 class="fw-semibold">Dados do produto</h3>
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label"><span>*</span> Código</label>
+            <input type="text" class="form-control" name="txtCodigoProduto" value="{{ produto.codigo if produto else '' }}" required>
+          </div>
+          <div class="col-md-9">
+            <label class="form-label"><span>*</span> Produto</label>
+            <input type="text" class="form-control" name="txtProduto" value="{{ produto.produto if produto else '' }}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Grupo</label>
+            <select class="form-select" name="selGrupo">
+              <option value=""></option>
+              {% for grupo in grupos %}
+              <option value="{{ grupo.id_pk }}" {{ 'selected' if produto and produto.idprodutos_grupo_fk == grupo.id_pk else '' }}>{{ grupo.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Marca</label>
+            <select class="form-select" name="selMarca">
+              <option value=""></option>
+              {% for marca in marcas %}
+              <option value="{{ marca.id_pk }}" {{ 'selected' if produto and produto.idprodutos_marca_fk == marca.id_pk else '' }}>{{ marca.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Código marca</label>
+            <input type="text" class="form-control" name="txtCodigoMarca" value="{{ produto.codigo_marca if produto else '' }}">
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Observações</label>
+            <textarea class="form-control" name="txtObservacoes" rows="2">{{ produto.observacoes if produto else '' }}</textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Controle por número de série</label>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="chkControledoPorNumeroDeSerie" value="t" {{ 'checked' if produto and produto.controlado_numero_serie else '' }}>
+              <span class="form-check-label">Sim</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 produtos-section">
+        <h3 class="fw-semibold">Detalhes por empresa</h3>
+        <div class="table-responsive">
+          <table class="table table-hover produtos-table">
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>Est. mínimo</th>
+                <th>Est. máximo</th>
+                <th>Corredor</th>
+                <th>Prateleira</th>
+                <th>Armário</th>
+                <th>Gaveta</th>
+                <th>Palete</th>
+                <th>Ativo</th>
+                <th>Qtd. atual</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for detalhe in detalhes %}
+              <tr>
+                <td class="fw-semibold">{{ detalhe.empresa_nome }}</td>
+                <td>
+                  <input type="hidden" name="txtIDProdutoDetalhe[{{ detalhe.empresa_id }}]" value="{{ detalhe.id_pk or '' }}">
+                  <input type="text" class="form-control form-control-sm" name="txtEstoqueMinimo[{{ detalhe.empresa_id }}]" value="{{ detalhe.quantidade_minima or '' }}">
+                </td>
+                <td><input type="text" class="form-control form-control-sm" name="txtEstoqueMaximo[{{ detalhe.empresa_id }}]" value="{{ detalhe.quantidade_maxima or '' }}"></td>
+                <td><input type="text" class="form-control form-control-sm" name="txtEstoqueCorredor[{{ detalhe.empresa_id }}]" value="{{ detalhe.corredor or '' }}"></td>
+                <td><input type="text" class="form-control form-control-sm" name="txtEstoquePrateleira[{{ detalhe.empresa_id }}]" value="{{ detalhe.prateleira or '' }}"></td>
+                <td><input type="text" class="form-control form-control-sm" name="txtEstoqueArmario[{{ detalhe.empresa_id }}]" value="{{ detalhe.armario or '' }}"></td>
+                <td><input type="text" class="form-control form-control-sm" name="txtEstoqueGaveta[{{ detalhe.empresa_id }}]" value="{{ detalhe.gaveta or '' }}"></td>
+                <td><input type="text" class="form-control form-control-sm" name="txtEstoquePalete[{{ detalhe.empresa_id }}]" value="{{ detalhe.palete or '' }}"></td>
+                <td class="text-center">
+                  <input class="form-check-input" type="checkbox" name="chkAtivo[{{ detalhe.empresa_id }}]" value="t" {{ 'checked' if detalhe.ativo else '' }}>
+                </td>
+                <td><input type="text" class="form-control form-control-sm" name="txtEstoqueQuantidadeAtual[{{ detalhe.empresa_id }}]" value="{{ detalhe.quantidade_atual or '' }}" readonly></td>
+              </tr>
+              {% endfor %}
+              {% if not detalhes %}
+              <tr>
+                <td colspan="10" class="text-center text-muted py-4">Nenhuma empresa vinculada.</td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="col-12 d-flex justify-content-end gap-2">
+        <button type="submit" class="btn btn-primary" name="save" value="1">Salvar</button>
+        {% if allow_more %}
+        <button type="submit" class="btn btn-outline-primary" name="save_more" value="1">Salvar +</button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

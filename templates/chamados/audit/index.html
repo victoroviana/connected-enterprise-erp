@@ -1,0 +1,1401 @@
+{% extends "layout.html" %}
+
+{% from "components/page_hero.html" import page_hero %}
+
+{% block title %}Auditoria - Chamados{% endblock %}
+
+
+
+{% macro render_json(payload, raw, key, label='', button_text='Ver detalhes', button_variant='outline-primary', extra_data_attrs=None, render_button=True) %}
+
+  {% set target_id = 'audit-json-' ~ key %}
+
+  {% set has_payload = payload is not none %}
+
+  {% set has_raw = raw %}
+
+  {% if has_payload or has_raw %}
+
+    {% set kind = 'payload' if has_payload else 'raw' %}
+
+    {% set title = 'Detalhes formatados' if has_payload else 'Contedo bruto' %}
+
+    {% if render_button %}
+
+    <button type="button"
+
+            class="btn btn-sm btn-{{ button_variant }} audit-json-trigger"
+
+            data-json-target="#{{ target_id }}"
+
+            data-json-kind="{{ kind }}"
+
+            data-title="{{ title }}"
+
+            {% if label %}data-context="{{ label }}"{% endif %}
+
+            {% if extra_data_attrs %}
+
+              {% for attr, value in extra_data_attrs %}
+
+                {% if value %}data-{{ attr }}="{{ value }}"{% endif %}
+
+              {% endfor %}
+
+            {% endif %}>
+
+      <i class="bi bi-eye me-1"></i>{{ button_text }}
+
+    </button>
+
+    {% endif %}
+
+    {% if has_payload %}
+
+      <script type="application/json" id="{{ target_id }}" class="audit-json-data" hidden>
+
+        {{ payload|tojson }}
+
+      </script>
+
+    {% else %}
+
+      <template id="{{ target_id }}" class="audit-json-data">
+
+        {{ raw|e }}
+
+      </template>
+
+    {% endif %}
+
+  {% else %}
+
+    {% if render_button %}
+
+    <span class="text-muted">&mdash;</span>
+
+    {% endif %}
+
+  {% endif %}
+
+{% endmacro %}
+
+
+
+
+
+{% block content %}
+
+<style>
+
+  .audit-json-trigger {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 0.35rem;
+
+    font-weight: 600;
+
+    text-decoration: none;
+
+    white-space: nowrap;
+
+  }
+
+  .audit-json-trigger .bi {
+
+    font-size: 1rem;
+
+  }
+
+  .audit-json-modal-context {
+
+    font-size: 0.85rem;
+
+    color: #64748b;
+
+    margin-bottom: 0.75rem;
+
+  }
+
+  .audit-json-modal {
+    color: #0f172a;
+  }
+
+  .audit-json-modal .text-muted {
+    color: #64748b !important;
+  }
+
+  .audit-table {
+
+    table-layout: fixed;
+
+    width: 100%;
+
+  }
+
+  .audit-table th,
+
+  .audit-table td {
+
+    word-wrap: break-word;
+
+  }
+
+  .audit-json-modal__grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+
+    gap: 1.25rem;
+
+  }
+
+  .audit-json-block {
+
+    background: #fff;
+
+    border: 1px solid rgba(15, 29, 55, 0.08);
+
+    border-radius: 1rem;
+
+    padding: 1rem;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 0.75rem;
+
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  }
+
+  .audit-json-block.is-focused {
+
+    border-color: rgba(14, 93, 198, 0.45);
+
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+
+  }
+
+  .audit-json-block__header {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 0.5rem;
+
+  }
+
+  .audit-json-block__title {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 0.75rem;
+
+  }
+
+  .audit-json-block__icon {
+
+    width: 2.5rem;
+
+    height: 2.5rem;
+
+    border-radius: 999px;
+
+    background: rgba(14, 93, 198, 0.12);
+
+    color: #0e5dc6;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 1.15rem;
+
+  }
+
+  .audit-json-block[data-block="after"] .audit-json-block__icon {
+
+    background: rgba(5, 150, 105, 0.15);
+
+    color: #059669;
+
+  }
+
+  .audit-json-block__label {
+
+    display: block;
+
+    font-size: 0.95rem;
+
+    font-weight: 600;
+
+    color: #0f172a;
+
+  }
+
+  .audit-json-block__meta {
+
+    display: block;
+
+    font-size: 0.7rem;
+
+    letter-spacing: 0.08em;
+
+    text-transform: uppercase;
+
+    color: #94a3b8;
+
+  }
+
+  .audit-json-block__badge {
+
+    font-size: 0.65rem;
+
+    letter-spacing: 0.08em;
+
+    text-transform: uppercase;
+
+  }
+
+  .audit-json-modal pre {
+
+    margin: 0;
+
+    font-size: 0.85rem;
+
+    line-height: 1.45;
+
+    font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+
+    white-space: pre-wrap;
+
+    word-break: break-word;
+
+    max-height: 60vh;
+
+    overflow: auto;
+
+    background: #0f172a0d;
+
+    border: 1px solid rgba(15, 23, 42, 0.08);
+
+    border-radius: 0.75rem;
+
+    padding: 0.9rem;
+
+  }
+
+  .audit-diff-summary {
+
+    border: 1px solid rgba(14, 93, 198, 0.2);
+
+    background: #edf4ff;
+
+    border-radius: 1rem;
+
+    padding: 1rem 1.25rem;
+
+    margin-bottom: 1.25rem;
+
+  }
+
+  .audit-diff-summary__header {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 1rem;
+
+    font-size: 0.9rem;
+
+    color: #0f172a;
+
+  }
+
+  .audit-diff-summary__title {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 0.65rem;
+
+    font-weight: 600;
+
+  }
+
+  .audit-diff-summary__title small {
+
+    display: block;
+
+    font-size: 0.7rem;
+
+    font-weight: 500;
+
+    text-transform: uppercase;
+
+    color: #94a3b8;
+
+    letter-spacing: 0.08em;
+
+  }
+
+  .audit-diff-list {
+
+    list-style: none;
+
+    margin: 0;
+
+    padding: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 0.35rem;
+
+    font-size: 0.8rem;
+
+  }
+
+  .audit-diff-item {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 0.35rem;
+
+    padding: 0.25rem 0.35rem;
+
+    border-radius: 0.4rem;
+
+    background: #fff;
+
+    border: 1px solid rgba(15, 29, 55, 0.06);
+
+    flex-wrap: wrap;
+
+  }
+
+  .audit-diff-item__key {
+
+    font-weight: 600;
+
+    color: #0f172a;
+
+  }
+
+  .audit-diff-item__values {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 0.35rem;
+
+    color: #475569;
+
+  }
+
+  .audit-diff-item__badge {
+
+    font-size: 0.7rem;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.04em;
+
+  }
+
+  .audit-diff-item code {
+
+    font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+
+    font-size: 0.75rem;
+
+    background: rgba(15, 29, 55, 0.08);
+
+    border-radius: 0.3rem;
+
+    padding: 0.1rem 0.35rem;
+
+    display: inline-block;
+
+    white-space: pre-wrap;
+
+  }
+
+  .audit-diff-item.is-added {
+
+    border-color: rgba(22, 163, 74, 0.25);
+
+    background: #ecfdf5;
+
+  }
+
+  .audit-diff-item.is-removed {
+
+    border-color: rgba(239, 68, 68, 0.25);
+
+    background: #fef2f2;
+
+  }
+
+  .audit-diff-item.is-changed {
+
+    border-color: rgba(245, 158, 11, 0.35);
+
+    background: #fffbeb;
+
+  }
+
+</style>
+
+
+
+
+
+
+
+{% set audit_total = rows|length %}
+
+{% if pagination is defined and pagination.total is not none %}
+
+  {% set audit_total = pagination.total %}
+
+{% endif %}
+
+{% set audit_stats = [
+
+  {'label': 'Registros filtrados', 'value': audit_total},
+
+  {'label': 'Nesta página', 'value': rows|length}
+
+] %}
+{% set audit_help_tips = [
+  'Use os filtros de Entidade, Ação, Autor e texto livre para chegar no conjunto exato de registros antes de buscar.',
+  'Clique em "Ver detalhes" para abrir o modal com dados Antes/Depois, alternando entre payload formatado e conteúdo bruto.',
+  'Ajuste "Por página" para revisar volumes maiores ou exportar trechos específicos sem perder o contexto do período.'
+] %}
+
+{{ page_hero(
+
+    title='Auditoria',
+
+    subtitle='Acompanhe alterações geradas pelos chamados.',
+
+    eyebrow='Monitoramento',
+
+    stats=audit_stats,
+    help_tips=audit_help_tips,
+    help_intro='Guia rápido para consultar os logs de auditoria.'
+
+) }}
+
+
+
+<form class="row g-2 g-md-3 mb-4" method="get">
+
+  <div class="col-12 col-sm-6 col-md-3">
+
+    <label class="form-label mb-1">Entidade</label>
+
+    <input class="form-control" name="entity_type" value="{{ filters.entity_type }}">
+
+  </div>
+
+  <div class="col-12 col-sm-6 col-md-3">
+
+    <label class="form-label mb-1">Ação</label>
+
+    <input class="form-control" name="action" value="{{ filters.action }}">
+
+  </div>
+
+  <div class="col-12 col-sm-6 col-md-3">
+
+    <label class="form-label mb-1">Autor (id, e-mail ou nome)</label>
+
+    <input class="form-control" name="actor" value="{{ filters.actor }}">
+
+  </div>
+
+  <div class="col-12 col-sm-6 col-md-3">
+
+    <label class="form-label mb-1">Mensagem / texto livre</label>
+
+    <input class="form-control" name="q" value="{{ filters.q }}">
+
+  </div>
+
+  <div class="col-6 col-sm-4 col-md-2">
+
+    <label class="form-label mb-1">Por página</label>
+
+    <input type="number" min="5" max="100" class="form-control" name="per_page" value="{{ filters.per_page }}">
+
+  </div>
+
+  <div class="col-12 col-sm-8 col-md-4 d-flex align-items-end gap-2">
+
+    <button class="btn btn-primary flex-fill"><i class="bi bi-search"></i> Buscar</button>
+
+    <a class="btn btn-outline-secondary" href="{{ url_for('audit.page') }}">Limpar</a>
+
+  </div>
+
+</form>
+
+
+
+<div class="table-responsive shadow-sm rounded-4 border">
+
+  <table class="table table-sm align-middle mb-0 audit-table">
+
+    <thead class="table-light">
+
+      <tr>
+
+        <th style="min-width: 140px; width: 160px;">Quando</th>
+
+        <th style="min-width: 140px;">Autor</th>
+
+        <th style="min-width: 130px;">Entidade</th>
+
+        <th style="min-width: 150px;">Ação</th>
+
+        <th style="min-width: 240px;">Mensagem</th>
+
+        <th style="min-width: 180px; width: 260px;">Alterações</th>
+
+        <th style="min-width: 110px; width: 120px;">IP</th>
+
+      </tr>
+
+    </thead>
+
+    <tbody>
+
+      {% for r in rows %}
+
+      <tr>
+
+        {% set entity_ref = r.entity_type or 'Registro' %}
+
+        {% if r.entity_id %}{% set entity_ref = entity_ref ~ ' #' ~ r.entity_id %}{% endif %}
+
+        {% set before_key = 'before-' ~ loop.index0 %}
+
+        {% set after_key = 'after-' ~ loop.index0 %}
+
+        {% set before_dom_id = 'audit-json-' ~ before_key %}
+
+        {% set after_dom_id = 'audit-json-' ~ after_key %}
+
+        {% set before_kind = 'payload' if r.before_data is not none else ('raw' if r.before else '') %}
+
+        {% set after_kind = 'payload' if r.after_data is not none else ('raw' if r.after else '') %}
+
+        {% set before_label = 'Antes - ' ~ entity_ref %}
+
+        {% set after_label = 'Depois - ' ~ entity_ref %}
+
+        {% set focus_target = 'after' if after_kind else 'before' %}
+
+        {% set detail_attrs = [
+
+          ('before-target', '#' ~ before_dom_id if before_kind else None),
+
+          ('before-kind', before_kind),
+
+          ('before-label', before_label),
+
+          ('after-target', '#' ~ after_dom_id if after_kind else None),
+
+          ('after-kind', after_kind),
+
+          ('after-label', after_label),
+
+          ('focus', focus_target)
+
+        ] %}
+
+        {% set modal_title = (r.action or 'Detalhes')|replace('_', ' ')|title %}
+
+        {% set modal_context = entity_ref ~ ' - ' ~ (r.created_at | local('%d/%m/%Y %H:%M') if r.created_at else '?') %}
+
+
+
+        <td class="text-nowrap">{{ r.created_at | local('%d/%m/%Y %H:%M') if r.created_at else '?' }}</td>
+
+        <td>
+
+          {% if r.actor_name %}<strong>{{ r.actor_name }}</strong>{% endif %}
+
+          {% if r.actor_email %}<div class="text-muted small">{{ r.actor_email }}</div>{% endif %}
+
+          {% if r.actor_id %}<div class="text-muted small">id: {{ r.actor_id }}</div>{% endif %}
+
+        </td>
+
+        <td class="text-nowrap">{{ r.entity_type }}{% if r.entity_id %} #{{ r.entity_id }}{% endif %}</td>
+
+        <td class="text-nowrap">
+
+          <span class="badge text-bg-secondary text-uppercase">{{ r.action }}</span>
+
+        </td>
+
+        <td style="max-width: 320px; word-break: break-word;">{{ r.message or '' }}</td>
+
+        <td>
+
+          {% if before_kind or after_kind %}
+
+          <button type="button"
+
+                  class="btn btn-sm btn-outline-primary audit-json-trigger"
+
+                  data-title="{{ modal_title }}"
+
+                  data-context="{{ modal_context }}"
+
+                  {% for attr, value in detail_attrs %}
+
+                    {% if value %}data-{{ attr }}="{{ value }}"{% endif %}
+
+                  {% endfor %}>
+
+            <i class="bi bi-eye me-1"></i>Ver detalhes
+
+          </button>
+
+          {% else %}
+
+          <span class="text-muted">&mdash;</span>
+
+          {% endif %}
+
+          {{ render_json(
+
+            r.before_data,
+
+            r.before,
+
+            'before-' ~ loop.index0,
+
+            before_label,
+
+            render_button=False
+
+          ) }}
+
+          {{ render_json(
+
+            r.after_data,
+
+            r.after,
+
+            'after-' ~ loop.index0,
+
+            after_label,
+
+            render_button=False
+
+          ) }}
+
+        </td>
+
+        <td class="text-nowrap">{{ r.ip or '' }}</td>
+
+      </tr>
+
+      {% else %}
+
+      <tr>
+
+        <td colspan="7" class="text-center text-muted py-4">Nenhum registro encontrado.</td>
+
+      </tr>
+
+      {% endfor %}
+
+    </tbody>
+
+  </table>
+
+</div>
+
+
+
+<div class="modal sollus-modal fade" id="auditJsonModal" tabindex="-1" aria-hidden="true">
+
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+
+    <div class="modal-content audit-json-modal">
+
+      <div class="modal-header">
+
+        <h5 class="modal-title audit-json-modal-title">Detalhes</h5>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
+      </div>
+
+      <div class="modal-body">
+
+        <div class="audit-json-modal-context d-none" id="auditJsonModalContext"></div>
+
+        <div class="audit-diff-summary d-none" id="auditJsonDiffSummary">
+
+          <div class="audit-diff-summary__header">
+
+            <div class="audit-diff-summary__title">
+
+              <i class="bi bi-shuffle text-primary"></i>
+
+              <div>
+
+                <span>Alterações identificadas</span>
+
+                <small>Resumo rápido</small>
+
+              </div>
+
+            </div>
+
+            <span class="badge text-bg-primary" id="auditJsonDiffCount">0 alterações</span>
+
+          </div>
+
+          <ul class="audit-diff-list" id="auditJsonDiffList"></ul>
+
+          <div class="text-muted small" id="auditJsonDiffEmpty">Diferenças disponíveis apenas para dados estruturados.</div>
+
+        </div>
+
+        <div class="audit-json-modal__grid">
+
+          <div class="audit-json-block" id="auditJsonBeforeBlock" data-block="before">
+
+            <div class="audit-json-block__header">
+
+              <div class="audit-json-block__title">
+
+                <span class="audit-json-block__icon">
+
+                  <i class="bi bi-arrow-counterclockwise"></i>
+
+                </span>
+
+                <div>
+
+                  <span class="audit-json-block__label" id="auditJsonBeforeLabel">Antes</span>
+
+                  <span class="audit-json-block__meta">Estado anterior</span>
+
+                </div>
+
+              </div>
+
+              <span class="badge text-bg-light text-primary audit-json-block__badge">Original</span>
+
+            </div>
+
+            <pre id="auditJsonModalBefore"></pre>
+
+          </div>
+
+          <div class="audit-json-block" id="auditJsonAfterBlock" data-block="after">
+
+            <div class="audit-json-block__header">
+
+              <div class="audit-json-block__title">
+
+                <span class="audit-json-block__icon">
+
+                  <i class="bi bi-stars"></i>
+
+                </span>
+
+                <div>
+
+                  <span class="audit-json-block__label" id="auditJsonAfterLabel">Depois</span>
+
+                  <span class="audit-json-block__meta">Estado atualizado</span>
+
+                </div>
+
+              </div>
+
+              <span class="badge text-bg-light text-success audit-json-block__badge">Aplicado</span>
+
+            </div>
+
+            <pre id="auditJsonModalAfter"></pre>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<script>
+
+  document.addEventListener('DOMContentLoaded', function () {
+
+    const modalElement = document.getElementById('auditJsonModal');
+
+    if (!modalElement) {
+
+      return;
+
+    }
+
+    const titleEl = modalElement.querySelector('.audit-json-modal-title');
+
+    const contextEl = modalElement.querySelector('#auditJsonModalContext');
+
+    const beforePre = modalElement.querySelector('#auditJsonModalBefore');
+
+    const afterPre = modalElement.querySelector('#auditJsonModalAfter');
+
+    const beforeLabelEl = modalElement.querySelector('#auditJsonBeforeLabel');
+
+    const afterLabelEl = modalElement.querySelector('#auditJsonAfterLabel');
+
+    const beforeBlock = modalElement.querySelector('#auditJsonBeforeBlock');
+
+    const afterBlock = modalElement.querySelector('#auditJsonAfterBlock');
+
+    const diffSummary = modalElement.querySelector('#auditJsonDiffSummary');
+
+    const diffListEl = modalElement.querySelector('#auditJsonDiffList');
+
+    const diffCountEl = modalElement.querySelector('#auditJsonDiffCount');
+
+    const diffEmptyEl = modalElement.querySelector('#auditJsonDiffEmpty');
+
+    const hasBootstrap = window.bootstrap && window.bootstrap.Modal;
+
+    const modalInstance = hasBootstrap ? window.bootstrap.Modal.getOrCreateInstance(modalElement) : null;
+
+    const MAX_DIFF_ITEMS = 40;
+
+
+
+    function setFocusBlock(target) {
+
+      if (!beforeBlock || !afterBlock) {
+
+        return;
+
+      }
+
+      beforeBlock.classList.toggle('is-focused', target === 'before');
+
+      afterBlock.classList.toggle('is-focused', target === 'after');
+
+    }
+
+
+
+    function extractData(selector, kind) {
+
+      if (!selector) {
+
+        return { text: 'Sem dados disponveis.', json: null, hasData: false };
+
+      }
+
+      const source = document.querySelector(selector);
+
+      if (!source) {
+
+        return { text: 'Sem dados disponveis.', json: null, hasData: false };
+
+      }
+
+      const raw = source.textContent || '';
+
+      if (kind === 'payload') {
+
+        try {
+
+          const parsed = JSON.parse(raw);
+
+          return { text: JSON.stringify(parsed, null, 2), json: parsed, hasData: true };
+
+        } catch (err) {
+
+          console.warn('Falha ao converter JSON da auditoria:', err);
+
+          return { text: raw || '(falha ao interpretar JSON)', json: null, hasData: Boolean(raw) };
+
+        }
+
+      }
+
+      return { text: raw || '(vazio)', json: null, hasData: Boolean(raw) };
+
+    }
+
+
+
+    function flattenValue(value, prefix = '', acc = new Map()) {
+
+      if (Array.isArray(value)) {
+
+        if (!value.length) {
+
+          acc.set(prefix || '[root]', '[]');
+
+          return acc;
+
+        }
+
+        value.forEach((item, index) => {
+
+          const nextKey = prefix ? `${prefix}[${index}]` : `[${index}]`;
+
+          flattenValue(item, nextKey, acc);
+
+        });
+
+        return acc;
+
+      }
+
+      if (value && typeof value === 'object') {
+
+        const entries = Object.entries(value);
+
+        if (!entries.length) {
+
+          acc.set(prefix || '[root]', '{}');
+
+          return acc;
+
+        }
+
+        entries.forEach(([childKey, childValue]) => {
+
+          const nextKey = prefix ? `${prefix}.${childKey}` : childKey;
+
+          flattenValue(childValue, nextKey, acc);
+
+        });
+
+        return acc;
+
+      }
+
+      let formatted;
+
+      if (typeof value === 'string') {
+
+        formatted = value;
+
+      } else if (value === null) {
+
+        formatted = 'null';
+
+      } else {
+
+        formatted = String(value);
+
+      }
+
+      acc.set(prefix || '[root]', formatted);
+
+      return acc;
+
+    }
+
+
+
+    function buildDiff(beforeJson, afterJson) {
+
+      const beforeMap = flattenValue(beforeJson, '', new Map());
+
+      const afterMap = flattenValue(afterJson, '', new Map());
+
+      const keys = new Set([...beforeMap.keys(), ...afterMap.keys()]);
+
+      const rows = [];
+
+      [...keys].sort().forEach((key) => {
+
+        const prev = beforeMap.has(key) ? beforeMap.get(key) : null;
+
+        const next = afterMap.has(key) ? afterMap.get(key) : null;
+
+        if (prev === next) {
+
+          return;
+
+        }
+
+        let status;
+
+        if (prev === null) {
+
+          status = 'added';
+
+        } else if (next === null) {
+
+          status = 'removed';
+
+        } else {
+
+          status = 'changed';
+
+        }
+
+        rows.push({ key, prev, next, status });
+
+      });
+
+      return rows;
+
+    }
+
+
+
+    function escapeHtml(value) {
+
+      return String(value).replace(/[&<>"']/g, function (char) {
+
+        switch (char) {
+
+          case '&': return '&amp;';
+
+          case '<': return '&lt;';
+
+          case '>': return '&gt;';
+
+          case '"': return '&quot;';
+
+          case "'": return '&#39;';
+
+          default: return char;
+
+        }
+
+      });
+
+    }
+
+
+
+    function formatDiffValue(value) {
+
+      if (value === null || value === undefined || value === '') {
+
+        return '&mdash;';
+
+      }
+
+      const str = String(value).trim();
+
+      const normalized = str.length > 160 ? `${str.slice(0, 157)}` : str;
+
+      return escapeHtml(normalized);
+
+    }
+
+
+
+    function renderDiff(beforeData, afterData) {
+
+      if (!diffSummary || !diffListEl || !diffCountEl || !diffEmptyEl) {
+
+        return;
+
+      }
+
+      diffSummary.classList.remove('d-none');
+
+      const canCompare = beforeData.json && afterData.json;
+
+      if (!canCompare) {
+
+        diffListEl.innerHTML = '';
+
+        diffCountEl.textContent = '';
+
+        diffEmptyEl.textContent = 'Diferenças disponíveis apenas para dados estruturados.';
+
+        diffEmptyEl.classList.remove('d-none');
+
+        return;
+
+      }
+
+      const diffItems = buildDiff(beforeData.json, afterData.json);
+
+      const countLabel = diffItems.length === 1 ? 'alteração' : 'alterações';
+      diffCountEl.textContent = `${diffItems.length} ${countLabel}`;
+
+      if (!diffItems.length) {
+
+        diffListEl.innerHTML = '';
+
+        diffEmptyEl.textContent = 'Nenhuma alteração detectada.';
+
+        diffEmptyEl.classList.remove('d-none');
+
+        return;
+
+      }
+
+      diffEmptyEl.classList.add('d-none');
+
+      const badgeMap = {
+
+        added: { label: 'novo', cls: 'text-bg-success' },
+
+        removed: { label: 'removido', cls: 'text-bg-danger' },
+
+        changed: { label: 'alterado', cls: 'text-bg-warning' }
+
+      };
+
+      const limited = diffItems.slice(0, MAX_DIFF_ITEMS);
+
+      diffListEl.innerHTML = limited.map((item) => {
+
+        const meta = badgeMap[item.status] || badgeMap.changed;
+
+        let valuesHtml = '';
+
+        if (item.status === 'added') {
+
+          valuesHtml = `<span>valor <code>${formatDiffValue(item.next)}</code></span>`;
+
+        } else if (item.status === 'removed') {
+
+          valuesHtml = `<span>valor <code>${formatDiffValue(item.prev)}</code></span>`;
+
+        } else {
+
+          valuesHtml = `<span class="text-muted">de <code>${formatDiffValue(item.prev)}</code></span><span>para <code>${formatDiffValue(item.next)}</code></span>`;
+
+        }
+
+        return `<li class="audit-diff-item is-${item.status}"><span class="badge ${meta.cls} audit-diff-item__badge">${meta.label}</span><span class="audit-diff-item__key">${escapeHtml(item.key)}</span><span class="audit-diff-item__values">${valuesHtml}</span></li>`;
+
+      }).join('');
+
+      if (diffItems.length > MAX_DIFF_ITEMS) {
+
+        diffListEl.innerHTML += `<li class="audit-diff-item"><span class="text-muted">+${diffItems.length - MAX_DIFF_ITEMS} alterações adicionais</span></li>`;
+
+      }
+
+    }
+
+
+
+
+
+
+
+    document.addEventListener('click', function (event) {
+
+      const trigger = event.target.closest('.audit-json-trigger');
+
+      if (!trigger) {
+
+        return;
+
+      }
+
+      event.preventDefault();
+
+
+
+      const beforeSelector = trigger.dataset.beforeTarget || trigger.dataset.jsonTarget || '';
+
+      const beforeKind = trigger.dataset.beforeKind || trigger.dataset.jsonKind || '';
+
+      const afterSelector = trigger.dataset.afterTarget || '';
+
+      const afterKind = trigger.dataset.afterKind || '';
+
+      const focusTarget = trigger.dataset.focus || 'before';
+
+      const beforeLabel = trigger.dataset.beforeLabel || 'Antes';
+
+      const afterLabel = trigger.dataset.afterLabel || 'Depois';
+
+      const title = trigger.dataset.title || 'Detalhes';
+
+
+
+      const beforeData = extractData(beforeSelector, beforeKind);
+
+      const afterData = extractData(afterSelector, afterKind);
+
+
+
+      if (beforePre) {
+
+        beforePre.textContent = beforeData.text;
+
+      }
+
+      if (afterPre) {
+
+        afterPre.textContent = afterData.text;
+
+      }
+
+      if (beforeLabelEl) {
+
+        beforeLabelEl.textContent = beforeLabel;
+
+      }
+
+      if (afterLabelEl) {
+
+        afterLabelEl.textContent = afterLabel;
+
+      }
+
+      setFocusBlock(focusTarget);
+
+      renderDiff(beforeData, afterData);
+
+
+
+      if (titleEl) {
+
+        titleEl.textContent = title;
+
+      }
+
+      if (contextEl) {
+
+        const context = trigger.dataset.context || '';
+
+        contextEl.textContent = context;
+
+        contextEl.classList.toggle('d-none', !context);
+
+      }
+
+
+
+      if (modalInstance) {
+
+        modalInstance.show();
+
+      } else {
+
+        modalElement.classList.add('show');
+
+        modalElement.style.display = 'block';
+
+        modalElement.removeAttribute('aria-hidden');
+
+      }
+
+    });
+
+
+
+    if (!modalInstance) {
+
+      modalElement.addEventListener('click', function (event) {
+
+        if (event.target === modalElement || event.target.classList.contains('btn-close')) {
+
+          modalElement.classList.remove('show');
+
+          modalElement.style.display = 'none';
+
+          modalElement.setAttribute('aria-hidden', 'true');
+
+        }
+
+      });
+
+    }
+
+  });
+
+</script>
+
+
+
+{% if pagination.pages > 1 %}
+{% set pages_to_show = [] %}
+{% for p in [1, pagination.page, pagination.page + 1, pagination.page + 2, pagination.page + 3, pagination.pages] %}
+  {% if 1 <= p <= pagination.pages and p not in pages_to_show %}
+    {% set _ = pages_to_show.append(p) %}
+  {% endif %}
+{% endfor %}
+<nav class="mt-3">
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <ul class="pagination mb-0">
+      <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+        {% if pagination.has_prev %}
+        <a class="page-link" href="{{ url_for('audit.page', page=pagination.prev_num, **filters) }}">Anterior</a>
+        {% else %}
+        <span class="page-link">Anterior</span>
+        {% endif %}
+      </li>
+      {% for p in pages_to_show %}
+      <li class="page-item {% if p == pagination.page %}active{% endif %}">
+        <a class="page-link" href="{{ url_for('audit.page', page=p, **filters) }}">{{ p }}</a>
+      </li>
+      {% endfor %}
+      <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+        {% if pagination.has_next %}
+        <a class="page-link" href="{{ url_for('audit.page', page=pagination.next_num, **filters) }}">Próximo</a>
+        {% else %}
+        <span class="page-link">Próximo</span>
+        {% endif %}
+      </li>
+    </ul>
+    <form class="d-flex align-items-center gap-2" method="get" action="{{ url_for('audit.page') }}">
+      {% for key, value in filters.items() %}
+      <input type="hidden" name="{{ key }}" value="{{ value }}">
+      {% endfor %}
+      <label class="small text-muted mb-0" for="audit-page-input-chamados">Página</label>
+      <input type="number" min="1" max="{{ pagination.pages }}" class="form-control form-control-sm" id="audit-page-input-chamados" name="page" value="{{ pagination.page }}">
+      <button class="btn btn-outline-secondary btn-sm" type="submit">Ir</button>
+    </form>
+  </div>
+</nav>
+{% endif %}
+
+{% endblock %}

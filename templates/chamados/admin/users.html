@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+{% block title %}Usuários  Sollus{% endblock %}
+{% block content %}
+
+<div class="row g-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <h5 class="mb-0"><i class="fa-solid fa-users-gear me-2"></i> Usuários</h5>
+        <div class="d-flex gap-2">
+          <a class="btn btn-primary btn-sm" href="{{ url_for('admin.users_new') }}">
+            <i class="bi bi-plus-circle"></i> Novo usuário
+          </a>
+        </div>
+      </div>
+
+      <div class="card-body">
+        {% if users|length == 0 %}
+          <div class="text-muted">Nenhum usuário cadastrado.</div>
+        {% else %}
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>usuário</th>
+                  <th>Função</th>
+                  <th>Status</th>
+                  <th class="text-end">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for u in users %}
+                <tr>
+                  <td>{{ u.id }}</td>
+                  <td>{{ u.name or u.username or u.email }}</td>
+                  <td>{{ u.email }}</td>
+                  <td>{{ u.username }}</td>
+                  <td><span class="badge text-bg-secondary">{{ u.role or '' }}</span></td>
+                  <td>
+                    {% if u.is_active %}
+                      <span class="badge text-bg-success">Ativo</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary">Inativo</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    <div class="btn-group">
+                      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.users_edit', user_id=u.id) }}">
+                        <i class="bi bi-pencil-square"></i>
+                      </a>
+                      <form method="POST" action="{{ url_for('admin.users_delete', user_id=u.id) }}"
+                            onsubmit="return confirm('Excluir usuário {{ u.name or u.username or u.email }}?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-outline-danger">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

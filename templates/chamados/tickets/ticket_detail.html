@@ -1,0 +1,93 @@
+{% extends 'layout.html' %}
+{% block content %}
+
+<h2>Chamado #{{ ticket.id }}  {{ ticket.title }}</h2>
+
+{% if current_user.role in ['agent','admin'] or current_user.id == ticket.user.id %}
+  <form method="post" action="{{ url_for('tickets.delete_ticket', ticket_id=ticket.id) }}"
+        onsubmit="return confirm('Excluir este chamado? Esta ação não pode ser desfeita.');"
+        style="margin:8px 0;">
+    {{ csrf_token() }}
+    <button class="btn danger">Excluir chamado</button>
+  </form>
+{% endif %}
+
+<p><strong>Status:</strong> {{ ticket.status }}  <strong>Prioridade:</strong> {{ ticket.priority }}</p>
+<p><strong>Aberto por:</strong> {{ ticket.user.name }}  <strong>Atribuído a:</strong> {{ ticket.assignee.name if ticket.assignee else '-' }}</p>
+
+<article class="card">
+  <h3>Descrição</h3>
+  <p style="white-space: pre-wrap;">{{ ticket.description }}</p>
+</article>
+
+{% if edit_form %}
+<section class="card">
+  <h3>Gerenciar (Agente/Admin)</h3>
+  <form method="post" action="{{ url_for('tickets.edit_ticket', ticket_id=ticket.id) }}">
+    {{ edit_form.hidden_tag() }}
+    <div class="grid">
+      <div>{{ edit_form.status.label }}{{ edit_form.status(class_='select') }}</div>
+      <div>{{ edit_form.priority.label }}{{ edit_form.priority(class_='select') }}</div>
+      <div>
+        <label>Atribuir a</label>
+        <select name="assigned_to" class="select">
+          <option value=""> Ninguém </option>
+          {% for a in agents %}
+            <option value="{{ a.id }}" {% if ticket.assignee and a.id == ticket.assignee.id %}selected{% endif %}>{{ a.name }} ({{ a.role }})</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="actions"><button class="btn">Atualizar</button></div>
+  </form>
+</section>
+{% endif %}
+
+<section class="card">
+  <h3>Anexos</h3>
+  {% if ticket.attachments %}
+    <ul>
+      {% for a in ticket.attachments %}
+        <li>
+          <a href="{{ url_for('tickets.download_attachment', ticket_id=ticket.id, attachment_id=a.id) }}">{{ a.filename }}</a>
+          <small>({{ (a.size or 0) // 1024 }} KB, {{ a.content_type or 'arquivo' }})</small>
+          <form method="post" action="{{ url_for('tickets.delete_attachment', ticket_id=ticket.id, attachment_id=a.id) }}" style="display:inline; margin-left:8px;">
+            {{ csrf_token() }}
+            <button class="btn secondary" onclick="return confirm('Remover este anexo?')">Excluir</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Nenhum anexo.</p>
+  {% endif %}
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('tickets.upload_attachment', ticket_id=ticket.id) }}">
+    {{ csrf_token() }}
+    <div id="dropzone" class="dropzone">
+      Solte arquivos aqui ou clique para selecionar
+      <small>Você pode enviar múltiplos arquivos (limite do servidor se aplica)</small>
+    </div>
+    <input id="fileInputMulti" class="input" type="file" name="files" multiple style="display:none">
+    <div class="actions"><button class="btn">Enviar anexos</button></div>
+  </form>
+</section>
+
+<section class="card">
+  <h3>Comentários</h3>
+  {% for c in ticket.comments %}
+    <div class="comment">
+      <div class="meta">{{ c.author.name }}  {{ c.created_at | local('%d/%m/%Y %H:%M') }}</div>
+      <div class="body">{{ c.body }}</div>
+    </div>
+  {% else %}
+    <p>Nenhum comentário ainda.</p>
+  {% endfor %}
+
+  <form method="post" action="{{ url_for('tickets.add_comment', ticket_id=ticket.id) }}">
+    {{ comment_form.hidden_tag() }}
+    {{ comment_form.body(class_='textarea', rows=3, placeholder='Escreva um comentário...') }}
+    <div class="actions">{{ comment_form.submit(class_='btn') }}</div>
+  </form>
+</section>
+
+{% endblock %}

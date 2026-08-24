@@ -1,0 +1,25 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+
+  <h2>{{ 'Novo usuário' if mode=='new' else 'Editar usuário' }}</h2>
+
+  <form method="post" novalidate>
+
+    {{ form.hidden_tag() }}
+
+    <div class="form-row">{{ form.name.label }} {{ form.name(class_='input') }}</div>
+
+    <div class="form-row">{{ form.email.label }} {{ form.email(class_='input') }}</div>
+
+    <div class="form-row">{{ form.role.label }} {{ form.role(class_='select') }}</div>
+
+    <div class="form-row">{{ form.is_active() }} <label class="checkbox">{{ form.is_active.label.text }}</label></div>
+
+    <div class="form-row">{{ form.password.label }} {{ form.password(class_='input') }}</div>
+
+    <div class="actions">{{ form.submit(class_='btn primary') }}</div>
+
+  </form>
+
+{% endblock %}

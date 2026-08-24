@@ -1,0 +1,268 @@
+{% extends "layout.html" %}
+
+{% block title %}Meu Perfil - Sollus Connected{% endblock %}
+
+
+
+{% block head %}
+
+<style>
+
+  .profile-card .avatar-holder{
+
+    width:110px;height:110px;border-radius:50%;
+
+    margin:0 auto 1rem;overflow:hidden;
+
+    background:rgba(148,163,184,0.1);display:flex;align-items:center;justify-content:center;
+
+  }
+
+  .profile-card .avatar-holder img{width:100%;height:100%;object-fit:cover;}
+
+  .profile-card .badge-role{background:rgba(14,93,198,.12);color:var(--blue-700);border-radius:999px;padding:.25rem .75rem;font-weight:600;}
+
+</style>
+
+{% endblock %}
+
+
+
+{% block scripts %}
+{{ super() }}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-phone-manager]').forEach((wrapper) => {
+      const list = wrapper.querySelector('[data-phone-list]');
+      const addBtn = wrapper.querySelector('[data-add-phone]');
+
+      const buildEntry = (value = '') => {
+        const div = document.createElement('div');
+        div.className = 'input-group input-group-sm mb-2 phone-extra-entry';
+        div.innerHTML = `
+          <input type="text" class="form-control" name="extra_phones[]" placeholder="(00) 00000-0000" value="${value}">
+          <button type="button" class="btn btn-outline-danger" data-remove-phone title="Remover telefone">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        `;
+        return div;
+      };
+
+      addBtn?.addEventListener('click', () => {
+        list?.appendChild(buildEntry());
+      });
+
+      list?.addEventListener('click', (event) => {
+        const btn = event.target.closest('[data-remove-phone]');
+        if (!btn) return;
+        const row = btn.closest('.phone-extra-entry');
+        if (row) row.remove();
+      });
+
+      if (list && !list.querySelector('.phone-extra-entry')) {
+        list.appendChild(buildEntry());
+      }
+    });
+  });
+</script>
+{% endblock %}
+
+{% block content %}
+
+{% set user_name = (session.get('nome') or session.get('usuario') or 'Usuário')|trim %}
+
+{% set role_label = session.get('role_label') or session.get('tipo') %}
+
+{% set avatar_path = session.get('avatar_path') %}
+
+{% if avatar_path %}
+
+  {% set avatar_url = url_for('static', filename=avatar_path) %}
+
+{% else %}
+
+  {% set avatar_url = url_for('static', filename='images/sollus_logo.png') %}
+
+{% endif %}
+
+{% set phone_value = session.get('phone') or current_user.phone or '' %}
+
+
+
+{% set extra_phone_values = session.get('extra_phones') or current_user.extra_phones or [] %}
+
+{% set profile_phone_list = [] %}
+
+{% if phone_value %}
+
+{% set profile_phone_list = profile_phone_list + [phone_value] %}
+
+{% endif %}
+
+{% for value in extra_phone_values %}
+
+{% if value %}
+
+{% set profile_phone_list = profile_phone_list + [value] %}
+
+{% endif %}
+
+{% endfor %}
+
+
+
+<div class="row g-4">
+
+  <div class="col-12 col-xl-4">
+
+    <div class="card profile-card h-100">
+
+      <div class="card-body text-center">
+
+        <div class="avatar-holder mb-2">
+
+          <img src="{{ avatar_url }}" alt="Avatar">
+
+        </div>
+
+        <h2 class="h5 fw-bold mb-1">{{ user_name }}</h2>
+
+        {% if role_label %}<span class="badge-role d-inline-flex align-items-center gap-1"><i class="bi bi-person-badge"></i> {{ role_label|title }}</span>{% endif %}
+
+        <p class="text-muted small mt-3 mb-0">Atualize a foto e o telefone para personalizar seu perfil na plataforma.</p>
+
+      </div>
+
+      <div class="card-footer bg-transparent">
+
+        <form class="text-start" method="post" action="{{ url_for('auth_bp.update_avatar') }}" enctype="multipart/form-data">
+
+          {{ csrf_token() }}
+
+          <div class="mb-3">
+
+            <label class="form-label fw-semibold">Foto de perfil</label>
+
+            <input type="file" class="form-control" name="avatar" accept="image/png,image/jpeg,image/webp">
+
+            <small class="form-text text-muted">Formatos aceitos: PNG, JPG, JPEG ou WEBP.</small>
+
+          </div>
+
+          <div class="mb-3">
+
+
+
+            <label class="form-label fw-semibold" for="profile_phone">Telefone principal</label>
+
+
+
+            <input type="text" class="form-control" id="profile_phone" name="phone" value="{{ phone_value }}" placeholder="(00) 00000-0000">
+
+
+
+          </div>
+
+          {% with extra_phones_list=extra_phone_values, toggle_id='profilePageExtraPhones' %}
+          {% include 'auth/_extra_phone_fields.html' %}
+          {% endwith %}
+
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save me-2"></i>Salvar alterações</button>
+
+        </form>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="col-12 col-xl-8">
+
+    <div class="card h-100">
+
+      <div class="card-body">
+
+        <h2 class="h5 fw-bold mb-4">Informações da conta</h2>
+
+        <div class="row g-3">
+
+          <div class="col-md-6">
+
+            <label class="text-muted small text-uppercase fw-semibold">E-mail</label>
+
+            <div>{{ current_user.email or session.get('email') or '' }}</div>
+
+          </div>
+
+          <div class="col-md-6">
+
+            <label class="text-muted small text-uppercase fw-semibold">Usuário</label>
+
+            <div>{{ current_user.usuario or session.get('usuario') or '' }}</div>
+
+          </div>
+
+          <div class="col-md-6">
+
+            <label class="text-muted small text-uppercase fw-semibold">Próximo número de proposta</label>
+
+            <div>{{ session.get('prox_num') or current_user.prox_num or '' }}</div>
+
+          </div>
+
+          <div class="col-md-6">
+
+
+
+            <label class="text-muted small text-uppercase fw-semibold">Telefones</label>
+
+
+
+            {% if profile_phone_list %}
+
+            <div class="d-flex flex-column gap-1">
+
+              {% for value in profile_phone_list %}
+
+              <span class="badge bg-light text-dark border align-self-start">{{ value }}</span>
+
+              {% endfor %}
+
+            </div>
+
+            {% else %}
+
+            <div class="text-muted">Nenhum telefone cadastrado</div>
+
+            {% endif %}
+
+
+
+          </div>
+
+        </div>
+
+        <hr class="my-4">
+
+        <p class="text-muted small mb-2">Precisa alterar e-mail ou senha? Fale com um administrador ou utilize o módulo de usuários se você tiver permissão.</p>
+
+        {% if session.get('tipo') in ['admin', 'gestor'] %}
+
+        <a class="btn btn-outline-primary" href="{{ url_for('auth_bp.gerenciar_usuarios') }}"><i class="bi bi-people-gear me-2"></i>Gerenciar usuários</a>
+
+        {% endif %}
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}
+
+

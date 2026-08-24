@@ -1,0 +1,140 @@
+<!-- templates/email/notify.html -->
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>{{ title or 'Notificação' }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}?v=3">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon.png') }}?v=3">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}?v=3">
+  <!-- Estilos inline para melhor compatibilidade -->
+</head>
+<body style="margin:0;padding:0;background:#f3f4f6;">
+  <!-- Wrapper -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <!-- Card -->
+        <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="width:640px;max-width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+          <!-- Cabealho -->
+          <tr>
+            <td style="padding:16px 20px;background:#0F7BC8;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="text-align:left;">
+                    <img src="{{ logo_url }}" alt="Sollus" width="140" style="display:block;border:0;outline:none;text-decoration:none;">
+                  </td>
+                  <td style="text-align:right;">
+                    <span style="display:inline-block;color:#E6F0F8;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:.3px;text-transform:uppercase;">
+                      {{ env_label or 'Sistema de Chamados' }}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Título -->
+          <tr>
+            <td style="padding:24px 24px 8px 24px;">
+              <h1 style="margin:0;color:#0b2239;font-family:Arial,Helvetica,sans-serif;font-size:20px;line-height:28px;">
+                {{ title }}
+              </h1>
+              {% if subtitle %}
+              <p style="margin:6px 0 0 0;color:#4b5563;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:20px;">
+                {{ subtitle }}
+              </p>
+              {% endif %}
+            </td>
+          </tr>
+
+          <!-- Corpo -->
+          <tr>
+            <td style="padding:0 24px 16px 24px;">
+              <!-- Bloco detalhes do ticket -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0 8px;">
+                <tr>
+                  <td style="width:170px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;font-size:13px;">Número</td>
+                  <td style="color:#111827;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;">#{{ ticket.id }}</td>
+                </tr>
+                <tr>
+                  <td style="width:170px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;font-size:13px;">Título</td>
+                  <td style="color:#111827;font-family:Arial,Helvetica,sans-serif;font-size:13px;">{{ ticket.title }}</td>
+                </tr>
+                <tr>
+                  <td style="width:170px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;font-size:13px;">Status</td>
+                  <td style="color:#111827;font-family:Arial,Helvetica,sans-serif;font-size:13px;">{{ status_pt }}</td>
+                </tr>
+                <tr>
+                  <td style="width:170px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;font-size:13px;">Prioridade</td>
+                  <td style="color:#111827;font-family:Arial,Helvetica,sans-serif;font-size:13px;">{{ priority_pt }}</td>
+                </tr>
+                <tr>
+                  <td style="width:170px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;font-size:13px;">Solicitante</td>
+                  <td style="color:#111827;font-family:Arial,Helvetica,sans-serif;font-size:13px;">{{ requester or '-' }}</td>
+                </tr>
+                {% if assignee %}
+                <tr>
+                  <td style="width:170px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;font-size:13px;">Atribuído para</td>
+                  <td style="color:#111827;font-family:Arial,Helvetica,sans-serif;font-size:13px;">{{ assignee }}</td>
+                </tr>
+                {% endif %}
+                {% if created_at %}
+                <tr>
+                  <td style="width:170px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;font-size:13px;">Criado em</td>
+                  <td style="color:#111827;font-family:Arial,Helvetica,sans-serif;font-size:13px;">{{ created_at }}</td>
+                </tr>
+                {% endif %}
+                {% if updated_at %}
+                <tr>
+                  <td style="width:170px;color:#6b7280;font-family:Arial,Helvetica,sans-serif;font-size:13px;">Atualizado em</td>
+                  <td style="color:#111827;font-family:Arial,Helvetica,sans-serif;font-size:13px;">{{ updated_at }}</td>
+                </tr>
+                {% endif %}
+              </table>
+
+              {% if description %}
+              <div style="margin:16px 0 0 0;padding:12px 14px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa;">
+                <div style="color:#6b7280;font-family:Arial,Helvetica,sans-serif;font-size:12px;margin-bottom:6px;">Descrição</div>
+                <div style="color:#111827;font-family:Arial,Helvetica,sans-serif;font-size:14px;white-space:pre-wrap;line-height:20px;">
+                  {{ description }}
+                </div>
+              </div>
+              {% endif %}
+
+              {% if last_message %}
+              <div style="margin:16px 0 0 0;padding:12px 14px;border:1px solid #e5e7eb;border-radius:8px;background:#ffffff;">
+                <div style="color:#6b7280;font-family:Arial,Helvetica,sans-serif;font-size:12px;margin-bottom:6px;">Última resposta</div>
+                <div style="color:#111827;font-family:Arial,Helvetica,sans-serif;font-size:14px;white-space:pre-wrap;line-height:20px;">
+                  {{ last_message }}
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- Boto -->
+              <div style="text-align:center;margin:20px 0 4px 0;">
+                <a href="{{ cta_url }}"
+                   style="display:inline-block;background:#0F7BC8;color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-size:14px;padding:12px 20px;border-radius:8px;">
+                  {{ cta_label or 'Abrir Chamado' }}
+                </a>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Rodap -->
+          <tr>
+            <td style="padding:14px 24px 20px 24px;border-top:1px solid #e5e7eb;">
+              <p style="margin:0;color:#6b7280;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;">
+                Este  um e-mail automtico do sistema de chamados Sollus.
+                Caso no reconhea esta solicitao, ignore esta mensagem.
+              </p>
+            </td>
+          </tr>
+        </table>
+        <!-- /Card -->
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

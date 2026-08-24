@@ -1,0 +1,184 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Crachá | Modelos{% endblock %}
+
+{% block head %}
+<style>
+  .crachas-card{border:0;border-radius:1.1rem;box-shadow:0 10px 24px rgba(15,35,58,.08);}
+  .crachas-card .card-header{background:transparent;border:0;padding:1.25rem 1.5rem 0;}
+  .crachas-card .card-body{padding:1.25rem 1.5rem 1.5rem;}
+  .crachas-table th,.crachas-table td{vertical-align:middle;}
+  .crachas-table thead{background:#f3f6fb;text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:#5a6782;}
+  .crachas-thumb{width:60px;height:78px;object-fit:cover;border-radius:.5rem;border:1px solid #e2e8f0;background:#fff;}
+  .crachas-table tbody tr:hover{background:rgba(148,163,184,.08);}
+  .crachas-table tbody tr{cursor:pointer;}
+  .crachas-table .form-check-input{cursor:pointer;}
+  .crachas-table .btn{white-space:nowrap;}
+</style>
+{% endblock %}
+
+{% block content %}
+{% set hero_stats = [
+  {'label': 'Total', 'value': pagination.total, 'hint': 'modelos'}
+] %}
+{% set hero_help_tips = [
+  'Use a busca por nome fantasia ou razão social para encontrar clientes.',
+  'Ative a chave de aprovado para liberar o modelo.',
+  'Clique em Editar para atualizar frente, verso e observações.'
+] %}
+{% call page_hero(
+  title='Modelos de Crachá'|safe,
+  subtitle='Cadastre, aprove e mantenha os modelos de crachá atualizados.',
+  eyebrow='Crachá'|safe,
+  stats=hero_stats,
+  help_tips=hero_help_tips,
+  help_intro='Dicas rápidas para gerenciar modelos.'
+) %}
+  <div class="page-hero__actions">
+    <a class="btn btn-light" href="{{ url_for('cracha_bp.modelos_novo') }}">
+      <i class="fa-solid fa-plus me-1"></i> Novo modelo
+    </a>
+  </div>
+{% endcall %}
+
+<div class="card crachas-card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-lg-6">
+        <label class="form-label">Nome fantasia / Razão social</label>
+        <input type="text" name="search" class="form-control" value="{{ search_value }}" placeholder="Digite para buscar">
+      </div>
+      <div class="col-lg-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">Buscar</button>
+        <a class="btn btn-outline-secondary w-100" href="{{ url_for('cracha_bp.modelos') }}">Limpar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card crachas-card">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <div>
+      <h2 class="h6 fw-bold mb-1">Registros</h2>
+      <p class="text-muted mb-0">{{ pagination.total }} modelo(s) encontrado(s).</p>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover crachas-table">
+        <thead>
+          <tr>
+            <th>Nome fantasia</th>
+            <th>Razão social</th>
+            <th>Frente</th>
+            <th>Verso</th>
+            <th>Aprovado</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in crachas %}
+          <tr class="js-cracha-row"
+              data-id="{{ row.id_pk }}"
+              data-nome="{{ row.nome_fantasia|e }}"
+              data-razao="{{ row.razao_social|e }}"
+              data-frente="{{ row.frente_url|e }}"
+              data-verso="{{ row.verso_url|e }}"
+              data-aprovado="{{ '1' if row.situacao_bool else '0' }}">
+            <td class="fw-semibold">{{ row.nome_fantasia }}</td>
+            <td>{{ row.razao_social }}</td>
+            <td><img class="crachas-thumb" src="{{ row.frente_url }}" alt="Frente do crachá"></td>
+            <td><img class="crachas-thumb" src="{{ row.verso_url }}" alt="Verso do crachá"></td>
+            <td>
+              <div class="form-check form-switch m-0">
+                <input class="form-check-input js-cracha-approve" type="checkbox" data-id="{{ row.id_pk }}" {{ 'checked' if row.situacao_bool else '' }}>
+              </div>
+            </td>
+            <td class="text-end">
+              <div class="d-flex justify-content-end gap-2">
+                <a class="btn btn-outline-primary btn-sm" href="{{ url_for('cracha_bp.modelos_editar', cracha_id=row.id_pk) }}">
+                  <i class="fa-solid fa-pen me-1"></i> Editar
+                </a>
+                <form method="post" action="{{ url_for('cracha_bp.modelos_excluir', cracha_id=row.id_pk) }}" onsubmit="return confirm('Deseja excluir este modelo?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="fa-solid fa-trash me-1"></i> Excluir
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not crachas %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">Nenhum modelo encontrado.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <nav class="mt-3">
+      <ul class="pagination justify-content-end mb-0">
+        <li class="page-item {{ 'disabled' if not pagination.has_prev else '' }}">
+          <a class="page-link" href="{{ build_url(page=pagination.prev_num) }}">Anterior</a>
+        </li>
+        {% for p in range(1, pagination.pages + 1) %}
+        {% if p == 1 or p == pagination.pages or (p >= pagination.page - 1 and p <= pagination.page + 1) %}
+        <li class="page-item {{ 'active' if p == pagination.page else '' }}">
+          <a class="page-link" href="{{ build_url(page=p) }}">{{ p }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+        <li class="page-item {{ 'disabled' if not pagination.has_next else '' }}">
+          <a class="page-link" href="{{ build_url(page=pagination.next_num) }}">Próxima</a>
+        </li>
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="crachaViewModal" tabindex="-1" aria-labelledby="crachaViewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="crachaViewModalLabel">Detalhes do modelo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label text-muted">Nome fantasia</label>
+            <div class="fw-semibold" data-field="nome">-</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted">Razão social</label>
+            <div data-field="razao">-</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted">Frente</label>
+            <img class="img-fluid rounded border" data-field="frente" alt="Frente do crachá">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted">Verso</label>
+            <img class="img-fluid rounded border" data-field="verso" alt="Verso do crachá">
+          </div>
+          <div class="col-md-12">
+            <label class="form-label text-muted">Status</label>
+            <div data-field="status">-</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/cracha_modelos.js') }}" defer></script>
+{% endblock %}

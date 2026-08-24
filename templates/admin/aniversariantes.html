@@ -1,0 +1,245 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Aniversariantes  Sollus Connected{% endblock %}
+
+{% block head %}
+<style>
+  .anniv-card{border:0;border-radius:1.5rem;box-shadow:0 18px 40px rgba(15,35,58,.08);} 
+  .anniv-card__header{padding:1.5rem 1.5rem 0;}
+  .anniv-card__body{padding:1.5rem;}
+  .anniv-table thead{background:#f1f4fb;text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:#5a6782;}
+  .anniv-table tbody tr{transition:background .2s ease;}
+  .anniv-table tbody tr:hover{background:#f7f9ff;}
+  .anniv-highlight{background:linear-gradient(135deg,#0059c8,#4390ff);color:#fff;border-radius:1.5rem;padding:1.75rem;box-shadow:0 20px 40px rgba(7,56,129,.35);}
+  .anniv-highlight small{letter-spacing:.08rem;text-transform:uppercase;color:rgba(255,255,255,.75);}
+  .anniv-highlight__item{border-radius:1rem;background:rgba(255,255,255,.15);padding:1rem;margin-top:1rem;display:flex;justify-content:space-between;align-items:center;backdrop-filter:blur(4px);}
+  .badge-month{font-weight:600;background:#eef3ff;color:#1e3a8a;border-radius:.75rem;padding:.35rem .8rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.08rem;}
+</style>
+{% endblock %}
+
+{% block content %}
+{% set stats = [
+  {'label': 'Colaboradores cadastrados', 'value': total_birthdays},
+  {'label': 'Próximos 30 dias', 'value': upcoming_birthdays|length}
+] %}
+{% set birthday_help_tips = [
+  'Use o botão "Novo" para vincular colaborador e data de nascimento; a faixa de próximos aniversários já traz quem está mais perto.',
+  'Planeje as ações olhando o painel azul: o selo mostra em quantos dias a comemoração chega.',
+  'Na lista completa, navegue por mês e use lápis/lixeira para corrigir registros ou remover duplicidades.'
+] %}
+{{ page_hero(
+    title='Calendário de Aniversariantes',
+    subtitle='Centralize o acompanhamento das datas especiais da sua equipe para organizar ações internas e não deixar ninguém sem parabéns.',
+    eyebrow='Administração',
+    stats=stats,
+    help_tips=birthday_help_tips,
+    help_intro='Guia rápido para manter o calendário de aniversários em dia.'
+) }}
+
+<div class="row g-4">
+  <div class="col-xl-4">
+    <div class="anniv-highlight h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div>
+          <small>Próximos aniversários</small>
+          <h2 class="h4 fw-bold mb-0">{{ today | local('%d/%m/%Y') }}</h2>
+        </div>
+        <button class="btn btn-light btn-sm text-primary fw-semibold" data-bs-toggle="modal" data-bs-target="#modalNovoAniversariante">
+          <i class="bi bi-plus-lg"></i> Novo
+        </button>
+      </div>
+      {% if upcoming_birthdays %}
+        {% for item in upcoming_birthdays %}
+        <div class="anniv-highlight__item">
+          <div>
+            <strong>{{ item.entry.nome }}</strong>
+            <div class="small opacity-75">{{ item.next_date | local('%d/%m') }}</div>
+          </div>
+          <span class="badge bg-light text-primary">Em {{ item.days }} dia{{ 's' if item.days != 1 else '' }}</span>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="mb-0 opacity-75">Não há aniversários agendados para os próximos dias.</p>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-xl-8">
+    <div class="card anniv-card">
+      <div class="anniv-card__header d-flex justify-content-between align-items-center">
+        <div>
+          <h2 class="h5 fw-bold mb-1">Lista completa</h2>
+          <p class="text-muted mb-0">Organize por mês e realize ajustes sempre que necessário.</p>
+        </div>
+      </div>
+      <div class="table-responsive anniv-card__body">
+        <table class="table anniv-table align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Colaborador</th>
+              <th class="text-center">Data</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if grouped_birthdays %}
+              {% for group in grouped_birthdays %}
+              <tr class="table-light">
+                <td colspan="3" class="text-uppercase fw-semibold small text-muted">
+                  <span class="badge-month">{{ group.label }}</span>
+                </td>
+              </tr>
+                {% for entry in group.entries %}
+                <tr>
+                  <td class="fw-semibold">{{ entry.nome }}</td>
+                  <td class="text-center">{{ entry.data_nascimento | local('%d/%m') }}</td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm" role="group">
+                      <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalEditarAniversariante" data-birthday='{{ entry.to_payload() | tojson }}' data-user-id="{{ birthday_user_map.get(entry.id) or '' }}" data-update-url="{{ url_for('admin_tools_bp.atualizar_aniversariante', birthday_id=entry.id) }}">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <form method="post" action="{{ url_for('admin_tools_bp.excluir_aniversariante', birthday_id=entry.id) }}" onsubmit="return confirm('Confirma a exclusão de {{ entry.nome }}?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-danger">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="3" class="text-center py-4 text-muted">Nenhum aniversariante cadastrado até o momento.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if birthday_pagination.pages > 1 %}
+<div class="d-flex justify-content-between align-items-center mt-3">
+  <div class="text-muted small">
+    Página {{ birthday_pagination.page }} de {{ birthday_pagination.pages }}
+  </div>
+  {% set _candidates = [1, birthday_pagination.page, birthday_pagination.page + 1, birthday_pagination.page + 2, birthday_pagination.page + 3, birthday_pagination.pages] %}
+  {% set pages_to_show = [] %}
+  {% for p in _candidates %}
+    {% if 1 <= p <= birthday_pagination.pages and p not in pages_to_show %}
+      {% set _ = pages_to_show.append(p) %}
+    {% endif %}
+  {% endfor %}
+  <nav aria-label="Paginação de aniversariantes">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item {% if not birthday_pagination.has_prev %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('admin_tools_bp.aniversariantes_dashboard', page=birthday_pagination.prev_num) if birthday_pagination.has_prev else '#' }}">Anterior</a>
+        </li>
+        {% for p in pages_to_show %}
+        <li class="page-item {% if p == birthday_pagination.page %}active{% endif %}">
+          <a class="page-link" href="{{ url_for('admin_tools_bp.aniversariantes_dashboard', page=p) }}">{{ p }}</a>
+        </li>
+        {% endfor %}
+        <li class="page-item {% if not birthday_pagination.has_next %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('admin_tools_bp.aniversariantes_dashboard', page=birthday_pagination.next_num) if birthday_pagination.has_next else '#' }}">Próximo</a>
+        </li>
+      </ul>
+      <form class="d-flex align-items-center gap-2" method="get" action="{{ url_for('admin_tools_bp.aniversariantes_dashboard') }}">
+        <label class="small text-muted mb-0" for="aniversariantes-page-input">Página</label>
+        <input type="number" min="1" max="{{ birthday_pagination.pages }}" class="form-control form-control-sm" id="aniversariantes-page-input" name="page" value="{{ birthday_pagination.page }}">
+        <button class="btn btn-outline-secondary btn-sm" type="submit">Ir</button>
+      </form>
+    </div>
+  </nav>
+</div>
+{% endif %}
+
+<!-- Modal: novo aniversariante -->
+<div class="modal sollus-modal fade" id="modalNovoAniversariante" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" action="{{ url_for('admin_tools_bp.criar_aniversariante') }}">
+      <div class="modal-header">
+        <h5 class="modal-title">Cadastrar aniversariante</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3">
+          <label class="form-label">Colaborador</label>
+          <select name="usuario_id" class="form-select" required>
+            <option value="">Selecione</option>
+            {% for user in users %}
+            <option value="{{ user.id }}">{{ user.nome_completo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Data de nascimento</label>
+          <input type="date" name="data_nascimento" class="form-control" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Adicionar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: editar -->
+<div class="modal sollus-modal fade" id="modalEditarAniversariante" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" id="formEditarAniversariante">
+      <div class="modal-header">
+        <h5 class="modal-title">Editar cadastro</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3">
+          <label class="form-label">Colaborador</label>
+          <input type="text" class="form-control bg-light" name="nome_exibicao" readonly>
+        </div>
+        <div class="row g-2">
+          <div class="col-4">
+            <label class="form-label">Dia</label>
+            <select name="dia" class="form-select" required>
+              {% for d in range(1, 32) %}
+              <option value="{{ d }}">{{ '%02d'|format(d) }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-8">
+            <label class="form-label">Mês</label>
+            <select name="mes" class="form-select" required>
+              <option value="1">Janeiro</option>
+              <option value="2">Fevereiro</option>
+              <option value="3">Março</option>
+              <option value="4">Abril</option>
+              <option value="5">Maio</option>
+              <option value="6">Junho</option>
+              <option value="7">Julho</option>
+              <option value="8">Agosto</option>
+              <option value="9">Setembro</option>
+              <option value="10">Outubro</option>
+              <option value="11">Novembro</option>
+              <option value="12">Dezembro</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar mudanças</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/admin_birthdays.js') }}" defer></script>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Contratos | Manutenções Agendadas{% endblock %}
+
+{% block head %}
+<style>
+  .manut-form-card{border:0;border-radius:1.1rem;box-shadow:0 10px 24px rgba(15,35,58,.08);}
+  .manut-form-card .card-body{padding:1.5rem;}
+  .manut-form-card .form-label span{color:#ef4444;}
+  .acao-bloco{display:none;}
+</style>
+{% endblock %}
+
+{% block content %}
+{% call page_hero(
+  title='Manutenções Agendadas'|safe,
+  subtitle=subtitle|safe,
+  eyebrow='Contratos'|safe
+) %}
+  <div class="page-hero__actions">
+    <a class="btn btn-light" href="{{ back_url }}">
+      <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+{% endcall %}
+
+<div class="card manut-form-card">
+  <div class="card-body">
+    <form method="post" action="{{ action_url }}" class="row g-3" id="formManutencao">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="txtID" value="{{ manutencao.id_pk if manutencao else '' }}">
+
+      {% if not manutencao %}
+      <div class="col-md-6">
+        <label class="form-label">Ação</label>
+        <select class="form-select" name="acao" id="acao">
+          <option value="1">Cadastrar uma ficha</option>
+          <option value="2">Gerar agenda pelo contrato</option>
+        </select>
+      </div>
+      {% else %}
+      <input type="hidden" name="acao" value="1">
+      {% endif %}
+
+      <div class="col-md-6">
+        <label class="form-label"><span>*</span> Cliente</label>
+        <select class="form-select" name="selCliente" id="selCliente" required>
+          <option value=""></option>
+          {% for cliente in clientes %}
+          <option value="{{ cliente.id_pk }}" {{ 'selected' if manutencao and manutencao.idclientes_fk == cliente.id_pk else '' }}>{{ cliente.nome_fantasia }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label"><span>*</span> Nº Contrato</label>
+        <select class="form-select" name="selNumeroContratos" id="selNumeroContratos" data-selected="{{ manutencao.contrato_id if manutencao else '' }}" required>
+          <option value=""></option>
+          {% for contrato in contratos %}
+          <option value="{{ contrato.id_pk }}" {{ 'selected' if manutencao and manutencao.contrato_id == contrato.id_pk else '' }}>{{ contrato.contrato_numero }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label"><span>*</span> Localidade</label>
+        <select class="form-select" name="selLocalidade" id="selLocalidade" data-selected="{{ manutencao.idcontrato_localidade_equipamento_fk if manutencao else '' }}" required>
+          <option value=""></option>
+          {% for loc in localidades %}
+          {% set label = loc.localidade ~ ((' - ' ~ loc.descricao) if loc.descricao else '') %}
+          <option value="{{ loc.id_pk }}" {{ 'selected' if manutencao and manutencao.idcontrato_localidade_equipamento_fk == loc.id_pk else '' }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-6 acao-bloco" id="acao_2">
+        <label class="form-label"><span>*</span> Dia base de atendimento</label>
+        <input type="text" class="form-control" name="txtDiaBaseAtendimento" value="">
+      </div>
+
+      <div class="col-12 acao-bloco" id="acao_1">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label"><span>*</span> Data atendimento</label>
+            <input type="text" class="form-control" name="txtDataAtendimento" value="{{ manutencao.data_inicio_br if manutencao else '' }}" placeholder="dd/mm/aaaa">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Técnico</label>
+            <select class="form-select" name="selUsuarios">
+              <option value=""></option>
+              {% for usuario in usuarios %}
+              <option value="{{ usuario.id_pk }}" {{ 'selected' if manutencao and manutencao.idusuarios_fk == usuario.id_pk else '' }}>{{ usuario.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Data visita</label>
+            <input type="text" class="form-control" name="txtDataVisita" value="{{ manutencao.data_visita_br if manutencao else '' }}" placeholder="dd/mm/aaaa">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Hora entrada</label>
+            <input type="text" class="form-control" name="txtHoraEntrada" value="{{ manutencao.hora_entrada or '' }}" placeholder="HH:MM">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Hora saída</label>
+            <input type="text" class="form-control" name="txtHoraSaida" value="{{ manutencao.hora_saida or '' }}" placeholder="HH:MM">
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 d-flex justify-content-end gap-2">
+        <button type="submit" class="btn btn-primary" name="save" value="1">Salvar</button>
+        {% if allow_more %}
+        <button type="submit" class="btn btn-outline-primary" name="save_more" value="1">Salvar +</button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/contratos_manutencoes.js') }}" defer></script>
+{% endblock %}

@@ -1,0 +1,1018 @@
+{% extends "layout.html" %}
+{% block title %}Nova Proposta{% endblock %}
+
+{% block head %}
+{{ super() }}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+  /* Select2 Custom Premium Styling */
+  .select2-container--default .select2-selection--single {
+    display: flex;
+    align-items: center;
+    height: 42px;
+    border-radius: 0.85rem;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background-color: var(--card, #fff);
+    color: var(--text, #000);
+  }
+  .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--text, #000);
+    line-height: normal;
+    padding-left: 0.75rem;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 40px;
+    right: 10px;
+  }
+  .select2-dropdown {
+    background-color: var(--card, #fff);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.85rem;
+    box-shadow: 0 10px 24px rgba(15,35,58,.08);
+    z-index: 9999;
+  }
+  .select2-container--default .select2-search--dropdown .select2-search__field {
+    background-color: var(--card, #fff);
+    color: var(--text, #000);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.75rem;
+  }
+  .select2-container--default .select2-results__option {
+    color: var(--text, #000);
+    padding: 0.5rem 0.75rem;
+  }
+  .select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: rgba(15, 123, 200, 0.15);
+    color: var(--text, #000);
+  }
+  .select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #0E5DC6 !important;
+    color: #fff !important;
+  }
+
+  .proposal-wrapper { padding-bottom: 3rem; }
+  .proposal-hero {
+    background: linear-gradient(130deg, rgba(15,123,200,.95), rgba(0,59,102,.95));
+    color: #f7fbff;
+    border-radius: 1.5rem;
+    padding: 2.25rem 2.6rem;
+    box-shadow: 0 22px 46px rgba(9,29,54,.28);
+    position: relative;
+    overflow: hidden;
+  }
+  .proposal-hero::after {
+    content: "";
+    position: absolute;
+    top: -45%;
+    right: -25%;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(255,255,255,.45), transparent 65%);
+    filter: blur(6px);
+    opacity: .65;
+  }
+  .proposal-hero .hero-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    background: rgba(255,255,255,.18);
+    font-size: 1.9rem;
+    color: #fff;
+    box-shadow: 0 12px 28px rgba(0,0,0,.18);
+  }
+  .proposal-hero .hero-title { font-weight: 700; letter-spacing: .3px; }
+  .ambiente-preview { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.75rem; }
+  .ambiente-preview.d-none { display: none; }
+  .ambiente-preview-item {
+    width: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .ambiente-preview-thumb {
+    width: 100%;
+    height: 96px;
+    border-radius: 12px;
+    border: 1px solid rgba(15,123,200,.18);
+    overflow: hidden;
+    background: #f2f6fb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ambiente-preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .ambiente-title-input { font-size: .75rem; border-radius: .6rem; padding: .35rem .6rem; }
+  .proposal-hero .hero-subtitle { color: rgba(240,247,255,.88); max-width: 620px; }
+  .proposal-hero .hero-metric {
+    background: rgba(255,255,255,.16);
+    border-radius: 1.2rem;
+    padding: 1.2rem 1.5rem;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 16px 36px rgba(0,0,0,.22);
+    min-width: 220px;
+  }
+  .proposal-hero .hero-metric .label {
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    font-size: .7rem;
+    color: rgba(255,255,255,.8);
+  }
+  .proposal-hero .hero-metric strong { display: block; font-size: 1.8rem; line-height: 1.1; margin-top: .35rem; }
+  .section-card { border-radius: 1.25rem; }
+  .section-card .card-header { background: transparent; border: 0; padding: 1.5rem 1.75rem 0; }
+  .section-card .card-body { padding: 1.5rem 1.75rem 1.75rem; }
+  .section-title { font-weight: 700; letter-spacing: .02em; }
+  .section-subtitle { font-size: .95rem; }
+  .proposal-form .form-label { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: #6c7893; font-weight: 600; }
+  .proposal-form .form-control,
+  .proposal-form .form-select { border-radius: .9rem; padding: .75rem 1rem; border-color: #d6deed; }
+  .proposal-form .form-control:focus,
+  .proposal-form .form-select:focus { border-color: var(--blue-700); box-shadow: 0 0 0 .2rem rgba(15,123,200,.18); }
+  .doc-type-group { gap: .5rem; }
+  .proposal-wrapper .doc-type-group .btn { flex: 1 1 160px; border-radius: .85rem; font-weight: 600; letter-spacing: .02em; }
+  .proposal-wrapper .doc-type-group .btn.active { box-shadow: 0 10px 25px rgba(15,123,200,.25); }
+  .subcard { border-radius: 1rem; }
+  #emailOptions.subcard { background: linear-gradient(180deg, rgba(79,178,255,.08), rgba(79,178,255,.02)); }
+  #sistemaWrapper { border: 1px dashed rgba(15,123,200,.3); background: rgba(15,123,200,.02); }
+  #sistemaWrapper .table { margin-bottom: 0; }
+  #equipamentos-selecionados > div {
+    border: 1px solid rgba(15,35,58,.12);
+    border-radius: 1rem;
+    padding: 1rem;
+    background: #ffffff;
+    box-shadow: 0 10px 28px rgba(15,35,58,.08);
+  }
+  .equip-stock-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .2rem .65rem;
+    border-radius: 999px;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    background: rgba(15,123,200,.12);
+    color: #0f2657;
+  }
+  .proposal-aside .card { border-radius: 1.25rem; box-shadow: 0 18px 36px rgba(15,35,58,.12); }
+  .proposal-aside ul { margin: 0; padding-left: 1.25rem; }
+  .proposal-aside li + li { margin-top: .5rem; }
+  .proposal-wrapper .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .55rem;
+    border-radius: 1rem;
+    font-weight: 600;
+    letter-spacing: .01em;
+    padding: .85rem 1.6rem;
+    border: 1px solid transparent;
+    transition: transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .proposal-wrapper .btn i { font-size: 1.15rem; line-height: 1; }
+  .proposal-wrapper .btn-elevated { box-shadow: 0 14px 32px rgba(12,37,63,.16); }
+  .proposal-wrapper .btn-elevated:hover { transform: translateY(-1px); box-shadow: 0 18px 40px rgba(12,37,63,.22); }
+  .proposal-wrapper .btn-elevated:active { transform: translateY(0); box-shadow: 0 10px 24px rgba(12,37,63,.18); }
+  .proposal-wrapper .btn:focus-visible { outline: none; box-shadow: 0 0 0 .25rem rgba(15,123,200,.28); }
+  .proposal-wrapper .btn-primary { background: linear-gradient(135deg,#0f7bc8,#1ba8f0); color: #fff; border: 0; }
+  .proposal-wrapper .btn-primary:hover { background: linear-gradient(135deg,#0c63a2,#1584c4); }
+  .proposal-wrapper .btn-secondary { background: linear-gradient(135deg,#7c3aed,#4c1d95); color: #fff; border: 0; }
+  .proposal-wrapper .btn-secondary:hover { background: linear-gradient(135deg,#5f2ad6,#3a1580); }
+  .proposal-wrapper .btn-outline-primary { border-color: rgba(15,123,200,.55); color: #0f2657; background: rgba(15,123,200,.08); }
+  .proposal-wrapper .btn-outline-primary:hover { border-color: #0f7bc8; background: rgba(15,123,200,.16); color: #0f2657; }
+  .proposal-wrapper .btn-outline-secondary { border-color: rgba(79,70,229,.5); color: #312e81; background: rgba(79,70,229,.12); }
+  .proposal-wrapper .btn-outline-secondary:hover { border-color: rgba(79,70,229,.75); background: rgba(79,70,229,.22); }
+  .proposal-actions { padding: 1.5rem 0 0; display: flex; flex-wrap: wrap; gap: 1rem; }
+  .proposal-wrapper .proposal-actions .btn { min-width: 220px; }
+  .issuer-preview { margin-top: .75rem; padding: 1rem 1.25rem; border-radius: 1rem; border: 1px dashed rgba(15,123,200,.2); background: linear-gradient(180deg, rgba(15,123,200,.08), rgba(15,123,200,.02)); box-shadow: 0 10px 22px rgba(15,35,58,.05); }
+  .issuer-preview .issuer-title { text-transform: uppercase; font-size: .75rem; letter-spacing: .08em; font-weight: 600; color: #0f172a; opacity: .7; margin-bottom: .35rem; }
+  .issuer-preview .issuer-line { font-weight: 600; color: #0f172a; }
+  .issuer-preview .issuer-line + .issuer-line { margin-top: .25rem; }
+  .issuer-preview .issuer-line.muted { font-weight: 500; color: #475569; font-size: .9rem; }
+  #observacoesPonto { border-radius: 1rem; }
+  #observacoesPonto strong { font-size: .95rem; }
+  @media (max-width: 991px) {
+    .proposal-hero { padding: 1.9rem 1.6rem; border-radius: 1.25rem; }
+    .proposal-hero .hero-metric { text-align: left; margin-top: 1.25rem; }
+    .section-card .card-header { padding: 1.35rem 1.25rem 0; }
+    .section-card .card-body { padding: 1.35rem 1.25rem 1.5rem; }
+  }
+  @media (max-width: 576px) {
+    .proposal-actions { flex-direction: column; }
+    .proposal-wrapper .proposal-actions .btn { width: 100%; }
+  }
+  #gerandoModal .modal-dialog { max-width: 420px; }
+  #gerandoModal .modal-content { border: 0; background: transparent; }
+  #pdfPreviewModal .modal-dialog { max-width: 960px; }
+  #pdfPreviewModal .modal-content { border: 0; border-radius: 1.5rem; box-shadow: 0 28px 68px rgba(6,28,56,.28); overflow: hidden; }
+  #pdfPreviewModal .modal-header { padding: 1.4rem 2rem; background: linear-gradient(135deg, rgba(15,123,200,.1), rgba(30,64,175,.08)); border-bottom: 0; }
+  #pdfPreviewModal .modal-title { font-weight: 700; letter-spacing: .02em; color: #0f1c36; }
+  #pdfPreviewModal .modal-body { padding: 0 2rem 2rem; background: #f8fbff; }
+  #pdfPreviewModal .modal-footer { padding: 1.3rem 2rem; background: #eef5ff; border-top: 0; }
+  .pdf-frame-wrapper { height: 70vh; border-radius: 1.25rem; overflow: hidden; border: 1px solid rgba(15,26,60,.08); background: linear-gradient(135deg, rgba(15,123,200,.06), rgba(99,102,241,.05)); box-shadow: inset 0 1px 0 rgba(255,255,255,.4); }
+  .pdf-frame { width: 100%; height: 100%; border: 0; background: #fff; }
+  .pdf-modal-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+  @media (max-width: 768px) {
+    .pdf-frame-wrapper { height: 60vh; }
+    #pdfPreviewModal .modal-body { padding: 0 1.25rem 1.5rem; }
+    #pdfPreviewModal .modal-footer { padding: 1.2rem 1.25rem; }
+  }
+  .loading-modal { background: linear-gradient(135deg, #0f7bc8, #001b33); color: #f8fafc; padding: 2.4rem 2.6rem; border-radius: 1.75rem; box-shadow: 0 30px 60px rgba(5,26,52,.45); position: relative; overflow: hidden; }
+  .loading-modal::after { content: ''; position: absolute; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.22), transparent 70%); top: -280px; right: -180px; opacity: .6; }
+  .loading-modal::before { content: ''; position: absolute; width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,.08); bottom: -120px; left: -80px; filter: blur(4px); }
+  .loading-icon { width: 78px; height: 78px; border-radius: 22px; background: rgba(255,255,255,.12); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; position: relative; box-shadow: 0 15px 35px rgba(7,34,66,.3); }
+  .loading-icon::after { content: ''; position: absolute; inset: 6px; border-radius: 18px; border: 2px solid rgba(255,255,255,.25); border-top-color: #38bdf8; animation: loading-spin 1.2s linear infinite; }
+  .loading-icon i { font-size: 1.9rem; color: #38bdf8; position: relative; z-index: 1; }
+  .loading-modal h5 { font-weight: 700; letter-spacing: .05em; text-transform: uppercase; margin-bottom: .35rem; }
+  .loading-modal .loading-subtitle { margin-bottom: 1.4rem; color: rgba(236,248,255,.78); }
+  .loading-progress { position: relative; height: 10px; border-radius: 999px; background: rgba(255,255,255,.12); overflow: hidden; box-shadow: inset 0 1px 6px rgba(7,34,66,.45); }
+  .loading-progress::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(135deg,rgba(96,222,126,.18),rgba(20,83,45,.05)); opacity: .6; }
+  .loading-progress .progress-bar { display: block; width: 0%; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#22c55e,#15803d); box-shadow: 0 8px 18px rgba(34,197,94,.45); transition: width .35s ease; position: relative; overflow: hidden; }
+  .loading-progress .progress-bar::after { content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 45%; background: linear-gradient(90deg,rgba(255,255,255,.0),rgba(255,255,255,.45),rgba(255,255,255,.0)); opacity: .6; transform: skewX(-12deg); animation: progress-sheen 1.4s ease-in-out infinite; }
+  @keyframes progress-sheen { 0% { left: -45%; } 50% { left: 60%; } 100% { left: 145%; } }
+  .loading-footnote { margin-top: 1.2rem; font-size: .85rem; color: rgba(236,248,255,.7); }
+  @keyframes loading-spin { to { transform: rotate(1turn); } }
+  @media (max-width: 576px) { .loading-modal { padding: 2rem 2.2rem; border-radius: 1.4rem; } }
+</style>
+{% endblock %}
+{% block content %}
+{% set proposal_help_tips = [
+  'Selecione CNPJ ou CPF; ao escolher CNPJ o campo Empresa aparece. Preencha contato, e-mail e telefone para que capa e carta usem os dados corretos.',
+  'Em Configuração do serviço, defina tipo/modalidade e responsável. Adicione equipamentos pelo seletor, ajuste quantidade, preço (manual se precisar) e descontos percentuais para recalcular totais.',
+  'Em Condições comerciais, revise pagamento, prazo, frete e garantias; finalize em "Gerar proposta" e depois use os botões de enviar ou baixar conforme o cliente.'
+] %}
+<div class="proposal-wrapper py-4">
+  <div class="proposal-hero mb-4">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-8">
+        <div class="d-flex align-items-start gap-3">
+          <span class="hero-icon"><i class="bi bi-file-earmark-text"></i></span>
+          <div>
+            <h1 class="hero-title h3 mb-2">Cadastro de proposta</h1>
+            <p class="hero-subtitle mb-0">Preencha os dados do cliente, ajuste o pacote comercial e gere o documento personalizado em segundos.</p>
+            <div class="page-hero__toolbar mt-3">
+              <button
+                type="button"
+                class="btn btn-light btn-sm page-hero__help-btn"
+                data-help-title="Como usar a criação de proposta"
+                data-help-intro="Passo a passo para montar e enviar a proposta."
+                data-help-tips="{{ proposal_help_tips | join('||') | e }}"
+                data-help-page="Cadastro de proposta"
+              >
+                <span>Como usar</span>
+                <span class="page-hero__help-icon"><i class="bi bi-question-circle-fill"></i></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="hero-metric text-lg-end">
+          <span class="label">Consultor responsável</span>
+          <strong>{{ session.get('nome') or current_user.name or current_user.username }}</strong>
+          <small class="text-light opacity-75 d-block mt-1">Você pode delegar para outro usuário logo abaixo.</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form id="novaPropostaForm" method="post" novalidate enctype="multipart/form-data" class="proposal-form">
+    {{ form.csrf_token }}
+    <div class="row g-4">
+      <div class="col-12 col-xxl-8">
+        <div class="card section-card shadow-sm border-0 mb-4">
+          <div class="card-header border-0 bg-transparent pb-0">
+            <h2 class="section-title h5 mb-1">Dados do cliente</h2>
+            <p class="section-subtitle text-muted mb-0">Informações exibidas na capa, na carta de apresentação e nas comunicações.</p>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label text-uppercase small fw-semibold text-muted mb-2">Tipo de documento</label>
+                <div class="doc-type-group btn-group w-100 flex-wrap" role="group" aria-label="Tipo de documento">
+                  {% for value, label in form.document_type.choices %}
+                    <input type="radio" class="btn-check" name="{{ form.document_type.name }}" id="docType_{{ value }}" value="{{ value }}" {% if (form.document_type.data or form.document_type.default) == value %}checked{% endif %}>
+                    <label class="btn btn-outline-primary{% if (form.document_type.data or form.document_type.default) == value %} active{% endif %}" for="docType_{{ value }}">{{ label }}</label>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="documentInput" id="documentLabel">{{ 'CNPJ do Cliente' if (form.document_type.data or form.document_type.default) == 'cnpj' else 'CPF do Cliente' }}</label>
+                {{ form.document(class="form-control", id="documentInput", placeholder="00.000.000/0000-00") }}
+              </div>
+              <div class="col-md-6" id="divCompany" style="display:{{ 'block' if (form.document_type.data or form.document_type.default) == 'cnpj' else 'none' }};">
+                {{ form.company.label(class="form-label") }}
+                {{ form.company(class="form-control", id="company") }}
+              </div>
+              <div class="col-md-6">
+                {{ form.client_name.label(class="form-label") }}
+                {{ form.client_name(class="form-control", id="client_name") }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="email">E-mail do cliente</label>
+                {{ form.email(class="form-control", id="email") }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="telefone">Telefone do cliente</label>
+                {{ form.telefone(class="form-control", id="telefone", placeholder="5521999999999") }}
+              </div>
+              <div class="col-12">
+                {{ form.issuer_company_code.label(class="form-label") }}
+                {{ form.issuer_company_code(class="form-select", id="issuer_company_code") }}
+                <div id="issuerPreview" class="issuer-preview mt-2 d-none"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section-card shadow-sm border-0 mb-4">
+          <div class="card-header border-0 bg-transparent pb-0">
+            <h2 class="section-title h5 mb-1">Configuração do serviço</h2>
+            <p class="section-subtitle text-muted mb-0">Selecione o tipo de solução, a modalidade e quem ficará responsável pelo envio.</p>
+          </div>
+          <div class="card-body">
+            <div class="row g-3 align-items-end">
+              <div class="col-lg-6">
+                <label class="form-label text-uppercase small fw-semibold text-muted mb-2">Tipo de sistema</label>
+                <div class="btn-group w-100 flex-wrap" role="group" aria-label="Tipo de sistema">
+                  <input type="radio" class="btn-check" name="servico_tipo_toggle" id="servicoTipoPonto" value="PONTO" autocomplete="off" {% if servico_atual == 'PONTO' %}checked{% endif %}>
+                  <label class="btn btn-outline-primary" for="servicoTipoPonto">Sistema de ponto</label>
+                  <input type="radio" class="btn-check" name="servico_tipo_toggle" id="servicoTipoAcesso" value="ACESSO" autocomplete="off" {% if servico_atual == 'ACESSO' %}checked{% endif %}>
+                  <label class="btn btn-outline-primary" for="servicoTipoAcesso">Sistema de acesso</label>
+                </div>
+                {{ form.servico_type(class="form-select d-none", id="servico_type_select") }}
+              </div>
+              <div class="col-lg-6">
+                {{ form.modalidade_type.label(class="form-label") }}
+                {{ form.modalidade_type(class="form-select", id="modalidade_type") }}
+              </div>
+              <div class="col-12 d-none" id="locacaoFields">
+                <div class="row g-3 mt-1">
+                  <div class="col-md-6 col-lg-4">
+                    {{ form.locacao_vigencia.label(class="form-label") }}
+                    {{ form.locacao_vigencia(class="form-control", id="locacao_vigencia", placeholder="Ex.: 24 meses") }}
+                  </div>
+                  <div class="col-md-6 col-lg-4">
+                    {{ form.locacao_modelo.label(class="form-label") }}
+                    {{ form.locacao_modelo(class="form-select", id="locacao_modelo") }}
+                  </div>
+                  <div class="col-md-4 col-6 col-lg-4">
+                    {{ form.locacao_qtd_cnpjs.label(class="form-label") }}
+                    {{ form.locacao_qtd_cnpjs(class="form-control", id="locacao_qtd_cnpjs", min="1") }}
+                  </div>
+                </div>
+              </div>
+              <div class="col-12" id="repPWrapper">
+                <div class="form-check mt-2">
+                  {{ form.rep_categoria_programa(class="form-check-input", id="rep_categoria_programa") }}
+                  {{ form.rep_categoria_programa.label(class="form-check-label", for="rep_categoria_programa") }}
+                  <div class="form-text">Marque quando o registrador atender à categoria REP-P para ajustar as observações da proposta.</div>
+                </div>
+                <div class="mt-2 d-none" id="repMobileWrapper">
+                  <div class="form-check">
+                    {{ form.rep_tem_mobile(class="form-check-input", id="rep_tem_mobile") }}
+                    {{ form.rep_tem_mobile.label(class="form-check-label", for="rep_tem_mobile") }}
+                  </div>
+                  <div class="row g-2 mt-2 d-none" id="repMobileQtdWrapper">
+                    <div class="col-md-6">
+                      {{ form.rep_qtd_mobile.label(class="form-label") }}
+                      {{ form.rep_qtd_mobile(class="form-control", id="rep_qtd_mobile", min="1", step="1", inputmode="numeric") }}
+                    </div>
+                    <div class="col-md-6">
+                      {{ form.rep_mobile_valor_mensal.label(class="form-label") }}
+                      {{ form.rep_mobile_valor_mensal(class="form-control", id="rep_mobile_valor_mensal", type="text", placeholder="R$ 0,00", inputmode="decimal") }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                {{ form.usar_outro_usuario.label(class="form-label") }}
+                {{ form.usar_outro_usuario(class="form-select", id="usar_outro") }}
+              </div>
+              <div class="col-lg-6" id="divOutroUsuario" style="display:none;">
+                {{ form.outro_usuario.label(class="form-label") }}
+                {{ form.outro_usuario(class="form-select") }}
+              </div>
+            </div>
+            <div id="observacoesPonto" class="alert alert-info d-none mt-3">
+              <div class="d-flex align-items-start gap-2">
+                <i class="bi bi-info-circle-fill fs-5"></i>
+                <div>
+                  <strong>Observações específicas para sistemas de ponto</strong>
+                  <p class="mb-0 small">Detalhe regras de jornada, necessidades de coleta offline e particularidades legais quando o serviço for de ponto eletrônico.</p>
+                </div>
+              </div>
+            </div>
+            <div id="observacoesAcesso" class="alert alert-info d-none mt-3">
+              <div class="d-flex align-items-start gap-2">
+                <i class="bi bi-info-circle-fill fs-5"></i>
+                <div>
+                  <strong>Observações específicas para sistemas de acesso</strong>
+                  <p class="mb-0 small">Os equipamentos são bivolt, mas recomenda-se uma rede de energia dedicada a cada unidade de equipamento, sendo recomendável o uso em redes de energia devidamente aterradas.</p>
+                  <p class="mb-0 small">Recomenda-se a adequação da estrutura física com o uso de guarda-corpos e medidas específicas dos espaços onde cada equipamento irá ser posicionado.</p>
+                  <p class="mb-0 small">As adequações de estrutura: espaços (estrutura de parede, sustentação, batentes etc.), infraestrutura lógica e de energia são de responsabilidade do cliente. A Sollus pode auxiliar em orientações, aconselhamentos técnicos e indicação de melhores práticas de mercado de acordo com a experiência da empresa no setor.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section-card shadow-sm border-0 mb-4">
+          <div class="card-header border-0 bg-transparent pb-0">
+            <h2 class="section-title h5 mb-1">Envio automático por e-mail</h2>
+            <p class="section-subtitle text-muted mb-0">Personalize a mensagem e defina para quem a proposta será enviada.</p>
+          </div>
+          <div class="card-body">
+            <div class="form-check form-switch mb-3">
+              {{ form.enviar_email(class="form-check-input", id="enviar_email") }}
+              {{ form.enviar_email.label(class="form-check-label", for="enviar_email") }}
+            </div>
+            <div id="emailOptions" class="subcard card border-0 shadow-sm d-none">
+              <div class="card-body">
+                <div class="mb-3">
+                  {{ form.email_corpo.label(class="form-label", for="email_corpo") }}
+                  {{ form.email_corpo(class="form-control", id="email_corpo", rows="6", placeholder="Escreva a mensagem que acompanhará a proposta") }}
+                  <div class="mt-3 d-flex flex-wrap align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="signatureUploadBtn">Adicionar assinatura</button>
+                    <input type="file" class="d-none" id="signatureInput" name="signature_image" accept=".png,.jpg,.jpeg">
+                    <div id="signaturePreview" class="signature-preview">
+                      {% if signature_url %}
+                        <img src="{{ signature_url }}" alt="Assinatura atual" style="max-height:80px;border-radius:10px;box-shadow:0 6px 16px rgba(0,0,0,0.18);">
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                <div class="form-check form-switch mb-3">
+                  {{ form.enviar_copia(class="form-check-input", id="enviar_copia") }}
+                  {{ form.enviar_copia.label(class="form-check-label", for="enviar_copia") }}
+                </div>
+                <div class="mb-0 d-none" id="emailCcWrapper">
+                  {{ form.email_cc.label(class="form-label", for="email_cc") }}
+                  {{ form.email_cc(class="form-control", id="email_cc", rows="3", placeholder="Informe um e-mail por linha ou separados por vírgula ou ponto e vírgula") }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card section-card shadow-sm border-0 mb-4">
+          <div class="card-header border-0 bg-transparent pb-0">
+            <h2 class="section-title h5 mb-1">Sistemas de Ponto e Acesso</h2>
+            <p class="section-subtitle text-muted mb-0">Utilize kits prontos para agilizar a composição da proposta.</p>
+          </div>
+          <div class="card-body">
+            <div class="form-check form-switch mb-3">
+              {{ form.usar_sistema(class="form-check-input", id="usar_sistema") }}
+              {{ form.usar_sistema.label(class="form-check-label", for="usar_sistema") }}
+            </div>
+            <div id="sistemaWrapper" class="subcard card shadow-sm d-none mb-0">
+              <div class="card-body">
+                <div class="row align-items-end g-3">
+                  <div class="col-md-6">
+                    {{ form.sistema_opcao.label(class="form-label") }}
+                    {{ form.sistema_opcao(class="form-select", id="sistema_opcao") }}
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Qtd.</label>
+                    {{ form.sistema_quantidade(class="form-control", id="sistema_quantidade", min="1") }}
+                  </div>
+                  <div class="col-md-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      {{ form.sistema_preco_unitario.label(class="form-label mb-0", id="label_sistema_preco") }}
+                      <div class="form-check form-check-inline mb-0">
+                        {{ form.sistema_preco_manual(class="form-check-input", id="sistema_preco_manual") }}
+                        <label class="form-check-label small" for="sistema_preco_manual">Valor Fixo?</label>
+                      </div>
+                    </div>
+                    {{ form.sistema_preco_unitario(class="form-control", id="sistema_preco_unitario", placeholder="0,00") }}
+                  </div>
+                </div>
+                <div class="table-responsive mt-3">
+                  <table class="table table-bordered align-middle d-none" id="tabelaSistema">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Descrição</th>
+                        <th class="text-center" style="width: 180px;">Imagem</th>
+                        <th class="text-center" style="width: 120px;">Qtd.</th>
+                        <th class="text-center" style="width: 160px;" id="thSistemaUnit">Valor mensal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="align-middle">
+                          <textarea id="sistemaDescricao" name="sistema_descricao_custom" class="form-control form-control-sm" rows="3" placeholder="Descrição do sistema editável"></textarea>
+                        </td>
+                        <td class="text-center">
+                          <img id="sistemaImagem" src="" alt="" class="img-fluid d-none" style="max-height:140px;">
+                        </td>
+                        <td class="text-center align-middle"><span id="sistemaQtdPreview"></span></td>
+                        <td class="text-center align-middle"><span id="sistemaUnitPreview"></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <input type="hidden" name="sistema_preco_total" id="sistema_preco_total" value="0">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section-card shadow-sm border-0 mb-4">
+          <div class="card-header border-0 bg-transparent pb-0">
+            <h2 class="section-title h5 mb-1">Equipamentos adicionais</h2>
+            <p class="section-subtitle text-muted mb-0">Monte o pacote adicionando itens complementares e condições especiais.</p>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label" for="equipamento-select">Adicionar equipamento</label>
+              <select id="equipamento-select" class="form-select">
+                <option value="">Selecione...</option>
+                {% for eq in equipments %}
+                    <option value="{{ eq.id }}" data-nome="{{ eq.name }}" data-quantity="{{ eq.quantity or 0 }}">{{ eq.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div id="equipamentos-selecionados" class="d-grid gap-3"></div>
+          </div>
+        </div>
+
+        {% macro select_or_other(field, other_id) -%}
+          <div class="col-md-6">
+            {{ field.label(class="form-label") }}
+            {{ field(class="form-select param-select", id=other_id ~ '_select') }}
+            <input type="text" name="{{ other_id }}" id="{{ other_id }}" class="form-control mt-2 d-none" placeholder="Especifique">
+          </div>
+        {%- endmacro %}
+
+        <div class="card section-card shadow-sm border-0 mb-4">
+          <div class="card-header border-0 bg-transparent pb-0">
+            <h2 class="section-title h5 mb-1">Condições comerciais</h2>
+            <p class="section-subtitle text-muted mb-0">Personalize pagamentos, prazos, garantias e demais parâmetros que aparecerão na proposta.</p>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              {{ select_or_other(form.pagto_equip,'pagto_equip_other') }}
+              {{ select_or_other(form.prazo_entrega,'prazo_entrega_other') }}
+              {{ select_or_other(form.frete,'frete_other') }}
+              <div class="col-md-6">
+                {{ form.validade.label(class="form-label") }}
+                {% set validade_value = (form_data.get('validade') if form_data else '') or validade_default or '' %}
+                <input type="date" name="validade" id="validade" class="form-control" value="{{ validade_value }}">
+              </div>
+              {{ select_or_other(form.garantia_eq,'garantia_eq_other') }}
+              {{ select_or_other(form.garantia_sys,'garantia_sys_other') }}
+              <div class="col-12">
+                {{ form.observacao_comercial.label(class="form-label") }}
+                {{ form.observacao_comercial(class="form-control", rows="3", placeholder="Particularidades ou observações para o cliente") }}
+              </div>
+              <div class="col-12">
+                <div class="form-check">
+                  {{ form.ambiente_incluir(class="form-check-input", id="ambiente_incluir") }}
+                  {{ form.ambiente_incluir.label(class="form-check-label", for="ambiente_incluir") }}
+                </div>
+              </div>
+              <div class="col-12 d-none" id="ambienteFotosWrapper">
+                <label class="form-label" for="ambiente_fotos">Fotos do ambiente do cliente</label>
+                <input type="file" class="form-control" id="ambiente_fotos" name="ambiente_fotos" multiple accept="image/png,image/jpeg">
+                <div class="form-text">Use fotos do ambiente para ilustrar a solução com o equipamento.</div>
+                <div class="ambiente-preview d-none" id="ambienteFotosPreview"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="proposal-actions">
+          <button id="btnGerarProposta" type="button" class="btn btn-primary btn-elevated">
+            <i class="bi bi-magic"></i>
+            <span>Gerar proposta</span>
+          </button>
+          <button id="btnEnviarEmail" type="button" class="btn btn-secondary btn-elevated d-none">
+            <i class="bi bi-envelope-paper"></i>
+            <span>Enviar por e-mail</span>
+          </button>
+        </div>
+        <input type="hidden" id="acaoHidden" name="acao" value="">
+      </div>
+
+      <div class="col-12 col-xxl-4 proposal-aside">
+        <div class="card shadow-sm border-0 position-sticky top-0" style="top:calc(var(--nav-h) + 1.5rem);">
+          <div class="card-body p-4">
+            <h2 class="h6 fw-bold text-uppercase text-muted mb-3">Dicas rápidas</h2>
+            <ul class="small text-muted">
+              <li>Valide o CNPJ para preencher automaticamente razão social, e-mail e telefone.</li>
+              <li>Utilize os sistemas pré-configurados para montar propostas em menos de um minuto.</li>
+              <li>Marque "Enviar e-mail" para disparar a proposta com a sua assinatura personalizada.</li>
+              <li>Revise as condições comerciais: elas vão para o rodapé do documento.</li>
+            </ul>
+            <hr class="my-4">
+            <div class="d-flex align-items-center gap-3">
+              <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width:52px;height:52px;"><i class="bi bi-lightning-charge-fill"></i></div>
+              <div class="small text-muted">A proposta gerada fica disponível no histórico e pode ser reenviada ou clonada a qualquer momento.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="modal sollus-modal fade" id="gerandoModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="loading-modal text-center">
+          <div class="loading-icon">
+            <i class="bi bi-lightning-charge-fill"></i>
+          </div>
+          <h5>Gerando sua proposta</h5>
+          <p class="loading-subtitle mb-3">Estamos organizando os dados, preparando o documento e aplicando o layout Sollus.</p>
+          <div class="loading-progress mb-2">
+            <div id="gerandoProgress" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%;"></div>
+          </div>
+          <div class="loading-footnote">Isso costuma levar apenas alguns segundos.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal sollus-modal fade" id="pdfPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title"><i class="bi bi-filetype-pdf me-2 text-primary"></i>Proposta pronta</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body pt-0">
+          <div class="pdf-frame-wrapper">
+            <iframe id="pdfPreviewFrame" class="pdf-frame" title="Visualização da proposta" src="about:blank"></iframe>
+          </div>
+        </div>
+        <div class="modal-footer border-0 justify-content-between flex-wrap gap-3">
+          <div class="pdf-modal-actions">
+            <a id="pdfDownloadBtn" class="btn btn-outline-primary btn-elevated" href="#" download>
+              <i class="bi bi-download"></i>
+              <span>Baixar PDF</span>
+            </a>
+            <button id="pdfPrintBtn" type="button" class="btn btn-outline-secondary btn-elevated">
+              <i class="bi bi-printer"></i>
+              <span>Imprimir</span>
+            </button>
+          </div>
+          <button type="button" class="btn btn-primary btn-elevated" data-bs-dismiss="modal">
+            <i class="bi bi-check2-circle"></i>
+            <span>Concluir</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+function fmt(v){return v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');}
+function formatCurrency(v){const num = Number.isFinite(v) ? v : 0; return `R$ ${fmt(num)}`;}
+function maskCurrencyInput(inputEl){
+  if(!inputEl) return;
+  const applyMask = () => {
+    const digits = (inputEl.value || '').replace(/\D/g,'');
+    if(!digits){ inputEl.value=''; return; }
+    const value = parseInt(digits,10) / 100;
+    inputEl.value = formatCurrency(value);
+  };
+  inputEl.addEventListener('input', applyMask);
+  inputEl.addEventListener('blur', applyMask);
+}
+function br2f(s){
+  const raw = String(s || '').trim();
+  if(!raw) return 0;
+  const cleaned = raw.replace(/[^\d,.-]/g,'');
+  if(!cleaned) return 0;
+  if(cleaned.includes(',')){
+    return parseFloat(cleaned.replace(/\./g,'').replace(',','.')) || 0;
+  }
+  return parseFloat(cleaned) || 0;
+}
+function getPreco(id){return fetch(`/equipamentos/${id}`).then(r=>r.json()).then(d=>parseFloat(d.preco));}
+const issuerOptions = {{ issuer_options|tojson|safe }};
+const issuerMap = {}; issuerOptions.forEach(opt => { if(opt.code){ issuerMap[opt.code] = opt; }});
+const systemOptions = {{ system_options|tojson|safe }};
+const systemMap = {}; systemOptions.forEach(opt => { systemMap[opt.key] = opt; });
+function normalizeTelefone(inputEl){ if(!inputEl) return; let raw = (inputEl.value || '').trim(); if(!raw) return; const digits = raw.replace(/\D/g,''); if(raw.startsWith('+') && digits.startsWith('55')) return; if(digits.startsWith('55') && digits.length >= 12){ inputEl.value = '+' + digits; return; } let d = digits.replace(/^0+/, ''); if(d.length === 10 || d.length === 11){ inputEl.value = '+55' + d; return; } if(digits.length >= 12 && !raw.startsWith('+')){ inputEl.value = '+' + digits; } }
+document.addEventListener('DOMContentLoaded',()=>{
+  const formEl=document.getElementById('novaPropostaForm');
+  const csrfMeta=document.querySelector('meta[name="csrf-token"]');
+  const docTypeInputs = Array.from(document.querySelectorAll('input[name="document_type"]'));
+  const documentInput = document.getElementById('documentInput');
+  const documentLabel = document.getElementById('documentLabel');
+  const company = document.getElementById('company');
+  const divCompany = document.getElementById('divCompany');
+  const issuerSelect = document.getElementById('issuer_company_code');
+  const issuerPreview = document.getElementById('issuerPreview');
+  const observacoesPonto=document.getElementById('observacoesPonto');
+  const observacoesAcesso=document.getElementById('observacoesAcesso');
+  const repPWrapper=document.getElementById('repPWrapper');
+  const repCategoriaInput=document.getElementById('rep_categoria_programa');
+  const repMobileWrapper=document.getElementById('repMobileWrapper');
+  const repTemMobile=document.getElementById('rep_tem_mobile');
+  const repMobileQtdWrapper=document.getElementById('repMobileQtdWrapper');
+  const repMobileQtd=document.getElementById('rep_qtd_mobile');
+  const repMobileValor=document.getElementById('rep_mobile_valor_mensal');
+  const ambienteIncluir=document.getElementById('ambiente_incluir');
+  const ambienteWrapper=document.getElementById('ambienteFotosWrapper');
+  const modalidadeSelect=document.getElementById('modalidade_type');
+  const locacaoFields=document.getElementById('locacaoFields');
+  const renderIssuerPreview = () => {
+    if(!issuerPreview || !issuerSelect){ return; }
+    const data = issuerMap[issuerSelect.value];
+    issuerPreview.innerHTML = '';
+    let hasContent = false;
+    const addLine = (text, className = 'issuer-line') => { if(!text) return; const div = document.createElement('div'); div.className = className; div.textContent = text; issuerPreview.appendChild(div); hasContent = true; };
+    if(data){
+      let displayName = data.name || '';
+      if(!displayName && issuerSelect){ const opt = issuerSelect.options[issuerSelect.selectedIndex]; if(opt){ displayName = opt.text; } }
+      if(displayName){ addLine(displayName, 'issuer-line muted'); }
+      if(data.address){ addLine(data.address); }
+      const segments = [];
+      if(data.phone_display || data.phone){ segments.push(data.phone_display || data.phone); }
+      if(data.site){ segments.push(data.site); }
+      if(segments.length){ addLine(segments.join('  ')); }
+      if(data.cnpj){ addLine('CNPJ ' + data.cnpj, 'issuer-line muted'); }
+    }
+    if(hasContent){ const title = document.createElement('div'); title.className = 'issuer-title'; title.textContent = 'Contato da unidade'; issuerPreview.insertBefore(title, issuerPreview.firstChild); issuerPreview.classList.remove('d-none'); issuerPreview.setAttribute('aria-hidden', 'false'); }
+    else { issuerPreview.classList.add('d-none'); issuerPreview.setAttribute('aria-hidden', 'true'); }
+  };
+  if(issuerSelect){ issuerSelect.addEventListener('change', renderIssuerPreview); renderIssuerPreview(); }
+  function getDocType(){ const checked = docTypeInputs.find(r => r.checked); return checked ? checked.value : 'cnpj'; }
+  function maskCNPJ(value){ let digits = (value || '').replace(/\D/g,'').slice(0,14); digits = digits.replace(/(\d{2})(\d)/, '$1.$2'); digits = digits.replace(/(\d{2}\.\d{3})(\d)/, '$1.$2'); digits = digits.replace(/(\d{2}\.\d{3}\.\d{3})(\d)/, '$1/$2'); digits = digits.replace(/(\d{2}\.\d{3}\.\d{3}\/\d{4})(\d)/, '$1-$2'); return digits; }
+  function maskCPF(value){ let digits = (value || '').replace(/\D/g,'').slice(0,11); digits = digits.replace(/(\d{3})(\d)/, '$1.$2'); digits = digits.replace(/(\d{3}\.\d{3})(\d)/, '$1.$2'); digits = digits.replace(/(\d{3}\.\d{3}\.\d{3})(\d)/, '$1-$2'); return digits; }
+  function updateDocumentInputFormatting(){ if(!documentInput) return; const type = getDocType(); const raw = documentInput.value || ''; documentInput.value = type === 'cnpj' ? maskCNPJ(raw) : maskCPF(raw); }
+  function updateDocumentUI(){ const type = getDocType(); if(documentLabel){ documentLabel.textContent = type === 'cnpj' ? 'CNPJ do Cliente' : 'CPF do Cliente'; } if(documentInput){ documentInput.placeholder = type === 'cnpj' ? '00.000.000/0000-00' : '000.000.000-00'; updateDocumentInputFormatting(); } if(divCompany){ divCompany.style.display = type === 'cnpj' ? 'block' : 'none'; } if(company && type !== 'cnpj'){ company.value = ''; } }
+  function handleDocumentBlur(){ if(!documentInput || getDocType() !== 'cnpj') return; const digits = documentInput.value.replace(/\D/g,''); if(digits.length !== 14) return; fetch('/api/cnpj/' + digits).then(r => r.json()).then(d => { if(d && d.company && company){ company.value = d.company; if(divCompany) divCompany.style.display = 'block'; } if(d && d.email){ const emailInput = document.getElementById('email'); if(emailInput && !emailInput.value){ emailInput.value = d.email; } } if(d && d.telefone){ const telInput = document.getElementById('telefone'); if(telInput && !telInput.value){ telInput.value = d.telefone; } } }).catch(() => {}); }
+  if(documentInput){ documentInput.addEventListener('input', updateDocumentInputFormatting); documentInput.addEventListener('blur', handleDocumentBlur); }
+  if(docTypeInputs.length){ docTypeInputs.forEach(radio => { radio.addEventListener('change', () => { docTypeInputs.forEach(btn => { const label = btn.nextElementSibling; if(label){ label.classList.toggle('active', btn.checked); } }); updateDocumentUI(); }); }); updateDocumentUI(); }
+  const usarOutro=document.getElementById('usar_outro');
+  const divOutro=document.getElementById('divOutroUsuario');
+  function toggleOutro(){ if(usarOutro && divOutro){ divOutro.style.display=usarOutro.value==='sim'?'block':'none'; } }
+  if(usarOutro){ usarOutro.addEventListener('change',toggleOutro); toggleOutro(); }
+  const usarSistema=document.getElementById('usar_sistema');
+  const sistemaWrapper=document.getElementById('sistemaWrapper');
+  const sistemaSelect=document.getElementById('sistema_opcao');
+  const sistemaQtd=document.getElementById('sistema_quantidade');
+  const sistemaPreco=document.getElementById('sistema_preco_unitario');
+  const tabelaSistema=document.getElementById('tabelaSistema');
+  const descSistema=document.getElementById('sistemaDescricao');
+  const imgSistema=document.getElementById('sistemaImagem');
+  const qtdPreview=document.getElementById('sistemaQtdPreview');
+  const unitPreview=document.getElementById('sistemaUnitPreview');
+  const hiddenSistemaTotal=document.getElementById('sistema_preco_total');
+  const servicoTypeSelect=document.getElementById('servico_type_select');
+  const servicoToggleInputs=Array.from(document.querySelectorAll('input[name="servico_tipo_toggle"]'));
+  function toggleLocacao(){
+    const isLocacao = (modalidadeSelect?.value || '').toUpperCase() === 'LOCACAO';
+    if(locacaoFields){ locacaoFields.classList.toggle('d-none', !isLocacao); }
+    document.querySelectorAll('.equip-acquisition').forEach(wrapper => {
+      wrapper.classList.toggle('d-none', !isLocacao);
+      if(!isLocacao){
+        const checkbox = wrapper.querySelector('input[type="checkbox"]');
+        if(checkbox) checkbox.checked = false;
+      }
+    });
+  }
+  function currentServicoType(){ if(!servicoTypeSelect) return 'PONTO'; const value=(servicoTypeSelect.value || '').toUpperCase(); return value || 'PONTO'; }
+  function isSistemaPonto(){ return currentServicoType()==='PONTO'; }
+  function toggleRepMobile(){
+    const isPonto = isSistemaPonto();
+    const repActive = !!(repCategoriaInput && repCategoriaInput.checked && isPonto);
+    if(repMobileWrapper){ repMobileWrapper.classList.toggle('d-none', !repActive); }
+    if(!repActive){ if(repTemMobile) repTemMobile.checked = false; if(repMobileQtd) repMobileQtd.value = ''; if(repMobileValor) repMobileValor.value = ''; }
+    const showQtd = repActive && repTemMobile && repTemMobile.checked;
+    if(repMobileQtdWrapper){ repMobileQtdWrapper.classList.toggle('d-none', !showQtd); }
+    if(!showQtd){ if(repMobileQtd) repMobileQtd.value = ''; if(repMobileValor) repMobileValor.value = ''; }
+  }
+  function toggleObservacoes(){ const isPonto = isSistemaPonto(); if(observacoesPonto){ observacoesPonto.classList.toggle('d-none', !isPonto); } if(observacoesAcesso){ observacoesAcesso.classList.toggle('d-none', isPonto); } if(repPWrapper){ repPWrapper.classList.toggle('d-none', !isPonto); } if(!isPonto && typeof repCategoriaInput !== 'undefined' && repCategoriaInput){ repCategoriaInput.checked = false; } toggleRepMobile(); }
+  function applyServicoTypeToUI(value){ if(servicoTypeSelect) { servicoTypeSelect.value = value; } servicoToggleInputs.forEach(input => { input.checked = (input.value === value); }); toggleObservacoes(); updateSistemaPreview(); }
+  if(servicoToggleInputs.length){ servicoToggleInputs.forEach(input => { input.addEventListener('change', () => { if(input.checked){ applyServicoTypeToUI(input.value); } }); }); }
+  if(servicoTypeSelect){ applyServicoTypeToUI(currentServicoType()); servicoTypeSelect.addEventListener('change', () => { applyServicoTypeToUI(currentServicoType()); }); } else { toggleObservacoes(); }
+  if(repCategoriaInput){ repCategoriaInput.addEventListener('change', toggleRepMobile); }
+  if(repTemMobile){ repTemMobile.addEventListener('change', toggleRepMobile); }
+  maskCurrencyInput(repMobileValor);
+  maskCurrencyInput(sistemaPreco);
+  let ambienteFiles = [];
+  let ambienteTitleMap = new Map();
+  function buildAmbienteKey(file){
+    return `${file.name}_${file.size}_${file.lastModified}`;
+  }
+  function syncAmbienteInput(input){
+    if(!input) return;
+    const dt = new DataTransfer();
+    ambienteFiles.forEach((file) => dt.items.add(file));
+    input.files = dt.files;
+  }
+  function renderAmbientePreview(input){
+    const preview = document.getElementById('ambienteFotosPreview');
+    if(!preview || !input){ return; }
+    preview.innerHTML = '';
+    const list = ambienteFiles.length ? ambienteFiles : Array.from(input.files || []);
+    const files = list.filter((file) => file && file.type && file.type.startsWith('image/'));
+    if(!files.length){ preview.classList.add('d-none'); return; }
+    preview.classList.remove('d-none');
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const key = buildAmbienteKey(file);
+        if(!ambienteTitleMap.has(key)){
+          ambienteTitleMap.set(key, '');
+        }
+        const wrap = document.createElement('div');
+        wrap.className = 'ambiente-preview-item';
+        const thumb = document.createElement('div');
+        thumb.className = 'ambiente-preview-thumb';
+        const img = document.createElement('img');
+        img.src = reader.result;
+        img.alt = file.name || 'Ambiente';
+        thumb.appendChild(img);
+        const titleInput = document.createElement('input');
+        titleInput.type = 'text';
+        titleInput.name = 'ambiente_titulos';
+        titleInput.className = 'form-control form-control-sm ambiente-title-input';
+        titleInput.placeholder = 'Titulo da foto';
+        titleInput.value = ambienteTitleMap.get(key) || '';
+        titleInput.addEventListener('input', () => {
+          ambienteTitleMap.set(key, titleInput.value);
+        });
+        wrap.appendChild(thumb);
+        wrap.appendChild(titleInput);
+        preview.appendChild(wrap);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  function mergeAmbienteFiles(input){
+    if(!input) return;
+    const incoming = Array.from(input.files || []).filter((file) => file && file.type && file.type.startsWith('image/'));
+    if(!incoming.length){ return; }
+    const map = new Map(ambienteFiles.map((file) => [buildAmbienteKey(file), file]));
+    incoming.forEach((file) => map.set(buildAmbienteKey(file), file));
+    ambienteFiles = Array.from(map.values());
+    ambienteFiles.forEach((file) => {
+      const key = buildAmbienteKey(file);
+      if(!ambienteTitleMap.has(key)){
+        ambienteTitleMap.set(key, '');
+      }
+    });
+    syncAmbienteInput(input);
+    renderAmbientePreview(input);
+  }
+  function toggleAmbiente(){
+    const show = !!(ambienteIncluir && ambienteIncluir.checked);
+    if(ambienteWrapper){ ambienteWrapper.classList.toggle('d-none', !show); }
+    const input = document.getElementById('ambiente_fotos');
+    if(!show){
+      ambienteFiles = [];
+      ambienteTitleMap = new Map();
+      if(input) input.value = '';
+      const preview = document.getElementById('ambienteFotosPreview');
+      if(preview){ preview.innerHTML = ''; preview.classList.add('d-none'); }
+    } else if(input){
+      mergeAmbienteFiles(input);
+    }
+  }
+  if(ambienteIncluir){ ambienteIncluir.addEventListener('change', toggleAmbiente); }
+  const ambienteInput = document.getElementById('ambiente_fotos');
+  if(ambienteInput){ ambienteInput.addEventListener('change', () => mergeAmbienteFiles(ambienteInput)); }
+  toggleAmbiente();
+  if(modalidadeSelect){ modalidadeSelect.addEventListener('change', toggleLocacao); toggleLocacao(); }
+  const signatureBtn=document.getElementById('signatureUploadBtn');
+  const signatureInput=document.getElementById('signatureInput');
+  const signaturePreview=document.getElementById('signaturePreview');
+  let signatureObjectUrl=null;
+  function setSignaturePreview(url, name){ if(!signaturePreview) return; signaturePreview.innerHTML=''; if(!url) return; const img=document.createElement('img'); img.src=url; img.alt='Assinatura selecionada'; img.style.maxHeight='120px'; img.style.borderRadius='8px'; img.style.boxShadow='0 4px 12px rgba(0,0,0,0.12)'; signaturePreview.appendChild(img); if(name){ const caption=document.createElement('div'); caption.className='small text-muted mt-1'; caption.textContent=name; signaturePreview.appendChild(caption); } }
+  function clearSignatureObjectUrl(){ if(signatureObjectUrl){ URL.revokeObjectURL(signatureObjectUrl); signatureObjectUrl=null; } }
+  function updateSignatureFile(file){ clearSignatureObjectUrl(); if(!file){ setSignaturePreview(null, null); return; } signatureObjectUrl = URL.createObjectURL(file); setSignaturePreview(signatureObjectUrl, file.name || 'assinatura'); }
+  if(signatureBtn && signatureInput){ signatureBtn.addEventListener('click',()=> signatureInput.click()); signatureInput.addEventListener('change',()=>{ const file = signatureInput.files && signatureInput.files[0]; if(!file){ updateSignatureFile(null); return; } const validType = /^image\/(png|jpe?g)$/i.test(file.type || ''); if(!validType){ alert('Selecione uma imagem PNG ou JPG.'); signatureInput.value=''; updateSignatureFile(null); return; } updateSignatureFile(file); }); }
+  function resetSistemaPreview(){ if(tabelaSistema) tabelaSistema.classList.add('d-none'); if(descSistema) descSistema.value=''; if(imgSistema){imgSistema.classList.add('d-none');imgSistema.removeAttribute('src');} if(qtdPreview) qtdPreview.textContent='-'; if(unitPreview) unitPreview.textContent='-'; if(hiddenSistemaTotal) hiddenSistemaTotal.value='0'; }
+  function updateSistemaPreview(){ if(!usarSistema || !usarSistema.checked){ resetSistemaPreview(); return; } const option = sistemaSelect ? systemMap[sistemaSelect.value] : undefined; if(!option){ resetSistemaPreview(); return; } let quantity = parseInt(sistemaQtd && sistemaQtd.value ? sistemaQtd.value : option.default_quantity || 1, 10); if(!quantity || quantity < 1){ quantity = option.default_quantity || 1; if(sistemaQtd) sistemaQtd.value = quantity; } let unitPrice = sistemaPreco ? br2f(sistemaPreco.value) : 0; if(unitPrice < 0) unitPrice = 0; if(unitPrice === 0 && option.unit_price){ unitPrice = option.unit_price; if(sistemaPreco) sistemaPreco.value = fmt(unitPrice); } if(descSistema && (!descSistema.value || descSistema.dataset.systemKey !== option.key)) { descSistema.value = option.description || ''; descSistema.dataset.systemKey = option.key; } if(imgSistema){ if(option.image){ const src = option.image.startsWith('/') ? option.image : `/${option.image}`; imgSistema.src = src; imgSistema.classList.remove('d-none'); }else{ imgSistema.classList.add('d-none'); imgSistema.removeAttribute('src'); } } if(qtdPreview) qtdPreview.textContent = quantity; const isFixo = document.getElementById('sistema_preco_manual')?.checked; const lblPreco = document.getElementById('label_sistema_preco'); if(lblPreco) lblPreco.textContent = isFixo ? 'Valor Fixo / Plano' : 'Valor mensal'; const thUnit = document.getElementById('thSistemaUnit'); if(thUnit) thUnit.textContent = isFixo ? 'Valor Total Plano' : 'Valor mensal'; const unitLabel = isFixo ? (unitPrice > 0 ? 'R$ ' + fmt(unitPrice) : '-') : 'R$ ' + fmt(unitPrice) + ' mensais'; if(unitPreview) unitPreview.textContent = unitLabel; const total = isFixo ? unitPrice : (unitPrice * quantity); if(hiddenSistemaTotal) hiddenSistemaTotal.value = (Math.round(total * 100) / 100).toString(); if(tabelaSistema) tabelaSistema.classList.remove('d-none'); }
+  const sistemaFixoCheck = document.getElementById('sistema_preco_manual'); if(sistemaFixoCheck) { sistemaFixoCheck.addEventListener('change', updateSistemaPreview); }
+  function toggleSistema(){ if(!usarSistema || !sistemaWrapper) return; const ativo = usarSistema.checked; sistemaWrapper.classList.toggle('d-none', !ativo); if(!ativo){ resetSistemaPreview(); return; } const option = sistemaSelect ? systemMap[sistemaSelect.value] : undefined; if(option){ if(sistemaQtd && (!sistemaQtd.value || parseInt(sistemaQtd.value,10) < 1)){ sistemaQtd.value = option.default_quantity || 1; } if(sistemaPreco && !sistemaPreco.value){ sistemaPreco.value = fmt(option.unit_price || 0); } } updateSistemaPreview(); }
+  if(usarSistema && sistemaWrapper){ usarSistema.addEventListener('change',toggleSistema); if(sistemaSelect){ sistemaSelect.addEventListener('change',()=>{ const option = systemMap[sistemaSelect.value]; if(option){ if(sistemaQtd) sistemaQtd.value = option.default_quantity || 1; if(sistemaPreco) sistemaPreco.value = fmt(option.unit_price || 0); } updateSistemaPreview(); }); } if(sistemaQtd){ sistemaQtd.addEventListener('input',updateSistemaPreview); sistemaQtd.addEventListener('change',updateSistemaPreview); } if(sistemaPreco){ sistemaPreco.addEventListener('input',updateSistemaPreview); sistemaPreco.addEventListener('blur',updateSistemaPreview); } toggleSistema(); }
+  const chkEnviarEmail = document.getElementById('enviar_email');
+  const emailOptions = document.getElementById('emailOptions');
+  const chkEnviarCopia = document.getElementById('enviar_copia');
+  const emailCcWrapper = document.getElementById('emailCcWrapper');
+  const emailCc = document.getElementById('email_cc');
+  const btnGerar = document.getElementById('btnGerarProposta');
+  const btnEnviarEmail = document.getElementById('btnEnviarEmail');
+  function toggleCc(){ if(!emailCcWrapper) return; const mostrar = !!(chkEnviarEmail && chkEnviarEmail.checked && chkEnviarCopia && chkEnviarCopia.checked); emailCcWrapper.classList.toggle('d-none', !mostrar); }
+  function toggleEmailOptions(){ const ativo = !!(chkEnviarEmail && chkEnviarEmail.checked); if(emailOptions) emailOptions.classList.toggle('d-none', !ativo); if(btnEnviarEmail) btnEnviarEmail.classList.toggle('d-none', !ativo); if(!ativo){ if(chkEnviarCopia) chkEnviarCopia.checked = false; if(emailCc) emailCc.value = ''; } toggleCc(); }
+  if(chkEnviarEmail){ chkEnviarEmail.addEventListener('change', toggleEmailOptions); }
+  if(chkEnviarCopia){ chkEnviarCopia.addEventListener('change', toggleCc); }
+  toggleEmailOptions();
+  document.querySelectorAll('.param-select').forEach(sel=>sel.addEventListener('change',function(){ const other=document.getElementById(this.id.replace('_select','')); if(other){ other.classList.toggle('d-none',this.value!=='outros'); } }));
+  const tel = document.getElementById('telefone'); if(tel){ tel.addEventListener('blur',()=>normalizeTelefone(tel)); }
+  const sel=document.getElementById('equipamento-select');
+  const cont=document.getElementById('equipamentos-selecionados');
+  if(sel && cont){
+    sel.addEventListener('change',()=>{
+      const opt=sel.options[sel.selectedIndex];
+      const id=opt.value;
+      const nome=opt.dataset.nome;
+      const stock=opt.dataset.quantity || '0';
+      if(!id) return;
+      const uid=Date.now()+""+Math.floor(Math.random()*1000);
+      const row=document.createElement('div');
+      row.id=`equip_${uid}`;
+      row.className='equip-card mb-3 p-3 border rounded shadow-sm bg-white';
+      row.innerHTML=`<input type='hidden' name='item_uids' value='${uid}'><input type='hidden' name='equip_id_${uid}' value='${id}'>
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+  <div>
+    <strong>${nome}</strong> <span class='equip-stock-tag ms-2'>Estoque: ${stock}</span>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    Qtd:<input type='number' name='quantity_${uid}' value='1' min='1' class='form-control d-inline-block' style='width:80px' onchange='recalcular("${uid}")'>
+    <label class='ms-2'><input type='checkbox' id='chk_desc_${uid}' onchange='togglePct("${uid}")'> Desconto?</label>
+    <span id='wrap_pct_${uid}' class='d-none'><input type='number' id='pct_${uid}' name='discount_${uid}' class='form-control d-inline-block' style='width:90px' placeholder='%' oninput='recalcular("${uid}")'> %</span>
+    <label class='ms-2'><input type='checkbox' id='chk_preco_${uid}' onchange='togglePreco("${uid}")'> Preço?</label>
+    <span id='wrap_manual_${uid}' class='d-none'><input type='text' id='manual_${uid}' name='price_${uid}' class='form-control d-inline-block' style='width:110px' placeholder='R$ 0,00'></span>
+    <label class='ms-2 equip-acquisition d-none'><input type='checkbox' name='acquisition_${uid}' value='1'> Aquisição?</label>
+    <label class='ms-2'><input type='checkbox' name='include_in_total_${uid}' value='1' checked> Somar no Total?</label>
+    <small class='ms-3'>R$ <span id='p_cheio_${uid}'>0,00</span> | <span id='p_desc_${uid}'>0,00</span></small>
+    <button type='button' class='btn btn-sm btn-danger ms-2' onclick='this.closest(".equip-card").remove()'>Remover</button>
+  </div>
+</div>
+<div class="mt-2">
+  <textarea name="description_${uid}" class="form-control form-control-sm" rows="2" placeholder="Descrição do equipamento para esta proposta (opcional)"></textarea>
+</div>`;
+      cont.appendChild(row);
+      sel.selectedIndex=0;
+      $(sel).val('').trigger('change.select2');
+      toggleLocacao();
+      fetch(`/equipamentos/${id}`).then(r=>r.json()).then(d=>{
+        row.dataset.preco=d.preco;
+        document.getElementById(`p_cheio_${uid}`).textContent=fmt(d.preco);
+        const ta=row.querySelector(`[name='description_${uid}']`);
+        if(ta)ta.value=d.descricao||'';
+        recalcular(uid);
+        const mInput=document.getElementById(`manual_${uid}`);
+        if(mInput){
+          maskCurrencyInput(mInput);
+          mInput.addEventListener('input',()=>recalcular(uid));
+          mInput.addEventListener('blur',()=>recalcular(uid));
+        }
+      });
+    });
+
+    $(sel).select2({
+      placeholder: "Selecione..."
+    }).on('select2:select', function(e) {
+      sel.value = e.params.data.id;
+      sel.dispatchEvent(new Event('change'));
+    });
+  }
+  window.togglePct = function(id){ const wrap=document.getElementById(`wrap_pct_${id}`); const chk=document.getElementById(`chk_desc_${id}`); const pctInput=document.getElementById(`pct_${id}`); if(wrap && chk){ wrap.classList.toggle('d-none',!chk.checked); if(!chk.checked && pctInput){ pctInput.value=''; } } recalcular(id); };
+  window.togglePreco = function(id){ const wrap=document.getElementById(`wrap_manual_${id}`); const chk=document.getElementById(`chk_preco_${id}`); const manual=document.getElementById(`manual_${id}`); if(wrap && chk){ wrap.classList.toggle('d-none',!chk.checked); if(!chk.checked && manual){ manual.value=''; } } recalcular(id); };
+  window.recalcular = function(id){ const row=document.getElementById(`equip_${id}`); if(!row) return; const qtd=parseFloat(row.querySelector(`[name='quantity_${id}']`).value)||1; let preco=parseFloat(row.dataset.preco||0); if(document.getElementById(`chk_preco_${id}`).checked) preco=br2f(document.getElementById(`manual_${id}`).value); const pct=document.getElementById(`chk_desc_${id}`).checked?(parseFloat(document.getElementById(`pct_${id}`).value)||0):0; const pd=preco*(1-pct/100); document.getElementById(`p_cheio_${id}`).textContent=fmt(preco*qtd); document.getElementById(`p_desc_${id}`).textContent=fmt(pd*qtd); };
+  const gerarModalEl = document.getElementById('gerandoModal');
+  const gerarModal = gerarModalEl ? new bootstrap.Modal(gerarModalEl, {backdrop:'static', keyboard:false}) : null;
+  const progressBar = document.getElementById('gerandoProgress');
+  const hidden = document.getElementById('acaoHidden');
+  let progressInterval = null; let progressValue = 0;
+  const pdfModalEl = document.getElementById('pdfPreviewModal');
+  const pdfModal = pdfModalEl ? new bootstrap.Modal(pdfModalEl) : null;
+  const pdfFrame = document.getElementById('pdfPreviewFrame');
+  const pdfDownloadBtn = document.getElementById('pdfDownloadBtn');
+  const pdfPrintBtn = document.getElementById('pdfPrintBtn');
+  let pdfFrameReady = false;
+  if(pdfFrame){ pdfFrame.addEventListener('load', () => { pdfFrameReady = true; }); }
+  if(pdfModalEl){ pdfModalEl.addEventListener('hidden.bs.modal', () => { try { sessionStorage.setItem('proposal-ready-message', 'A proposta foi enviada para o histórico. Você pode editá-la ou baixá-la novamente por lá.'); } catch (err) { console.error('Não foi possível registrar o aviso do histórico.', err); } window.location.reload(); }); }
+  if(pdfPrintBtn){ pdfPrintBtn.addEventListener('click', () => { if(pdfFrame && pdfFrame.contentWindow && pdfFrameReady){ pdfFrame.contentWindow.focus(); pdfFrame.contentWindow.print(); } else if(pdfFrame && pdfFrame.src){ window.open(pdfFrame.src, '_blank'); } }); }
+  const flashStack = document.querySelector('.flash-stack');
+  const formAction = formEl.getAttribute('action') || window.location.pathname;
+  function showFlash(message, category = 'info', timeout = 6000){ if(!message) return; if(!flashStack){ alert(message); return; } const allowed = ['success','danger','warning','info']; const cat = allowed.includes(category) ? category : 'info'; const wrapper = document.createElement('div'); wrapper.className = `alert alert-${cat} alert-dismissible fade show shadow-sm mb-2`; wrapper.setAttribute('role','alert'); wrapper.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>`; flashStack.appendChild(wrapper); if(timeout){ setTimeout(()=>{ try{ wrapper.classList.remove('show'); wrapper.classList.add('hide'); }catch(_){ } setTimeout(()=>wrapper.remove(), 300); }, timeout); } }
+  const storedProposalMessage = (() => { try { return sessionStorage.getItem('proposal-ready-message'); } catch (err) { console.error('Não foi possível recuperar o aviso do histórico.', err); return null; } })();
+  if(storedProposalMessage){ showFlash(storedProposalMessage, 'info', 8000); try { sessionStorage.removeItem('proposal-ready-message'); } catch (err) { console.error(err); } }
+  function startProgress(){ if(progressInterval){ clearInterval(progressInterval); progressInterval = null; } progressValue = 0; updateProgress(0); progressInterval = setInterval(() => { if(progressValue < 85){ progressValue += 2; updateProgress(progressValue); } else { clearInterval(progressInterval); progressInterval = null; } }, 150); }
+  function finishProgress(){ if(progressInterval){ clearInterval(progressInterval); progressInterval = null; } updateProgress(100); }
+  function updateProgress(value){ if(typeof value === 'number'){ progressValue = Math.max(progressValue, Math.min(100, value)); } if(progressBar){ progressBar.style.width = `${progressValue}%`; progressBar.setAttribute('aria-valuenow', String(Math.round(progressValue))); } }
+  function resolveCsrfToken(){ if(csrfMeta){ const value = csrfMeta.getAttribute('content'); if(value){ return value; } } if(window.csrfToken){ return window.csrfToken; } const input = formEl ? formEl.querySelector('input[name="csrf_token"]') : null; return input ? (input.value || '') : ''; }
+  async function postForm(action){ if(formEl && typeof window.ensureFormCsrf === 'function'){ window.ensureFormCsrf(formEl); } const data = new FormData(formEl); data.set('acao', action); const token = resolveCsrfToken(); if(token && !data.get('csrf_token')){ data.set('csrf_token', token); } const headers = new Headers({'X-Requested-With': 'XMLHttpRequest'}); if(token){ headers.set('X-CSRFToken', token); } const resp = await fetch(formAction, { method: 'POST', body: data, headers, credentials: 'same-origin' }); const contentType = resp.headers.get('content-type') || ''; if(!contentType.includes('application/json')){ const html = await resp.text(); throw { type: 'html', content: html }; } const payload = await resp.json(); payload.statusCode = resp.status; return payload; }
+  function handleValidation(payload){ if(!payload) return; if(payload.message){ showFlash(payload.message, 'danger'); } else if(payload.html){ document.open(); document.write(payload.html); document.close(); } if(payload.errors){ console.warn('Erros de validação:', payload.errors); } }
+  function showPdfModal(viewUrl, downloadUrl, downloadName){ if(!viewUrl){ showFlash('Não foi possível abrir a proposta gerada.', 'danger'); return; } const prefersMobilePreview = window.matchMedia('(max-width: 768px)').matches; if(prefersMobilePreview){ if(pdfDownloadBtn){ pdfDownloadBtn.href = downloadUrl || viewUrl; pdfDownloadBtn.setAttribute('download', downloadName || 'proposta.pdf'); } window.open(viewUrl, '_blank'); showFlash('Abrimos a proposta em uma nova aba para melhor visualização no celular.', 'info'); if(pdfModal){ pdfModal.hide(); } return; } pdfFrameReady = false; if(pdfFrame){ pdfFrame.src = viewUrl; } if(pdfDownloadBtn){ pdfDownloadBtn.href = downloadUrl || viewUrl; pdfDownloadBtn.setAttribute('download', downloadName || 'proposta.pdf'); } if(pdfModal){ pdfModal.show(); } else { window.open(viewUrl, '_blank'); } showFlash('Proposta pronta para visualização.', 'success'); }
+  async function downloadWithSaveDialog(url, filename) { try { if ('showSaveFilePicker' in window) { try { const handle = await window.showSaveFilePicker({ suggestedName: filename || 'proposta.pdf', types: [{ description: 'PDF Files', accept: { 'application/pdf': ['.pdf'] } }] }); const response = await fetch(url); const blob = await response.blob(); const writable = await handle.createWritable(); await writable.write(blob); await writable.close(); showFlash('Arquivo salvo com sucesso!', 'success'); } catch (err) { if (err.name !== 'AbortError') { console.error('Erro ao salvar arquivo:', err); triggerDownload(url, filename); } } } else { triggerDownload(url, filename); } } catch (error) { console.error('Erro no download:', error); triggerDownload(url, filename); } }
+  function triggerDownload(url, filename) { const link = document.createElement('a'); link.href = url; link.download = filename || 'proposta.pdf'; document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+  if (pdfDownloadBtn) { pdfDownloadBtn.addEventListener('click', async (e) => { e.preventDefault(); const url = pdfDownloadBtn.getAttribute('href'); const filename = pdfDownloadBtn.getAttribute('download'); if (url && url !== '#') { await downloadWithSaveDialog(url, filename); } }); }
+  function pollJob(state){ const jobId = state.job_id; if(!jobId){ finishProgress(); if(gerarModal) setTimeout(()=>gerarModal.hide(), 300); showFlash('Tarefa inválida.', 'danger'); return; } let attempts = 0; const maxAttempts = 120; const timer = setInterval(async () => { attempts += 1; try { const resp = await fetch('/api/jobs/' + jobId); if (!resp.ok) throw new Error('status'); const data = await resp.json(); if (!data.ok) throw new Error(data.message || 'Erro'); if (data.status === 'done') { clearInterval(timer); finishProgress(); if(gerarModal) setTimeout(()=>gerarModal.hide(), 250); if (state.action === 'visualizar') { const viewUrl = data.inline_url || data.download_url; const downloadUrl = data.download_url || viewUrl; showPdfModal(viewUrl, downloadUrl, data.download_name || 'proposta.pdf'); } else if (state.action === 'enviar_email') { showFlash(data.message || 'Proposta enviada por e-mail com sucesso.', 'success'); if(formEl) formEl.reset(); if(chkEnviarEmail) chkEnviarEmail.checked = false; if(typeof toggleEmailOptions === 'function') toggleEmailOptions(); } return; } if (data.status === 'error') { throw new Error(data.message || 'Falha ao gerar a proposta.'); } updateProgress(Math.min(95, 60 + attempts)); } catch (err) { clearInterval(timer); finishProgress(); if(gerarModal) setTimeout(()=>gerarModal.hide(), 250); showFlash(err.message || 'Falha ao gerar a proposta.', 'danger'); return; } if (attempts >= maxAttempts){ clearInterval(timer); finishProgress(); if(gerarModal) setTimeout(()=>gerarModal.hide(), 250); showFlash('Tempo excedido ao gerar a proposta.', 'danger'); } }, 1000); }
+  async function submitAction(action){ if(hidden) hidden.value = action; if(gerarModal) gerarModal.show(); startProgress(); try { const payload = await postForm(action); if (!payload.ok) { finishProgress(); if(gerarModal) setTimeout(()=>gerarModal.hide(), 250); handleValidation(payload); return; } if (payload.action === 'visualizar' || payload.action === 'enviar_email') { pollJob(payload); return; } finishProgress(); if(gerarModal) setTimeout(()=>gerarModal.hide(), 250); if (payload.message) { showFlash(payload.message, 'success'); } } catch (error) { if (error && error.type === 'html'){ document.open(); document.write(error.content); document.close(); return; } console.error(error); finishProgress(); if(gerarModal) setTimeout(()=>gerarModal.hide(), 250); showFlash('Falha ao enviar a solicitação.', 'danger'); } }
+  if(btnGerar){ btnGerar.addEventListener('click', (e) => { e.preventDefault(); submitAction('visualizar'); }); }
+  if(btnEnviarEmail){ btnEnviarEmail.addEventListener('click', (e) => { e.preventDefault(); submitAction('enviar_email'); }); }
+  formEl.addEventListener('submit', (e) => { e.preventDefault(); const action = chkEnviarEmail && chkEnviarEmail.checked ? 'enviar_email' : 'visualizar'; submitAction(action); });
+});
+</script>
+{% endblock %}

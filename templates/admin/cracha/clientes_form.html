@@ -1,0 +1,225 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Crachá | Clientes{% endblock %}
+
+{% block head %}
+<style>
+  .clientes-form-card{border:0;border-radius:1.1rem;box-shadow:0 10px 24px rgba(15,35,58,.08);}
+  .clientes-form-card .card-body{padding:1.5rem;}
+  .clientes-section{border:1px solid #e2e8f0;border-radius:1rem;padding:1.25rem;}
+  .clientes-section + .clientes-section{margin-top:1.5rem;}
+  .clientes-section h3{font-size:1rem;margin-bottom:1rem;}
+  .clientes-section .form-label span{color:#ef4444;}
+</style>
+{% endblock %}
+
+{% block content %}
+{% set hero_help_tips = [
+  'Mantenha o e-mail e contatos atualizados para agilizar cobranças.',
+  'Defina o tipo Pessoa Física ou Jurídica para exibir os campos corretos.',
+  'O usuário do cliente pode ser atualizado sem trocar a senha.'
+] %}
+{% call page_hero(
+  title='Clientes'|safe,
+  subtitle=subtitle|safe,
+  eyebrow='Crachá'|safe,
+  help_tips=hero_help_tips,
+  help_intro='Dicas rápidas para cadastro.'
+) %}
+  <div class="page-hero__actions">
+    <a class="btn btn-light" href="{{ back_url }}">
+      <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+{% endcall %}
+
+<div class="card clientes-form-card">
+  <div class="card-body">
+    <form method="post" action="{{ action_url }}" class="row g-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="txtID" value="{{ cliente.id_pk if cliente else '' }}">
+      <input type="hidden" name="txtIDUsuario" value="{{ cliente.id_pkusuario if cliente else '' }}">
+
+      <div class="col-12 clientes-section">
+        <h3 class="fw-semibold">Dados do cliente</h3>
+        <div class="row g-3">
+          <div class="col-md-12">
+            <label class="form-label">Tipo</label>
+            <div class="d-flex flex-wrap gap-3">
+              <label class="form-check">
+                <input class="form-check-input" type="radio" name="radTipo" value="1" {{ 'checked' if cliente and cliente.tipo == 1 else '' }}>
+                <span class="form-check-label">Pessoa Física</span>
+              </label>
+              <label class="form-check">
+                <input class="form-check-input" type="radio" name="radTipo" value="2" {{ 'checked' if not cliente or cliente.tipo == 2 else '' }}>
+                <span class="form-check-label">Pessoa Jurídica</span>
+              </label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label"><span>*</span> Nome fantasia</label>
+            <input type="text" class="form-control" name="txtNomeFantasia" value="{{ cliente.nome_fantasia if cliente else '' }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Razão social</label>
+            <input type="text" class="form-control" name="txtRazaoSocial" value="{{ cliente.razao_social if cliente else '' }}">
+          </div>
+          <div class="col-md-4 p-juridica">
+            <label class="form-label">CNPJ</label>
+            <input type="text" class="form-control" name="txtCNPJ" value="{{ cliente.cnpj if cliente else '' }}">
+          </div>
+          <div class="col-md-4 p-juridica">
+            <label class="form-label">Inscrição estadual</label>
+            <input type="text" class="form-control" name="txtInscricaoEstadual" value="{{ cliente.inscricao_estadual if cliente else '' }}">
+          </div>
+          <div class="col-md-4 p-fisica">
+            <label class="form-label">CPF</label>
+            <input type="text" class="form-control" name="txtCPF" value="{{ cliente.cpf if cliente else '' }}">
+          </div>
+          <div class="col-md-4 p-fisica">
+            <label class="form-label">RG</label>
+            <input type="text" class="form-control" name="txtRG" value="{{ cliente.rg if cliente else '' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Contato</label>
+            <input type="text" class="form-control" name="txtContato" value="{{ cliente.contato if cliente else '' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Setor</label>
+            <input type="text" class="form-control" name="txtContatoSetor" value="{{ cliente.contato_setor if cliente else '' }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Telefone 1</label>
+            <input type="text" class="form-control" name="txtTelefone1" value="{{ cliente.telefone1 if cliente else '' }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Telefone 2</label>
+            <input type="text" class="form-control" name="txtTelefone2" value="{{ cliente.telefone2 if cliente else '' }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Telefone 3</label>
+            <input type="text" class="form-control" name="txtTelefone3" value="{{ cliente.telefone3 if cliente else '' }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Telefone 4</label>
+            <input type="text" class="form-control" name="txtTelefone4" value="{{ cliente.telefone4 if cliente else '' }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Fax</label>
+            <input type="text" class="form-control" name="txtFAX" value="{{ cliente.fax if cliente else '' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">E-mail</label>
+            <input type="email" class="form-control" name="txtEmail" value="{{ cliente.email if cliente else '' }}">
+          </div>
+          <div class="col-md-5">
+            <label class="form-label">Website</label>
+            <input type="text" class="form-control" name="txtWebSite" value="{{ cliente.website if cliente else '' }}">
+          </div>
+          <div class="col-md-5">
+            <label class="form-label">Endereço</label>
+            <input type="text" class="form-control" name="txtEndereco" value="{{ cliente.endereco if cliente else '' }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Número</label>
+            <input type="text" class="form-control" name="txtEnderecoNumero" value="{{ cliente.endereco_numero if cliente else '' }}">
+          </div>
+          <div class="col-md-5">
+            <label class="form-label">Complemento</label>
+            <input type="text" class="form-control" name="txtEnderecoComplemento" value="{{ cliente.endereco_complemento if cliente else '' }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Bairro</label>
+            <input type="text" class="form-control" name="txtEnderecoBairro" value="{{ cliente.endereco_bairro if cliente else '' }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Município</label>
+            <input type="text" class="form-control" name="txtEnderecoMunicipio" value="{{ cliente.endereco_municipio if cliente else '' }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">UF</label>
+            <select class="form-select" name="selUFS">
+              <option value=""></option>
+              {% for uf in ufs %}
+              <option value="{{ uf.sigla }}" {{ 'selected' if cliente and cliente.endereco_uf == uf.sigla else '' }}>{{ uf.sigla }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">CEP</label>
+            <input type="text" class="form-control" name="txtEnderecoCEP" value="{{ cliente.endereco_cep if cliente else '' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label"><span>*</span> Localidade</label>
+            <select class="form-select" name="selLocalidade" required>
+              <option value=""></option>
+              {% for loc in localidades %}
+              <option value="{{ loc.id_pk }}" {{ 'selected' if cliente and cliente.idlocalidades_fk == loc.id_pk else '' }}>{{ loc.localidade }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label"><span>*</span> Empresa</label>
+            <select class="form-select" name="selEmpresa" required>
+              <option value=""></option>
+              {% for emp in empresas %}
+              <option value="{{ emp.id_pk }}" {{ 'selected' if cliente and cliente.idempresas_fk == emp.id_pk else '' }}>{{ emp.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Ativo</label>
+            <div class="d-flex gap-3">
+              <label class="form-check">
+                <input class="form-check-input" type="radio" name="radAtivo" value="t" {{ 'checked' if not cliente or cliente.ativo else '' }}>
+                <span class="form-check-label">Sim</span>
+              </label>
+              <label class="form-check">
+                <input class="form-check-input" type="radio" name="radAtivo" value="f" {{ 'checked' if cliente and not cliente.ativo else '' }}>
+                <span class="form-check-label">Não</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 clientes-section">
+        <h3 class="fw-semibold">Usuário do cliente</h3>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label"><span>*</span> Nome</label>
+            <input type="text" class="form-control" name="txtNomeUsuario" value="{{ cliente.nomeusuario if cliente else '' }}" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label"><span>*</span> Login</label>
+            <input type="text" class="form-control" name="txtLoginUsuario" value="{{ cliente.loginusuario if cliente else '' }}" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label"><span>*</span> Senha</label>
+            <input type="password" class="form-control" name="txtSenhaUsuario" value="" {{ 'required' if not cliente else '' }}>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label"><span>*</span> E-mail</label>
+            <input type="email" class="form-control" name="txtEmailUsuario" value="{{ cliente.emailusuario if cliente else '' }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">CNPJ para senha2</label>
+            <input type="password" class="form-control" name="txtCNPJSenha2" value="">
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 d-flex justify-content-end gap-2">
+        <button type="submit" class="btn btn-primary" name="save" value="1">Salvar</button>
+        {% if allow_more %}
+        <button type="submit" class="btn btn-outline-primary" name="save_more" value="1">Salvar +</button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/cracha_clientes_legado.js') }}" defer></script>
+{% endblock %}

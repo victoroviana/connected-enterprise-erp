@@ -1,0 +1,666 @@
+{% extends "layout.html" %}
+
+
+
+{% from "components/page_hero.html" import page_hero %}
+
+
+
+{% block title %}Sistemas de Ponto{% endblock %}
+
+
+
+{% block head %}
+
+
+
+<style>
+
+
+
+    position:relative;
+
+
+
+    border-radius:16px;
+
+
+
+    background:linear-gradient(135deg,#0f172a,#020b1f);
+
+
+
+    color:#f8fafc;
+
+
+
+    padding:24px 28px;
+
+
+
+    display:flex;
+
+
+
+    align-items:center;
+
+
+
+    justify-content:space-between;
+
+
+
+    gap:18px;
+
+
+
+    box-shadow:0 24px 60px rgba(2,8,23,.35);
+
+
+
+  }
+
+
+
+    display:flex;
+
+
+
+    align-items:center;
+
+
+
+    gap:16px;
+
+
+
+  }
+
+
+
+    width:52px;
+
+
+
+    height:52px;
+
+
+
+    border-radius:50%;
+
+
+
+    background:rgba(248,250,252,0.22);
+
+
+
+    display:flex;
+
+
+
+    align-items:center;
+
+
+
+    justify-content:center;
+
+
+
+    font-size:26px;
+
+
+
+  }
+
+
+
+    margin:0;
+
+
+
+    font-size:1.32rem;
+
+
+
+  }
+
+
+
+    margin:4px 0 0;
+
+
+
+    font-size:.94rem;
+
+
+
+    opacity:.82;
+
+
+
+  }
+
+
+
+    display:flex;
+
+
+
+    flex-direction:column;
+
+
+
+    gap:8px;
+
+
+
+    min-width:220px;
+
+
+
+  }
+
+
+
+    min-width:220px;
+
+
+
+  }
+
+
+
+  @media (max-width: 768px){
+
+
+
+      flex-direction:column;
+
+
+
+      align-items:flex-start;
+
+
+
+    }
+
+
+
+      width:100%;
+
+
+
+    }
+
+
+
+  }
+
+
+
+</style>
+
+
+
+{% endblock %}
+
+
+
+{% block content %}
+
+
+
+{% set systems_stats = [
+
+
+
+  {'label': 'Unidades disponíveis', 'value': branch_choices|length}
+
+
+
+] %}
+{% set systems_help_tips = [
+  'Selecione a filial no topo para carregar textos e imagens aplicáveis; a escolha vale para todos os formulários abaixo.',
+  'No seletor "Escolha o sistema", abra o kit que quer editar, ajuste a descrição exibida na proposta e envie uma imagem atualizada se necessário.',
+  'Para voltar ao padrão visual, marque "Remover imagem personalizada" e salve antes de alternar para outro sistema ou filial.'
+] %}
+
+
+
+{% call page_hero(
+
+
+
+    title='Sistemas de ponto',
+
+
+
+    subtitle='Personalize textos e imagens exibidos nas propostas para cada sistema disponibilizado.',
+
+
+
+    eyebrow='Administração',
+
+
+
+    stats=systems_stats,
+    help_tips=systems_help_tips,
+    help_intro='Guia rápido para personalizar os sistemas de ponto.'
+
+
+
+  ) %}
+
+
+
+  <div class="page-hero__actions flex-column align-items-stretch w-100">
+
+
+
+    <label class="form-label text-white-50" for="systems_branch_selector">Filial</label>
+
+
+
+    <select id="systems_branch_selector" class="form-select">
+
+
+
+      <option value="">Todas as unidades</option>
+
+
+
+      {% for code, label in branch_choices %}
+
+
+
+        <option value="{{ code }}" {% if branch_sel == code %}selected{% endif %}>{{ label }}</option>
+
+
+
+      {% endfor %}
+
+
+
+    </select>
+
+
+
+    <small class="text-white-50">Atual: {{ branch_label }}.</small>
+
+
+
+  </div>
+
+
+
+{% endcall %}
+
+
+
+
+
+
+
+<p class="text-muted">Selecione um sistema abaixo para editar descrição, imagem e demais informações exibidas nas propostas geradas pelo time comercial.</p>
+
+
+
+
+
+
+
+<div class="row g-3 align-items-end mb-4">
+
+
+
+  <div class="col-md-6 col-lg-4">
+
+
+
+    <label for="systemOptionSelect" class="form-label">Escolha o sistema</label>
+
+
+
+    <select id="systemOptionSelect" class="form-select">
+
+
+
+      {% for card in system_cards %}
+
+
+
+        <option value="{{ card.option.key }}">{{ card.option.label }}</option>
+
+
+
+      {% endfor %}
+
+
+
+    </select>
+
+
+
+  </div>
+
+
+
+</div>
+
+
+
+<div id="systemFormsWrapper">
+
+
+
+  {% for card in system_cards %}
+
+
+
+  <form class="card mb-4 system-form d-none" method="POST" enctype="multipart/form-data"
+
+
+
+        action="{{ url_for('sistemas_ponto_bp.atualizar_sistema_de_ponto', key=card.option.key, issuer_branch_code=branch_sel if branch_sel else None) }}"
+
+
+
+        data-system="{{ card.option.key }}">
+
+
+
+    {{ card.form.hidden_tag() }}
+
+
+
+    <input type="hidden" name="issuer_branch_code" value="{{ branch_sel }}">
+
+
+
+    <div class="card-header d-flex justify-content-between align-items-center">
+
+
+
+      <div>
+
+
+
+        <strong>{{ card.option.label }}</strong>
+
+
+
+        <div class="small text-muted">Chave: {{ card.option.key }}</div>
+
+
+
+      </div>
+
+
+
+    </div>
+
+
+
+    <div class="card-body">
+
+
+
+      {% if card.image_url %}
+
+
+
+      <div class="mb-3 text-center">
+
+
+
+        <img src="{{ card.image_url }}" alt="Imagem do sistema" class="img-fluid rounded" style="max-height:160px;">
+
+
+
+        <div class="form-text">
+
+
+
+          {% if card.uses_default_image %}Imagem padrão.{% else %}Imagem personalizada em uso.{% endif %}
+
+
+
+        </div>
+
+
+
+      </div>
+
+
+
+      {% endif %}
+
+
+
+      <div class="mb-3">
+
+
+
+        <label class="form-label" for="{{ card.form.description.id }}">Descrição</label>
+
+
+
+        {{ card.form.description(class="form-control", rows=4, placeholder="Texto exibido na proposta") }}
+
+
+
+      </div>
+
+
+
+      <div class="mb-3">
+
+
+
+        <label class="form-label" for="{{ card.form.image.id }}">Imagem</label>
+
+
+
+        {{ card.form.image(class="form-control") }}
+
+
+
+        <div class="form-text">Formatos aceitos: PNG, JPG, JPEG ou WEBP.</div>
+
+
+
+      </div>
+
+
+
+      <div class="form-check mb-3">
+
+
+
+        {{ card.form.remove_image(class="form-check-input", id=card.option.key ~ '_remove') }}
+
+
+
+        <label class="form-check-label" for="{{ card.option.key }}_remove">
+
+
+
+          Remover imagem personalizada e usar a imagem padro.
+
+
+
+        </label>
+
+
+
+      </div>
+
+
+
+    </div>
+
+
+
+    <div class="card-footer text-end">
+
+
+
+      {{ card.form.submit(class="btn btn-primary") }}
+
+
+
+    </div>
+
+
+
+  </form>
+
+
+
+  {% endfor %}
+
+
+
+</div>
+
+
+
+<script>
+
+
+
+  document.addEventListener('DOMContentLoaded', function() {
+
+
+
+    const branchSelect = document.getElementById('systems_branch_selector');
+
+
+
+    if (branchSelect) {
+
+
+
+      branchSelect.addEventListener('change', function(){
+
+
+
+        const params = new URLSearchParams(window.location.search);
+
+
+
+        const value = branchSelect.value || '';
+
+
+
+        if (value) {
+
+
+
+          params.set('issuer_branch_code', value);
+
+
+
+        } else {
+
+
+
+          params.delete('issuer_branch_code');
+
+
+
+        }
+
+
+
+        const query = params.toString();
+
+
+
+        window.location.href = window.location.pathname + (query ? '?' + query : '');
+
+
+
+      });
+
+
+
+    }
+
+
+
+
+
+
+
+    const select = document.getElementById('systemOptionSelect');
+
+
+
+    const forms = document.querySelectorAll('.system-form');
+
+
+
+    function updateSystemForms() {
+
+
+
+      const value = select ? select.value : null;
+
+
+
+      forms.forEach(function(form) {
+
+
+
+        form.classList.toggle('d-none', form.getAttribute('data-system') !== value);
+
+
+
+      });
+
+
+
+    }
+
+
+
+    if (select) {
+
+
+
+      select.addEventListener('change', updateSystemForms);
+
+
+
+      updateSystemForms();
+
+
+
+    }
+
+
+
+  });
+
+
+
+</script>
+
+
+
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

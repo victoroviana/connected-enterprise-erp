@@ -1,0 +1,104 @@
+{% extends "layout.html" %}
+
+{% from "components/page_hero.html" import page_hero %}
+
+
+
+{% block title %}Administração{% endblock %}
+
+
+
+{% block head %}
+
+{{ super() }}
+
+<style>
+
+  .admin-hub .admin-card{border:0;border-radius:1.2rem;box-shadow:0 18px 40px rgba(15,35,58,.08);padding:1.35rem;transition:transform .15s ease, box-shadow .15s ease;}
+
+  .admin-hub .admin-card:hover{transform:translateY(-4px);box-shadow:0 22px 48px rgba(15,35,58,.12);}
+
+  .admin-hub .admin-card h3{font-weight:700;font-size:1.15rem;margin-bottom:.4rem;}
+
+  .admin-hub .admin-card-icon{width:52px;height:52px;border-radius:16px;background:rgba(15,123,200,.1);display:flex;align-items:center;justify-content:center;color:#0E5DC6;font-size:1.35rem;margin-bottom:.9rem;}
+
+  .admin-hub .admin-card p{color:#5a6c84;margin-bottom:1.1rem;}
+
+  .admin-hub-empty{border:0;border-radius:1.2rem;box-shadow:0 16px 36px rgba(15,35,58,.08);}
+
+</style>
+
+{% endblock %}
+
+
+
+{% block content %}
+
+<div class="admin-hub py-4">
+
+  {% set admin_hub_help_tips = [
+    'Escolha o card correspondente à tarefa que precisa (usuários, permissões, parâmetros, agenda etc.); ele só aparece se seu perfil permitir acesso.',
+    'Leia o título e a descrição de cada card para entender o uso de cada ferramenta e clique em "Acessar" para abrir o módulo.',
+    'Se alguma área essencial não aparecer na sua grade, solicite ao administrador a liberação ou inclusão para o seu perfil.'
+  ] %}
+  {{ page_hero(
+
+    title='Administração',
+
+    subtitle='Escolha uma das ferramentas disponíveis para o seu perfil.',
+
+    eyebrow='Central',
+
+    stats=hero_stats,
+    help_tips=admin_hub_help_tips,
+    help_intro='Guia rápido para navegar pelas ferramentas administrativas.'
+
+  ) }}
+
+
+
+  {% if admin_cards %}
+
+  <div class="row g-4">
+
+    {% for card in admin_cards %}
+
+    <div class="col-md-6 col-xl-4">
+
+      <div class="card admin-card h-100">
+
+        <div class="admin-card-icon"><i class="{{ card.icon }}"></i></div>
+
+        <h3>{{ card.title }}</h3>
+
+        <p>{{ card.description }}</p>
+
+        <a class="btn btn-primary stretched-link mt-auto" href="{{ card.url }}">Acessar</a>
+
+      </div>
+
+    </div>
+
+    {% endfor %}
+
+  </div>
+
+  {% else %}
+
+  <div class="card admin-hub-empty mt-4">
+
+    <div class="card-body text-center py-5">
+
+      <p class="mb-0 text-muted">Nenhuma ferramenta administrativa foi atribuída ao seu perfil.</p>
+
+    </div>
+
+  </div>
+
+  {% endif %}
+
+
+
+</div>
+
+{% endblock %}

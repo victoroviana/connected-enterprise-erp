@@ -1,0 +1,282 @@
+{% extends "layout.html" %}
+{% block title %}Chamado #{{ ticket.id }}  Sollus{% endblock %}
+{% block content %}
+
+<div class="row g-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+          <h5 class="mb-0">
+            <i class="fa-solid fa-ticket me-2"></i>
+            Chamado #{{ ticket.id }}  {{ ticket.title }}
+          </h5>
+
+          {% set st = (ticket.status or '').lower() %}
+          {% set pr = (ticket.priority or '').lower() %}
+
+          {% set st_pt = 'Aberto' %}
+          {% if st == 'in_progress' %}{% set st_pt = 'Em andamento' %}
+          {% elif st == 'closed' %}{% set st_pt = 'Finalizado' %}{% endif %}
+
+          {% set pr_pt = '' %}
+          {% set pr_badge = 'secondary' %}
+          {% if pr == 'low' %}{% set pr_pt = 'Baixa' %}{% set pr_badge = 'secondary' %}
+          {% elif pr == 'medium' %}{% set pr_pt = 'Média' %}{% set pr_badge = 'primary' %}
+          {% elif pr == 'high' %}{% set pr_pt = 'Alta' %}{% set pr_badge = 'danger' %}
+          {% elif pr == 'urgent' %}{% set pr_pt = 'Urgente' %}{% set pr_badge = 'dark' %}{% endif %}
+
+          <span class="badge text-bg-{{ 'success' if st=='closed' else ('warning' if st=='in_progress' else 'secondary') }}">{{ st_pt }}</span>
+          <span class="badge text-bg-{{ pr_badge }}">{{ pr_pt }}</span>
+        </div>
+
+        <div class="text-muted small">
+          Criado em {{ ticket.created_at | local('%d/%m/%Y %H:%M') if ticket.created_at else '-' }}
+           por {{ ticket.user.name or ticket.user.email if ticket.user else '-' }}
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="row g-4">
+          <!-- Descrição -->
+          <div class="col-12 col-lg-8">
+            <h6 class="text-uppercase text-muted fw-bold mb-2">Descrição</h6>
+            <div class="p-3 rounded border bg-body">
+              <pre class="mb-0" style="white-space:pre-wrap; font-family:inherit">{{ ticket.description or '' }}</pre>
+            </div>
+          </div>
+
+          <!-- Atendimento / Ações -->
+          <div class="col-12 col-lg-4">
+            <h6 class="text-uppercase text-muted fw-bold mb-2">Atendimento</h6>
+
+            {% if can_assign %}
+            <form method="POST" action="{{ url_for('tickets.assign_agent', ticket_id=ticket.id) }}" class="d-flex gap-2 mb-2">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <select name="assignee_id" class="form-select">
+                <option value=""> Selecionar atendente </option>
+                {% for u in agents %}
+                  <option value="{{ u.id }}" {{ 'selected' if current_assignee_id==u.id else '' }}>
+                    {{ u.name or u.email }}
+                  </option>
+                {% endfor %}
+              </select>
+              <button class="btn btn-primary" title="Salvar atribuio"><i class="bi bi-person-check"></i></button>
+            </form>
+            {% else %}
+              <div class="p-3 rounded border bg-body mb-2">
+                <div class="small text-muted">Atribuição</div>
+                <div>{{ current_assignee_label or ' não atribuído ' }}</div>
+              </div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('tickets.update_status', ticket_id=ticket.id) }}" class="d-flex gap-2">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <select name="status" class="form-select">
+                <option value="open"        {{ 'selected' if st=='open' else '' }}>Aberto</option>
+                <option value="in_progress" {{ 'selected' if st=='in_progress' else '' }}>Em andamento</option>
+                <option value="closed"      {{ 'selected' if st=='closed' else '' }}>Finalizado</option>
+              </select>
+              <button class="btn btn-outline-primary" title="Atualizar status"><i class="bi bi-check2-circle"></i></button>
+            </form>
+
+            {% if can_edit %}
+            <div class="mt-3">
+              <form method="POST" action="{{ url_for('tickets.delete_ticket', ticket_id=ticket.id) }}"
+                    onsubmit="return confirm('Excluir o chamado #{{ ticket.id }}? Esta ação é irreversível.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-outline-danger w-100">
+                  <i class="bi bi-trash"></i> Excluir Chamado
+                </button>
+              </form>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Respostas -->
+          <div class="col-12">
+            <h6 class="text-uppercase text-muted fw-bold mb-2">Respostas</h6>
+
+            {% if messages and messages|length %}
+              <div class="list-group mb-3">
+                {% for m in messages %}
+                  <div class="list-group-item bg-body">
+                    <div class="d-flex justify-content-between">
+                      <div class="fw-semibold">{{ m.author.name or m.author.email if m.author else '' }}</div>
+                      <div class="text-muted small">{{ m.created_at | local('%d/%m/%Y %H:%M') if m.created_at else '-' }}</div>
+                    </div>
+                    <div class="mt-1" style="white-space:pre-wrap">{{ m.body }}</div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="text-muted mb-3">Ainda não há respostas.</div>
+            {% endif %}
+
+            {% if can_reply %}
+            <form method="POST" action="{{ reply_url }}" class="mt-2">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="mb-2">
+                <textarea class="form-control" name="message" rows="4" placeholder="Escreva sua resposta..." required></textarea>
+              </div>
+              <button class="btn btn-primary"><i class="bi bi-send"></i> Enviar resposta</button>
+            </form>
+            {% else %}
+              <div class="text-muted small">Somente o atendente atribuído ou equipe (agent/gestor/admin) pode responder.</div>
+            {% endif %}
+          </div>
+
+          <!-- Anexos -->
+          <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <h6 class="text-uppercase text-muted fw-bold mb-0">Anexos</h6>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="toggleAutoPreview">
+                <label class="form-check-label" for="toggleAutoPreview">Mostrar pré-visualizações</label>
+              </div>
+            </div>
+
+            {% if can_edit %}
+            <form class="d-flex align-items-center gap-2 flex-wrap"
+                  method="POST"
+                  action="{{ url_for('tickets.attachments_upload', ticket_id=ticket.id) }}"
+                  enctype="multipart/form-data">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input class="form-control" type="file" name="file"
+                     accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.txt,.log,.csv,.doc,.docx,.xls,.xlsx" required>
+              <button class="btn btn-outline-primary"><i class="bi bi-upload"></i> Enviar</button>
+            </form>
+            {% endif %}
+
+            {% set _img_ext = ['.png','.jpg','.jpeg','.gif','.webp'] %}
+            <div class="row g-3 mt-2">
+              {% if attachments and attachments|length > 0 %}
+                {% for att in attachments %}
+                  {% set name = att.original_name or att.filename or att.stored_name %}
+                  {% set ext = ('.' ~ (name.split('.')[-1]|lower)) if '.' in name else '' %}
+                  {% set is_img = (att.content_type and 'image' in att.content_type) or (ext in _img_ext) %}
+                  {% set file_url = url_for('tickets.attachments_download', ticket_id=ticket.id, att_id=att.id) %}
+                  <div class="col-12 col-md-6 col-xl-4">
+                    <div class="border rounded p-2">
+                      <div class="d-flex gap-2 align-items-start">
+                        <div class="flex-shrink-0">
+                          {% if is_img %}
+                            <img src="{{ file_url }}"
+                                 alt="{{ name }}"
+                                 class="rounded border attachment-thumb"
+                                 style="width:96px; height:96px; object-fit:cover; display:none">
+                          {% else %}
+                            <div class="d-flex align-items-center justify-content-center rounded border"
+                                 style="width:96px; height:96px;">
+                              <i class="fa-regular fa-file-lines fs-3 text-muted"></i>
+                            </div>
+                          {% endif %}
+                        </div>
+
+                        <div class="flex-grow-1">
+                          <div class="fw-semibold text-truncate" title="{{ name }}">{{ name }}</div>
+                          <div class="text-muted small">
+                            {{ (att.size or 0) // 1024 }} KB  {{ att.content_type or 'arquivo' }}
+                            <br>Enviado em {{ att.uploaded_at | local('%d/%m/%Y %H:%M') if att.uploaded_at else '-' }}
+                          </div>
+
+                          <div class="mt-2 d-flex flex-wrap gap-2">
+                            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('tickets.attachments_download', ticket_id=ticket.id, att_id=att.id) }}">
+                              <i class="bi bi-download"></i> Baixar
+                            </a>
+                            <a class="btn btn-sm btn-outline-secondary" target="_blank" href="{{ file_url }}">
+                              <i class="bi bi-box-arrow-up-right"></i> Abrir
+                            </a>
+
+                            {% if is_img or (att.content_type and 'pdf' in att.content_type) %}
+                            <button type="button" class="btn btn-sm btn-outline-primary btn-toggle-preview" data-target="#pv-{{ att.id }}">
+                              <i class="bi bi-eye"></i> Pr-visualizar
+                            </button>
+                            {% endif %}
+
+                            {% if can_edit %}
+                            <form method="POST"
+                                  action="{{ url_for('tickets.attachments_delete', ticket_id=ticket.id, att_id=att.id) }}"
+                                  onsubmit="return confirm('Remover o anexo {{ name }}?');">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                              <button class="btn btn-sm btn-outline-danger" title="Excluir">
+                                <i class="bi bi-trash"></i>
+                              </button>
+                            </form>
+                            {% endif %}
+                          </div>
+                        </div>
+                      </div>
+
+                      {% if is_img %}
+                        <div id="pv-{{ att.id }}" class="mt-2 preview-area" style="display:none">
+                          <img src="{{ file_url }}" alt="{{ name }}" class="img-fluid rounded border">
+                        </div>
+                      {% elif att.content_type and 'pdf' in att.content_type %}
+                        <div id="pv-{{ att.id }}" class="mt-2 preview-area" style="display:none">
+                          <iframe src="{{ file_url }}" title="{{ name }}" style="width:100%; height:320px" frameborder="0"></iframe>
+                        </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="col-12"><div class="text-muted">Nenhum anexo.</div></div>
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="card-footer d-flex justify-content-end">
+        <a class="btn btn-outline-primary" href="{{ url_for('tickets.dashboard') }}">
+          <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  // Toggle por anexo
+  document.querySelectorAll('.btn-toggle-preview').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sel = btn.getAttribute('data-target');
+      const el = document.querySelector(sel);
+      if (!el) return;
+      const isOpen = el.style.display !== 'none';
+      el.style.display = isOpen ? 'none' : 'block';
+    });
+  });
+
+  // Switch global de pr-visualizao (com persistncia)
+  const sw = document.getElementById('toggleAutoPreview');
+  if (!sw) return;
+  const KEY = 'sollus:autoPreview';
+  const saved = localStorage.getItem(KEY) === '1';
+  sw.checked = saved;
+
+  function applyAutoPreview(on) {
+    document.querySelectorAll('.attachment-thumb').forEach(img => {
+      img.style.display = on ? '' : 'none';
+    });
+    document.querySelectorAll('.preview-area').forEach(div => {
+      div.style.display = on ? '' : 'none';
+    });
+  }
+
+  applyAutoPreview(saved);
+
+  sw.addEventListener('change', () => {
+    const on = sw.checked;
+    localStorage.setItem(KEY, on ? '1' : '0');
+    applyAutoPreview(on);
+  });
+})();
+</script>
+{% endblock %}

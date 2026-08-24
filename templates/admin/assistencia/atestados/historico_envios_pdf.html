@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Histórico de Envios</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
+    th, td { border: 1px solid #333; padding: 6px; text-align: left; }
+    th { background-color: #555; color: #fff; }
+    .success { color: green; font-weight: bold; }
+    .error { color: red; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Histórico de Envios</h1>
+
+  <p>Filtro aplicado:</p>
+  <ul>
+    <li>Data início: {{ data_inicio or 'Todos' }}</li>
+    <li>Hora início: {{ hora_inicio or '00:00' }}</li>
+    <li>Data fim: {{ data_fim or 'Todos' }}</li>
+    <li>Hora fim: {{ hora_fim or '23:59' }}</li>
+    <li>Status: {{ status or 'Todos' }}</li>
+  </ul>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Data de envio</th>
+        <th>Arquivo</th>
+        <th>E-mails enviados</th>
+        <th>Status</th>
+        <th>Mensagem</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td>{{ log.data_envio | local('%d/%m/%Y %H:%M:%S') if log.data_envio else '' }}</td>
+        <td>{{ log.arquivo.nome }}</td>
+        <td>
+          {% for email in log.arquivo.emails %}
+            {{ email.endereco }}{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        </td>
+        <td class="{{ log.status }}">{{ log.status|capitalize }}</td>
+        <td>{{ log.mensagem }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="5" style="text-align:center;">Nenhum registro encontrado.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

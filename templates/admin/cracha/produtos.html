@@ -1,0 +1,252 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Crachá | Produtos{% endblock %}
+
+{% block head %}
+<style>
+  .produtos-card{border:0;border-radius:1.1rem;box-shadow:0 10px 24px rgba(15,35,58,.08);}
+  .produtos-card .card-header{background:transparent;border:0;padding:1.25rem 1.5rem 0;}
+  .produtos-card .card-body{padding:1.25rem 1.5rem 1.5rem;}
+  .produtos-table th,.produtos-table td{vertical-align:middle;}
+  .produtos-table thead{background:#f3f6fb;text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:#5a6782;}
+  .produtos-table tbody tr:hover{background:rgba(148,163,184,.08);}
+  .badge-lite{background:#e2e8f0;color:#1f2937;font-weight:600;}
+  .produtos-section{border:1px solid #e2e8f0;border-radius:1rem;padding:1.25rem;}
+  .produtos-section + .produtos-section{margin-top:1.5rem;}
+  .produtos-table input{min-width:80px;}
+</style>
+{% endblock %}
+
+{% block content %}
+{% set hero_stats = [
+  {'label': 'Produtos', 'value': pagination.total, 'hint': 'cadastros'}
+] %}
+{% set hero_help_tips = [
+  'Use grupos e marcas para organizar o catálogo.',
+  'Controle por número de série habilita rastreio individual.',
+  'Mantenha estoque mínimo e máximo por empresa.'
+] %}
+{% call page_hero(
+  title='Produtos'|safe,
+  subtitle='Cadastre e acompanhe produtos do estoque de crachás.',
+  eyebrow='Crachá'|safe,
+  stats=hero_stats,
+  help_tips=hero_help_tips,
+  help_intro='Dicas rápidas para produtos.'
+) %}
+  <div class="page-hero__actions d-flex flex-wrap gap-2">
+    <button class="btn btn-light" type="button" data-bs-toggle="modal" data-bs-target="#modalNovoProduto">
+      <i class="fa-solid fa-plus me-1"></i> Novo produto
+    </button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('cracha_bp.produtos_grupo') }}">
+      <i class="fa-solid fa-layer-group me-1"></i> Grupos
+    </a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('cracha_bp.produtos_marca') }}">
+      <i class="fa-solid fa-tags me-1"></i> Marcas
+    </a>
+  </div>
+{% endcall %}
+
+<div class="card produtos-card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-lg-8">
+        <label class="form-label">Produto</label>
+        <input type="text" name="search" class="form-control" placeholder="Digite para buscar" value="{{ search }}">
+      </div>
+      <div class="col-lg-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">Buscar</button>
+        <a class="btn btn-outline-secondary w-100" href="{{ url_for('cracha_bp.produtos') }}">Limpar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card produtos-card">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <div>
+      <h2 class="h6 fw-bold mb-1">Registros</h2>
+      <p class="text-muted mb-0">{{ pagination.total }} produto(s) encontrado(s).</p>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover produtos-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Produto</th>
+            <th>Controle por número de série</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in produtos %}
+          <tr>
+            <td><span class="badge badge-lite">{{ row.codigo or '-' }}</span></td>
+            <td class="fw-semibold">{{ row.produto }}</td>
+            <td>{{ 'Sim' if row.controlado_numero_serie else 'Não' }}</td>
+            <td class="text-end">
+              <div class="d-flex justify-content-end gap-2">
+                <a class="btn btn-outline-primary btn-sm" href="{{ url_for('cracha_bp.produtos_editar', produto_id=row.id_pk) }}">
+                  <i class="fa-solid fa-pen me-1"></i> Editar
+                </a>
+                <form method="post" action="{{ url_for('cracha_bp.produtos_excluir', produto_id=row.id_pk) }}" onsubmit="return confirm('Deseja excluir este produto?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="fa-solid fa-trash me-1"></i> Excluir
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not produtos %}
+          <tr>
+            <td colspan="4" class="text-center text-muted py-4">Nenhum produto encontrado.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <nav class="mt-3">
+      <ul class="pagination justify-content-end mb-0">
+        <li class="page-item {{ 'disabled' if not pagination.has_prev else '' }}">
+          <a class="page-link" href="{{ build_url('cracha_bp.produtos', page=pagination.prev_num) }}">Anterior</a>
+        </li>
+        {% for p in range(1, pagination.pages + 1) %}
+        {% if p == 1 or p == pagination.pages or (p >= pagination.page - 1 and p <= pagination.page + 1) %}
+        <li class="page-item {{ 'active' if p == pagination.page else '' }}">
+          <a class="page-link" href="{{ build_url('cracha_bp.produtos', page=p) }}">{{ p }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+        <li class="page-item {{ 'disabled' if not pagination.has_next else '' }}">
+          <a class="page-link" href="{{ build_url('cracha_bp.produtos', page=pagination.next_num) }}">Próxima</a>
+        </li>
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalNovoProduto" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('cracha_bp.produtos_novo') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="origin" value="list">
+        <input type="hidden" name="txtID" value="">
+        <div class="modal-header">
+          <h5 class="modal-title">Novo produto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-4">
+            <div class="col-12 produtos-section">
+              <h3 class="fw-semibold">Dados do produto</h3>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label"><span class="text-danger">*</span> Código</label>
+                  <input type="text" class="form-control" name="txtCodigoProduto" required>
+                </div>
+                <div class="col-md-9">
+                  <label class="form-label"><span class="text-danger">*</span> Produto</label>
+                  <input type="text" class="form-control" name="txtProduto" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Grupo</label>
+                  <select class="form-select" name="selGrupo">
+                    <option value=""></option>
+                    {% for grupo in grupos %}
+                    <option value="{{ grupo.id_pk }}">{{ grupo.nome }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Marca</label>
+                  <select class="form-select" name="selMarca">
+                    <option value=""></option>
+                    {% for marca in marcas %}
+                    <option value="{{ marca.id_pk }}">{{ marca.nome }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Código marca</label>
+                  <input type="text" class="form-control" name="txtCodigoMarca">
+                </div>
+                <div class="col-md-12">
+                  <label class="form-label">Observações</label>
+                  <textarea class="form-control" name="txtObservacoes" rows="2"></textarea>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Controle por número de série</label>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="chkControledoPorNumeroDeSerie" value="t">
+                    <span class="form-check-label">Sim</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 produtos-section">
+              <h3 class="fw-semibold">Detalhes por empresa</h3>
+              <div class="table-responsive">
+                <table class="table table-hover produtos-table">
+                  <thead>
+                    <tr>
+                      <th>Empresa</th>
+                      <th>Est. mínimo</th>
+                      <th>Est. máximo</th>
+                      <th>Corredor</th>
+                      <th>Prateleira</th>
+                      <th>Armário</th>
+                      <th>Gaveta</th>
+                      <th>Palete</th>
+                      <th>Ativo</th>
+                      <th>Qtd. atual</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for detalhe in detalhes %}
+                    <tr>
+                      <td class="fw-semibold">{{ detalhe.empresa_nome }}</td>
+                      <td>
+                        <input type="hidden" name="txtIDProdutoDetalhe[{{ detalhe.empresa_id }}]" value="{{ detalhe.id_pk or '' }}">
+                        <input type="text" class="form-control form-control-sm" name="txtEstoqueMinimo[{{ detalhe.empresa_id }}]" value="{{ detalhe.quantidade_minima or '' }}">
+                      </td>
+                      <td><input type="text" class="form-control form-control-sm" name="txtEstoqueMaximo[{{ detalhe.empresa_id }}]" value="{{ detalhe.quantidade_maxima or '' }}"></td>
+                      <td><input type="text" class="form-control form-control-sm" name="txtEstoqueCorredor[{{ detalhe.empresa_id }}]" value="{{ detalhe.corredor or '' }}"></td>
+                      <td><input type="text" class="form-control form-control-sm" name="txtEstoquePrateleira[{{ detalhe.empresa_id }}]" value="{{ detalhe.prateleira or '' }}"></td>
+                      <td><input type="text" class="form-control form-control-sm" name="txtEstoqueArmario[{{ detalhe.empresa_id }}]" value="{{ detalhe.armario or '' }}"></td>
+                      <td><input type="text" class="form-control form-control-sm" name="txtEstoqueGaveta[{{ detalhe.empresa_id }}]" value="{{ detalhe.gaveta or '' }}"></td>
+                      <td><input type="text" class="form-control form-control-sm" name="txtEstoquePalete[{{ detalhe.empresa_id }}]" value="{{ detalhe.palete or '' }}"></td>
+                      <td class="text-center">
+                        <input class="form-check-input" type="checkbox" name="chkAtivo[{{ detalhe.empresa_id }}]" value="t" {{ 'checked' if detalhe.ativo else '' }}>
+                      </td>
+                      <td><input type="text" class="form-control form-control-sm" name="txtEstoqueQuantidadeAtual[{{ detalhe.empresa_id }}]" value="{{ detalhe.quantidade_atual or '' }}" readonly></td>
+                    </tr>
+                    {% endfor %}
+                    {% if not detalhes %}
+                    <tr>
+                      <td colspan="10" class="text-center text-muted py-4">Nenhuma empresa vinculada.</td>
+                    </tr>
+                    {% endif %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" name="save" value="1">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

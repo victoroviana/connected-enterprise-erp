@@ -1,0 +1,142 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Crachá | Novo extrato{% endblock %}
+
+{% block head %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+  .extrato-form-card{border:0;border-radius:1.1rem;box-shadow:0 10px 24px rgba(15,35,58,.08);}
+  .extrato-form-card .card-header{background:transparent;border:0;padding:1.25rem 1.5rem 0;}
+  .extrato-form-card .card-body{padding:1.25rem 1.5rem 1.5rem;}
+  .form-actions{display:flex;gap:.75rem;flex-wrap:wrap;}
+
+  /* Select2 Custom Premium Styling */
+  .select2-container--default .select2-selection--single {
+    display: flex;
+    align-items: center;
+    height: 42px;
+    border-radius: 0.85rem;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background-color: var(--card, #fff);
+    color: var(--text, #000);
+  }
+  .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--text, #000);
+    line-height: normal;
+    padding-left: 0.75rem;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 40px;
+    right: 10px;
+  }
+  .select2-dropdown {
+    background-color: var(--card, #fff);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.85rem;
+    box-shadow: 0 10px 24px rgba(15,35,58,.08);
+  }
+  .select2-container--default .select2-search--dropdown .select2-search__field {
+    background-color: var(--card, #fff);
+    color: var(--text, #000);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.75rem;
+  }
+  .select2-container--default .select2-results__option {
+    color: var(--text, #000);
+    padding: 0.5rem 0.75rem;
+  }
+  .select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: rgba(15, 123, 200, 0.15);
+    color: var(--text, #000);
+  }
+  .select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #0E5DC6 !important;
+    color: #fff !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set hero_help_tips = [
+  'Selecione cliente e produto antes de informar o saldo inicial.',
+  'Registre a data correta para manter o histórico consistente.',
+  'Use uma descrição clara para facilitar auditorias.'
+] %}
+{% call page_hero(
+  title='Novo extrato',
+  subtitle='Registre o saldo inicial do cliente.',
+  eyebrow='Crachá'|safe,
+  help_tips=hero_help_tips,
+  help_intro='Dicas rápidas para cadastrar extratos.'
+) %}
+  <div class="page-hero__actions">
+    <a class="btn btn-light" href="{{ url_for('cracha_bp.extratos') }}">Voltar</a>
+  </div>
+{% endcall %}
+
+<div class="card extrato-form-card">
+  <div class="card-body">
+    <form method="post" action="{{ action_url }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <label class="form-label">Cliente</label>
+          <select name="cliente_id" id="selectClienteForm" class="form-select" required style="width: 100%;">
+            <option value="">Selecione</option>
+            {% for cliente in clientes %}
+              <option value="{{ cliente.id_pk }}">{{ cliente.nome_fantasia }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-lg-6">
+          <label class="form-label">Produto</label>
+          <select name="produto_id" id="selectProdutoForm" class="form-select" required style="width: 100%;">
+            <option value="">Selecione</option>
+            {% for produto in produtos %}
+              <option value="{{ produto.id_pk }}">{{ produto.produto }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-lg-3">
+          <label class="form-label">Quantidade</label>
+          <input type="number" name="quantidade" class="form-control" required>
+        </div>
+        <div class="col-lg-3">
+          <label class="form-label">Data</label>
+          <input type="date" name="data" id="inputDataExtratoForm" class="form-control" required>
+        </div>
+        <div class="col-lg-6">
+          <label class="form-label">Descrição</label>
+          <input type="text" name="descricao" class="form-control" value="Saldo inicial" required>
+        </div>
+        <div class="col-12 form-actions">
+          <button type="submit" class="btn btn-primary">Salvar</button>
+          {% if allow_save_more %}
+            <button type="submit" name="save_more" value="1" class="btn btn-outline-primary">Salvar +</button>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+  $(document).ready(function() {
+    // Define a data de hoje como padrão se vazia
+    const today = new Date().toISOString().split('T')[0];
+    const dataInput = document.getElementById('inputDataExtratoForm');
+    if (dataInput && !dataInput.value) {
+      dataInput.value = today;
+    }
+
+    // Inicializa Select2 para Cliente e Produto na página
+    $('#selectClienteForm').select2();
+    $('#selectProdutoForm').select2();
+  });
+</script>
+{% endblock %}
+{% endblock %}

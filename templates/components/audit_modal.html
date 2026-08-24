@@ -1,0 +1,86 @@
+{# templates/components/audit_modal.html #}
+
+{% macro audit_payload(payload, raw, dom_id) %}
+  {% if payload is not none %}
+    <script type="application/json" id="{{ dom_id }}" class="audit-json-data" hidden>
+      {{ payload|tojson }}
+    </script>
+  {% elif raw %}
+    <template id="{{ dom_id }}" class="audit-json-data">
+      {{ raw|e }}
+    </template>
+  {% endif %}
+{% endmacro %}
+
+{% macro audit_button_attrs(r, index0) %}
+  {% set entity_ref = r.entity_type or 'Registro' %}
+  {% if r.entity_id %}{% set entity_ref = entity_ref ~ ' #' ~ r.entity_id %}{% endif %}
+  {% set before_dom_id = 'audit-json-before-' ~ index0 %}
+  {% set after_dom_id = 'audit-json-after-' ~ index0 %}
+  {% set before_kind = 'payload' if r.before_data is not none else ('raw' if r.before else '') %}
+  {% set after_kind = 'payload' if r.after_data is not none else ('raw' if r.after else '') %}
+  {% set before_label = 'Antes  ' ~ entity_ref %}
+  {% set after_label = 'Depois  ' ~ entity_ref %}
+
+  {% if before_kind or after_kind %}
+    data-json-target="#{{ (after_kind and after_dom_id or before_dom_id) }}"
+    data-json-kind="{{ after_kind if after_kind else before_kind }}"
+    data-before-target="{{ '#' ~ before_dom_id if before_kind else '' }}"
+    data-before-kind="{{ before_kind }}"
+    data-before-label="{{ before_label if before_kind else '' }}"
+    data-after-target="{{ '#' ~ after_dom_id if after_kind else '' }}"
+    data-after-kind="{{ after_kind }}"
+    data-after-label="{{ after_label if after_kind else '' }}"
+    data-context="{{ entity_ref }}"
+    data-focus="{{ 'after' if after_kind else 'before' }}"
+    data-title="Detalhes do registro"
+  {% endif %}
+{% endmacro %}
+
+<div class="modal sollus-modal fade" id="auditJsonModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content audit-json-modal">
+      <div class="modal-header">
+        <h5 class="modal-title audit-json-modal-title">Detalhes</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="audit-json-modal-context mb-0" id="auditJsonModalContext"></div>
+          <div class="btn-group btn-group-sm" role="group" aria-label="Visualização">
+            <button type="button" class="btn btn-outline-primary active" id="btnAuditViewFriendly">
+              <i class="bi bi-layout-text-window-reverse me-1"></i>Amigável
+            </button>
+            <button type="button" class="btn btn-outline-primary" id="btnAuditViewJson">
+              <i class="bi bi-code-slash me-1"></i>JSON
+            </button>
+          </div>
+        </div>
+        <div class="audit-diff-summary d-none" id="auditJsonDiffSummary">
+          <div class="audit-diff-summary__header">
+            <span>Alterações identificadas</span>
+            <span class="badge text-bg-primary" id="auditJsonDiffCount">0 alterações</span>
+          </div>
+          <ul class="audit-diff-list" id="auditJsonDiffList"></ul>
+          <div class="text-muted small" id="auditJsonDiffEmpty">Diferenças disponíveis apenas para dados estruturados.</div>
+        </div>
+        <div class="audit-json-modal__grid">
+          <div class="audit-json-block" id="auditJsonBeforeBlock">
+            <div class="audit-json-block__header">
+              <span id="auditJsonBeforeLabel">Antes</span>
+            </div>
+            <div id="auditFriendlyModalBefore" class="audit-friendly-block p-1"></div>
+            <pre id="auditJsonModalBefore" class="d-none"></pre>
+          </div>
+          <div class="audit-json-block" id="auditJsonAfterBlock">
+            <div class="audit-json-block__header">
+              <span id="auditJsonAfterLabel">Depois</span>
+            </div>
+            <div id="auditFriendlyModalAfter" class="audit-friendly-block p-1"></div>
+            <pre id="auditJsonModalAfter" class="d-none"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

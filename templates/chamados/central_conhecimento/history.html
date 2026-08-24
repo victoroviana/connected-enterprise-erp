@@ -1,0 +1,488 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+
+
+
+{% block title %}Histórico de Conhecimento{% endblock %}
+
+
+
+
+
+
+
+{% block content %}
+
+
+
+{% set history_stats = [
+  {'label': 'Concluídas', 'value': tasks|length, 'hint': 'Tarefas encerradas manualmente'}
+] %}
+{% set history_help_tips = [
+  'As tarefas aparecem aqui quando alguém clica em Concluir no quadro.',
+  'Use o campo Filtrar para buscar por título, responsável ou descrição dentro do histórico.',
+  'Se tiver permissão, use a lixeira para remover entradas antigas e manter o histórico enxuto; o atalho "Ver Central de Conhecimento" leva de volta ao quadro ativo.'
+] %}
+{% call page_hero(
+    title='Histórico de Conhecimento',
+    subtitle='Itens concluídos e arquivados para consulta e auditoria.',
+    eyebrow='Conhecimento',
+    stats=history_stats,
+    help_tips=history_help_tips,
+    help_intro='Dicas rápidas para revisar o histórico.'
+) %}
+  <div class="page-hero__actions">
+    <span class="page-hero__pill js-history-count">{{ tasks|length }} itens</span>
+    <a class="btn btn-outline-light" href="{{ url_for('central_conhecimento.board') }}"><i class="bi bi-book"></i> Ver Quadro</a>
+  </div>
+{% endcall %}
+
+
+
+
+
+
+
+<div class="card">
+
+
+
+  <div class="card-body">
+
+
+
+    <div class="row g-3 align-items-end mb-3">
+
+
+
+      <div class="col-md-5 col-lg-4">
+
+
+
+        <label class="form-label mb-1" for="historyFilter">Filtrar</label>
+
+
+
+        <input type="search" class="form-control" id="historyFilter" placeholder="Buscar por Título, Responsável ou Descrição">
+
+
+
+      </div>
+
+
+
+      <div class="col-auto ms-auto">
+
+
+
+        <button class="btn btn-outline-secondary" type="button" id="historyRefresh"><i class="bi bi-arrow-repeat"></i> Atualizar</button>
+
+
+
+      </div>
+
+
+
+    </div>
+
+
+
+
+
+
+
+    <div class="table-responsive">
+
+
+
+      <table class="table table-hover align-middle" id="historyTable">
+
+
+
+        <thead class="table-light">
+
+
+
+          <tr>
+
+
+
+            <th style="min-width:220px">Título</th>
+            <th style="min-width:160px">Setor</th>
+            <th style="min-width:140px">Visibilidade</th>
+
+
+
+            <th style="min-width:160px">Responsável</th>
+
+
+
+            <th style="min-width:120px">Vencimento</th>
+
+
+
+            <th style="min-width:150px">Concluída em</th>
+
+
+
+            <th style="min-width:150px">Arquivada em</th>
+
+
+
+            <th>Descrição</th>
+
+
+
+            <th class="text-end" style="min-width:110px">Ações</th>
+
+
+
+          </tr>
+
+
+
+        </thead>
+
+
+
+        <tbody>
+
+
+
+          {% set current_role = (current_user.role or '').lower() %}
+
+
+
+          {% set can_delete_all = current_role in ('gestor', 'admin') %}
+
+
+
+          {% if tasks %}
+
+
+
+            {% for task in tasks %}
+
+
+
+            <tr>
+
+
+
+              {% set can_delete_task = can_delete_all or (task.assignee_id == current_user.id) %}
+
+
+
+              <td class="fw-semibold">{{ task.title }}</td>
+              <td>{{ scope_labels.get(task.scope_key, task.scope_key or 'Geral') }}</td>
+              <td>{{ 'Privada' if task.visibility == 'private' else 'Pública' }}</td>
+
+
+
+              <td>
+
+
+
+                {% if task.assignee %}
+
+
+
+                  {{ task.assignee.name or task.assignee.email }}
+
+
+
+                {% else %}
+
+
+
+                  <span class="text-muted"></span>
+
+
+
+                {% endif %}
+
+
+
+              </td>
+
+
+
+              <td>
+
+
+
+                {% if task.due_date %}
+
+
+
+                  {{ task.due_date | local('%d/%m/%Y') }}
+
+
+
+                {% else %}
+
+
+
+                  <span class="text-muted"></span>
+
+
+
+                {% endif %}
+
+
+
+              </td>
+
+
+
+              <td>
+
+
+
+                {% if task.completed_at %}
+
+
+
+                  {{ task.completed_at | local('%d/%m/%Y %H:%M') }}
+
+
+
+                {% else %}
+
+
+
+                  <span class="text-muted"></span>
+
+
+
+                {% endif %}
+
+
+
+              </td>
+
+
+
+              <td>
+
+
+
+                {% if task.archived_at %}
+
+
+
+                  {{ task.archived_at | local('%d/%m/%Y %H:%M') }}
+
+
+
+                {% else %}
+
+
+
+                  <span class="text-muted"></span>
+
+
+
+                {% endif %}
+
+
+
+              </td>
+
+
+
+              <td class="text-end">
+
+
+
+                {% if can_delete_task %}
+
+
+
+                  <button type="button" class="btn btn-outline-danger btn-sm js-history-delete" data-task-id="{{ task.id }}" data-task-title="{{ task.title|e }}">
+
+
+
+                    <i class="bi bi-trash"></i>
+
+
+
+                    <span class="visually-hidden">Excluir</span>
+
+
+
+                  </button>
+
+
+
+                {% else %}
+
+
+
+                  <span class="text-muted small">-</span>
+
+
+
+                {% endif %}
+
+
+
+              </td>
+
+
+
+            </tr>
+
+
+
+            {% endfor %}
+
+
+
+            <tr class="history-empty d-none">
+
+
+
+              <td colspan="9" class="text-center text-muted py-4">Nenhum resultado corresponde ao filtro aplicado.</td>
+
+
+
+            </tr>
+
+
+
+          {% else %}
+
+
+
+            <tr>
+
+
+
+              <td colspan="9" class="text-center text-muted py-4">Nenhum item arquivado ainda.</td>
+
+
+
+            </tr>
+
+
+
+          {% endif %}
+
+
+
+        </tbody>
+
+
+
+      </table>
+
+
+
+    </div>
+
+
+
+  </div>
+
+
+
+</div>
+
+
+
+{% endblock %}
+
+
+
+
+
+
+
+{% block scripts %}
+
+
+
+<script>
+(function(){
+  const filterInput = document.getElementById('historyFilter');
+  const refreshBtn = document.getElementById('historyRefresh');
+  const table = document.getElementById('historyTable');
+  if (!table) return;
+
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+  let rows = Array.from(table.querySelectorAll('tbody tr')).filter(row => !row.classList.contains('history-empty'));
+  const emptyRow = table.querySelector('.history-empty');
+  const countBadge = document.querySelector('.js-history-count');
+
+  function updateCount(){
+    if(!countBadge) return;
+    const count = rows.length;
+    countBadge.textContent = count === 1 ? '1 item' : `${count} itens`;
+  }
+
+  function applyFilter(){
+    const term = (filterInput?.value || '').trim().toLowerCase();
+    let visible = 0;
+    rows.forEach(row => {
+      const matches = !term || row.textContent.toLowerCase().includes(term);
+      row.classList.toggle('d-none', !matches);
+      if (matches) visible += 1;
+    });
+    if (emptyRow){ emptyRow.classList.toggle('d-none', visible !== 0); }
+  }
+
+  filterInput?.addEventListener('input', () => requestAnimationFrame(applyFilter));
+  refreshBtn?.addEventListener('click', () => window.location.reload());
+
+  table.addEventListener('click', async (event) => {
+    const button = event.target.closest('.js-history-delete');
+    if(!button) return;
+    event.preventDefault();
+    if(button.disabled) return;
+
+    const row = button.closest('tr');
+    const taskId = button.dataset.taskId;
+    const taskTitle = button.dataset.taskTitle || 'esta tarefa';
+    if(!taskId) return;
+
+    if(!confirm(`Excluir "${taskTitle}" do histórico?`)) return;
+
+    button.disabled = true;
+    try {
+      const resp = await fetch(`/central_conhecimento/api/tasks/${taskId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {})
+        },
+        credentials: 'same-origin',
+      });
+      let payload = null;
+      try { payload = await resp.json(); } catch (err) { payload = null; }
+      if (!resp.ok || !payload?.ok) {
+        throw new Error(payload?.error || `Falha ao excluir (status ${resp.status}).`);
+      }
+      if(row){
+        row.remove();
+        rows = rows.filter(r => r !== row);
+      }
+      updateCount();
+      applyFilter();
+      alert('Tarefa removida do histórico.');
+    } catch (err) {
+      console.error(err);
+      alert('Não foi possível excluir a tarefa: ' + (err?.message || err));
+      button.disabled = false;
+    }
+  });
+
+  updateCount();
+  applyFilter();
+})();
+</script>
+
+{% endblock %}
+
+
+

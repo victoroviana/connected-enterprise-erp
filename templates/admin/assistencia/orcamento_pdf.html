@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Sollus Connected</title>
+  {% if favicon_ico %}<link rel="icon" href="{{ favicon_ico }}?v=3">{% endif %}
+  {% if favicon_png %}<link rel="icon" type="image/png" sizes="32x32" href="{{ favicon_png }}?v=3">{% endif %}
+  {% if favicon_png %}<link rel="apple-touch-icon" href="{{ favicon_png }}?v=3">{% endif %}
+  <style>
+    @page { size: A4; margin: 12mm; }
+    html { background:#f8fafc; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:'Roboto','Segoe UI',sans-serif; background:#f8fafc; color:#0f172a; font-size:11.6px; }
+    h1, h2, h3, h4 {
+      page-break-after: avoid;
+      break-after: avoid-page;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    .grid-bg{position:relative;background:#f8fafc;padding:28px 0;}
+    .grid-bg > .page{position:relative;z-index:1;}
+    .page {
+      width:760px;
+      margin:0 auto;
+      background:#f8fafc;
+      border-radius:18px;
+      padding:30px 34px;
+      box-shadow:0 24px 70px rgba(2,8,23,0.5);
+      position:relative;
+    }
+    .page::before {
+      content:"";
+      position:absolute;
+      inset:18px;
+      border:1px solid rgba(2,8,23,0.12);
+      border-radius:14px;
+      pointer-events:none;
+    }
+
+    .hero {
+      display:flex;
+      align-items:stretch;
+      gap:26px;
+      margin-bottom:26px;
+    }
+    .hero-info {
+      flex:1 1 auto;
+      position:relative;
+      padding:26px 28px 30px;
+      background:linear-gradient(135deg,#0ea5e9,#0b2a52 55%,#02091a 100%);
+      color:#f8fafc;
+      border-radius:16px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+    .hero-info::after {
+      content:"";
+      position:absolute;
+      width:240px;
+      height:240px;
+      border-radius:50%;
+      border:1px dashed rgba(255,255,255,0.28);
+      right:-70px;
+      top:-60px;
+      opacity:.6;
+    }
+    .hero-header { position:relative; z-index:1; display:flex; flex-direction:column; gap:10px; }
+    .proposal-code { position:absolute; top:26px; right:30px; font-size:11px; letter-spacing:.12em; text-transform:uppercase; background:rgba(2,8,23,0.35); padding:6px 14px; border-radius:12px; }
+    .badge {
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 14px;
+      background:rgba(2,8,23,0.35);
+      border-radius:999px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      font-size:10px;
+    }
+    .hero-header h1 {
+      margin:4px 0 0;
+      font-size:20px;
+      letter-spacing:.05em;
+      text-transform:uppercase;
+    }
+
+    .hero-cards {
+      margin-top:20px;
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:18px;
+      position:relative;
+      z-index:1;
+      align-items:stretch;
+    }
+    .hero-card {
+      padding:18px 20px;
+      border-radius:16px;
+      box-shadow:inset 0 0 0 1px rgba(148,163,184,0.18);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .hero-card h3 {
+      margin:0;
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+    .hero-card.hero-client { background:linear-gradient(180deg, rgba(15,116,210,0.65) 0%, rgba(15,23,42,0.82) 100%); }
+    .hero-card.hero-issuer { background:linear-gradient(180deg, rgba(15,23,42,0.75) 0%, rgba(2,8,23,0.92) 100%); }
+    .hero-list {
+      list-style:none;
+      margin:0;
+      padding:0;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      font-size:11px;
+    }
+    .hero-list .label {
+      display:block;
+      text-transform:uppercase;
+      font-size:9.5px;
+      letter-spacing:.05em;
+      opacity:.75;
+    }
+    .hero-list .value {
+      display:flex;
+      align-items:center;
+      gap:6px;
+      flex-wrap:wrap;
+      font-weight:600;
+      color:#f8fafc;
+      word-break:break-word;
+    }
+    .hero-list .value-text {
+      display:inline-flex;
+      align-items:center;
+      min-width:0;
+    }
+    .whatsapp-link {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:16px;
+      height:16px;
+    }
+    .whatsapp-link img {
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      display:block;
+    }
+    .contact .contact-phone {
+      display:flex;
+      align-items:center;
+      gap:6px;
+      margin:6px 0;
+    }
+    .contact .contact-phone span {
+      display:inline-flex;
+      align-items:center;
+    }
+    .contact .whatsapp-link {
+      width:16px;
+      height:16px;
+    }
+
+    .hero-brand {
+      flex:0 0 170px;
+      background:linear-gradient(180deg,#f8fbff 0%, #e0e7f5 100%);
+      border-radius:18px;
+      border:1px solid rgba(148,163,184,0.18);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,0.6);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-start;
+      padding:24px;
+      gap:12px;
+    }
+    .hero-brand-logo {
+      flex:1 1 auto;
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .hero-brand img {
+      max-width:120px;
+      max-height:200px;
+      object-fit:contain;
+    }
+    .hero-brand strong {
+      font-size:18px;
+      letter-spacing:.12em;
+      color:#0f172a;
+    }
+    .hero-brand-social {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-top:auto;
+    }
+    .hero-brand-social a {
+      display:inline-flex;
+      width:16px;
+      height:16px;
+    }
+    .hero-brand-social img {
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      display:block;
+    }
+
+    .matrix { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+    .matrix-card {
+      background:#0f172a;
+      color:#f8fafc;
+      border-radius:14px;
+      padding:16px 18px;
+      position:relative;
+      overflow:hidden;
+    }
+    .matrix-card::after {
+      content:"";
+      position:absolute;
+      inset:6px;
+      border:1px solid rgba(148,163,184,0.12);
+      border-radius:12px;
+    }
+    .matrix-card small { text-transform:uppercase; font-size:10px; letter-spacing:.08em; opacity:.75; }
+    .matrix-card strong { display:block; margin-top:6px; font-size:18px; }
+
+    h2 {
+      margin:28px 0 12px;
+      font-size:14px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:#0f172a;
+      border-left:4px solid #0ea5e9;
+      padding-left:10px;
+    }
+    .columns { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .panel {
+      background:#e2e8f0;
+      border-radius:14px;
+      padding:16px 18px;
+      font-size:11px;
+      color:#0f172a;
+      box-shadow:inset 0 0 0 1px rgba(2,8,23,0.06);
+    }
+    .panel strong { display:block; margin-bottom:8px; color:#0ea5e9; text-transform:uppercase; letter-spacing:.05em; }
+
+    table {
+      width:100%;
+      border-collapse:collapse;
+      font-size:11px;
+      margin-top:10px;
+      border-radius:16px;
+      overflow:hidden;
+      box-shadow:0 20px 36px rgba(2,8,23,0.12);
+    }
+    table.items { table-layout: fixed; }
+    th.description, td.description { width: 52%; }
+    td.description { word-break: break-word; line-height: 1.4; }
+    th.image, td.image { width: 12%; }
+    th.quantity, td.quantity { width: 8%; }
+    th.price, td.price { width: 14%; }
+    thead { background:#0f172a; color:#f8fafc; }
+    th,td { padding:9px 12px; }
+    tbody tr:nth-child(odd) { background:#f1f5f9; }
+    td.image { width:90px; text-align:center; }
+    td.image img {
+      width:80px;
+      height:80px;
+      object-fit:contain;
+      border-radius:8px;
+      box-shadow:0 8px 18px rgba(15,23,42,0.2);
+      background:#fff;
+    }
+    td.quantity,
+    td.price { text-align:center; white-space:nowrap; }
+    .price-stack{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:4px;
+    }
+    .price-value{font-weight:600;}
+    .discount-pill{
+      display:inline-block;
+      margin:0;
+      padding:2px 6px;
+      border-radius:999px;
+      font-size:9px;
+      font-weight:700;
+      color:#0ea5e9;
+      background:rgba(14,165,233,0.15);
+    }
+    .badge-empty {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:4px 8px;
+      border-radius:10px;
+      background:#0f172a;
+      color:#f8fafc;
+      font-size:10px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+    .total {
+      text-align:right;
+      font-weight:600;
+      margin-top:8px;
+      color:#0ea5e9;
+    }
+
+    .conditions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 18px; font-size:11px; }
+    .conditions strong { display:block; margin-bottom:4px; color:#0f172a; }
+
+    .observacoes {
+      margin-top:20px;
+      background:#0f172a;
+      color:#cbd5f5;
+      padding:16px 18px;
+      border-radius:16px;
+      font-size:11px;
+      page-break-inside:avoid;
+      break-inside:avoid;
+      page-break-after:avoid;
+    }
+    .observacoes ul { margin:0; padding-left:18px; }
+
+    .contact {
+      margin-top:24px;
+      padding:20px 24px;
+      background:#e2e8f0;
+      border-radius:16px;
+      box-shadow:0 16px 32px rgba(15,23,42,0.12);
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      page-break-inside:avoid;
+      break-inside:avoid;
+      page-break-after:avoid;
+    }
+    .contact-header {
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:16px;
+    }
+    .contact-main {
+      flex:1 1 240px;
+      min-width:220px;
+    }
+    .contact h3 { margin:0 0 6px; text-transform:uppercase; letter-spacing:.06em; color:#0f172a; }
+    .contact p { margin:4px 0; }
+    .contact-meta {
+      border-top:1px dashed rgba(15,23,42,0.25);
+      padding-top:12px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      font-size:10px;
+      color:#475569;
+      page-break-inside:avoid;
+      break-inside:avoid;
+      page-break-before:avoid;
+    }
+    .contact-meta .meta-note {
+      font-weight:600;
+      color:#0f172a;
+      letter-spacing:.03em;
+    }
+    .contact-meta .meta-lines {
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px 16px;
+      font-weight:600;
+    }
+    .contact-meta .meta-lines span { color:#1e293b; }
+    .contact-meta .meta-lines span:last-child { color:#0b3b8c; }
+    .contact-meta .social-links{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-top:6px;
+    }
+    .contact-meta .social-links a{
+      display:inline-flex;
+      width:16px;
+      height:16px;
+    }
+    .contact-meta .social-links img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      display:block;
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg">
+    <div class="page">
+      {% set client_fields = [
+        ("Empresa", company if client_document_label != "CPF" else None, None),
+        ("Contato", client_name if (client_document_label == "CPF" or client_name != company) else None, None),
+        (client_document_label, client_document_value, None),
+        ("E-mail", email, None),
+        ("Telefone", client_phone_display if client_phone_display != "-" else None, None),
+        ("OS", os_code, None),
+        ("Unidade", unidade, None),
+        ("Departamento", departamento, None),
+        ("Técnico", tecnico, None)
+      ] %}
+      {% set issuer_fields = [
+        ("Empresa", issuer_company, None),
+        ("Responsável", issuer_contact_name, None),
+        ("Telefone", issuer_phone, None),
+        ("Website", issuer_site, None)
+      ] %}
+
+      <section class="hero">
+        <div class="hero-info">
+          {% if orcamento_code %}<span class="proposal-code">Orçamento {{ orcamento_code }}</span>{% endif %}
+          <div class="hero-header">
+            <span class="badge">Sollus - Assistência Técnica</span>
+            <h1>{{ orcamento_label or 'Orçamento Técnico' }}</h1>
+          </div>
+          <div class="hero-cards">
+            <div class="hero-card hero-client">
+              <h3>Cliente</h3>
+              <ul class="hero-list">
+                {% for label, value, action in client_fields %}
+                  {% if value %}
+                  <li>
+                    <span class="label">{{ label }}</span>
+                    <span class="value">
+                      <span class="value-text">{{ value }}</span>
+                      {% if action and whatsapp_icon %}
+                      <a class="whatsapp-link" href="{{ action }}" target="_blank" rel="noopener">
+                        <img src="{{ whatsapp_icon }}" alt="WhatsApp">
+                      </a>
+                      {% endif %}
+                    </span>
+                  </li>
+                  {% endif %}
+                {% endfor %}
+              </ul>
+            </div>
+            <div class="hero-card hero-issuer">
+              <h3>Sollus</h3>
+              <ul class="hero-list">
+                {% for label, value, action in issuer_fields %}
+                  {% if value %}
+                  <li>
+                    <span class="label">{{ label }}</span>
+                    <span class="value">
+                      <span class="value-text">{{ value }}</span>
+                      {% if action and whatsapp_icon %}
+                      <a class="whatsapp-link" href="{{ action }}" target="_blank" rel="noopener">
+                        <img src="{{ whatsapp_icon }}" alt="WhatsApp">
+                      </a>
+                      {% endif %}
+                    </span>
+                  </li>
+                  {% endif %}
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="hero-brand">
+          <div class="hero-brand-logo">
+            {% if logo_image_dark %}
+              <img src="{{ logo_image_dark }}" alt="Logo">
+            {% elif logo_image %}
+              <img src="{{ logo_image }}" alt="Logo">
+            {% else %}
+              <strong>{{ issuer_company }}</strong>
+            {% endif %}
+          </div>
+          {% if youtube_icon or linkedin_icon or facebook_icon or instagram_icon %}
+          <div class="hero-brand-social">
+            {% if youtube_icon %}
+            <a href="https://www.youtube.com/channel/UC3XwpoYt8-USzRX6eUWXNFA" target="_blank" rel="noopener">
+              <img src="{{ youtube_icon }}" alt="YouTube">
+            </a>
+            {% endif %}
+            {% if linkedin_icon %}
+            <a href="https://br.linkedin.com/company/sollus-tecnologia-pontoeacesso" target="_blank" rel="noopener">
+              <img src="{{ linkedin_icon }}" alt="LinkedIn">
+            </a>
+            {% endif %}
+            {% if facebook_icon %}
+            <a href="https://www.facebook.com/sollustecnologiaoficial" target="_blank" rel="noopener">
+              <img src="{{ facebook_icon }}" alt="Facebook">
+            </a>
+            {% endif %}
+            {% if instagram_icon %}
+            <a href="https://www.instagram.com/sollustecnologia" target="_blank" rel="noopener">
+              <img src="{{ instagram_icon }}" alt="Instagram">
+            </a>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="matrix">
+        <div class="matrix-card">
+          <small>Investimento total</small>
+          <strong>{{ investimento_total }}</strong>
+        </div>
+        <div class="matrix-card">
+          <small>Itens contemplados</small>
+          <strong>{{ total_itens }}</strong>
+        </div>
+        <div class="matrix-card">
+          <small>Data de emissão</small>
+          <strong>{{ data_criacao or '-' }}</strong>
+        </div>
+      </section>
+
+      <h2>Itens do orçamento</h2>
+      <table class="items">
+        <thead>
+          <tr>
+            <th class="description">Descrição</th>
+            <th class="image">Imagem</th>
+            <th class="quantity">Qtd.</th>
+            <th class="price">Valor unitário</th>
+            <th class="price">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td class="description">{{ item.description | replace('\n', '<br>') | safe }}</td>
+            <td class="image">
+              {% if item.image %}
+                <img src="{{ item.image }}" alt="{{ item.description }}">
+              {% else %}
+                <span class="badge-empty">Sem imagem</span>
+              {% endif %}
+            </td>
+            <td class="quantity">{{ item.quantity }}</td>
+            <td class="price">
+              <div class="price-stack">
+                <span class="price-value">{{ item.unit_price }}</span>
+                {% if item.discount_percent %}
+                <span class="discount-pill">Desc. {{ ('%.2f' % item.discount_percent).rstrip('0').rstrip('.') }}%</span>
+                {% endif %}
+              </div>
+            </td>
+            <td class="price">{{ item.total_price }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="total">Total do orçamento: {{ total_label }}</div>
+
+      <h2>Por que a Sollus Tecnologia</h2>
+      <div class="panel">
+        <p>Acreditamos que ao fornecer soluções completas, personalizadas, de acordo com a necessidade de cada cliente, e, através de produtos e serviços de qualidade, facilitamos e otimizamos o processo de controle ponto e acesso da sua empresa.</p>
+      </div>
+
+      <h2>Como resolvemos seu problema</h2>
+      <div class="panel">
+        <p>Sendo a resposta rápida e especializada para suas necessidades. Vamos além da simples venda dos produtos, focamos no que é mais importante para solução ser efetiva, o serviço de qualidade.</p>
+        <p>Nossa experiência de mais de 25 anos no segmento permite que sejamos mais assertivos ao entregar soluções únicas, bem como assessorar, tanto na implantação como estratégias para que sejam mais eficientes, permanentes e essenciais.</p>
+      </div>
+
+      <h2>Você sabia?</h2>
+      <div class="observacoes">
+        <p>Suporte técnico e manutenção para equipamentos e softwares com atendimento totalmente humanizado. Além disso, disponibilizamos uma linha completa de soluções inovadoras para a gestão de ponto e controle de acesso, garantindo tecnologia de ponta e eficiência para sua empresa.</p>
+        <p>Conheça algumas de nossas opções:</p>
+        <ul>
+          <li>Leitores faciais</li>
+          <li>Catracas modernas</li>
+          <li>Suportes para leitores faciais</li>
+          <li>Relógios de ponto com leitores faciais</li>
+          <li>Sistemas de ponto e acesso em nuvem</li>
+          <li>Marcação do ponto mobile via aplicativo</li>
+          <li>Crachás e Cordões</li>
+          <li>Acessórios para controle de acesso</li>
+        </ul>
+      </div>
+
+      <h2>Condições comerciais</h2>
+      <div class="conditions">
+        {% for label, value in condicoes %}
+          {% if value %}
+          <div>
+            <strong>{{ label }}</strong>
+            <span>{{ value }}</span>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      {% if observacao %}
+      <h2>Observação</h2>
+      <div class="observacoes">
+        {{ observacao }}
+      </div>
+      {% endif %}
+
+      {% if aceite %}
+      <h2>Aceite</h2>
+      <div class="observacoes">
+        <ul>
+          {% for item in aceite %}
+          <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <section class="contact">
+        <div class="contact-header">
+          <div class="contact-main">
+            <h3>Contato Sollus</h3>
+            <p>Responsável: <strong>{{ nome_colaborador or 'Equipe Sollus Tecnologia' }}</strong></p>
+            {% if email_colaborador %}<p>{{ email_colaborador }}</p>{% endif %}
+            {% if consultor_phone_list %}
+            <p class="contact-phone">
+              {% for phone in consultor_phone_list %}
+              <span>{{ phone }}</span>
+              {% endfor %}
+              {% if consultor_whatsapp_url and whatsapp_icon %}
+              <a class="whatsapp-link" href="{{ consultor_whatsapp_url }}" target="_blank" rel="noopener">
+                <img src="{{ whatsapp_icon }}" alt="WhatsApp">
+              </a>
+              {% endif %}
+            </p>
+            {% endif %}
+            <p>Estamos à disposição para ajustes e alinhamentos.</p>
+          </div>
+        </div>
+        <div class="contact-meta">
+          <span class="meta-note">Documento gerado pela plataforma Sollus Tecnologia - Conecte pessoas, dados e segurança.</span>
+          {% set footer_lines = issuer_footer_lines if issuer_footer_lines else [] %}
+          {% if not footer_lines %}
+            {% set footer_lines = [] %}
+            {% if issuer_address %}{% set footer_lines = footer_lines + [issuer_address] %}{% endif %}
+            {% if issuer_phone_display %}{% set footer_lines = footer_lines + [issuer_phone_display] %}{% endif %}
+            {% if issuer_site %}{% set footer_lines = footer_lines + [issuer_site] %}{% endif %}
+          {% endif %}
+          {% if footer_lines %}
+          <div class="meta-lines">
+            {% for line in footer_lines %}
+            {% if issuer_site and line == issuer_site %}
+            <span><a href="{{ issuer_site }}" target="_blank" rel="noopener">{{ line }}</a></span>
+            {% else %}
+            <span>{{ line }}</span>
+            {% endif %}
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if linkedin_icon or facebook_icon or instagram_icon or youtube_icon %}
+          <div class="social-links">
+            {% if youtube_icon %}
+            <a href="https://www.youtube.com/channel/UC3XwpoYt8-USzRX6eUWXNFA" target="_blank" rel="noopener">
+              <img src="{{ youtube_icon }}" alt="YouTube">
+            </a>
+            {% endif %}
+            {% if linkedin_icon %}
+            <a href="https://br.linkedin.com/company/sollus-tecnologia-pontoeacesso" target="_blank" rel="noopener">
+              <img src="{{ linkedin_icon }}" alt="LinkedIn">
+            </a>
+            {% endif %}
+            {% if facebook_icon %}
+            <a href="https://www.facebook.com/sollustecnologiaoficial" target="_blank" rel="noopener">
+              <img src="{{ facebook_icon }}" alt="Facebook">
+            </a>
+            {% endif %}
+            {% if instagram_icon %}
+            <a href="https://www.instagram.com/sollustecnologia" target="_blank" rel="noopener">
+              <img src="{{ instagram_icon }}" alt="Instagram">
+            </a>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </section>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,54 @@
+{% extends 'layout.html' %}
+{% block content %}
+  <h2>Relatórios & SLA</h2>
+  <div class="grid">
+    <div class="card"><h3>Total de chamados</h3><p style="font-size:28px;margin:0;">{{ total }}</p></div>
+    <div class="card"><h3>Média de resolução (h)</h3><p style="font-size:28px;margin:0;">{{ avg_res if avg_res is not none else '' }}</p></div>
+    <div class="card"><h3>SLAs estourados (abertos/em andamento)</h3><p style="font-size:28px;margin:0;">{{ breaches }}</p></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Por status</h3>
+      <div class="canvas-wrap"><canvas id="chartStatus"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Por prioridade</h3>
+      <div class="canvas-wrap"><canvas id="chartPriority"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Alvos de SLA (horas)</h3>
+      <ul>
+        {% for k,v in sla.items() %}<li>{{ k }}: <strong>{{ v }}</strong>h</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    const byStatus = {{ by_status | tojson }};
+    const byPriority = {{ by_priority | tojson }};
+    const themeIsLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const textColor = themeIsLight ? '#0b1226' : '#f3f4f6';
+    const gridColor = themeIsLight ? '#e5e7eb' : '#1f2937';
+
+    new Chart(document.getElementById('chartStatus').getContext('2d'), {
+      type: 'bar',
+      data: { labels: Object.keys(byStatus), datasets: [{ label: 'Chamados', data: Object.values(byStatus) }] },
+      options: {
+        responsive: true,
+        scales: {
+          x: { grid: { color: gridColor }, ticks: { color: textColor } },
+          y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } }
+        },
+        plugins: { legend: { labels: { color: textColor } } }
+      }
+    });
+
+    new Chart(document.getElementById('chartPriority').getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: Object.keys(byPriority), datasets: [{ label: 'Chamados', data: Object.values(byPriority) }] },
+      options: { responsive: true, plugins: { legend: { labels: { color: textColor } } } }
+    });
+  </script>
+{% endblock %}

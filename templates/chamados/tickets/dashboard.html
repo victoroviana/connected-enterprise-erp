@@ -1,0 +1,464 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Dashboard  Sollus{% endblock %}
+
+{% block head %}
+<style>
+/* ==== Estilo local do Dashboard ==== */
+.dashboard-wrap { gap: 1rem; }
+.kpi-card{
+  background: linear-gradient(180deg, rgba(15,123,200,.10), rgba(15,123,200,.05));
+  border:1px solid rgba(16,24,40,.08);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  display:flex; align-items:center; justify-content:space-between;
+  min-height: 92px;
+}
+.kpi-title{ font-weight:700; color:var(--muted); text-transform:uppercase; font-size:.85rem; letter-spacing:.02em }
+.kpi-value{ font-weight:800; font-size:2.25rem; line-height:1; }
+.kpi-badge{ font-size:.86rem; padding:.25rem .5rem; border-radius:.5rem; border:1px solid rgba(16,24,40,.12) }
+
+.status-board{
+  display:grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+}
+.status-col{
+  background: var(--card); border:1px solid rgba(16,24,40,.08); border-radius:14px;
+  display:flex; flex-direction:column; min-height: 420px;
+}
+.status-col h6{
+  margin:0; padding:.75rem 1rem; border-bottom:1px solid rgba(16,24,40,.08);
+  font-weight:800; text-transform:uppercase; letter-spacing:.02em; color:var(--muted);
+}
+.status-list{ padding:.75rem; overflow:auto; }
+.ticket-card{
+  border:1px solid rgba(16,24,40,.10); border-left-width:6px; border-radius:12px;
+  padding:.5rem .75rem; background: var(--bg);
+  display:flex; flex-direction:column; gap:.1rem;
+}
+.ticket-card + .ticket-card{ margin-top:.5rem; }
+.ticket-title{ font-weight:700; }
+.ticket-meta{ font-size:.9rem; color: var(--muted) }
+.chip{
+  display:inline-flex; align-items:center; gap:.35rem; padding:.2rem .5rem; font-size:.78rem;
+  border-radius:.5rem; border:1px solid rgba(16,24,40,.16); background: var(--card);
+}
+
+/* Cores da borda por prioridade */
+.border-low{ border-left-color:#94a3b8 }     /* cinza-azulado */
+.border-medium{ border-left-color:#0F7BC8 }  /* azul */
+.border-high{ border-left-color:#e11d48 }    /* vermelho */
+.border-urgent{ border-left-color:#f1f5f9 }  /* branco/claro no dark mode ou muito escuro no light */
+:root:not([data-theme="dark"]) .border-urgent { border-left-color:#020617 } 
+
+/* Toolbar flutuante (auto refresh / TV) */
+.tv-toolbar{
+  position: fixed; right: 16px; bottom: 16px; z-index: 1040;
+  background: var(--card); color: var(--text);
+  border:1px solid rgba(16,24,40,.12); border-radius: 12px; box-shadow:0 8px 24px rgba(2,20,38,.12);
+  padding: .5rem .6rem; display:flex; align-items:center; gap:.5rem;
+}
+.tv-toolbar .form-check{ margin-bottom:0; }
+
+/* Boto flutuante: Sair do modo TV (visvel s no modo TV) */
+.tv-exit{ display:none; }
+html[data-tv="1"] .tv-exit{
+  --tv-exit-size: 44px;
+  display:inline-flex !important;
+  position:fixed;
+  top: calc(var(--nav-h, 60px) + 12px);
+  right: 16px;
+  z-index: 1100;
+  align-items:center;
+  justify-content:center;
+  width:var(--tv-exit-size);
+  height:var(--tv-exit-size);
+  padding:0;
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.2);
+  overflow:hidden;
+  transition: width .2s ease, padding .2s ease, box-shadow .2s ease, border-radius .2s ease;
+}
+html[data-tv="1"] .tv-exit i{ flex-shrink:0; }
+html[data-tv="1"] .tv-exit .tv-exit-label{
+  opacity:0;
+  max-width:0;
+  overflow:hidden;
+  white-space:nowrap;
+  margin-left:0;
+  transition: opacity .15s ease, max-width .2s ease, margin-left .2s ease;
+}
+html[data-tv="1"] .tv-exit:hover,
+html[data-tv="1"] .tv-exit:focus-visible{
+  width:auto;
+  padding:.45rem .85rem;
+  border-radius:999px;
+  box-shadow:0 8px 20px rgba(0,0,0,.25);
+}
+html[data-tv="1"] .tv-exit:hover .tv-exit-label,
+html[data-tv="1"] .tv-exit:focus-visible .tv-exit-label{
+  opacity:1;
+  max-width:160px;
+  margin-left:.4rem;
+}
+
+/* Modo TV  esconde chrome e aumenta tipografia */
+html[data-tv="1"] .navbar-sollus,
+html[data-tv="1"] .sidebar,
+html[data-tv="1"] .site-footer{ display:none !important; }
+html[data-tv="1"] main.content{ margin-left:0 !important; padding-top:1rem !important; }
+html[data-tv="1"] body{ font-size: 18px; }
+html[data-tv="1"] .kpi-value{ font-size: 2.8rem; }
+html[data-tv="1"] .tv-toolbar{ display:none; } /* oculta controles no telo */
+
+/* Melhor altura em telo */
+@media (min-height: 700px){
+  .status-col{ min-height: calc(100vh - 340px); }
+}
+
+@media (max-width: 1199px){
+  .status-board{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 768px){
+  .dashboard-wrap .row > [class^="col-"]{ margin-bottom: .75rem; }
+  .kpi-card{
+    min-height:auto;
+    flex-direction:row;
+    gap:.75rem;
+  }
+  .kpi-value{ font-size:1.9rem; }
+  .status-board{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap:.75rem; }
+  .status-col{ min-height:320px; }
+}
+
+@media (max-width: 600px){
+  .kpi-card{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:.35rem;
+    padding:.85rem 1rem;
+  }
+  .kpi-value{ font-size:1.75rem; }
+  .kpi-badge{ align-self:flex-start; }
+  .status-board{ grid-template-columns: 1fr; }
+  .status-col{
+    min-height:auto;
+  }
+  .status-col h6{ padding:.65rem .85rem; }
+  .status-list{ max-height:60vh; }
+  .ticket-card{ padding:.6rem .7rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{# Listas por status #}
+{% set abertos = tickets|selectattr('status','equalto','open')|list %}
+{% set andamento = tickets|selectattr('status','equalto','in_progress')|list %}
+{% set finalizados = tickets|selectattr('status','equalto','closed')|list %}
+
+{# Contagem "Sem atendente"  s conta se NENHUM dos dois tiver valor #}
+{% set ns = namespace(sem=0) %}
+{% for t in tickets %}
+  {% set assigned = ((t.assignee_id is defined and t.assignee_id) or (t.agent_id is defined and t.agent_id)) %}
+  {% if not assigned %}{% set ns.sem = ns.sem + 1 %}{% endif %}
+{% endfor %}
+
+{% set hero_stats = [
+  {'label': 'Abertos', 'value': abertos|length},
+  {'label': 'Em andamento', 'value': andamento|length},
+  {'label': 'Finalizados', 'value': finalizados|length},
+  {'label': 'Sem atendente', 'value': ns.sem}
+] %}
+{% set hero_tips = [
+  'Leia os KPIs iniciais para ver volume por status e pendências sem atendente; defina prioridades a partir deles.',
+  'Nos quadros por status, clique no cartão para abrir detalhes, reatribuir responsável, ajustar prioridade ou comentar.',
+  'Use o painel de Ações para Relatórios/Finalizados e ligue Autoatualizar ou Modo TV na barra flutuante para monitorar em tempo real.'
+] %}
+{{ page_hero(
+  title='Painel de chamados TI',
+  subtitle='Acompanhe o volume por status, abra detalhes com um clique e mantenha o time de atendimento alinhado.',
+  eyebrow='Chamados TI',
+  stats=hero_stats,
+  help_tips=hero_tips,
+  help_intro='Dicas rápidas para navegar no painel.'
+) }}
+
+{# Contagem por prioridade (exibio textual) #}
+{% set pri = namespace(baixa=0, media=0, alta=0, urgente=0) %}
+{% for t in tickets %}
+  {% set p = (t.priority or '')|lower %}
+  {% if p == 'low' %}{% set pri.baixa = pri.baixa + 1 %}
+  {% elif p == 'medium' %}{% set pri.media = pri.media + 1 %}
+  {% elif p == 'high' %}{% set pri.alta = pri.alta + 1 %}
+  {% elif p == 'urgent' %}{% set pri.urgente = pri.urgente + 1 %}
+  {% endif %}
+{% endfor %}
+
+<!-- Boto flutuante: Sair do modo TV -->
+<button id="tvExit" type="button" class="btn btn-warning btn-sm tv-exit d-none">
+  <i class="bi bi-x-circle"></i>
+  <span class="tv-exit-label">Sair do modo TV</span>
+</button>
+
+<div class="dashboard-wrap d-flex flex-column">
+
+  <!-- KPIs -->
+  <div class="row g-3">
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title">Abertos</div>
+          <div class="kpi-value">{{ abertos|length }}</div>
+        </div>
+        <span class="kpi-badge">ativos</span>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title">Em andamento</div>
+          <div class="kpi-value">{{ andamento|length }}</div>
+        </div>
+        <span class="kpi-badge">sendo tratados</span>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title">Finalizados</div>
+          <div class="kpi-value">{{ finalizados|length }}</div>
+        </div>
+        <span class="kpi-badge">total</span>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title">Sem atendente</div>
+          <div class="kpi-value">{{ ns.sem }}</div>
+        </div>
+        <span class="kpi-badge">a atribuir</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quadro por Status -->
+  <div class="status-board mt-3">
+    <!-- Abertos -->
+    <div class="status-col">
+      <h6><i class="bi bi-inbox me-1"></i> Abertos</h6>
+      <div class="status-list">
+        {% if abertos|length == 0 %}
+          <div class="text-muted">Nenhum chamado aberto.</div>
+        {% else %}
+          {% for t in abertos %}
+          {% set p = (t.priority or '')|lower %}
+          {% set border = 'border-medium' %}
+          {% if p == 'low' %}{% set border = 'border-low' %}
+          {% elif p == 'medium' %}{% set border = 'border-medium' %}
+          {% elif p == 'high' %}{% set border = 'border-high' %}
+          {% elif p == 'urgent' %}{% set border = 'border-urgent' %}{% endif %}
+          <a class="ticket-card {{ border }} text-decoration-none" href="{{ url_for('tickets.ticket_detail', ticket_id=t.id) }}">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="ticket-title text-truncate">#{{ t.id }}  {{ t.title }}</div>
+              <span class="chip">{{ 'Baixa' if p=='low' else ('Média' if p=='medium' else ('Alta' if p=='high' else ('Urgente' if p=='urgent' else ''))) }}</span>
+            </div>
+            <div class="ticket-meta">
+              Criado: {{ t.created_at | local('%d/%m/%Y %H:%M') if t.created_at else '-' }}
+              {% if t.assignee is defined and t.assignee %}  Atendente: {{ t.assignee.name or t.assignee.email }}{% endif %}
+            </div>
+          </a>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Em andamento -->
+    <div class="status-col">
+      <h6><i class="bi bi-gear-wide-connected me-1"></i> Em andamento</h6>
+      <div class="status-list">
+        {% if andamento|length == 0 %}
+          <div class="text-muted">Nenhum chamado em andamento.</div>
+        {% else %}
+          {% for t in andamento %}
+          {% set p = (t.priority or '')|lower %}
+          {% set border = 'border-medium' %}
+          {% if p == 'low' %}{% set border = 'border-low' %}
+          {% elif p == 'medium' %}{% set border = 'border-medium' %}
+          {% elif p == 'high' %}{% set border = 'border-high' %}
+          {% elif p == 'urgent' %}{% set border = 'border-urgent' %}{% endif %}
+          <a class="ticket-card {{ border }} text-decoration-none" href="{{ url_for('tickets.ticket_detail', ticket_id=t.id) }}">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="ticket-title text-truncate">#{{ t.id }}  {{ t.title }}</div>
+              <span class="chip">{{ 'Baixa' if p=='low' else ('Média' if p=='medium' else ('Alta' if p=='high' else ('Urgente' if p=='urgent' else ''))) }}</span>
+            </div>
+            <div class="ticket-meta">
+              Atualizado: {{ t.updated_at | local('%d/%m/%Y %H:%M') if t.updated_at else (t.created_at | local('%d/%m/%Y %H:%M') if t.created_at else '-') }}
+              {% if t.assignee is defined and t.assignee %}  Atendente: {{ t.assignee.name or t.assignee.email }}{% endif %}
+            </div>
+          </a>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Finalizados -->
+    <div class="status-col">
+      <h6><i class="bi bi-check2-circle me-1"></i> Finalizados</h6>
+      <div class="status-list">
+        {% if finalizados|length == 0 %}
+          <div class="text-muted">Nenhum chamado finalizado.</div>
+        {% else %}
+          {% for t in finalizados %}
+          {% set p = (t.priority or '')|lower %}
+          {% set border = 'border-low' %}
+          <a class="ticket-card {{ border }} text-decoration-none" href="{{ url_for('tickets.ticket_detail', ticket_id=t.id) }}">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="ticket-title text-truncate">#{{ t.id }}  {{ t.title }}</div>
+              <span class="chip">{{ 'Baixa' if p=='low' else ('Média' if p=='medium' else ('Alta' if p=='high' else ('Urgente' if p=='urgent' else ''))) }}</span>
+            </div>
+            <div class="ticket-meta">
+              Concludo: {{ t.updated_at | local('%d/%m/%Y %H:%M') if t.updated_at else (t.created_at | local('%d/%m/%Y %H:%M') if t.created_at else '-') }}
+              {% if t.assignee is defined and t.assignee %}  Atendente: {{ t.assignee.name or t.assignee.email }}{% endif %}
+            </div>
+          </a>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Grfico por Prioridade -->
+  <div class="row g-3 mt-1">
+    <div class="col-12 col-xl-6">
+      <div class="card h-100">
+        <div class="card-header"><strong>Chamados por Prioridade</strong></div>
+        <div class="card-body">
+          <canvas id="chartPrior" height="140"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-xl-6">
+      <div class="card h-100">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <strong>Ações</strong>
+          <div class="d-flex gap-2">
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('tickets.reports_overview') }}"><i class="bi bi-graph-up"></i> Relatórios</a>
+            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('tickets.closed_list') }}"><i class="bi bi-archive"></i> Finalizados</a>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="text-muted">Use os botões acima para ver Relatórios e chamados finalizados.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toolbar flutuante -->
+<div class="tv-toolbar">
+  <div class="form-check form-switch">
+    <input class="form-check-input" type="checkbox" id="autoRefreshSwitch">
+    <label class="form-check-label" for="autoRefreshSwitch">Autoatualizar</label>
+  </div>
+  <button class="btn btn-sm btn-primary" id="tvToggle"><i class="bi bi-tv"></i> Modo TV</button>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function(){
+  // ===== Modo TV =====
+  const root = document.documentElement;
+  const TV_KEY = 'sollus:tvMode';
+  const tvExit = document.getElementById('tvExit');
+
+  function refreshTvExit(){
+    if(!tvExit) return;
+    const on = root.hasAttribute('data-tv');
+    tvExit.classList.toggle('d-none', !on);
+  }
+
+  function setTV(on){
+    if(on){ root.setAttribute('data-tv','1'); }
+    else { root.removeAttribute('data-tv'); }
+    localStorage.setItem(TV_KEY, on ? '1' : '0');
+    refreshTvExit();
+  }
+
+  const urlParams = new URLSearchParams(location.search);
+  const tvQuery = urlParams.get('tv');
+  if(tvQuery === '1'){ setTV(true); }
+  else { setTV(localStorage.getItem(TV_KEY) === '1'); }
+
+  document.getElementById('tvToggle')?.addEventListener('click', ()=>{
+    setTV(!root.hasAttribute('data-tv'));
+  });
+
+  tvExit?.addEventListener('click', ()=> setTV(false));
+  refreshTvExit();
+
+  // ===== Auto Refresh =====
+  const REFRESH_SEC = 60;
+  const AR_KEY = 'sollus:autoRefreshDashboard';
+  const arSwitch = document.getElementById('autoRefreshSwitch');
+  let timer = null;
+  function applyAutoRefresh(on){
+    if(timer){ clearInterval(timer); timer = null; }
+    if(on){ timer = setInterval(()=>location.reload(), REFRESH_SEC*1000); }
+    localStorage.setItem(AR_KEY, on ? '1' : '0');
+  }
+  const savedAR = localStorage.getItem(AR_KEY) === '1';
+  if(arSwitch){
+    arSwitch.checked = savedAR;
+    applyAutoRefresh(savedAR);
+    arSwitch.addEventListener('change', ()=> applyAutoRefresh(arSwitch.checked));
+  }
+})();
+</script>
+
+{# Dados para o grfico (reconta aqui dentro para evitar escopo) #}
+{% set ns = namespace(baixa=0, media=0, alta=0, urgente=0) %}
+{% for t in tickets %}
+  {% set p = (t.priority or '')|lower %}
+  {% if   p == 'low'    %}{% set ns.baixa   = ns.baixa   + 1 %}
+  {% elif p == 'medium' %}{% set ns.media   = ns.media   + 1 %}
+  {% elif p == 'high'   %}{% set ns.alta    = ns.alta    + 1 %}
+  {% elif p == 'urgent' %}{% set ns.urgente = ns.urgente + 1 %}
+  {% endif %}
+{% endfor %}
+
+<script>
+(function(){
+  // ===== Chart: Prioridades =====
+  const priorData = {
+    labels: ['Baixa','Média','Alta','Urgente'],
+    datasets: [{
+      data: [{{ ns.baixa }}, {{ ns.media }}, {{ ns.alta }}, {{ ns.urgente }}]
+    }]
+  };
+  const style = getComputedStyle(document.documentElement);
+  const chartTextColor = style.getPropertyValue('--chart-text').trim();
+  const chartGridColor = style.getPropertyValue('--chart-grid').trim();
+
+  new Chart(document.getElementById('chartPrior'), {
+    type: 'doughnut',
+    data: priorData,
+    options: {
+      responsive: true,
+      plugins: { 
+        legend: { 
+          position: 'bottom',
+          labels: { color: chartTextColor }
+        }
+      },
+      cutout: '60%'
+    }
+  });
+})();
+</script>
+{% endblock %}

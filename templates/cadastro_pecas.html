@@ -1,0 +1,376 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+
+{% block title %}Cadastro de Peças{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+  .pecas-wrapper { padding-bottom: 3rem; }
+  .pecas-card {
+    border-radius: 1.25rem;
+    border: none;
+    box-shadow: 0 14px 35px rgba(15, 35, 58, 0.08);
+    background: var(--card);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .pecas-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 40px rgba(15, 35, 58, 0.12);
+  }
+  .pecas-card .card-header {
+    background: transparent;
+    border: 0;
+    padding: 1.5rem 1.75rem 0;
+  }
+  .pecas-card .card-body {
+    padding: 1.5rem 1.75rem 1.75rem;
+  }
+  .pecas-form .form-label {
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: .35rem;
+  }
+  .pecas-form .form-control,
+  .pecas-form .form-select {
+    border-radius: .75rem;
+    padding: .65rem .9rem;
+    border-color: rgba(148, 163, 184, 0.25);
+    background-color: var(--card);
+    color: var(--text);
+  }
+  .pecas-form .form-control:focus,
+  .pecas-form .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+    background-color: var(--card);
+    color: var(--text);
+  }
+  .pecas-wrapper .btn {
+    border-radius: .75rem;
+    font-weight: 600;
+  }
+  .table-image {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    background-color: var(--bg);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+  }
+  .placeholder-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 0.5rem;
+    background-color: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 1.5rem;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+  }
+  .pecas-table thead {
+    background: #f1f4fb;
+    text-transform: uppercase;
+    font-size: .75rem;
+    letter-spacing: .08rem;
+    color: #5a6782;
+  }
+  .pecas-table tbody tr {
+    transition: background-color 0.2s ease;
+  }
+  .pecas-table tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.02) !important;
+  }
+  html[data-theme="dark"] .pecas-table thead {
+    background: rgba(148, 163, 184, 0.08);
+    color: #cbd5e1;
+  }
+  html[data-theme="dark"] .pecas-table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.02) !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pecas-wrapper">
+  {% set hero_stats = [
+    {'label': 'Total de Itens', 'value': total_parts},
+    {'label': 'Quantidade Total', 'value': total_quantity}
+  ] %}
+  {% set hero_help_tips = [
+    'Preencha o formulário à esquerda para cadastrar uma nova peça com código/nome, preço, quantidade e ilustração.',
+    'A lista de peças à direita exibe todos os itens cadastrados com paginação e busca rápida por nome.',
+    'Clique no ícone de lápis para editar os detalhes de uma peça ou na lixeira para excluí-la.'
+  ] %}
+  {{ page_hero(
+    title="Estoque de Peças",
+    subtitle="Cadastre, edite e controle as peças e custos de deslocamento utilizados na assistência técnica.",
+    eyebrow="Assistência Técnica",
+    stats=hero_stats,
+    help_tips=hero_help_tips
+  ) }}
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="row g-4">
+    <!-- Novo Cadastro Card -->
+    <div class="col-12 col-xl-4">
+      <div class="card pecas-card mb-4">
+        <div class="card-header">
+          <h5 class="card-title fw-bold mb-0">Cadastrar Nova Peça / Item</h5>
+        </div>
+        <div class="card-body">
+          <form class="pecas-form" method="post" enctype="multipart/form-data" novalidate>
+            {{ form.csrf_token }}
+            
+            <div class="mb-3">
+              <label for="{{ form.name.id }}" class="form-label">{{ form.name.label }}</label>
+              {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="Ex: 27000025 - ALINHADOR") }}
+              {% for error in form.name.errors %}
+                <div class="invalid-feedback">{{ error }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="mb-3">
+              <label for="{{ form.description.id }}" class="form-label">{{ form.description.label }}</label>
+              {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), placeholder="Descrição opcional do item...") }}
+              {% for error in form.description.errors %}
+                <div class="invalid-feedback">{{ error }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                <label for="precoCadastro" class="form-label">{{ form.unit_price.label }}</label>
+                {{ form.unit_price(id="precoCadastro", class="form-control" + (" is-invalid" if form.unit_price.errors else ""), placeholder="0,00") }}
+                {% for error in form.unit_price.errors %}
+                  <div class="invalid-feedback">{{ error }}</div>
+                {% endfor %}
+              </div>
+              <div class="col-6">
+                <label for="{{ form.quantity.id }}" class="form-label">{{ form.quantity.label }}</label>
+                {{ form.quantity(class="form-control" + (" is-invalid" if form.quantity.errors else ""), placeholder="0") }}
+                {% for error in form.quantity.errors %}
+                  <div class="invalid-feedback">{{ error }}</div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label for="pecaIllustration" class="form-label">{{ form.illustration.label }}</label>
+              {{ form.illustration(id="pecaIllustration", class="form-control" + (" is-invalid" if form.illustration.errors else "")) }}
+              <div class="form-text text-muted">Apenas JPG, JPEG ou PNG. Máximo 5MB.</div>
+              {% for error in form.illustration.errors %}
+                <div class="invalid-feedback">{{ error }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="d-grid">
+              {{ form.submit(class="btn btn-primary fw-semibold py-2 shadow-sm") }}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de Itens -->
+    <div class="col-12 col-xl-8">
+      <div class="card pecas-card mb-4">
+        <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+          <h5 class="card-title fw-bold mb-0">Itens Cadastrados</h5>
+          <form class="d-flex align-items-center gap-2" method="get" action="{{ url_for('equipamentos_bp.pecas') }}">
+            <input type="text" name="q" class="form-control form-control-sm" placeholder="Buscar peça..." value="{{ search_query }}">
+            <button type="submit" class="btn btn-primary btn-sm px-3">Buscar</button>
+            {% if search_query %}
+              <a href="{{ url_for('equipamentos_bp.pecas') }}" class="btn btn-outline-secondary btn-sm">Limpar</a>
+            {% endif %}
+          </form>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table align-middle pecas-table">
+              <thead>
+                <tr>
+                  <th scope="col" style="width: 70px;">Imagem</th>
+                  <th scope="col">Nome / Código</th>
+                  <th scope="col" class="d-none d-md-table-cell">Descrição</th>
+                  <th scope="col" class="text-end">Preço</th>
+                  <th scope="col" class="text-center" style="width: 90px;">Quantidade</th>
+                  <th scope="col" class="text-center" style="width: 130px;">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for pc in parts %}
+                  <tr>
+                    <td>
+                      {% if pc.image_src %}
+                        <img src="{{ pc.image_src }}" class="table-image shadow-sm" alt="{{ pc.name }}">
+                      {% else %}
+                        <div class="placeholder-icon shadow-sm"><i class="bi bi-gear"></i></div>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <div class="fw-bold">{{ pc.name }}</div>
+                    </td>
+                    <td class="d-none d-md-table-cell text-muted small">
+                      {{ pc.description or '-' }}
+                    </td>
+                    <td class="text-end fw-semibold text-primary">
+                      {{ pc.price_label }}
+                    </td>
+                    <td class="text-center">
+                      <span class="badge bg-{{ 'success' if pc.quantity > 0 else 'secondary' }} rounded-pill px-3">{{ pc.quantity }}</span>
+                    </td>
+                    <td class="text-center">
+                      <div class="d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn btn-outline-primary btn-sm px-2" onclick="abrirModalEdicao({{ pc.id }})">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm px-2" onclick="confirmarExclusao({{ pc.id }})">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                      <i class="bi bi-box-seam fs-2 mb-3 d-block"></i>
+                      Nenhuma peça cadastrada.
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          {% if pagination and pagination.pages > 1 %}
+            <nav class="d-flex justify-content-between align-items-center mt-4">
+              <span class="small text-muted">Mostrando página {{ pagination.page }} de {{ pagination.pages }}</span>
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+                  <a class="page-link" href="{{ url_for('equipamentos_bp.pecas', page=pagination.prev_num, q=search_query) }}">Anterior</a>
+                </li>
+                {% for p in pagination.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+                  {% if p %}
+                    <li class="page-item {{ 'active' if p == pagination.page }}">
+                      <a class="page-link" href="{{ url_for('equipamentos_bp.pecas', page=p, q=search_query) }}">{{ p }}</a>
+                    </li>
+                  {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                  {% endif %}
+                {% endfor %}
+                <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+                  <a class="page-link" href="{{ url_for('equipamentos_bp.pecas', page=pagination.next_num, q=search_query) }}">Próximo</a>
+                </li>
+              </ul>
+            </nav>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Edição -->
+<div class="modal sollus-modal fade" id="modalEdicaoPeca" tabindex="-1" aria-labelledby="modalEdicaoPecaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 py-3">
+        <h5 class="modal-title fw-bold" id="modalEdicaoPecaLabel">Editar Peça / Item</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body py-4">
+        <form id="formEdicaoPeca" class="pecas-form" novalidate>
+          <input type="hidden" id="pecaId">
+          <div class="mb-3">
+            <label for="pecaNome" class="form-label">Nome / Código</label>
+            <input type="text" class="form-control" id="pecaNome" required>
+          </div>
+          <div class="mb-3">
+            <label for="pecaDescricao" class="form-label">Descrição</label>
+            <textarea class="form-control" id="pecaDescricao" rows="3"></textarea>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label for="pecaPreco" class="form-label">Preço unitário</label>
+              <input type="text" class="form-control" id="pecaPreco" required>
+            </div>
+            <div class="col-6">
+              <label for="pecaQuantidade" class="form-label">Quantidade</label>
+              <input type="number" class="form-control" id="pecaQuantidade" required>
+            </div>
+          </div>
+          <div class="mb-0">
+            <label for="pecaImagem" class="form-label">Atualizar Imagem</label>
+            <input type="file" class="form-control" id="pecaImagem">
+            <div class="form-text text-muted">Apenas JPG, JPEG ou PNG. Máximo 5MB.</div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer border-0 py-3">
+        <button type="button" class="btn btn-outline-secondary btn-sm px-4" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm px-4" onclick="salvarEdicaoPeca()">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirma Exclusão -->
+<div class="modal sollus-modal fade" id="modalConfirmarExclusao" tabindex="-1" aria-labelledby="modalConfirmarExclusaoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 py-3">
+        <h5 class="modal-title fw-bold" id="modalConfirmarExclusaoLabel">Excluir Peça</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body py-4 text-center">
+        <input type="hidden" id="pecaIdParaExcluir">
+        <i class="bi bi-exclamation-triangle text-danger fs-1 mb-3"></i>
+        <p class="mb-0 fw-semibold">Tem certeza que deseja excluir esta peça?</p>
+        <p class="small text-muted mb-0">Esta ação não poderá ser desfeita.</p>
+      </div>
+      <div class="modal-footer border-0 py-3 d-flex justify-content-center gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger btn-sm px-3" onclick="excluirPeca()">Confirmar Exclusão</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Formato Imagem Inválido -->
+<div class="modal sollus-modal fade" id="modalFormatoImagem" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow-lg text-center">
+      <div class="modal-body py-4">
+        <i class="bi bi-x-circle text-danger fs-1 mb-3"></i>
+        <h5 class="fw-bold mb-2">Imagem Inválida</h5>
+        <p class="small text-muted mb-0">Selecione uma imagem no formato PNG, JPG ou JPEG com menos de 5MB.</p>
+      </div>
+      <div class="modal-footer border-0 py-2 justify-content-center">
+        <button type="button" class="btn btn-primary btn-sm px-4" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/cadastro_pecas.js') }}"></script>
+{% endblock %}

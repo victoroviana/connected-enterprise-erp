@@ -1,0 +1,739 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Crachá | Pedidos{% endblock %}
+
+{% block head %}
+<style>
+  .pedidos-card {
+    border: 0;
+    border-radius: 1.1rem;
+    box-shadow: 0 10px 24px rgba(15,35,58,.08);
+  }
+  .pedidos-card .card-header {
+    background: transparent;
+    border: 0;
+    padding: 1.25rem 1.5rem 0;
+  }
+  .pedidos-card .card-body {
+    padding: 1.25rem 1.5rem 1.5rem;
+  }
+  .pedidos-table th, .pedidos-table td {
+    vertical-align: middle;
+  }
+  .pedidos-table thead {
+    background: #f3f6fb;
+    text-transform: uppercase;
+    font-size: .7rem;
+    letter-spacing: .08rem;
+    color: #5a6782;
+  }
+  .pedidos-table tbody tr:hover {
+    background: rgba(148,163,184,.08);
+  }
+  /* Interactive Stepper */
+  .stepper-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8fafc;
+    padding: 6px 12px;
+    border-radius: 30px;
+    border: 1px solid #e2e8f0;
+  }
+  .stepper-progress-bar {
+    display: flex;
+    align-items: center;
+    user-select: none;
+  }
+  .stepper-step-node {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #e2e8f0;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    border: 2px solid #cbd5e1;
+  }
+  
+  /* Active states & Completed states by stage value (each stage gets its own vibrant color when reached/completed!) */
+  
+  /* Recebimento (Slate Gray) */
+  .stepper-step-node.completed[data-value="recebimento"],
+  .stepper-step-node.active[data-value="recebimento"] {
+    background-color: #64748b;
+    color: #ffffff;
+    border-color: #475569;
+  }
+  
+  /* Layout e Aprovação (Teal/Turquoise) */
+  .stepper-step-node.completed[data-value="layout_aprovacao"],
+  .stepper-step-node.active[data-value="layout_aprovacao"] {
+    background-color: #06b6d4;
+    color: #ffffff;
+    border-color: #0891b2;
+  }
+  
+  /* Bravasoft (Blue) */
+  .stepper-step-node.completed[data-value="confeccao_bravasoft"],
+  .stepper-step-node.active[data-value="confeccao_bravasoft"] {
+    background-color: #3b82f6;
+    color: #ffffff;
+    border-color: #2563eb;
+  }
+  
+  /* Confecção Manual (Amber Orange) */
+  .stepper-step-node.completed[data-value="confeccao_manual"],
+  .stepper-step-node.active[data-value="confeccao_manual"] {
+    background-color: #f59e0b;
+    color: #ffffff;
+    border-color: #d97706;
+  }
+  
+  /* Finalizado (Emerald Green) */
+  .stepper-step-node.completed[data-value="finalizado"],
+  .stepper-step-node.active[data-value="finalizado"] {
+    background-color: #10b981;
+    color: #ffffff;
+    border-color: #059669;
+  }
+
+  /* Make active node pop out with bigger scale, border highlight and matching glowing shadow */
+  .stepper-step-node.active {
+    transform: scale(1.25);
+    z-index: 2;
+    border: 2px dashed #ffffff !important;
+  }
+  .stepper-step-node.active[data-value="recebimento"] {
+    box-shadow: 0 0 14px rgba(100, 116, 139, 0.7);
+  }
+  .stepper-step-node.active[data-value="layout_aprovacao"] {
+    box-shadow: 0 0 14px rgba(6, 182, 212, 0.7);
+  }
+  .stepper-step-node.active[data-value="confeccao_bravasoft"] {
+    box-shadow: 0 0 14px rgba(59, 130, 246, 0.7);
+  }
+  .stepper-step-node.active[data-value="confeccao_manual"] {
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.7);
+  }
+  .stepper-step-node.active[data-value="finalizado"] {
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.7);
+  }
+
+  /* Interactive behavior */
+  .stepper-progress-bar.can-modify .stepper-step-node {
+    cursor: pointer;
+  }
+  .stepper-progress-bar.can-modify .stepper-step-node:hover {
+    transform: scale(1.2);
+  }
+
+  .stepper-progress-line {
+    width: 25px;
+    height: 3px;
+    background-color: #cbd5e1;
+    transition: all 0.3s ease;
+  }
+  .stepper-progress-line.completed {
+    background-color: #3b82f6;
+  }
+  .stepper-progress-line.completed-finalizado {
+    background-color: #10b981;
+  }
+  
+  .stepper-btn {
+    border: 0;
+    background: transparent;
+    color: #64748b;
+    padding: 2px 6px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stepper-btn:hover:not(:disabled) {
+    background-color: #cbd5e1;
+    color: #1e293b;
+  }
+  .stepper-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  /* Toasts */
+  #toast-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 9999;
+  }
+  .sollus-toast {
+    min-width: 280px;
+    background: #1e293b;
+    color: #ffffff;
+    padding: 12px 18px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .sollus-toast.toast-success {
+    background: #10b981;
+    border-left: 5px solid #047857;
+  }
+  .sollus-toast.toast-danger {
+    background: #ef4444;
+    border-left: 5px solid #b91c1c;
+  }
+  @keyframes slideIn {
+    from { transform: translateX(120%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes fadeOut {
+    to { opacity: 0; transform: translateY(-10px); }
+  }
+
+  /* Text badges above stepper */
+  .status-badge-recebimento { background-color: #64748b; color: #ffffff; }
+  .status-badge-layout_aprovacao { background-color: #06b6d4; color: #ffffff; }
+  .status-badge-confeccao_bravasoft { background-color: #3b82f6; color: #ffffff; }
+  .status-badge-confeccao_manual { background-color: #f59e0b; color: #ffffff; }
+  .status-badge-finalizado { background-color: #10b981; color: #ffffff; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set hero_stats = [
+  {'label': 'Total de Pedidos', 'value': total_items, 'hint': 'solicitações'}
+] %}
+{% set hero_help_tips = [
+  'Use a busca por empresa para filtrar os pedidos correspondentes.',
+  'Atualize a etapa de confecção diretamente no dropdown da tabela.',
+  'A mudança de etapa é salva automaticamente no banco e exibe um aviso de sucesso.'
+] %}
+
+{% set hero_title = 'Histórico de Pedidos' if is_historico else 'Pedidos de Crachá' %}
+{% set hero_subtitle = 'Consulte todas as solicitações concluídas e finalizadas.' if is_historico else 'Acompanhe e sinalize as etapas de confecção dos crachás solicitados.' %}
+
+{% call page_hero(
+  title=hero_title|safe,
+  subtitle=hero_subtitle,
+  eyebrow='Crachá'|safe,
+  stats=hero_stats,
+  help_tips=hero_help_tips,
+  help_intro='Dicas rápidas para acompanhar confecções.'
+) %}
+  {% if not is_historico %}
+    <div class="page-hero__actions">
+      <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#novoPedidoModal">
+        <i class="fa-solid fa-plus me-1"></i> Novo pedido
+      </button>
+    </div>
+  {% endif %}
+{% endcall %}
+
+<!-- Toast Notification Container -->
+<div id="toast-container"></div>
+
+<!-- Filters Card -->
+<div class="card pedidos-card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="{% if is_historico %}col-lg-9{% else %}col-lg-5{% endif %}">
+        <label class="form-label">Buscar por empresa</label>
+        <input type="text" name="pesquisa" class="form-control" value="{{ filtros.pesquisa }}" placeholder="Digite o nome da empresa">
+      </div>
+      {% if not is_historico %}
+      <div class="col-lg-4">
+        <label class="form-label">Filtrar por etapa</label>
+        <select name="filtro_etapa" class="form-select">
+          <option value="">Todas as etapas</option>
+          {% for et in etapas if et.value != 'finalizado' %}
+            <option value="{{ et.value }}" {{ 'selected' if filtros.filtro_etapa == et.value else '' }}>
+              {{ et.label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="col-lg-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">Buscar</button>
+        <a class="btn btn-outline-secondary w-100" href="{{ url_for('cracha_bp.pedidos_historico') if is_historico else url_for('cracha_bp.pedidos') }}">Limpar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Table Card -->
+<div class="card pedidos-card">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <div>
+      <h2 class="h6 fw-bold mb-1">{% if is_historico %}Solicitações Finalizadas{% else %}Lista de Solicitações{% endif %}</h2>
+      <p class="text-muted mb-0">{{ total_items }} pedido(s) encontrado(s).</p>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover pedidos-table">
+        <thead>
+          <tr>
+            <th>Empresa</th>
+            <th>Solicitado em</th>
+            <th>Criado por</th>
+            <th>Tipo</th>
+            <th>Qtd</th>
+            <th>Etapa de Confecção</th>
+            <th>Observações</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in pedidos %}
+          <tr>
+            <td class="fw-semibold">{{ row.empresa }}</td>
+            <td>{{ row.data_solicitacao_br }}</td>
+            <td>
+              <span class="badge bg-light text-dark fw-semibold" style="font-size: 0.85rem; border: 1px solid #e2e8f0; padding: 0.4em 0.7em;">
+                <i class="fa-solid fa-user me-1 text-muted"></i>{{ row.criado_por or 'Sistema' }}
+              </span>
+            </td>
+            <td>
+              {% if row.tipo == 'comanda' %}
+                <span class="badge text-white fw-semibold" style="font-size: 0.82rem; border: 1px solid #7c3aed; background-color: #8b5cf6;">
+                  <i class="fa-solid fa-receipt me-1"></i>Comanda
+                </span>
+              {% else %}
+                <span class="badge text-white fw-semibold" style="font-size: 0.82rem; border: 1px solid #2563eb; background-color: #3b82f6;">
+                  <i class="fa-solid fa-id-card me-1"></i>Crachá
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="fw-bold text-dark" style="font-size: 0.95rem;">{{ row.quantidade or 1 }}</span>
+            </td>
+            <td>
+              <div class="d-flex flex-column align-items-center gap-1 py-1">
+                {% set ns = namespace(current_idx=0, active_label='') %}
+                {% for et in etapas %}
+                  {% if row.etapa == et.value %}
+                    {% set ns.current_idx = loop.index0 %}
+                    {% set ns.active_label = et.label %}
+                  {% endif %}
+                {% endfor %}
+                
+                <span class="badge js-status-label-text status-badge-{{ row.etapa }}" 
+                      style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.35em 0.7em;">
+                  {{ ns.active_label }}
+                </span>
+
+                <div class="stepper-wrapper mt-1">
+                  {% if can_modify %}
+                    <button type="button" class="stepper-btn js-prev-step-btn" data-id="{{ row.id }}" title="Retornar Etapa">
+                      <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                  {% endif %}
+
+                  <div class="stepper-progress-bar {% if can_modify %}can-modify{% endif %}" 
+                       data-id="{{ row.id }}" 
+                       data-current="{{ row.etapa }}"
+                       data-current-idx="{{ ns.current_idx }}">
+                    {% for et in etapas %}
+                      <div class="stepper-step-node {% if loop.index0 <= ns.current_idx %}completed{% endif %} {% if row.etapa == et.value %}active{% endif %}" 
+                           data-value="{{ et.value }}" 
+                           data-index="{{ loop.index0 }}"
+                           data-label="{{ et.label }}"
+                           title="{{ et.label }}">
+                        {% if et.value == 'recebimento' %}
+                          <i class="fa-solid fa-cart-shopping"></i>
+                        {% elif et.value == 'layout_aprovacao' %}
+                          <i class="fa-solid fa-palette"></i>
+                        {% elif et.value == 'confeccao_bravasoft' %}
+                          <i class="fa-solid fa-industry"></i>
+                        {% elif et.value == 'confeccao_manual' %}
+                          <i class="fa-solid fa-hands-holding"></i>
+                        {% elif et.value == 'finalizado' %}
+                          <i class="fa-solid fa-circle-check"></i>
+                        {% endif %}
+                      </div>
+                      {% if not loop.last %}
+                        <div class="stepper-progress-line {% if loop.index0 < ns.current_idx %}completed {% if row.etapa == 'finalizado' %}completed-finalizado{% endif %}{% endif %}" data-line-index="{{ loop.index0 }}"></div>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+
+                  {% if can_modify %}
+                    <button type="button" class="stepper-btn js-next-step-btn" data-id="{{ row.id }}" title="Avançar Etapa">
+                      <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="text-muted" style="font-size: 0.9rem;" title="{{ row.observacoes or '' }}">
+                {{ (row.observacoes or '')|truncate(50) }}
+              </span>
+            </td>
+            <td class="text-end">
+              <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-outline-primary btn-sm js-edit-btn"
+                        data-id="{{ row.id }}"
+                        data-empresa="{{ row.empresa|e }}"
+                        data-data="{{ row.data_solicitacao_iso }}"
+                        data-etapa="{{ row.etapa|e }}"
+                        data-obs="{{ row.observacoes|e }}"
+                        data-quantidade="{{ row.quantidade or 1 }}"
+                        data-tipo="{{ row.tipo|e }}">
+                  <i class="fa-solid fa-pen me-1"></i> Editar
+                </button>
+                <form method="post" action="{{ url_for('cracha_bp.pedidos_excluir', pedido_id=row.id) }}"
+                      onsubmit="return confirm('Deseja realmente excluir este pedido?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="fa-solid fa-trash me-1"></i> Excluir
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not pedidos %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-4">Nenhum pedido registrado.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if total_pages > 1 %}
+    <nav class="mt-3">
+      <ul class="pagination justify-content-end mb-0">
+        <li class="page-item {{ 'disabled' if page == 1 else '' }}">
+          <a class="page-link" href="{{ build_url(page=page-1) }}">Anterior</a>
+        </li>
+        {% for p in range(1, total_pages + 1) %}
+          <li class="page-item {{ 'active' if p == page else '' }}">
+            <a class="page-link" href="{{ build_url(page=p) }}">{{ p }}</a>
+          </li>
+        {% endfor %}
+        <li class="page-item {{ 'disabled' if page == total_pages else '' }}">
+          <a class="page-link" href="{{ build_url(page=page+1) }}">Próxima</a>
+        </li>
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Modal: Novo Pedido -->
+<div class="modal fade" id="novoPedidoModal" tabindex="-1" aria-labelledby="novoPedidoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="novoPedidoModalLabel">Novo Pedido de Crachá</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <form method="post" action="{{ url_for('cracha_bp.pedidos_criar') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Empresa / Cliente</label>
+            <input type="text" name="empresa" list="companiesList" class="form-control" required placeholder="Digite ou selecione a empresa">
+            <datalist id="companiesList">
+              {% for cli in clientes %}
+                <option value="{{ cli.nome_fantasia }}"></option>
+              {% endfor %}
+            </datalist>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Data da Solicitação</label>
+            <input type="date" name="data_solicitacao" class="form-control" required value="{{ date.today().strftime('%Y-%m-%d') }}">
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Tipo de Pedido</label>
+              <select name="tipo" class="form-select" required>
+                <option value="cracha" selected>Crachá</option>
+                <option value="comanda">Comanda</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Quantidade</label>
+              <input type="number" name="quantidade" class="form-control" min="1" required value="1">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Etapa Inicial</label>
+            <select name="etapa" class="form-select" required>
+              {% for et in etapas %}
+                <option value="{{ et.value }}">{{ et.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Observações</label>
+            <textarea name="observacoes" rows="4" class="form-control" placeholder="Algum detalhe adicional sobre a confecção..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Cadastrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Pedido -->
+<div class="modal fade" id="editarPedidoModal" tabindex="-1" aria-labelledby="editarPedidoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editarPedidoModalLabel">Editar Pedido de Crachá</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <form method="post" action="{{ url_for('cracha_bp.pedidos_editar') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="pedido_id" id="edit_pedido_id">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Empresa / Cliente</label>
+            <input type="text" name="empresa" id="edit_empresa" list="companiesList" class="form-control" required placeholder="Nome da empresa">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Data da Solicitação</label>
+            <input type="date" name="data_solicitacao" id="edit_data_solicitacao" class="form-control" required>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Tipo de Pedido</label>
+              <select name="tipo" id="edit_tipo" class="form-select" required>
+                <option value="cracha">Crachá</option>
+                <option value="comanda">Comanda</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Quantidade</label>
+              <input type="number" name="quantidade" id="edit_quantidade" class="form-control" min="1" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Etapa de Confecção</label>
+            <select name="etapa" id="edit_etapa" class="form-select" required>
+              {% for et in etapas %}
+                <option value="{{ et.value }}">{{ et.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Observações</label>
+            <textarea name="observacoes" id="edit_observacoes" rows="4" class="form-control"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Toast Notification helper
+    function showToast(message, type = "success") {
+      const container = document.getElementById("toast-container");
+      const toast = document.createElement("div");
+      toast.className = `sollus-toast toast-${type}`;
+      
+      const icon = document.createElement("i");
+      if (type === "success") {
+        icon.className = "fa-solid fa-circle-check";
+      } else {
+        icon.className = "fa-solid fa-circle-exclamation";
+      }
+      
+      const text = document.createElement("span");
+      text.innerText = message;
+      
+      toast.appendChild(icon);
+      toast.appendChild(text);
+      container.appendChild(toast);
+      
+      // Auto dismiss after 3.5 seconds
+      setTimeout(() => {
+        toast.style.animation = "fadeOut 0.4s ease forwards";
+        setTimeout(() => {
+          toast.remove();
+        }, 400);
+      }, 3500);
+    }
+
+    // Dynamic stage updates via Stepper
+    const isHistorico = {{ 'true' if is_historico else 'false' }};
+    const etapasList = ['recebimento', 'layout_aprovacao', 'confeccao_bravasoft', 'confeccao_manual', 'finalizado'];
+    const statusLabels = {
+      'recebimento': 'Recebimento',
+      'layout_aprovacao': 'Montagem de Layout e Aprovação',
+      'confeccao_bravasoft': 'Confecção no Bravasoft',
+      'confeccao_manual': 'Confecção Manual',
+      'finalizado': 'Finalizado'
+    };
+
+    function updatePedidoEtapa(pedidoId, newEtapa, container) {
+      const csrfToken = "{{ csrf_token() }}";
+      
+      fetch("{{ url_for('cracha_bp.pedidos_atualizar_etapa') }}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken,
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        body: JSON.stringify({
+          pedido_id: pedidoId,
+          etapa: newEtapa
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showToast(data.message, "success");
+          
+          const newIdx = etapasList.indexOf(newEtapa);
+          container.dataset.current = newEtapa;
+          container.dataset.currentIdx = newIdx;
+          
+          // Update status label badge above stepper
+          const labelEl = container.closest("td").querySelector(".js-status-label-text");
+          if (labelEl) {
+            labelEl.innerText = statusLabels[newEtapa] || newEtapa;
+            // Clear old classes and add new one
+            etapasList.forEach(et => labelEl.classList.remove(`status-badge-${et}`));
+            labelEl.classList.add(`status-badge-${newEtapa}`);
+          }
+          
+          // Update nodes
+          container.querySelectorAll(".stepper-step-node").forEach(node => {
+            const idx = parseInt(node.dataset.index);
+            node.classList.remove("completed", "active");
+            if (idx <= newIdx) {
+              node.classList.add("completed");
+            }
+            if (node.dataset.value === newEtapa) {
+              node.classList.add("active");
+            }
+          });
+          
+          // Update lines
+          container.querySelectorAll(".stepper-progress-line").forEach(line => {
+            const idx = parseInt(line.dataset.lineIndex);
+            line.classList.remove("completed", "completed-finalizado");
+            if (idx < newIdx) {
+              line.classList.add("completed");
+              if (newEtapa === 'finalizado') {
+                line.classList.add("completed-finalizado");
+              }
+            }
+          });
+
+          // Dynamic fade-out and removal if the status transitions out of the current page scope
+          const shouldRemove = (!isHistorico && newEtapa === 'finalizado') || (isHistorico && newEtapa !== 'finalizado');
+          if (shouldRemove) {
+            setTimeout(() => {
+              const tr = container.closest("tr");
+              tr.style.transition = "all 0.5s ease";
+              tr.style.opacity = "0";
+              tr.style.transform = "translateX(-20px)";
+              setTimeout(() => {
+                tr.remove();
+                // Check if table is empty and show empty message
+                const tbody = document.querySelector(".pedidos-table tbody");
+                if (tbody && tbody.querySelectorAll("tr").length === 0) {
+                  const trEmpty = document.createElement("tr");
+                  trEmpty.innerHTML = `<td colspan="8" class="text-center text-muted py-4">Nenhum pedido registrado.</td>`;
+                  tbody.appendChild(trEmpty);
+                }
+              }, 500);
+            }, 1200);
+          }
+        } else {
+          showToast(data.message || "Erro ao atualizar etapa.", "danger");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        showToast("Erro de comunicação com o servidor.", "danger");
+      });
+    }
+
+    // Direct node click handler (only for authorized users)
+    document.querySelectorAll(".stepper-progress-bar.can-modify .stepper-step-node").forEach(node => {
+      node.addEventListener("click", function () {
+        const container = this.closest(".stepper-progress-bar");
+        const pedidoId = container.dataset.id;
+        const newEtapa = this.dataset.value;
+        if (container.dataset.current !== newEtapa) {
+          updatePedidoEtapa(pedidoId, newEtapa, container);
+        }
+      });
+    });
+
+    // Prev step button handler (only for authorized users)
+    document.querySelectorAll(".js-prev-step-btn").forEach(btn => {
+      btn.addEventListener("click", function () {
+        const wrapper = this.closest(".stepper-wrapper");
+        const container = wrapper.querySelector(".stepper-progress-bar");
+        const currentIdx = parseInt(container.dataset.currentIdx);
+        if (currentIdx > 0) {
+          const newEtapa = etapasList[currentIdx - 1];
+          updatePedidoEtapa(this.dataset.id, newEtapa, container);
+        }
+      });
+    });
+
+    // Next step button handler (only for authorized users)
+    document.querySelectorAll(".js-next-step-btn").forEach(btn => {
+      btn.addEventListener("click", function () {
+        const wrapper = this.closest(".stepper-wrapper");
+        const container = wrapper.querySelector(".stepper-progress-bar");
+        const currentIdx = parseInt(container.dataset.currentIdx);
+        if (currentIdx < etapasList.length - 1) {
+          const newEtapa = etapasList[currentIdx + 1];
+          updatePedidoEtapa(this.dataset.id, newEtapa, container);
+        }
+      });
+    });
+
+    // Populate Edit Modal
+    document.querySelectorAll(".js-edit-btn").forEach(btn => {
+      btn.addEventListener("click", function () {
+        document.getElementById("edit_pedido_id").value = this.dataset.id;
+        document.getElementById("edit_empresa").value = this.dataset.empresa;
+        document.getElementById("edit_data_solicitacao").value = this.dataset.data;
+        document.getElementById("edit_etapa").value = this.dataset.etapa;
+        document.getElementById("edit_observacoes").value = this.dataset.obs;
+        document.getElementById("edit_quantidade").value = this.dataset.quantidade;
+        document.getElementById("edit_tipo").value = this.dataset.tipo;
+        
+        const modal = new bootstrap.Modal(document.getElementById("editarPedidoModal"));
+        modal.show();
+      });
+    });
+  });
+</script>
+{% endblock %}

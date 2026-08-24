@@ -1,0 +1,1030 @@
+{% extends "layout.html" %}
+{% block title %}{{ ticket.number or ('Ticket #' ~ ticket.id) }}{% endblock %}
+
+{% block content %}
+{% set status_translations = {
+    'open': 'Aberto',
+    'in_progress': 'Em andamento',
+    'waiting_user': 'Aguardando cliente',
+    'resolved': 'Resolvido',
+    'closed': 'Arquivado',
+    'deleted': 'Deletado'
+} %}
+{% set priority_translations = {
+    'low': 'Baixa',
+    'normal': 'Normal',
+    'high': 'Alta',
+    'emergency': 'Emergência'
+} %}
+{% set priority_badge_classes = {
+    'low': 'badge-soft-success',
+    'normal': 'badge-soft-secondary',
+    'high': 'badge-soft-warning',
+    'emergency': 'badge-soft-danger'
+} %}
+<div class="py-4 ticket-premium-container">
+  {% set pr = priorities.get(ticket.priority_key) %}
+  
+  <div class="row g-4">
+    <!-- Coluna Principal (Conversa/Thread) -->
+    <div class="col-12 col-xl-8">
+      <div class="card card-premium border-0 p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+          <div>
+            <div class="sidebar-section-title mb-2">Detalhes do Chamado</div>
+            <h2 class="h3 fw-bold mb-1">{{ ticket.number or ('#' ~ ticket.id) }}</h2>
+            <h1 class="h5 text-muted fw-normal mb-0">{{ ticket.subject }}</h1>
+          </div>
+          <div class="d-flex gap-2">
+            <span class="badge badge-soft badge-soft-{{ 'success' if ticket.is_closed else 'primary' }} fs-6">
+              {{ status_translations.get(ticket.status_key, ticket.status_key) }}
+            </span>
+            <span class="badge badge-soft {{ priority_badge_classes.get(ticket.priority_key, 'badge-soft-primary') }} fs-6">
+              {{ priority_translations.get(ticket.priority_key, pr.label if pr else ticket.priority_key) }}
+            </span>
+          </div>
+        </div>
+
+        {% if not lock_ok and ticket_lock %}
+          <div class="alert alert-soft-warning d-flex align-items-center gap-3 border-0 rounded-4 mb-4" style="background: rgba(245, 158, 11, 0.08); color: #b45309;">
+            <i class="bi bi-lock-fill fs-4"></i>
+            <div class="small">
+              Este ticket está sendo editado por <strong>{{ ticket_lock.user.name or ticket_lock.user.email }}</strong>.
+              <br><span class="opacity-75">Bloqueio expira em {{ ticket_lock.expires_at | local('%H:%M') }}.</span>
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="thread-list mt-5">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="sidebar-section-title mb-0">Histórico de Interações</div>
+            <button type="button" class="btn btn-soft-secondary btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#systemEventsModal">
+              <i class="bi bi-info-circle me-1"></i> Detalhes
+            </button>
+          </div>
+          {% set timeline = ticket.entries | sort(attribute='created_at') %}
+          {% for entry in timeline %}
+            {% set is_requester = (entry.author_user_id and entry.author_user_id == ticket.requester_id) or (entry.contact_id and entry.contact_id == ticket.contact_id) %}
+            {% set is_staff = entry.author is not none and not is_requester %}
+            {% set is_internal = entry.visibility == 'internal' %}
+            <div class="thread-item d-flex gap-3 {{ 'flex-row-reverse' if is_staff else '' }}">
+              <div class="thread-avatar" style="background: {{ '#f59e0b' if is_internal else ('#0ea5e9' if is_staff else '#64748b') }}; flex-shrink: 0;">
+                <i class="bi {{ 'bi-shield-lock' if is_internal else ('bi-person-badge' if is_staff else 'bi-person') }}"></i>
+              </div>
+              <div class="thread-bubble {{ 'internal' if is_internal else ('staff' if is_staff else 'client') }}" style="max-width: 80%; width: 100%;">
+                <div class="d-flex justify-content-between align-items-center mb-2 gap-3">
+                  <div class="fw-bold small {{ 'text-info' if is_staff else 'text-body' }}">
+                    {% if entry.author %}{{ entry.author.name or entry.author.email }}
+                    {% elif entry.contact %}{{ entry.contact.name or entry.contact.email }}
+                    {% else %}Sistema{% endif %}
+                    {% if is_internal %}
+                      <span class="ms-2 badge bg-warning text-dark border-0 rounded-pill" style="font-size: 0.6rem; letter-spacing: 0.05em;">INTERNO</span>
+                    {% elif is_staff %}
+                      <span class="ms-2 badge bg-info text-dark border-0 rounded-pill" style="font-size: 0.6rem; letter-spacing: 0.05em; background-color: rgba(14, 165, 233, 0.15) !important; color: #0ea5e9 !important;">ATENDENTE</span>
+                    {% endif %}
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="text-muted" style="font-size: 0.7rem;">{{ entry.created_at | local('%d/%m/%Y %H:%M') }}</div>
+                    {# Botão Editar: visível somente para o autor ou admin/gestor, e somente em tickets abertos #}
+                    {% if not ticket.is_closed and entry.author_user_id and (entry.author_user_id == current_user.id or can_manage) %}
+                      <button type="button"
+                              class="btn btn-soft-secondary btn-xs rounded-pill d-inline-flex align-items-center gap-1 entry-edit-btn"
+                              data-entry-id="{{ entry.id }}"
+                              data-ticket-id="{{ ticket.id }}"
+                              data-edit-url="{{ url_for('sollus_tickets.edit_entry', ticket_id=ticket.id, entry_id=entry.id) }}"
+                              data-csrf="{{ csrf_token() }}"
+                              title="Editar esta mensagem">
+                        <i class="bi bi-pencil-square" style="font-size: 0.65rem;"></i>
+                        <span style="font-size: 0.65rem;">Editar</span>
+                      </button>
+                      {% if entry.edit_history %}
+                        <button type="button"
+                                class="btn btn-soft-warning btn-xs rounded-pill d-inline-flex align-items-center gap-1"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editHistoryModal"
+                                data-history-url="{{ url_for('sollus_tickets.entry_history', ticket_id=ticket.id, entry_id=entry.id) }}"
+                                title="Ver histórico de edições">
+                          <i class="bi bi-clock-history" style="font-size: 0.65rem;"></i>
+                          <span style="font-size: 0.65rem;">{{ entry.edit_history | length }}x editado</span>
+                        </button>
+                      {% endif %}
+                    {% endif %}
+                  </div>
+                </div>
+
+                {# Corpo da mensagem — modo leitura #}
+                <div class="thread-body text-body" id="entry-body-{{ entry.id }}" style="font-size: 0.95rem;">{{ entry.body | format_thread_body }}</div>
+
+                {# Indicador de edição #}
+                {% if entry.edited_at %}
+                  <div class="entry-edited-tag mt-1" id="entry-edited-tag-{{ entry.id }}" style="font-size: 0.68rem; color: var(--bs-secondary-color, #6c757d); font-style: italic;">
+                    <i class="bi bi-pencil me-1" style="font-size: 0.6rem;"></i>
+                    editado em {{ entry.edited_at | local('%d/%m/%Y %H:%M') }}
+                    {% if entry.editor %} por {{ entry.editor.name or entry.editor.email }}{% endif %}
+                  </div>
+                {% else %}
+                  <div class="entry-edited-tag mt-1" id="entry-edited-tag-{{ entry.id }}" style="font-size: 0.68rem; color: var(--bs-secondary-color, #6c757d); font-style: italic; display:none;"></div>
+                {% endif %}
+
+                {# Formulário de edição inline (oculto por padrão) #}
+                <div class="entry-edit-form mt-3" id="entry-edit-form-{{ entry.id }}" style="display:none;">
+                  <textarea class="form-control form-control-sm mb-2 entry-edit-textarea"
+                            rows="5"
+                            style="font-size: 0.9rem; resize: vertical;"
+                            data-entry-id="{{ entry.id }}"></textarea>
+                  <div class="mb-2">
+                    <label class="form-label small fw-bold text-muted mb-1" style="font-size: 0.75rem;">
+                      <i class="bi bi-paperclip me-1"></i>Adicionar novos anexos (opcional)
+                    </label>
+                    <input type="file"
+                           class="form-control form-control-sm entry-edit-attachments"
+                           multiple
+                           data-entry-id="{{ entry.id }}"
+                           style="font-size: 0.8rem;">
+                  </div>
+                  <div class="d-flex gap-2 align-items-center">
+                    <button type="button"
+                            class="btn btn-primary btn-sm rounded-pill px-3 fw-bold entry-edit-save"
+                            data-entry-id="{{ entry.id }}">
+                      <i class="bi bi-floppy-disk me-1"></i>Salvar
+                    </button>
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm rounded-pill px-3 entry-edit-cancel"
+                            data-entry-id="{{ entry.id }}">
+                      Cancelar
+                    </button>
+                    <span class="text-muted small entry-edit-saving" id="entry-saving-{{ entry.id }}" style="display:none; font-size: 0.75rem;">
+                      <span class="spinner-border spinner-border-sm me-1" style="width:0.7rem;height:0.7rem;"></span>Salvando...
+                    </span>
+                  </div>
+                </div>
+
+                {# Anexos existentes da entrada #}
+                <div class="entry-attachments-container" id="entry-attachments-{{ entry.id }}">
+                {% if entry.attachments %}
+                  <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex flex-wrap gap-2">
+                    {% for att in entry.attachments %}
+                      {% if att.content_type and att.content_type.startswith('image/') %}
+                        <div class="entry-attachment-image">
+                          <a href="{{ url_for('sollus_tickets.download_attachment', ticket_id=ticket.id, attachment_id=att.id) }}" target="_blank">
+                            <img src="{{ url_for('sollus_tickets.download_attachment', ticket_id=ticket.id, attachment_id=att.id) }}" 
+                                 class="img-fluid rounded-3 border" 
+                                 style="max-height: 200px; max-width: 100%; object-fit: contain;"
+                                 alt="{{ att.original_name }}">
+                          </a>
+                        </div>
+                      {% else %}
+                        <a href="{{ url_for('sollus_tickets.download_attachment', ticket_id=ticket.id, attachment_id=att.id) }}" 
+                           class="btn btn-soft-secondary btn-xs rounded-pill d-inline-flex align-items-center gap-1">
+                          <i class="bi bi-paperclip"></i>
+                          <span>{{ att.original_name }}</span>
+                        </a>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+                </div>
+              </div>
+            </div>
+          {% else %}
+            <div class="text-center py-5 text-muted">
+              <i class="bi bi-chat-dots fs-1 opacity-25"></i>
+              <p class="mt-2">Nenhuma interação registrada ainda.</p>
+            </div>
+          {% endfor %}
+        </div>
+
+        <!-- Seção de Tarefas Vinculadas -->
+        {% if can_tasks %}
+          <div class="tasks-section mt-5 border-top pt-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div class="sidebar-section-title mb-0"><i class="bi bi-list-task me-1"></i> Tarefas Vinculadas</div>
+              <button class="btn btn-soft-primary btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+                <i class="bi bi-plus-lg me-1"></i> Nova Tarefa
+              </button>
+            </div>
+            
+            <div class="list-group list-group-flush">
+              {% for task in ticket.tasks %}
+                <div class="list-group-item bg-transparent px-0 py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                      <span class="fw-bold small text-primary">{{ task.number }}</span>
+                      <h5 class="h6 mb-0 fw-bold">{{ task.title }}</h5>
+                      <span class="badge badge-soft badge-soft-{{ 'success' if task.status_key == 'closed' else 'warning' }} text-uppercase" style="font-size: 0.65rem;">
+                        {{ 'Fechada' if task.status_key == 'closed' else 'Aberta' }}
+                      </span>
+                    </div>
+                    {% if task.body %}
+                      <p class="text-muted small mb-1" style="white-space: pre-wrap;">{{ task.body | urlize_html }}</p>
+                    {% endif %}
+                    <div class="text-muted small" style="font-size: 0.75rem;">
+                      {% if task.assignee %}
+                        Atribuído a: <strong>{{ task.assignee.name or task.assignee.email }}</strong> |
+                      {% endif %}
+                      Departamento: <strong>{{ task.department.name if task.department else 'Geral' }}</strong>
+                    </div>
+                  </div>
+                  <div class="d-flex gap-2">
+                    {% if task.status_key != 'closed' %}
+                      <form method="post" action="{{ url_for('sollus_tickets.close_task', task_id=task.id) }}" class="mb-0">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-soft-success btn-xs rounded-pill" title="Fechar Tarefa"><i class="bi bi-check-lg"></i> Fechar</button>
+                      </form>
+                    {% endif %}
+                    
+                    <button class="btn btn-soft-secondary btn-xs rounded-pill" data-bs-toggle="collapse" data-bs-target="#task-comments-{{ task.id }}">
+                      <i class="bi bi-chat-text"></i> Interações
+                    </button>
+                  </div>
+
+                  <div class="collapse w-100 mt-2" id="task-comments-{{ task.id }}">
+                    <div class="p-3 rounded-4" style="background: var(--premium-bg-soft);">
+                      <div class="small fw-bold mb-2">Comentários da Tarefa</div>
+                      <div class="task-comments-list mb-3">
+                        {% for ent in task.entries %}
+                          <div class="p-2 mb-2 rounded border-0" style="background: rgba(255, 255, 255, 0.03);">
+                            <div class="d-flex justify-content-between small text-muted mb-1" style="font-size: 0.7rem;">
+                              <strong>{{ ent.actor.name or ent.actor.email or 'Sistema' }}</strong>
+                              <span>{{ ent.created_at | local('%d/%m/%Y %H:%M') }}</span>
+                            </div>
+                             <div class="small" style="white-space: pre-wrap;">{{ ent.body | urlize_html }}</div>
+                          </div>
+                        {% else %}
+                          <div class="small text-muted">Nenhum comentário nesta tarefa.</div>
+                        {% endfor %}
+                      </div>
+                      
+                      <form method="post" action="{{ url_for('sollus_tickets.task_entry', task_id=task.id) }}" class="form-premium mb-0">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="input-group input-group-sm">
+                          <input class="form-control form-control-sm" name="body" placeholder="Escreva um comentário..." required>
+                          <button class="btn btn-primary btn-sm"><i class="bi bi-send"></i></button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              {% else %}
+                <div class="text-center py-4 text-muted small">
+                  <i class="bi bi-journal-check fs-2 opacity-25"></i>
+                  <p class="mt-2 mb-0">Nenhuma tarefa vinculada a este chamado.</p>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="reply-area mt-5 pt-4 border-top">
+          <div class="sidebar-section-title mb-3">Sua Resposta</div>
+          <form class="form-premium" method="post" action="{{ url_for('sollus_tickets.reply', ticket_id=ticket.id) }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            {% if canned_responses %}
+              <div class="mb-3">
+                <select class="form-select form-select-sm border-0" style="background: var(--premium-bg-soft);" id="cannedResponse">
+                  <option value="">Respostas Rápidas</option>
+                  {% for item in canned_responses %}<option value="{{ item.body|e }}">{{ item.title }}</option>{% endfor %}
+                </select>
+              </div>
+            {% endif %}
+            <textarea class="form-control mb-3" id="body" name="body" rows="6" placeholder="Escreva aqui sua resposta ou nota interna..." required></textarea>
+            
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-muted" for="attachments">
+                <i class="bi bi-send me-1"></i> Anexos (Opcional)
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill ms-1 fw-normal" style="font-size: 0.65rem; letter-spacing: 0.02em;">
+                  <i class="bi bi-envelope me-1"></i>Enviado ao cliente por e-mail
+                </span>
+              </label>
+              <div class="input-group input-group-sm">
+                <input class="form-control form-control-sm" id="attachments" name="attachments" type="file" multiple>
+                <span class="input-group-text text-muted small border-start-0" style="background: var(--premium-bg-soft);"><i class="bi bi-paperclip me-1"></i> Múltiplos</span>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center">
+              <div class="d-flex gap-3 align-items-center">
+                {% if can_internal_note %}
+                  <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="radio" name="visibility" id="vis_public" value="public" checked>
+                    <label class="form-check-label small fw-medium" for="vis_public text-muted">Pública</label>
+                  </div>
+                  <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="radio" name="visibility" id="vis_internal" value="internal">
+                    <label class="form-check-label small fw-medium" for="vis_internal text-muted">Interna</label>
+                  </div>
+                {% else %}
+                  <input type="hidden" name="visibility" value="public">
+                {% endif %}
+              </div>
+              <button class="btn btn-primary px-4 rounded-pill fw-bold">
+                <i class="bi bi-send-fill me-2"></i> Enviar Resposta
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Coluna Lateral (Gestão) -->
+    <div class="col-12 col-xl-4">
+      <div class="card card-premium border-0 p-4 sticky-top" style="top: 1.5rem; z-index: 10;">
+        <a class="btn btn-outline-secondary btn-sm w-100 rounded-pill mb-4" href="{{ url_for('sollus_tickets.dashboard') }}">
+          <i class="bi bi-arrow-left me-1"></i> Voltar ao Painel
+        </a>
+        <div class="sidebar-section-title"><i class="bi bi-info-circle-fill me-1"></i> Informações do Chamado</div>
+        <div class="rounded-4 p-3 mb-4" style="background: var(--premium-bg-soft);">
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="small text-muted mb-1">Solicitante</div>
+              <div class="fw-bold small text-truncate" title="{{ ticket.requester_label }}">{{ ticket.requester_label }}</div>
+              {% if ticket.contact and ticket.contact.email %}
+                <div class="small text-muted text-truncate" style="font-size: 0.8em;" title="{{ ticket.contact.email }}">{{ ticket.contact.email }}</div>
+              {% elif ticket.requester and ticket.requester.email %}
+                <div class="small text-muted text-truncate" style="font-size: 0.8em;" title="{{ ticket.requester.email }}">{{ ticket.requester.email }}</div>
+              {% endif %}
+            </div>
+            <div class="col-6">
+              <div class="small text-muted mb-1">Aberto em</div>
+              <div class="fw-bold small">{{ ticket.created_at | local('%d/%m/%Y') }}</div>
+            </div>
+            <div class="col-6">
+              <div class="small text-muted mb-1">Departamento</div>
+              <div class="fw-bold small">{{ ticket.department.name if ticket.department else 'Geral' }}</div>
+            </div>
+            <div class="col-6">
+              <div class="small text-muted mb-1">SLA</div>
+              <div class="fw-bold small {{ 'text-danger' if ticket.overdue_at else '' }}">
+                {{ ticket.due_at | local('%d/%m %H:%M') if ticket.due_at else '-' }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {% if can_assign %}
+          <div class="sidebar-section-title"><i class="bi bi-person-badge-fill me-1"></i> Atribuição</div>
+          <form class="form-premium mb-4" method="post" action="{{ url_for('sollus_tickets.assign', ticket_id=ticket.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="input-group">
+              <select class="form-select form-select-sm" name="assignee_id">
+                <option value="">Sem atendente</option>
+                {% for agent in agents %}
+                  <option value="{{ agent.id }}" {{ 'selected' if ticket.assignee_id == agent.id else '' }}>{{ agent.name or agent.email }}</option>
+                {% endfor %}
+              </select>
+              <button class="btn btn-primary btn-sm"><i class="bi bi-check-lg"></i></button>
+            </div>
+          </form>
+        {% endif %}
+
+        {% if can_close or can_reopen or can_manage %}
+          <div class="sidebar-section-title"><i class="bi bi-arrow-repeat me-1"></i> Atualizar Status</div>
+          <form class="form-premium mb-4" method="post" action="{{ url_for('sollus_tickets.status', ticket_id=ticket.id) }}" onsubmit="(function(f){var btn=f.querySelector('button[type=submit],button:not([type])');if(btn){btn.disabled=true;btn.innerHTML='<span class=\'spinner-border spinner-border-sm\'></span>';}return true;})(this)">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <select class="form-select form-select-sm mb-2" name="status_key">
+              {% for status in statuses %}
+                <option value="{{ status.key }}" {{ 'selected' if ticket.status_key == status.key else '' }}>{{ status.label }}</option>
+              {% endfor %}
+            </select>
+            <div class="input-group">
+              <input class="form-control form-control-sm" name="reason" placeholder="Motivo...">
+              <button class="btn btn-outline-primary btn-sm"><i class="bi bi-arrow-right"></i></button>
+            </div>
+          </form>
+
+        {% endif %}
+
+        <div class="sidebar-section-title"><i class="bi bi-paperclip me-1"></i> Anexos</div>
+        <div class="list-group list-group-flush mb-2">
+          {% for attachment in ticket.attachments if ';inline' not in (attachment.content_type or '') %}
+            <div class="list-group-item bg-transparent px-0 d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center gap-2 overflow-hidden">
+                <i class="bi bi-file-earmark-text text-muted"></i>
+                <span class="small text-truncate" title="{{ attachment.original_name }}">{{ attachment.original_name }}</span>
+              </div>
+              <a href="{{ url_for('sollus_tickets.download_attachment', ticket_id=ticket.id, attachment_id=attachment.id) }}" class="text-primary"><i class="bi bi-download"></i></a>
+            </div>
+          {% else %}
+            <div class="small text-muted py-2">Nenhum anexo.</div>
+          {% endfor %}
+        </div>
+
+        <form class="form-premium" method="post" action="{{ url_for('sollus_tickets.direct_upload', ticket_id=ticket.id) }}" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="input-group input-group-sm">
+            <input class="form-control form-control-sm" name="attachments" type="file" multiple required>
+            <button class="btn btn-outline-primary btn-sm" title="Upload"><i class="bi bi-upload"></i></button>
+          </div>
+        </form>
+        <div class="d-flex align-items-start gap-1 mt-2 mb-4 text-body-secondary text-dark-mode-white" style="font-size: 0.72rem;">
+          <i class="bi bi-info-circle flex-shrink-0 mt-1"></i>
+          <span>Arquivos aqui são de <strong>referência interna</strong> e <strong>não são enviados ao cliente</strong>. Para enviar um arquivo ao cliente, use o campo <em>Anexos (Opcional)</em> no formulário de resposta abaixo.</span>
+        </div>
+
+        {% if can_transfer %}
+          <div class="sidebar-section-title"><i class="bi bi-arrow-left-right me-1"></i> Transferir</div>
+          <form class="form-premium mb-4" method="post" action="{{ url_for('sollus_tickets.transfer', ticket_id=ticket.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <select class="form-select form-select-sm mb-2" name="department_id" id="transfer_department_id">
+              <option value="">Selecione o Departamento</option>
+              {% for dept in departments %}
+                <option value="{{ dept.id }}" {{ 'selected' if ticket.department_id == dept.id else '' }}>{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+
+            <select class="form-select form-select-sm mb-2" name="team_id" id="transfer_team_id">
+              <option value="">Selecione a Equipe</option>
+              {% for team in teams %}
+                <option value="{{ team.id }}" {{ 'selected' if ticket.team_id == team.id else '' }}>{{ team.name }}</option>
+              {% endfor %}
+            </select>
+
+            <select class="form-select form-select-sm mb-2" name="queue_id" id="transfer_queue_id">
+              <option value="">Selecione a Fila</option>
+              {% for q in queues %}
+                <option value="{{ q.id }}" {{ 'selected' if ticket.queue_id == q.id else '' }}>{{ q.name }}</option>
+              {% endfor %}
+            </select>
+            
+            <select class="form-select form-select-sm mb-2" name="assignee_id" id="transfer_assignee_id">
+              <option value="">Selecione o Atendente</option>
+              {% for agent in all_agents %}
+                <option value="{{ agent.id }}" {{ 'selected' if ticket.assignee_id == agent.id else '' }}>{{ agent.name or agent.email }}</option>
+              {% endfor %}
+            </select>
+
+            <div class="input-group">
+              <input class="form-control form-control-sm" name="reason" placeholder="Motivo da transferencia..." required>
+              <button class="btn btn-outline-primary btn-sm"><i class="bi bi-arrow-right"></i></button>
+            </div>
+          </form>
+        {% endif %}
+
+        <div class="sidebar-section-title"><i class="bi bi-people-fill me-1"></i> Colaboradores</div>
+        <div class="list-group list-group-flush mb-2">
+          {% for collab in ticket.collaborators %}
+            <div class="list-group-item bg-transparent px-0 d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center gap-2 overflow-hidden">
+                <i class="bi bi-person text-muted"></i>
+                <span class="small text-truncate" title="{{ collab.contact.name }} ({{ collab.contact.email }})">
+                  {{ collab.contact.name or collab.contact.email }}
+                </span>
+              </div>
+              {% if can_delete or can_manage %}
+                <form method="post" action="{{ url_for('sollus_tickets.delete_collaborator', ticket_id=ticket.id, collaborator_id=collab.id) }}" class="d-inline mb-0">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-link text-danger p-0 border-0 btn-sm"><i class="bi bi-trash"></i></button>
+                </form>
+              {% endif %}
+            </div>
+          {% else %}
+            <div class="small text-muted py-2">Nenhum colaborador.</div>
+          {% endfor %}
+        </div>
+
+        {% if can_manage %}
+          <form class="form-premium mb-4" method="post" action="{{ url_for('sollus_tickets.add_collaborator', ticket_id=ticket.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="input-group input-group-sm mb-1">
+              <input class="form-control form-control-sm" name="email" type="email" placeholder="E-mail do colaborador..." required>
+            </div>
+            <div class="input-group input-group-sm">
+              <input class="form-control form-control-sm" name="name" placeholder="Nome (opcional)...">
+              <button class="btn btn-outline-primary btn-sm"><i class="bi bi-plus-lg"></i></button>
+            </div>
+          </form>
+        {% endif %}
+
+        {% if can_link or can_merge %}
+          <div class="sidebar-section-title d-flex align-items-center justify-content-between">
+            <span><i class="bi bi-link-45deg me-1"></i> Relações e Mesclagem</span>
+            <i class="bi bi-info-circle text-muted fs-7 cursor-pointer" data-bs-toggle="tooltip" data-bs-html="true" title="<strong>Vincular:</strong> Cria uma referência mútua de link entre chamados, mantendo ambos ativos.<br><strong>Mesclar:</strong> Copia anexos/colaboradores do chamado atual para o de destino, e fecha este chamado."></i>
+          </div>
+          {% set relations = ticket.outgoing_relations + ticket.incoming_relations %}
+          <div class="list-group list-group-flush mb-2">
+            {% for rel in relations %}
+              {% set is_outgoing = rel.source_ticket_id == ticket.id %}
+              {% set other_ticket = rel.target if is_outgoing else rel.source %}
+              <div class="list-group-item bg-transparent px-0 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                  <i class="bi bi-link text-muted"></i>
+                  <span class="small text-truncate">
+                    <a href="{{ url_for('sollus_tickets.detail', ticket_id=other_ticket.id) }}">
+                      {{ other_ticket.number or ('#' ~ other_ticket.id) }}
+                    </a>
+                    <span class="badge bg-secondary text-light fs-8">{{ rel.relation_type }}</span>
+                  </span>
+                </div>
+                {% if can_link or can_merge %}
+                  <form method="post" action="{{ url_for('sollus_tickets.unrelate', relation_id=rel.id, back_id=ticket.id) }}" class="d-inline ms-2" onsubmit="return confirm('Deseja realmente remover a relação com o chamado {{ other_ticket.number or other_ticket.id }}?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Remover relação">
+                      <i class="bi bi-x-circle fs-6"></i>
+                    </button>
+                  </form>
+                {% endif %}
+              </div>
+            {% else %}
+              <div class="small text-muted py-2">Sem chamados relacionados.</div>
+            {% endfor %}
+          </div>
+
+          <form class="form-premium mb-4" method="post" action="{{ url_for('sollus_tickets.relate', ticket_id=ticket.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="input-group input-group-sm mb-1">
+              <input class="form-control form-control-sm" name="target" placeholder="Número do ticket destino..." required>
+            </div>
+            <div class="input-group input-group-sm">
+              <select class="form-select form-select-sm" name="relation_type">
+                {% if can_link %}<option value="linked">Vincular Relacionado</option>{% endif %}
+                {% if can_merge %}<option value="merged">Mesclar Duplicado</option>{% endif %}
+              </select>
+              <button class="btn btn-outline-primary btn-sm"><i class="bi bi-check-lg"></i></button>
+            </div>
+            <div class="text-muted small mt-2" style="font-size: 0.75rem; line-height: 1.3;">
+              <span class="d-block mb-1"><strong>Vincular Relacionado:</strong> Apenas cria uma referência mútua de link entre os chamados, mantendo ambos abertos e ativos.</span>
+              <span class="d-block"><strong>Mesclar Duplicado:</strong> Copia os anexos e colaboradores deste chamado para o de destino, e fecha o chamado atual.</span>
+            </div>
+          </form>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+  <!-- Modal de Criação de Tarefa -->
+  {% if can_tasks %}
+    <div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 p-3" style="background: var(--card); border-radius: 1.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold" id="createTaskModalLabel"><i class="bi bi-plus-lg me-1"></i> Nova Tarefa</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body pt-3">
+            <form class="form-premium" method="post" action="{{ url_for('sollus_tickets.create_task', ticket_id=ticket.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              
+              <div class="mb-3">
+                <label class="form-label small fw-bold">Título da Tarefa</label>
+                <input type="text" class="form-control" name="title" placeholder="Ex: Verificar conexão física..." required>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label small fw-bold">Descrição</label>
+                <textarea class="form-control" name="body" rows="3" placeholder="Instruções para a tarefa (opcional)..."></textarea>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label small fw-bold">Atribuir a Agente</label>
+                <select class="form-select" name="assignee_id">
+                  <option value="">Selecione um agente (opcional)</option>
+                  {% for agent in agents %}
+                    <option value="{{ agent.id }}">{{ agent.name or agent.email }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label small fw-bold">Departamento</label>
+                <select class="form-select" name="department_id">
+                  <option value="">Mesmo do chamado</option>
+                  {% for dept in departments %}
+                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label small fw-bold">Equipe</label>
+                <select class="form-select" name="team_id">
+                  <option value="">Mesma do chamado</option>
+                  {% for team in teams %}
+                    <option value="{{ team.id }}">{{ team.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="d-flex justify-content-end gap-2 mt-4">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">Criar Tarefa</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+{% if can_delete %}
+  <!-- Modal Confirmação de Exclusão do Ticket -->
+  <div class="modal fade" id="deleteTicketModal" tabindex="-1" aria-labelledby="deleteTicketModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 p-3" style="background: var(--card); border-radius: 1.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold text-danger" id="deleteTicketModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i>Excluir Ticket</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pt-3">
+          <p class="text-muted">Você tem certeza que deseja excluir permanentemente o ticket <strong>{{ ticket.number or ('#' ~ ticket.id) }}</strong>?</p>
+          <p class="small text-danger"><i class="bi bi-exclamation-circle me-1"></i>Esta ação é irreversível. Todas as interações, anexos e histórico serão removidos.</p>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+          <form method="post" action="{{ url_for('sollus_tickets.delete_ticket', ticket_id=ticket.id) }}" class="mb-0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">
+              <i class="bi bi-trash me-1"></i> Excluir Permanentemente
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+  <!-- Modal de Histórico de Edições de Entrada -->
+  <div class="modal fade" id="editHistoryModal" tabindex="-1" aria-labelledby="editHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 p-3" style="background: var(--card); border-radius: 1.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold" id="editHistoryModalLabel"><i class="bi bi-clock-history me-2 text-warning"></i>Histórico de Edições</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pt-3" style="max-height: 60vh; overflow-y: auto;">
+          <div id="editHistoryContent">
+            <div class="text-center py-4 text-muted small">
+              <span class="spinner-border spinner-border-sm me-2"></span>Carregando histórico...
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Detalhes do Histórico (Eventos de Sistema) -->
+  <div class="modal fade" id="systemEventsModal" tabindex="-1" aria-labelledby="systemEventsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 p-3" style="background: var(--card); border-radius: 1.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold" id="systemEventsModalLabel"><i class="bi bi-info-circle me-2 text-primary"></i>Detalhes do Histórico</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pt-3" style="max-height: 60vh; overflow-y: auto;">
+          <div class="list-group list-group-flush">
+            {% set event_list = ticket.events | sort(attribute='created_at') %}
+            {% for item in event_list %}
+              <div class="list-group-item bg-transparent px-0 py-3 border-bottom border-secondary border-opacity-10 d-flex align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                  <span class="badge-soft rounded-circle p-2 d-inline-flex align-items-center justify-content-center" 
+                        style="width: 36px; height: 36px; background: var(--premium-bg-soft); border: 1px solid rgba(255, 255, 255, 0.05);">
+                    {% if item.action == 'transfer' %}
+                      <i class="bi bi-arrow-left-right text-info"></i>
+                    {% elif item.action in ['assign', 'auto_assign'] %}
+                      <i class="bi bi-person-check text-success"></i>
+                    {% elif item.action == 'status' or item.action == 'reopen' %}
+                      <i class="bi bi-info-circle text-primary"></i>
+                    {% elif item.action == 'overdue' %}
+                      <i class="bi bi-clock-history text-danger"></i>
+                    {% else %}
+                      <i class="bi bi-gear text-secondary"></i>
+                    {% endif %}
+                  </span>
+                  <div>
+                    <div class="text-body small">
+                      {{ item.message }}
+                      {% if item.actor %}
+                        <span class="text-muted">por <strong>{{ item.actor.name or item.actor.email }}</strong></span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                <div class="text-muted small text-nowrap" style="font-size: 0.75rem;">
+                  {{ item.created_at | local('%d/%m/%Y %H:%M') }}
+                </div>
+              </div>
+            {% else %}
+              <div class="text-center py-4 text-muted small">
+                <i class="bi bi-info-circle fs-2 opacity-25"></i>
+                <p class="mt-2 mb-0">Nenhum evento de sistema registrado neste chamado.</p>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+/* ── Edição inline de entradas do thread ── */
+(function () {
+  const CURRENT_USER_ID = {{ current_user.id }};
+
+  // Abre o formulário de edição ao clicar em "Editar"
+  document.querySelectorAll('.entry-edit-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const entryId = this.dataset.entryId;
+      const bodyEl = document.getElementById('entry-body-' + entryId);
+      const formEl = document.getElementById('entry-edit-form-' + entryId);
+      const textarea = formEl.querySelector('.entry-edit-textarea');
+
+      // Preenche o textarea com o texto atual (texto puro, sem HTML)
+      textarea.value = bodyEl.innerText.trim();
+      bodyEl.style.display = 'none';
+      formEl.style.display = 'block';
+      textarea.focus();
+      this.style.display = 'none';
+    });
+  });
+
+  // Cancela a edição
+  document.querySelectorAll('.entry-edit-cancel').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const entryId = this.dataset.entryId;
+      document.getElementById('entry-body-' + entryId).style.display = '';
+      document.getElementById('entry-edit-form-' + entryId).style.display = 'none';
+      const editBtn = document.querySelector('.entry-edit-btn[data-entry-id="' + entryId + '"]');
+      if (editBtn) editBtn.style.display = '';
+    });
+  });
+
+  // Salva a edição via AJAX
+  document.querySelectorAll('.entry-edit-save').forEach(btn => {
+    btn.addEventListener('click', async function () {
+      const entryId = this.dataset.entryId;
+      const formEl  = document.getElementById('entry-edit-form-' + entryId);
+      const textarea = formEl.querySelector('.entry-edit-textarea');
+      const fileInput = formEl.querySelector('.entry-edit-attachments');
+      const savingEl = document.getElementById('entry-saving-' + entryId);
+      const editBtn  = document.querySelector('.entry-edit-btn[data-entry-id="' + entryId + '"]');
+
+      const newBody = textarea.value.trim();
+      if (!newBody) {
+        textarea.classList.add('is-invalid');
+        return;
+      }
+      textarea.classList.remove('is-invalid');
+
+      const editUrl  = editBtn ? editBtn.dataset.editUrl : formEl.closest('[data-edit-url]')?.dataset.editUrl;
+      const csrf     = editBtn ? editBtn.dataset.csrf : '';
+
+      // Monta FormData para suportar anexos
+      const fd = new FormData();
+      fd.append('body', newBody);
+      fd.append('csrf_token', csrf);
+      if (fileInput && fileInput.files.length > 0) {
+        Array.from(fileInput.files).forEach(f => fd.append('attachments', f));
+      }
+
+      btn.disabled = true;
+      savingEl.style.display = '';
+
+      try {
+        const resp = await fetch(editUrl, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+          body: fd
+        });
+        const data = await resp.json();
+
+        if (data.ok) {
+          // Atualiza o corpo exibido — usa formato simples (texto puro com quebras)
+          const bodyEl = document.getElementById('entry-body-' + entryId);
+          bodyEl.innerHTML = data.body.replace(/\n/g, '<br>');
+          bodyEl.style.display = '';
+          formEl.style.display = 'none';
+          if (editBtn) editBtn.style.display = '';
+
+          // Atualiza ou exibe o indicador de edição
+          const tagEl = document.getElementById('entry-edited-tag-' + entryId);
+          if (tagEl) {
+            tagEl.style.display = '';
+            tagEl.innerHTML = '<i class="bi bi-pencil me-1" style="font-size:0.6rem;"></i>editado em ' + data.edited_at + ' por ' + data.editor_name;
+          }
+
+          // Adiciona novos anexos à lista de anexos da entrada
+          if (data.new_attachments && data.new_attachments.length > 0) {
+            const attContainer = document.getElementById('entry-attachments-' + entryId);
+            let attWrap = attContainer.querySelector('.d-flex.flex-wrap');
+            if (!attWrap) {
+              attWrap = document.createElement('div');
+              attWrap.className = 'mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex flex-wrap gap-2';
+              attContainer.appendChild(attWrap);
+            }
+            data.new_attachments.forEach(att => {
+              const a = document.createElement('a');
+              a.href = att.download_url;
+              a.className = 'btn btn-soft-secondary btn-xs rounded-pill d-inline-flex align-items-center gap-1';
+              a.innerHTML = '<i class="bi bi-paperclip"></i><span>' + att.name + '</span>';
+              attWrap.appendChild(a);
+            });
+          }
+
+          if (fileInput) fileInput.value = '';
+        } else {
+          alert('Erro ao salvar: ' + (data.error || 'Tente novamente.'));
+        }
+      } catch (e) {
+        alert('Erro de comunicação. Tente novamente.');
+      } finally {
+        btn.disabled = false;
+        savingEl.style.display = 'none';
+      }
+    });
+  });
+
+  // Modal de histórico de edições
+  const histModal = document.getElementById('editHistoryModal');
+  if (histModal) {
+    histModal.addEventListener('show.bs.modal', function (event) {
+      const trigger = event.relatedTarget;
+      const histUrl = trigger ? trigger.dataset.historyUrl : null;
+      const contentEl = document.getElementById('editHistoryContent');
+
+      if (!histUrl) return;
+      contentEl.innerHTML = '<div class="text-center py-4 text-muted small"><span class="spinner-border spinner-border-sm me-2"></span>Carregando histórico...</div>';
+
+      fetch(histUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
+        .then(r => r.json())
+        .then(data => {
+          if (!data.history || data.history.length === 0) {
+            contentEl.innerHTML = '<div class="text-center py-4 text-muted small"><i class="bi bi-info-circle fs-2 opacity-25"></i><p class="mt-2 mb-0">Nenhuma edição registrada.</p></div>';
+            return;
+          }
+          let html = '<div class="list-group list-group-flush">';
+          data.history.forEach((h, i) => {
+            html += `
+              <div class="list-group-item bg-transparent px-0 py-3 border-bottom border-secondary border-opacity-10">
+                <div class="d-flex justify-content-between small text-muted mb-2" style="font-size:0.75rem;">
+                  <span><i class="bi bi-pencil me-1"></i><strong>Versão ${i + 1}</strong> — editado por <strong>${h.editor}</strong></span>
+                  <span>${h.edited_at}</span>
+                </div>
+                <div class="p-2 rounded-3" style="background:rgba(255,255,255,0.03); font-size:0.85rem; white-space:pre-wrap;">${h.body_before.replace(/</g,'&lt;')}</div>
+              </div>`;
+          });
+          html += '</div>';
+          contentEl.innerHTML = html;
+        })
+        .catch(() => {
+          contentEl.innerHTML = '<div class="text-center py-4 text-danger small">Erro ao carregar histórico.</div>';
+        });
+    });
+  }
+})();
+</script>
+
+<script>
+(function () {
+  const bodyTextarea = document.getElementById('body');
+
+  /* ── Assinatura do agente ── */
+  fetch('{{ url_for("sollus_tickets.api_agent_signature") }}')
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (data && data.signature && bodyTextarea && !bodyTextarea.value) {
+        bodyTextarea.value = '\n\n' + data.signature;
+        // posiciona o cursor no início
+        bodyTextarea.setSelectionRange(0, 0);
+        bodyTextarea.scrollTop = 0;
+      }
+    })
+    .catch(() => {});
+
+  /* ── Resposta rápida simples (select → textarea) ── */
+  const cannedSelect = document.getElementById('cannedResponse');
+  if (cannedSelect) {
+    cannedSelect.addEventListener('change', function () {
+      if (this.value && bodyTextarea) {
+        const sig = bodyTextarea.value.includes('\n\n--\n')
+          ? '\n\n' + bodyTextarea.value.split('\n\n--\n').slice(1).join('\n\n--\n')
+          : '';
+        bodyTextarea.value = this.value + sig;
+        bodyTextarea.focus();
+        bodyTextarea.setSelectionRange(0, 0);
+        bodyTextarea.scrollTop = 0;
+        this.value = '';
+      }
+    });
+  }
+
+  // Dynamic transfer filters data
+  const transferData = {
+    teams: [
+      {% for team in teams %}
+        {
+          id: {{ team.id }},
+          name: "{{ team.name | escape }}",
+          department_ids: [
+            {% set dept_ids = [] %}
+            {% for member in team.members %}
+              {% for access in department_access if access.user_id == member.user_id %}
+                {% if access.department_id not in dept_ids %}
+                  {% if dept_ids.append(access.department_id) %}{% endif %}
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+            {% for dept in departments %}
+              {% if dept.slug == team.slug and dept.id not in dept_ids %}
+                {% if dept_ids.append(dept.id) %}{% endif %}
+              {% endif %}
+            {% endfor %}
+            {{ dept_ids | join(', ') }}
+          ]
+        },
+      {% endfor %}
+    ],
+    agents: [
+      {% for agent in all_agents %}
+        {
+          id: {{ agent.id }},
+          name: "{{ (agent.name or agent.email) | escape }}",
+          department_ids: [
+            {% set agent_depts = [] %}
+            {% for access in department_access if access.user_id == agent.id %}
+              {% if agent_depts.append(access.department_id) %}{% endif %}
+            {% endfor %}
+            {{ agent_depts | join(', ') }}
+          ],
+          team_ids: [
+            {% set agent_teams = [] %}
+            {% for member in team_members if member.user_id == agent.id %}
+              {% if agent_teams.append(member.team_id) %}{% endif %}
+            {% endfor %}
+            {{ agent_teams | join(', ') }}
+          ]
+        },
+      {% endfor %}
+    ]
+  };
+
+  const transferDeptSelect = document.getElementById('transfer_department_id');
+  const transferTeamSelect = document.getElementById('transfer_team_id');
+  const transferAssigneeSelect = document.getElementById('transfer_assignee_id');
+
+  if (transferDeptSelect && transferTeamSelect && transferAssigneeSelect) {
+    const originalTeams = Array.from(transferTeamSelect.options).slice(1);
+    const originalAgents = Array.from(transferAssigneeSelect.options).slice(1);
+
+    function updateTransferFilters() {
+      const selectedDeptId = transferDeptSelect.value;
+      const selectedTeamId = transferTeamSelect.value;
+
+      transferTeamSelect.innerHTML = '<option value="">Selecione a Equipe</option>';
+      originalTeams.forEach(opt => {
+        const teamId = parseInt(opt.value, 10);
+        const teamData = transferData.teams.find(t => t.id === teamId);
+        if (!selectedDeptId || (teamData && teamData.department_ids.includes(parseInt(selectedDeptId, 10)))) {
+          transferTeamSelect.appendChild(opt.cloneNode(true));
+        }
+      });
+
+      if (selectedTeamId && Array.from(transferTeamSelect.options).some(o => o.value === selectedTeamId)) {
+        transferTeamSelect.value = selectedTeamId;
+      } else {
+        transferTeamSelect.value = '';
+      }
+
+      const currentTeamId = transferTeamSelect.value;
+      transferAssigneeSelect.innerHTML = '<option value="">Selecione o Atendente</option>';
+      originalAgents.forEach(opt => {
+        const agentId = parseInt(opt.value, 10);
+        const agentData = transferData.agents.find(a => a.id === agentId);
+        if (agentData) {
+          const deptMatch = !selectedDeptId || agentData.department_ids.includes(parseInt(selectedDeptId, 10));
+          const teamMatch = !currentTeamId || agentData.team_ids.includes(parseInt(currentTeamId, 10));
+          if (deptMatch && teamMatch) {
+            transferAssigneeSelect.appendChild(opt.cloneNode(true));
+          }
+        }
+      });
+    }
+
+    transferDeptSelect.addEventListener('change', () => {
+      transferTeamSelect.value = '';
+      updateTransferFilters();
+    });
+    transferTeamSelect.addEventListener('change', updateTransferFilters);
+
+    updateTransferFilters();
+  }
+
+  // Inicialização de tooltips Bootstrap 5
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+    new bootstrap.Tooltip(el);
+  });
+})();
+</script>
+{% endblock %}

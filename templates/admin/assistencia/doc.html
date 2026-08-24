@@ -1,0 +1,147 @@
+{% extends "layout.html" %}
+{% block title %}Documentação - Fluxo Assistência Técnica{% endblock %}
+
+{% block head %}
+<style>
+  .diagram-container{background:#fff;border-radius:12px;box-shadow:0 12px 30px rgba(15,35,58,.08);padding:20px;overflow-x:auto;}
+  .flow-card{border-left:5px solid #0d6efd;transition:transform .2s;}
+  .flow-card:hover{transform:translateY(-2px);box-shadow:0 .5rem 1rem rgba(0,0,0,.15)!important;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <p class="text-uppercase text-muted mb-1">Assistência Técnica</p>
+    <h1 class="h4 mb-0">Fluxo de Processos</h1>
+  </div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('assist_bp.assistencia_dashboard') }}"><i class="bi bi-journal-text"></i> Voltar à Assistência</a>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header bg-white">
+    <h5 class="mb-0 text-primary"><i class="bi bi-shield-lock me-2"></i>Regras de decisão</h5>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0">
+        <thead class="table-light">
+          <tr><th class="ps-4">Cenário</th><th>Condição</th><th>Ação imediata</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="ps-4 fw-bold">Conserto interno</td><td><span class="badge bg-success rounded-pill">Com contrato</span></td><td>Oficina realiza conserto direto e devolve.</td></tr>
+          <tr><td class="ps-4 fw-bold">Conserto interno</td><td><span class="badge bg-danger rounded-pill">Sem contrato</span></td><td>Oficina analisa → Assistência envia orçamento → Cliente aprova.</td></tr>
+          <tr><td class="ps-4 fw-bold">Envio fábrica</td><td><span class="badge bg-success rounded-pill">Com contrato</span></td><td>Cliente comunicado (sem orçamento) → Estoque envia.</td></tr>
+          <tr><td class="ps-4 fw-bold">Envio fábrica</td><td><span class="badge bg-danger rounded-pill">Sem contrato</span></td><td>Assistência orça valor da fábrica → Cliente aprova → Estoque envia.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header bg-white">
+    <h5 class="mb-0 text-primary"><i class="bi bi-diagram-3 me-2"></i>Diagrama de fluxo</h5>
+  </div>
+  <div class="card-body diagram-container">
+<div class="mermaid">
+graph TD
+  Inicio("Chegada Equipamento")
+  Oficina_Analise["OFICINA: Análise Inicial"]
+  Decisao_Tipo{"Interno ou Fábrica?"}
+
+  %% Interno
+  Decisao_Contrato_Int{"Tem Contrato?"}
+  Oficina_Conserto["OFICINA: Faz Conserto"]
+  AssTec_Orc["ASS. TÉC: Envia Orçamento"]
+  Cliente_Decisao{"Aprova?"}
+  Devolucao_Sem_Reparo["Devolução S/ Reparo"]
+
+  %% Fábrica
+  Decisao_Contrato_Fab{"Tem Contrato?"}
+  AssTec_Comunicado["ASS. TÉC: Comunica Envio"]
+  Estoque_Envio["ESTOQUE: Envia p/ Fábrica"]
+  AssTec_OrcFab["ASS. TÉC: Orçamento Fábrica"]
+  Cliente_DecisaoFab{"Aprova?"}
+  Oficina_Encaminha["OFICINA: Encaminha p/ Estoque"]
+  Fabrica_Ext["FÁBRICA"]
+  Estoque_Retorno["Chegada da Fábrica"]
+  Timer_15d{"Passou 15 dias?"}
+  Consulta_Fab["ESTOQUE: Cobra Fábrica"]
+
+  %% Finalização
+  Oficina_Teste["OFICINA: Testes Finais"]
+  AssTec_OS["ASS. TÉC: Gera OS Devolução"]
+  AssTec_Avisa["Avisa Ass. Téc Prontidão"]
+  Fim(("Entrega Cliente"))
+
+  Inicio --> Oficina_Analise
+  Oficina_Analise --> Decisao_Tipo
+  Decisao_Tipo -- "Interno" --> Decisao_Contrato_Int
+  Decisao_Contrato_Int -- "Sim" --> Oficina_Conserto
+  Decisao_Contrato_Int -- "Não" --> AssTec_Orc
+  AssTec_Orc --> Cliente_Decisao
+  Cliente_Decisao -- "Sim" --> Oficina_Conserto
+  Cliente_Decisao -- "Não" --> Devolucao_Sem_Reparo
+
+  Decisao_Tipo -- "Fábrica" --> Decisao_Contrato_Fab
+  Decisao_Contrato_Fab -- "Sim" --> AssTec_Comunicado --> Estoque_Envio
+  Decisao_Contrato_Fab -- "Não" --> AssTec_OrcFab --> Cliente_DecisaoFab
+  Cliente_DecisaoFab -- "Sim" --> Oficina_Encaminha --> Estoque_Envio
+  Cliente_DecisaoFab -- "Não" --> Devolucao_Sem_Reparo
+
+  subgraph FLUXO_FABRICA ["Processo Externo"]
+    Estoque_Envio --> Fabrica_Ext --> Estoque_Retorno
+  end
+  Estoque_Envio -.-> Timer_15d
+  Timer_15d -- "Sem retorno" --> Consulta_Fab
+
+  Estoque_Retorno --> Oficina_Teste --> AssTec_OS
+  Oficina_Conserto --> AssTec_Avisa --> AssTec_OS --> Fim
+
+  style Decisao_Tipo fill:#ffebcc,stroke:#ff9900,stroke-width:2px
+  style Decisao_Contrato_Int fill:#d1e7dd,stroke:#198754,stroke-width:2px
+  style Decisao_Contrato_Fab fill:#d1e7dd,stroke:#198754,stroke-width:2px
+  style Oficina_Analise fill:#cce5ff,stroke:#0d6efd
+  style Oficina_Conserto fill:#cce5ff,stroke:#0d6efd
+  style Oficina_Teste fill:#cce5ff,stroke:#0d6efd
+  style AssTec_OS fill:#f8d7da,stroke:#dc3545
+</div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card h-100 flow-card shadow-sm">
+      <div class="card-body">
+        <h6 class="card-title"><i class="bi bi-calendar-check me-2 text-warning"></i>Monitoramento fábrica</h6>
+        <p class="mb-0 text-secondary">Após 15 dias sem retorno, abrir cobrança ao fornecedor. Prazo padrão ~30 dias.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100 flow-card shadow-sm" style="border-left-color:#198754;">
+      <div class="card-body">
+        <h6 class="card-title"><i class="bi bi-clipboard-check me-2 text-success"></i>Finalização (OS)</h6>
+        <p class="mb-0 text-secondary">Retorno interno ou de fábrica: gerar OS de devolução e avisar prontidão.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100 flow-card shadow-sm" style="border-left-color:#dc3545;">
+      <div class="card-body">
+        <h6 class="card-title"><i class="bi bi-file-earmark-text me-2 text-danger"></i>Contratos</h6>
+        <p class="mb-0 text-secondary">Com contrato: fast-track (sem orçamento). Sem contrato: orçamento e aprovação obrigatórios.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true });
+</script>
+{% endblock %}

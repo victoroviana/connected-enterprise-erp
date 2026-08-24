@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Importacoes Sollus Tickets{% endblock %}
+
+{% block content %}
+{{ page_hero(
+  title='Importacoes',
+  subtitle='Historico das importacoes feitas a partir do osTicket legado.',
+  eyebrow='Sollus Tickets'
+) }}
+<div class="card border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead class="table-light">
+        <tr><th>ID</th><th>Origem</th><th>Status</th><th>Inicio</th><th>Fim</th><th>Resumo</th></tr>
+      </thead>
+      <tbody>
+        {% for run in runs %}
+          <tr>
+            <td>{{ run.id }}</td>
+            <td>{{ run.source }}</td>
+            <td><span class="badge text-bg-{{ 'success' if run.status == 'done' else ('danger' if run.status == 'failed' else 'secondary') }}">{{ run.status }}</span></td>
+            <td class="text-muted small">{{ run.started_at | local('%d/%m/%Y %H:%M') if run.started_at else '-' }}</td>
+            <td class="text-muted small">{{ run.finished_at | local('%d/%m/%Y %H:%M') if run.finished_at else '-' }}</td>
+            <td><code class="small">{{ run.summary or '-' }}</code></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" class="text-center text-muted py-4">Nenhuma importacao registrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

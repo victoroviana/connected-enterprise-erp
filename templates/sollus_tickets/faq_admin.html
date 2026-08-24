@@ -1,0 +1,133 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Administrar FAQ - Sollus Tickets{% endblock %}
+
+{% block content %}
+{{ page_hero(
+  title='Base de Conhecimento',
+  subtitle='Gerencie categorias e artigos de ajuda para os clientes e agentes.',
+  eyebrow='Sollus Tickets'
+) }}
+
+<div class="row g-3">
+  <!-- Categorias -->
+  <div class="col-12 col-xl-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">Categorias</div>
+      <div class="card-body">
+        <form method="post" class="mb-4">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="category">
+          <div class="mb-2">
+            <input class="form-control" name="name" placeholder="Nome da Categoria" required>
+          </div>
+          <div class="mb-2">
+            <textarea class="form-control" name="description" rows="2" placeholder="Descrição"></textarea>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="is_public" checked id="cat_public">
+              <label class="form-check-label small" for="cat_public">Pública</label>
+            </div>
+            <button class="btn btn-sm btn-primary">Adicionar</button>
+          </div>
+        </form>
+        <hr>
+        {% for cat in categories %}
+          <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+            <div>
+              <div class="fw-medium">{{ cat.name }}</div>
+              <div class="small text-muted">{{ cat.faqs|length }} artigos</div>
+            </div>
+            <form method="post" class="m-0">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="kind" value="faq_category">
+              <input type="hidden" name="id" value="{{ cat.id }}">
+              <button class="btn btn-sm btn-outline-danger border-0"><i class="fa-solid fa-trash"></i></button>
+            </form>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Artigos -->
+  <div class="col-12 col-xl-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white fw-semibold">Novo Artigo</div>
+      <div class="card-body">
+        <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="faq">
+          <div class="row g-2 mb-3">
+            <div class="col-md-8">
+              <input class="form-control" name="question" placeholder="Pergunta / Título" required>
+            </div>
+            <div class="col-md-4">
+              <select class="form-select" name="category_id" required>
+                <option value="">Selecionar Categoria</option>
+                {% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <textarea class="form-control" name="answer" rows="6" placeholder="Resposta completa (HTML aceito)" required></textarea>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="is_published" checked id="faq_pub">
+              <label class="form-check-label" for="faq_pub">Publicado</label>
+            </div>
+            <button class="btn btn-primary">Salvar Artigo</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mt-3">
+      <div class="card-header bg-white fw-semibold">Artigos Existentes</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle m-0">
+            <thead class="table-light">
+              <tr>
+                <th>Pergunta</th>
+                <th>Categoria</th>
+                <th>Status</th>
+                <th class="text-end">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for faq in faqs %}
+                <tr>
+                  <td>{{ faq.question }}</td>
+                  <td><span class="badge bg-light text-dark border">{{ faq.category.name }}</span></td>
+                  <td>
+                    {% if faq.is_published %}
+                      <span class="badge bg-success-subtle text-success border border-success-subtle">Publicado</span>
+                    {% else %}
+                      <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Rascunho</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    <form method="post" class="m-0 d-inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="action" value="delete">
+                      <input type="hidden" name="kind" value="faq">
+                      <input type="hidden" name="id" value="{{ faq.id }}">
+                      <button class="btn btn-sm btn-outline-danger border-0"><i class="fa-solid fa-trash"></i></button>
+                    </form>
+                  </td>
+                </tr>
+              {% else %}
+                <tr><td colspan="4" class="text-center py-4 text-muted small">Nenhum artigo cadastrado.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

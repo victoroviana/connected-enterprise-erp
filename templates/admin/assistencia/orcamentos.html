@@ -1,0 +1,689 @@
+{% extends "layout.html" %}
+{% block title %}Orçamentos{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+  .proposal-wrapper { padding-bottom: 3rem; }
+  .proposal-hero {
+    background: linear-gradient(130deg, rgba(15,123,200,.95), rgba(0,59,102,.95));
+    color: #f7fbff;
+    border-radius: 1.5rem;
+    padding: 2.25rem 2.6rem;
+    box-shadow: 0 22px 46px rgba(9,29,54,.28);
+    position: relative;
+    overflow: hidden;
+  }
+  .proposal-hero::after {
+    content: "";
+    position: absolute;
+    top: -45%;
+    right: -25%;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(255,255,255,.45), transparent 65%);
+    filter: blur(6px);
+    opacity: .65;
+  }
+  .proposal-hero .hero-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    background: rgba(255,255,255,.18);
+    font-size: 1.9rem;
+    color: #fff;
+    box-shadow: 0 12px 28px rgba(0,0,0,.18);
+  }
+  .proposal-hero .hero-title { font-weight: 700; letter-spacing: .3px; }
+  .proposal-hero .hero-subtitle { color: rgba(240,247,255,.88); max-width: 640px; }
+  .proposal-hero .hero-metric {
+    background: rgba(255,255,255,.16);
+    border-radius: 1.2rem;
+    padding: 1.2rem 1.5rem;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 16px 36px rgba(0,0,0,.22);
+    min-width: 220px;
+  }
+  .proposal-hero .hero-metric .label {
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    font-size: .7rem;
+    color: rgba(255,255,255,.8);
+  }
+  .proposal-hero .hero-metric strong { display: block; font-size: 1.8rem; line-height: 1.1; margin-top: .35rem; }
+  .section-card { border-radius: 1.25rem; }
+  .section-card .card-header { background: transparent; border: 0; padding: 1.5rem 1.75rem 0; }
+  .section-card .card-body { padding: 1.5rem 1.75rem 1.75rem; }
+  .section-title { font-weight: 700; letter-spacing: .02em; }
+  .section-subtitle { font-size: .95rem; }
+  .proposal-form .form-label { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: #6c7893; font-weight: 600; }
+  .proposal-form .form-control,
+  .proposal-form .form-select { border-radius: .9rem; padding: .75rem 1rem; border-color: #d6deed; }
+  .proposal-form .form-control:focus,
+  .proposal-form .form-select:focus { border-color: var(--blue-700); box-shadow: 0 0 0 .2rem rgba(15,123,200,.18); }
+  .proposal-wrapper .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .55rem;
+    border-radius: 1rem;
+    font-weight: 600;
+    letter-spacing: .01em;
+    padding: .75rem 1.4rem;
+    border: 1px solid transparent;
+    transition: transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .proposal-wrapper .btn i { font-size: 1.15rem; line-height: 1; }
+  .proposal-wrapper .btn-primary { background: linear-gradient(135deg,#0f7bc8,#1ba8f0); color: #fff; border: 0; }
+  .proposal-wrapper .btn-primary:hover { background: linear-gradient(135deg,#0c63a2,#1584c4); }
+  .proposal-wrapper .btn-outline-primary { border-color: rgba(15,123,200,.55); color: #0f2657; background: rgba(15,123,200,.08); }
+  .proposal-wrapper .btn-outline-primary:hover { border-color: #0f7bc8; background: rgba(15,123,200,.16); color: #0f2657; }
+  .proposal-wrapper .btn-outline-secondary { border-color: rgba(79,70,229,.5); color: #312e81; background: rgba(79,70,229,.12); }
+  .proposal-wrapper .btn-outline-secondary:hover { border-color: rgba(79,70,229,.75); background: rgba(79,70,229,.22); }
+  .orc-table thead { background: #f1f4fb; text-transform: uppercase; font-size: .7rem; letter-spacing: .08rem; color: #5a6782; }
+  .orc-table td { vertical-align: top; }
+  .orc-table .btn-sm { padding: .35rem .7rem; border-radius: .7rem; }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .35rem .7rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: .75rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    background: rgba(15,123,200,.12);
+    color: #0f2657;
+  }
+  .blink-red {
+    animation: blinker 1s linear infinite;
+    background-color: #dc2626;
+    color: #fff;
+  }
+  .blink-yellow {
+    animation: blinker 1s linear infinite;
+    background-color: #facc15;
+    color: #1f2937;
+  }
+  @keyframes blinker { 50% { opacity: 0; } }
+
+  html[data-theme="dark"] .proposal-hero{
+    background: linear-gradient(130deg, rgba(10,48,92,.95), rgba(6,22,46,.95));
+    box-shadow: 0 22px 46px rgba(0,0,0,.45);
+  }
+  html[data-theme="dark"] .proposal-hero::after{ opacity:.3; }
+  html[data-theme="dark"] .proposal-hero .hero-subtitle{ color:rgba(226,232,240,.82); }
+  html[data-theme="dark"] .proposal-hero .hero-metric{
+    background: rgba(15,23,42,.6);
+    box-shadow: 0 16px 36px rgba(0,0,0,.4);
+  }
+  html[data-theme="dark"] .section-card{ background: var(--card); border-color: rgba(148,163,184,.2); }
+  html[data-theme="dark"] .orc-table{ color: var(--text); }
+  html[data-theme="dark"] .orc-table thead{ background: rgba(15,23,42,.8); color:#cbd5e1; }
+  html[data-theme="dark"] .orc-table th,
+  html[data-theme="dark"] .orc-table td{ border-color: rgba(148,163,184,.2); }
+  html[data-theme="dark"] .orc-table tbody tr{ background: rgba(15,23,42,.35); }
+  html[data-theme="dark"] .status-pill{ background: rgba(59,130,246,.25); color:#e2e8f0; }
+  html[data-theme="dark"] .proposal-wrapper .btn-outline-primary{
+    color:#e2e8f0;
+    border-color: rgba(147,197,253,.7);
+    background: rgba(59,130,246,.14);
+  }
+  html[data-theme="dark"] .proposal-wrapper .btn-outline-primary:hover{
+    color:#f8fafc;
+    background: rgba(59,130,246,.3);
+    border-color: rgba(147,197,253,.9);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="proposal-wrapper">
+  <div class="proposal-hero mb-4">
+    <div class="d-flex flex-wrap gap-4 align-items-center justify-content-between position-relative">
+      <div class="d-flex flex-column gap-3">
+        <div class="hero-icon"><i class="bi bi-file-earmark-text"></i></div>
+        <div>
+          <h1 class="hero-title h3 mb-2">Orçamentos</h1>
+          <p class="hero-subtitle mb-0">Acompanhe os orçamentos em aberto, registre cobranças e mantenha o histórico organizado.</p>
+        </div>
+      </div>
+      <div class="hero-metric">
+        <span class="label">Orçamentos encontrados</span>
+        <strong>{{ orcamentos_total }}</strong>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <a class="btn btn-primary btn-sm" href="{{ url_for('assist_bp.assistencia_orcamentos_gerar') }}">
+          <i class="bi bi-file-earmark-pdf"></i> Gerar orçamento
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <form method="get" class="proposal-form">
+    <div class="card section-card shadow-sm border-0 mb-4">
+      <div class="card-header">
+        <h2 class="section-title h5 mb-1">Filtros</h2>
+        <p class="section-subtitle text-muted mb-0">Refine por unidade, responsável, status, cliente e datas de envio.</p>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-2">
+            <label class="form-label" for="unidadeFiltro">Unidade</label>
+            <select class="form-select" id="unidadeFiltro" name="unidadeFiltro">
+              <option value="">Todas</option>
+              {% for unidade in unidades %}
+                <option value="{{ unidade }}" {% if filters.unidade == unidade %}selected{% endif %}>{{ unidade }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="responsavelFiltro">Responsável</label>
+            <input type="text" class="form-control" id="responsavelFiltro" name="responsavelFiltro" value="{{ filters.responsavel }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="statusFiltro">Status</label>
+            <select class="form-select" id="statusFiltro" name="statusFiltro">
+              <option value="">Todos</option>
+              {% for status in status_options %}
+                <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="clienteFiltro">Cliente</label>
+            <input type="text" class="form-control" id="clienteFiltro" name="clienteFiltro" value="{{ filters.cliente }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="dataInicio">Data início</label>
+            <input type="date" class="form-control" id="dataInicio" name="dataInicio" value="{{ filters.data_inicio }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="dataFim">Data fim</label>
+            <input type="date" class="form-control" id="dataFim" name="dataFim" value="{{ filters.data_fim }}">
+          </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <button type="submit" class="btn btn-outline-primary">Filtrar</button>
+          {% if filters.unidade or filters.responsavel or filters.status or filters.cliente or filters.data_inicio or filters.data_fim %}
+            <a href="{{ url_for('assist_bp.assistencia_orcamentos') }}" class="btn btn-outline-secondary">Limpar filtro</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div id="orcamentos-abertos-section">
+  <div class="card section-card shadow-sm border-0">
+    <div class="card-header">
+      <h2 class="section-title h5 mb-1">Orçamentos em aberto</h2>
+      <p class="section-subtitle text-muted mb-0">Acompanhe cobranças, status e detalhes dos orçamentos.</p>
+    </div>
+    <div class="card-body">
+      {% if orcamentos %}
+        <div class="table-responsive">
+          <table class="table align-middle orc-table">
+            <thead>
+              <tr>
+                <th>Unidade</th>
+                <th>Data envio</th>
+                <th>Responsável</th>
+                <th>última cobrança</th>
+                <th>Cliente</th>
+                <th>Mais informações</th>
+                <th>Valor</th>
+                <th>Status</th>
+                <th>Editar</th>
+                <th>Data aprovação</th>
+                <th>Data atendimento</th>
+                <th>Ordem de serviço</th>
+                <th>NF + data</th>
+                <th>Outras informações</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in orcamentos %}
+              <tr>
+                <td>{{ item.unidade }}</td>
+                <td>{{ item.data_envio or '-' }}</td>
+                <td>{{ item.responsavel }}</td>
+                <td>
+                  <div class="small">{{ item.ultima_cobranca or '-' }}</div>
+                  <button type="button" class="btn btn-outline-primary btn-sm mt-1" data-bs-toggle="modal" data-bs-target="#cobrancaModal{{ item.id }}">Cobrança</button>
+                </td>
+                <td>{{ item.cliente }}</td>
+                <td>
+                  <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal{{ item.id }}">
+                    <i class="bi bi-card-text"></i> Detalhes
+                  </button>
+                </td>
+                <td>
+                  <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#valorModal{{ item.id }}">
+                    {{ item.valor }}
+                  </button>
+                </td>
+                <td>
+                  <span class="status-pill {{ item.blink_class }}">{{ item.status }}</span>
+                </td>
+                <td>
+                  {% if item.can_edit_status %}
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#statusModal{{ item.id }}">Status</button>
+                  {% else %}
+                    <span class="text-muted small">-</span>
+                  {% endif %}
+                </td>
+                <td>{{ item.data_aprovacao or '-' }}</td>
+                <td>
+                  {% if item.has_data_atendimento %}
+                    {{ item.data_atendimento }}
+                  {% else %}
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#atendimentoModal{{ item.id }}">Data atendimento</button>
+                  {% endif %}
+                </td>
+                <td>{{ item.ordem_servico or 'Não informada' }}</td>
+                <td>
+                  {% if can_edit_nf and not item.nf_data %}
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#nfModal{{ item.id }}">NF e data</button>
+                  {% else %}
+                    {{ item.nf_data or '-' }}
+                  {% endif %}
+                </td>
+                <td>
+                  <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#outrasInfoModal{{ item.id }}">Informações</button>
+                </td>
+                <td>
+                  <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#removerOrcamentoModal{{ item.id }}">
+                    <i class="bi bi-trash"></i> Remover
+                  </button>
+                </td>
+              </tr>
+
+              <div class="modal sollus-modal fade" id="cobrancaModal{{ item.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title">Cobrança</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                      <form method="post" action="{{ url_for('assist_bp.assistencia_orcamentos_cobranca', orcamento_id=item.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                          <label class="form-label">Data cobrança</label>
+                          <input type="date" class="form-control" name="dataCobranca" required>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label">Descrição da cobrança</label>
+                          <textarea class="form-control" name="descricaoCobranca" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal sollus-modal fade" id="valorModal{{ item.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title">Editar valor</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                      <form method="post" action="{{ url_for('assist_bp.assistencia_orcamentos_valor', orcamento_id=item.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                          <label class="form-label">Novo valor</label>
+                          <input type="text" class="form-control" name="novoValor" value="{{ item.valor }}" data-currency required>
+                        </div>
+                        <div class="form-check mb-3">
+                          <input class="form-check-input" type="checkbox" name="fabrica" value="SIM" id="fabrica{{ item.id }}" {% if item.fabrica == 'SIM' %}checked{% endif %}>
+                          <label class="form-check-label" for="fabrica{{ item.id }}">É da fábrica?</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal sollus-modal fade" id="statusModal{{ item.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title">Atualizar status</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                      <form method="post" action="{{ url_for('assist_bp.assistencia_orcamentos_status', orcamento_id=item.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                          <label class="form-label">Data aprovação</label>
+                          <input type="date" class="form-control" name="dataAprovacao">
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label">Status</label>
+                          <select class="form-select" name="status" required>
+                            {% for status in status_edit_options %}
+                              <option value="{{ status }}">{{ status }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal sollus-modal fade" id="atendimentoModal{{ item.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title">Adicionar atendimento e OS</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                      <form method="post" action="{{ url_for('assist_bp.assistencia_orcamentos_atendimento', orcamento_id=item.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                          <label class="form-label">Data de atendimento</label>
+                          <input type="date" class="form-control" name="dataAtendimento" required>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label">Ordem de serviço</label>
+                          <input type="text" class="form-control" name="ordemServico" maxlength="255" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal sollus-modal fade" id="nfModal{{ item.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title">Adicionar NF e data</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                      <form method="post" action="{{ url_for('assist_bp.assistencia_orcamentos_nf', orcamento_id=item.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                          <label class="form-label">Número da nota fiscal</label>
+                          <input type="text" class="form-control" name="numeroNotaFiscal" required>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label">Data</label>
+                          <input type="date" class="form-control" name="dataNF" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal sollus-modal fade" id="infoModal{{ item.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title">Detalhes do orçamento</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                      <p><strong>Número proposta:</strong> {{ item.numero_proposta or '-' }}</p>
+                      <p><strong>Tipo da visita:</strong> {{ item.tipo_visita or '-' }}</p>
+                      <p><strong>Equipamento:</strong> {{ item.equipamento or '-' }}</p>
+                      <p><strong>Fábrica:</strong> {{ item.fabrica or '-' }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal sollus-modal fade" id="outrasInfoModal{{ item.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title">Informações adicionais</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                      {% if item.outras_informacoes %}
+                        {{ item.outras_informacoes | safe }}
+                      {% else %}
+                        <span class="text-muted">Sem informações adicionais.</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal sollus-modal fade" id="removerOrcamentoModal{{ item.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title">Remover orçamento em aberto</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                      <p class="mb-2">Confirma a remoção deste orçamento em aberto?</p>
+                      <div class="small text-muted">
+                        <div><strong>Cliente:</strong> {{ item.cliente }}</div>
+                        <div><strong>Número proposta:</strong> {{ item.numero_proposta or '-' }}</div>
+                        <div><strong>Status:</strong> {{ item.status }}</div>
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+                      <form method="post" action="{{ url_for('assist_bp.assistencia_orcamentos_excluir', orcamento_id=item.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger">
+                          <i class="bi bi-trash"></i> Remover
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-muted">Nenhum orçamento encontrado com os filtros atuais.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if pagination.total_pages > 1 %}
+    {% set base_params = {
+      'unidadeFiltro': filters.unidade,
+      'responsavelFiltro': filters.responsavel,
+      'statusFiltro': filters.status,
+      'clienteFiltro': filters.cliente,
+      'dataInicio': filters.data_inicio,
+      'dataFim': filters.data_fim,
+    } %}
+    <nav class="mt-4" aria-label="Paginação">
+      <ul class="pagination">
+        <li class="page-item {% if pagination.page <= 1 %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('assist_bp.assistencia_orcamentos', page=1, **base_params) }}">&laquo;</a>
+        </li>
+        <li class="page-item {% if pagination.page <= 1 %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('assist_bp.assistencia_orcamentos', page=pagination.page - 1, **base_params) }}">&lsaquo;</a>
+        </li>
+        {% for page_num in range(pagination.start_page, pagination.end_page + 1) %}
+          <li class="page-item {% if pagination.page == page_num %}active{% endif %}">
+            <a class="page-link" href="{{ url_for('assist_bp.assistencia_orcamentos', page=page_num, **base_params) }}">{{ page_num }}</a>
+          </li>
+        {% endfor %}
+        <li class="page-item {% if pagination.page >= pagination.total_pages %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('assist_bp.assistencia_orcamentos', page=pagination.page + 1, **base_params) }}">&rsaquo;</a>
+        </li>
+        <li class="page-item {% if pagination.page >= pagination.total_pages %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('assist_bp.assistencia_orcamentos', page=pagination.total_pages, **base_params) }}">&raquo;</a>
+        </li>
+      </ul>
+    </nav>
+  {% endif %}
+  </div>
+
+  <div id="orcamentos-historico-section" class="d-none">
+  <div class="card section-card shadow-sm border-0 mt-4" id="orcamentos-historico">
+    <div class="card-header">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+          <h2 class="section-title h5 mb-1">Hist&oacute;rico de or&ccedil;amentos</h2>
+          <p class="section-subtitle text-muted mb-0">Or&ccedil;amentos conclu&iacute;dos ou encerrados.</p>
+        </div>
+        <span class="text-muted small">Total: {{ orcamentos_historico_total }}</span>
+      </div>
+    </div>
+    <div class="card-body">
+      {% if orcamentos_historico %}
+        <div class="table-responsive">
+          <table class="table align-middle orc-table">
+            <thead>
+              <tr>
+                <th>Unidade</th>
+                <th>Data envio</th>
+                <th>Respons&aacute;vel</th>
+                <th>&Uacute;ltima cobran&ccedil;a</th>
+                <th>Tipo visita</th>
+                <th>Equipamento</th>
+                <th>Cliente</th>
+                <th>N&uacute;mero proposta</th>
+                <th>Valor</th>
+                <th>Status</th>
+                <th>Data aprova&ccedil;&atilde;o</th>
+                <th>Data atendimento</th>
+                <th>Ordem de servi&ccedil;o</th>
+                <th>NF + data</th>
+                <th>Outras informa&ccedil;&otilde;es</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in orcamentos_historico %}
+              <tr>
+                <td>{{ item.unidade }}</td>
+                <td>{{ item.data_envio or '-' }}</td>
+                <td>{{ item.responsavel }}</td>
+                <td>{{ item.ultima_cobranca or '-' }}</td>
+                <td>{{ item.tipo_visita }}</td>
+                <td>{{ item.equipamento }}</td>
+                <td>{{ item.cliente }}</td>
+                <td>{{ item.numero_proposta }}</td>
+                <td>{{ item.valor }}</td>
+                <td>{{ item.status }}</td>
+                <td>{{ item.data_aprovacao or '-' }}</td>
+                <td>{{ item.data_atendimento or '-' }}</td>
+                <td>{{ item.ordem_servico or '-' }}</td>
+                <td>{{ item.nf_data or '-' }}</td>
+                <td>
+                  <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#historyInfoModal{{ item.id }}">
+                    Ver informa&ccedil;&otilde;es
+                  </button>
+                </td>
+              </tr>
+
+              <div class="modal sollus-modal fade" id="historyInfoModal{{ item.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title">Informa&ccedil;&otilde;es adicionais</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                      {% if item.outras_informacoes %}
+                        {{ item.outras_informacoes | safe }}
+                      {% else %}
+                        <span class="text-muted">Sem informa&ccedil;&otilde;es adicionais.</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-muted">Nenhum or&ccedil;amento encontrado no hist&oacute;rico.</div>
+      {% endif %}
+    </div>
+  </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/orcamentos_status.js') }}"></script>
+<script>
+  (() => {
+    const openBtn = document.querySelector('[data-orcamento-view="abertos"]');
+    const historyBtn = document.querySelector('[data-orcamento-view="historico"]');
+    const openSection = document.getElementById('orcamentos-abertos-section');
+    const historySection = document.getElementById('orcamentos-historico-section');
+    const historyAnchor = document.getElementById('orcamentos-historico');
+
+    if (!openBtn || !historyBtn || !openSection || !historySection) return;
+
+    const setButtonState = (btn, active) => {
+      btn.classList.toggle('btn-light', active);
+      btn.classList.toggle('btn-outline-light', !active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    };
+
+    const setView = (view, updateUrl) => {
+      const target = view === 'historico' ? 'historico' : 'abertos';
+      openSection.classList.toggle('d-none', target !== 'abertos');
+      historySection.classList.toggle('d-none', target !== 'historico');
+      setButtonState(openBtn, target === 'abertos');
+      setButtonState(historyBtn, target === 'historico');
+      if (updateUrl) {
+        const url = new URL(window.location.href);
+        if (target === 'historico') {
+          url.searchParams.set('view', 'historico');
+          url.hash = 'orcamentos-historico';
+        } else {
+          url.searchParams.delete('view');
+          url.hash = '';
+        }
+        window.history.replaceState({}, '', url);
+      }
+      if (target === 'historico' && historyAnchor) {
+        historyAnchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+
+    openBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      setView('abertos', true);
+    });
+
+    historyBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      setView('historico', true);
+    });
+
+    const initialParams = new URLSearchParams(window.location.search);
+    const initialView = initialParams.get('view');
+    const hashView = window.location.hash === '#orcamentos-historico' ? 'historico' : '';
+    setView(initialView || hashView || 'abertos', false);
+  })();
+</script>
+{% endblock %}

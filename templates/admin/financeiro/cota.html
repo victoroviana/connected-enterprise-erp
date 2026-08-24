@@ -1,0 +1,610 @@
+﻿{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Financeiro | Cota{% endblock %}
+
+{% block head %}
+<style>
+  .cota-shell{
+    --cota-ink:var(--text);
+    --cota-muted:var(--muted);
+    --cota-accent:var(--blue-700);
+    --cota-accent-strong:var(--blue-900);
+    --cota-line:rgba(148,163,184,.3);
+    --cota-surface:var(--card);
+    --cota-soft:rgba(15,35,58,.04);
+    --cota-shadow:0 14px 32px rgba(15,35,58,.08);
+    font-family:inherit;
+    color:var(--cota-ink);
+    position:relative;
+    padding:0;
+    background:transparent;
+  }
+  .cota-shell::before{content:none;}
+  .cota-shell > *{position:relative;z-index:1;}
+  .cota-toolbar{
+    display:flex;
+    flex-direction:column;
+    gap:.9rem;
+    align-items:flex-start;
+    padding:1rem 1.25rem;
+    margin:1.2rem 0 1.4rem;
+    border-radius:20px;
+    border:1px solid var(--cota-line);
+    background:var(--cota-surface);
+    box-shadow:var(--cota-shadow);
+  }
+  .cota-toolbar__group{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;width:100%;}
+  .cota-toolbar__actions{display:flex;flex-direction:column;gap:.6rem;align-items:flex-start;width:100%;}
+  .cota-action-row{display:flex;flex-wrap:wrap;gap:.6rem;width:100%;justify-content:flex-start;}
+
+  .cota-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:.4rem;
+    padding:.35rem .85rem;
+    border-radius:999px;
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.18em;
+    background:rgba(14,93,198,.12);
+    color:var(--cota-accent-strong);
+    font-weight:600;
+  }
+  .cota-chip--outline{
+    background:transparent;
+    color:var(--cota-muted);
+    border:1px solid var(--cota-line);
+    letter-spacing:.12em;
+  }
+
+  .cota-grid{margin-bottom:1.2rem;}
+  .cota-panel{
+    border-radius:22px;
+    border:1px solid var(--cota-line);
+    background:var(--cota-surface);
+    box-shadow:var(--cota-shadow);
+    overflow:hidden;
+  }
+  .cota-panel__header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:1rem;
+    margin-bottom:1rem;
+  }
+  .cota-overline{
+    font-size:.65rem;
+    text-transform:uppercase;
+    letter-spacing:.24em;
+    color:var(--cota-muted);
+    font-weight:600;
+  }
+  .cota-panel__title{font-size:1.1rem;font-weight:600;margin:0;}
+  .cota-panel__subtitle{color:var(--cota-muted);font-size:.85rem;}
+  .cota-section-header{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:1rem;
+    margin:2rem 0 1rem;
+  }
+
+  .cota-table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    font-size:.9rem;
+  }
+  .cota-table thead th{
+    background:var(--cota-soft);
+    color:var(--cota-muted);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.16em;
+    padding:.85rem .75rem;
+    border-bottom:1px solid var(--cota-line);
+  }
+  .cota-table tbody td{
+    padding:.75rem .75rem;
+    border-bottom:1px solid rgba(15,23,42,.08);
+  }
+  .cota-table tbody tr:last-child td{border-bottom:0;}
+  .cota-table tbody tr:hover{background:rgba(14,93,198,.06);}
+  .cota-num{font-variant-numeric:tabular-nums;}
+  .cota-money{display:flex;flex-direction:column;align-items:flex-end;gap:.35rem;}
+  .cota-table__total td{
+    background:rgba(14,93,198,.08);
+    font-weight:600;
+  }
+
+  .cota-totals{
+    display:flex;
+    flex-wrap:wrap;
+    gap:.8rem;
+    align-items:center;
+    justify-content:space-between;
+    padding:.85rem 1rem;
+    border-radius:16px;
+    border:1px solid var(--cota-line);
+    background:var(--cota-soft);
+    font-weight:600;
+  }
+
+  #faltaParaBaterMeta{
+    padding:14px 16px;
+    border-radius:16px;
+    border:1px dashed rgba(14,93,198,.35);
+    background:rgba(14,93,198,.08);
+    font-weight:600;
+  }
+
+  .cota-shell .btn{
+    border-radius:999px;
+    font-weight:600;
+    letter-spacing:.01em;
+  }
+  .cota-shell .btn-sm{
+    font-size:.78rem;
+    padding:.3rem .75rem;
+  }
+
+  .cota-shell .card-body{padding:1.4rem;}
+  .cota-shell .chart-card{min-height:360px;}
+
+  .cota-panel,
+  .cota-toolbar{animation:cotaRise .5s ease both;}
+  @keyframes cotaRise{
+    from{opacity:0;transform:translateY(12px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .cota-panel,
+    .cota-toolbar{animation:none;}
+  }
+  @media (max-width: 991px){
+    .cota-shell{padding:20px;}
+    .cota-toolbar__actions{align-items:flex-start;}
+  }
+  @media (max-width: 767px){
+    .cota-toolbar{flex-direction:column;align-items:stretch;}
+    .cota-action-row{width:100%;}
+    .cota-shell .btn{width:100%;justify-content:center;}
+  }
+</style>
+<script src="https://www.gstatic.com/charts/loader.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="cota-shell">
+{{ page_hero(
+  title='Cota Mensal e Trimestral',
+  subtitle='Controle de metas, faturamento e recebimentos por unidade e período.',
+  eyebrow='Financeiro',
+  stats=[
+    {'label': 'Meta do mês', 'value': 'R$ ' ~ meta_valor_display},
+    {'label': 'Total faturado', 'value': 'R$ ' ~ valor_arrecadado_total_display}
+  ],
+  help_tips=[
+    'Use Selecionar mês para filtrar a cota mensal e gerar o PDF.',
+    'Atualize valores de faturamento/recebimento diretamente na tabela.',
+    'Crie o trimestre a partir do primeiro mês para liberar o gráfico consolidado.'
+  ]
+) }}
+
+<section class="cota-toolbar">
+  <div class="cota-toolbar__group">
+    <span class="cota-chip">Mês {{ mes_selecionado }}/{{ ano_selecionado }}</span>
+    <span class="cota-chip cota-chip--outline">{{ cota_mensal|length }} unidades</span>
+  </div>
+  <div class="cota-toolbar__actions">
+    <div class="cota-action-row">
+      <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalAdicionarCotaMensal">Adicionar cota mensal</button>
+      <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalSelecionarMes">Selecionar mês</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('financeiro_bp.cota_dashboard') }}">Limpar filtro</a>
+    </div>
+    <div class="cota-action-row">
+      <button class="btn btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#modalFecharMes">Fechar mês</button>
+      <button class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#modalPDFMes">Ver totais (PDF)</button>
+    </div>
+  </div>
+</section>
+
+<div class="row g-3 cota-grid">
+  <div class="col-lg-6">
+    <div class="card cota-panel h-100">
+      <div class="card-body">
+        <div class="cota-panel__header">
+          <div>
+            <span class="cota-overline">Cota mensal</span>
+            <h6 class="cota-panel__title">{{ mes_selecionado }}/{{ ano_selecionado }}</h6>
+          </div>
+          <span class="cota-chip cota-chip--outline">{{ cota_mensal|length }} unidades</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm cota-table">
+            <thead>
+              <tr>
+                <th>Cota mês</th>
+                <th class="text-end">Meta de faturamento</th>
+                <th>Unidade</th>
+                <th class="text-end">Valor faturado</th>
+                <th class="text-end">Valor recebido</th>
+                <th class="text-center">Início</th>
+                <th class="text-center">Fim</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if cota_mensal %}
+                {% for row in cota_mensal %}
+                <tr>
+                  {% if loop.first %}
+                    <td class="cota-num">{{ mes_selecionado }}/{{ ano_selecionado }}</td>
+                    <td class="text-end cota-num">R$ {{ row.Valor_Mes_display }}</td>
+                  {% else %}
+                    <td></td>
+                    <td></td>
+                  {% endif %}
+                  <td>{{ row.Unidade_Responsavel }}</td>
+                  <td class="text-end cota-num">
+                    <div class="cota-money">
+                      <span>R$ {{ row.Valor_Arrecadado_display }}</span>
+                      <button class="btn btn-sm btn-outline-primary js-edit-arrecadado" data-id="{{ row.ID }}" data-valor="{{ row.Valor_Arrecadado }}">Editar</button>
+                    </div>
+                  </td>
+                  <td class="text-end cota-num">
+                    <div class="cota-money">
+                      <span>R$ {{ row.Valor_Pago_display }}</span>
+                      <button class="btn btn-sm btn-outline-primary js-edit-pago" data-id="{{ row.ID }}" data-valor="{{ row.Valor_Pago }}">Editar</button>
+                    </div>
+                  </td>
+                  <td class="text-center cota-num">{{ row.Data_Inicio_br }}</td>
+                  <td class="text-center cota-num">{{ row.Data_Fim_br }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="cota-table__total">
+                  <td colspan="3"></td>
+                  <td class="text-end cota-num">Total faturado: R$ {{ valor_arrecadado_total_display }}</td>
+                  <td class="text-end cota-num">Total recebido: R$ {{ valor_pago_total_display }}</td>
+                  <td colspan="2" class="text-end">
+                    <button class="btn btn-sm btn-primary" type="button" id="btnEnviarEmail">Enviar por e-mail</button>
+                  </td>
+                </tr>
+              {% else %}
+                <tr><td colspan="7" class="text-center text-muted py-3">Nenhum registro encontrado.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card cota-panel h-100 chart-card">
+      <div class="card-body">
+        <div class="cota-panel__header">
+          <div>
+            <span class="cota-overline">Gráfico mensal</span>
+            <h6 class="cota-panel__title">Performance do mês</h6>
+          </div>
+          <span class="cota-chip cota-chip--outline">Meta R$ {{ meta_valor_display }}</span>
+        </div>
+        <div id="chart_div" style="width:100%;height:320px;"></div>
+        <div id="faltaParaBaterMeta" class="mt-3"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="cota-section-header">
+  <div>
+    <span class="cota-overline">Resumo</span>
+    <h5 class="cota-panel__title mb-0">Cota trimestral</h5>
+  </div>
+  <div class="cota-action-row">
+    <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalCriarCotaTrimestral">Novo mês do trimestre</button>
+    <button class="btn btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#modalDataTrimestre">Gerar relatório do trimestre</button>
+  </div>
+</div>
+
+<div class="row g-3 cota-grid">
+  <div class="col-lg-7">
+    <div class="card cota-panel h-100">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm cota-table">
+            <thead>
+              <tr>
+                <th>Mês</th>
+                <th class="text-end">Valor faturado</th>
+                <th class="text-end">Valor recebido</th>
+                <th class="text-center">Início</th>
+                <th class="text-center">Fim</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if cota_trimestral %}
+                {% for row in cota_trimestral %}
+                <tr>
+                  <td>{{ row.Nome_mes }}</td>
+                  <td class="text-end cota-num">R$ {{ row.Valor_faturado_display }}</td>
+                  <td class="text-end cota-num">R$ {{ row.Valor_recebido_display }}</td>
+                  <td class="text-center cota-num">{{ row.Data_inicio_br }}</td>
+                  <td class="text-center cota-num">{{ row.Data_fim_br }}</td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr><td colspan="5" class="text-center text-muted py-3">Nenhum trimestre encontrado.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+        <div class="cota-totals mt-3">
+          <strong>Total faturado:</strong> R$ {{ trimestre_totais_display.faturado }} | 
+          <strong>Total recebido:</strong> R$ {{ trimestre_totais_display.recebido }}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card cota-panel h-100 chart-card">
+      <div class="card-body">
+        <div class="cota-panel__header">
+          <div>
+            <span class="cota-overline">Gráfico trimestral</span>
+            <h6 class="cota-panel__title">Consolidado</h6>
+          </div>
+        </div>
+        <div id="chart_trimestral" style="width:100%;height:320px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<div id="cota-email-table" class="d-none">
+  <table border="1" cellpadding="6" cellspacing="0">
+    <tr><th>Unidade</th><th>Total faturado</th><th>Total recebido</th></tr>
+    {% for item in totais %}
+    <tr>
+      <td>{{ item.Unidade_Responsavel }}</td>
+      <td>R$ {{ item.Total_Arrecadado_display }}</td>
+      <td>R$ {{ item.Total_Pago_display }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+
+<!-- Modais -->
+<div class="modal sollus-modal fade" id="modalAdicionarCotaMensal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('financeiro_bp.cota_adicionar') }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Adicionar cota mensal</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-2">
+            <label class="form-label">Valor mês geral</label>
+            <input type="text" class="form-control" id="valorMesInput" name="valorMes" inputmode="decimal" required>
+            <div class="form-text">Prévia: <span id="previewValorMes">R$ 0,00</span></div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Data início</label>
+            <input type="date" class="form-control" name="dataInicio" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Adicionar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalSelecionarMes" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Selecionar mês/ano</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2">
+          <label class="form-label">Mês</label>
+          <select class="form-select" id="selectMes">
+            {% for m in range(1, 13) %}
+              <option value="{{ '%02d'|format(m) }}" {% if mes_selecionado == '%02d'|format(m) %}selected{% endif %}>{{ '%02d'|format(m) }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Ano</label>
+          <select class="form-select" id="selectAno"></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnConfirmarMes">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalPDFMes" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Selecionar mês e ano</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2">
+          <label class="form-label">Mês</label>
+          <select class="form-select" id="selectMesPDF"></select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Ano</label>
+          <select class="form-select" id="selectAnoPDF"></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnGerarPDF">Gerar PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalFecharMes" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Fechar mês</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        Deseja realmente fechar o mês de <strong id="mesFechamento"></strong>?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btnFecharMes">Fechar mês</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalAdicionarValor" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formAdicionarValor">
+        <div class="modal-header">
+          <h5 class="modal-title">Adicionar/remover valor faturado</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="id" id="inputID">
+          <div class="mb-2">
+            <label class="form-label">Valor atual</label>
+            <input type="text" class="form-control" id="inputValorAtual" readonly>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Novo valor</label>
+            <input type="text" class="form-control" id="inputNovoValor" name="valor" inputmode="decimal" required>
+            <div class="form-text">Prévia: <span id="previewNovoValor">R$ 0,00</span></div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Tipo</label>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="tipo" id="radioAdicionar" value="adicionar" checked>
+              <label class="form-check-label" for="radioAdicionar">Adicionar</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="tipo" id="radioRemover" value="remover">
+              <label class="form-check-label" for="radioRemover">Remover</label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalAdicionarValorPago" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formAdicionarValorPago">
+        <div class="modal-header">
+          <h5 class="modal-title">Adicionar/remover valor recebido</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="id" id="inputIDValorPago">
+          <div class="mb-2">
+            <label class="form-label">Valor atual</label>
+            <input type="text" class="form-control" id="inputValorAtualValorPago" readonly>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Novo valor</label>
+            <input type="text" class="form-control" id="inputNovoValorValorPago" name="valor" inputmode="decimal" required>
+            <div class="form-text">Prévia: <span id="previewNovoValorPago">R$ 0,00</span></div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Tipo</label>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="tipo" id="tipoValorPagoAdicionar" value="adicionar" checked>
+              <label class="form-check-label" for="tipoValorPagoAdicionar">Adicionar</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="tipo" id="tipoValorPagoRemover" value="remover">
+              <label class="form-check-label" for="tipoValorPagoRemover">Remover</label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalCriarCotaTrimestral" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('financeiro_bp.cota_trimestre') }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Criar cota trimestral</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label class="form-label">Data de início do mês</label>
+          <input type="date" class="form-control" name="dataInicio" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Criar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalDataTrimestre" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Selecionar data do trimestre</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <input type="date" id="dataSelecionada" class="form-control">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnEnviarData">Gerar PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const CHART_MENSAL = {{ chart_mensal|tojson }};
+  const CHART_TRIMESTRAL = {{ chart_trimestral|tojson }};
+  const META_VALOR = {{ meta_valor|tojson }};
+  const TOTAL_ARRECADADO = {{ valor_arrecadado_total|tojson }};
+  const SELECTED_YEAR = {{ ano_selecionado|tojson }};
+  const SELECTED_MONTH = {{ mes_selecionado|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/financeiro_cota.js') }}"></script>
+{% endblock %}

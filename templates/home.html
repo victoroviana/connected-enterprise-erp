@@ -1,0 +1,1589 @@
+{% extends "layout.html" %}
+
+{% set theme = ui_theme or {} %}
+{% set colors = theme.colors or {} %}
+{% set hero_start = colors.hero_start or '#0B3B8C' %}
+{% set hero_end = colors.hero_end or '#0E5DC6' %}
+{% set hero_text = colors.hero_text or '#E9F2FF' %}
+{% set badge_bg = colors.badge_bg or 'rgba(255,255,255,0.16)' %}
+{% set badge_text = colors.badge_text or hero_text %}
+{% set hero_text_muted = colors.hero_text_muted or 'rgba(231,241,255,.88)' %}
+{% set hero_badge = theme.badge or 'Plataforma integrada' %}
+{% set hero_title = theme.title or 'Bem-vindo ao Sollus Connected' %}
+{% set hero_message = theme.message or 'Centralizamos a geração de propostas e o atendimento de chamados em uma única experiência. Simplifique seu fluxo, acompanhe clientes e equipes com mais clareza, deixe que a Sol, nossa assistente IA, guie sua jornada e experimente as novas funções de alertas inteligentes de aniversários e férias direto no painel.' %}
+{% set hero_image = theme.illustration or 'images/sol.gif' %}
+{% set _theme_text = ((theme.id or '') ~ ' ' ~ (theme.label or '') ~ ' ' ~ (theme.badge or '') ~ ' ' ~ (theme.title or '') ~ ' ' ~ (theme.message or ''))|lower %}
+{% set is_holiday_theme = (theme.type or '') == 'holiday' %}
+{% set is_christmas = is_holiday_theme and ('natal' in _theme_text) %}
+{% set is_new_year = is_holiday_theme and ('ano novo' in _theme_text or 'confraterniza' in _theme_text) %}
+
+{% block title %}Bem-vindo ao Sollus Connected{% endblock %}
+
+{% block head %}
+<style>
+  .welcome-hero{
+    position:relative;
+    --hero-start: {{ hero_start }};
+    --hero-end: {{ hero_end }};
+    --hero-text: {{ hero_text }};
+    --badge-bg: {{ badge_bg }};
+    --badge-text: {{ badge_text }};
+    background:linear-gradient(135deg, var(--hero-start), var(--hero-end));
+    border-radius:1.8rem;
+    padding:2.5rem;
+    overflow:hidden;
+    color:{{ hero_text }};
+    box-shadow:0 28px 45px rgba(11,59,140,.20);
+  }
+
+  .welcome-hero::after{
+    content:"";
+    position:absolute;
+    inset:-40% -10% 40% 55%;
+    background:radial-gradient(circle,rgba(255,255,255,.45),transparent 65%);
+    opacity:.8;
+    filter:blur(12px);
+  }
+
+  .holiday-lights,
+  .fireworks{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:4;
+  }
+
+  .holiday-lights{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    padding:12px 26px 0;
+    opacity:0;
+    visibility:hidden;
+    gap:12px;
+  }
+
+  .welcome-hero.is-christmas .holiday-lights{
+    opacity:1;
+    visibility:visible;
+  }
+
+  .holiday-lights::before{
+    content:"";
+    position:absolute;
+    top:18px;
+    left:6%;
+    right:6%;
+    height:32px;
+    border-bottom:2px dashed rgba(255,255,255,.55);
+    border-radius:40% 40% 60% 60%;
+    opacity:.65;
+  }
+
+  .holiday-lights .light{
+    position:relative;
+    width:12px;
+    height:18px;
+    border-radius:50% 50% 42% 42%;
+    background:#f87171;
+    color:#f87171;
+    box-shadow:0 6px 14px rgba(0,0,0,.25);
+    transform-origin:top center;
+    animation:twinkle 2.8s ease-in-out infinite, sway 3.2s ease-in-out infinite;
+    animation-delay:calc(var(--i, 0) * .12s);
+  }
+
+  .holiday-lights .light::after{
+    content:"";
+    position:absolute;
+    top:-8px;
+    left:50%;
+    width:2px;
+    height:8px;
+    background:rgba(255,255,255,.65);
+    transform:translateX(-50%);
+    border-radius:999px;
+  }
+
+  .holiday-lights .light:nth-child(3n+1){background:#22c55e;color:#22c55e;box-shadow:0 6px 14px rgba(34,197,94,.45);}
+  .holiday-lights .light:nth-child(3n+2){background:#facc15;color:#facc15;box-shadow:0 6px 14px rgba(250,204,21,.45);}
+  .holiday-lights .light:nth-child(4n){background:#38bdf8;color:#38bdf8;box-shadow:0 6px 14px rgba(56,189,248,.45);}
+
+  .fireworks{
+    opacity:0;
+    visibility:hidden;
+    overflow:hidden;
+  }
+
+  .welcome-hero.is-new-year .fireworks{
+    opacity:1;
+    visibility:visible;
+  }
+
+  .firework{
+    position:absolute;
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    left:var(--x, 50%);
+    top:var(--y, 25%);
+    background:transparent;
+    box-shadow:0 -16px #facc15, 12px -10px #f97316, 16px 0 #fb7185, 12px 10px #38bdf8, 0 16px #a855f7, -12px 10px #22c55e, -16px 0 #eab308, -12px -10px #0ea5e9;
+    animation:firework-burst 2.6s ease-out infinite;
+    animation-delay:var(--delay, 0s);
+    transform-origin:center;
+    mix-blend-mode:screen;
+    filter:drop-shadow(0 0 6px rgba(255,255,255,.65));
+  }
+
+  .firework::after{
+    content:"";
+    position:absolute;
+    inset:-26px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,.55), transparent 60%);
+    opacity:0;
+    animation:firework-halo 2.6s ease-out infinite;
+    animation-delay:var(--delay, 0s);
+  }
+
+  .welcome-copy{
+    position:relative;
+    z-index:2;
+    max-width:520px;
+    margin:0 auto;
+    text-align:center;
+  }
+
+  .welcome-copy h1{
+    font-weight:700;
+    letter-spacing:.5px;
+    margin-bottom:.6rem;
+  }
+
+  .welcome-copy p{
+    font-size:1rem;
+    line-height:1.6;
+    margin-bottom:1.6rem;
+    color:{{ hero_text_muted }};
+  }
+
+  .campaign-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:.4rem;
+    padding:.35rem 1.15rem;
+    border-radius:999px;
+    font-weight:600;
+    letter-spacing:.08rem;
+    text-transform:uppercase;
+    font-size:.75rem;
+    background:linear-gradient(120deg, var(--badge-bg), color-mix(in srgb, var(--hero-end), transparent 68%));
+    color:var(--badge-text);
+    border:1px solid color-mix(in srgb, var(--badge-text), transparent 55%);
+    text-shadow:0 1px 4px color-mix(in srgb, var(--badge-text), transparent 75%);
+    margin-bottom:1.1rem;
+  }
+  @supports not (color-mix(in srgb, #000 50%, #fff 50%)){
+    .campaign-badge{
+      background:var(--badge-bg);
+      color:var(--badge-text);
+      border:1px solid rgba(255,255,255,.35);
+    }
+  }
+
+  .welcome-actions .btn{
+    border-radius:999px;
+    padding:.65rem 1.75rem;
+    font-weight:600;
+    letter-spacing:.04rem;
+  }
+
+  .welcome-illustration{
+    position:relative;
+    z-index:2;
+    display:flex;
+    justify-content:center;
+  }
+
+  .welcome-illustration .hero-frame{
+    position:relative;
+    max-width:360px;
+    width:100%;
+    padding:1.15rem;
+    border-radius:32px;
+    background:linear-gradient(150deg, rgba(255,255,255,.28), rgba(255,255,255,0));
+    box-shadow:0 28px 50px rgba(9,40,92,.38);
+    overflow:hidden;
+  }
+
+  .welcome-illustration .hero-frame::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    border-radius:28px;
+    border:1px solid rgba(255,255,255,.45);
+    opacity:.75;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  .welcome-illustration .hero-frame::after{
+    content:"";
+    position:absolute;
+    top:-35%;
+    right:-25%;
+    width:220px;
+    height:220px;
+    border-radius:50%;
+    background:linear-gradient(135deg, rgba(14,93,198,.35), rgba(14,93,198,0));
+    opacity:.45;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  .welcome-illustration .hero-frame img{
+    position:relative;
+    z-index:1;
+    display:block;
+    width:100%;
+    height:auto;
+    border-radius:22px;
+    box-shadow:0 16px 32px rgba(7,25,58,.28);
+  }
+
+  .welcome-hero .row{
+    justify-content:center;
+    text-align:center;
+  }
+
+  .welcome-hero .row > [class*="col-"]{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+
+  .welcome-actions{
+    justify-content:center;
+  }
+
+  .feature-card{
+    border:0;
+    border-radius:1.4rem;
+    padding:1.9rem;
+    background:#fff;
+    box-shadow:0 20px 45px rgba(15,35,58,.08);
+    height:100%;
+    position:relative;
+    overflow:hidden;
+  }
+
+  .feature-card::after{
+    content:"";
+    position:absolute;
+    right:-120px;
+    top:-140px;
+    width:240px;
+    height:240px;
+    border-radius:100%;
+    background:rgba(14,93,198,.08);
+  }
+
+  .feature-card h2{
+    font-weight:700;
+    margin-bottom:.8rem;
+  }
+
+  .feature-card p{
+    color:#5a6c84;
+    margin-bottom:1.4rem;
+  }
+
+  .feature-card .icon{
+    width:56px;
+    height:56px;
+    border-radius:14px;
+    background:rgba(14,93,198,.1);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#0E5DC6;
+    font-size:1.35rem;
+    margin-bottom:1rem;
+  }
+
+  .feature-card .btn{
+    border-radius:12px;
+    font-weight:600;
+  }
+
+  .module-carousel{
+    border-radius:1.8rem;
+    background:#fff;
+    padding:2.2rem clamp(2rem,4vw,3.2rem);
+    box-shadow:0 22px 48px rgba(15,35,58,.1);
+    position:relative;
+    overflow:hidden;
+    width:100%;
+    margin:2.2rem 0 2.8rem;
+  }
+
+  .module-carousel::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:0;
+    background:linear-gradient(135deg, rgba(231,239,255,.55) 0%, rgba(255,255,255,0) 55%);
+  }
+
+  .module-carousel .carousel-inner{
+    width:100%;
+    position:relative;
+  }
+
+  .module-carousel .carousel-item{
+    display:none;
+    justify-content:center;
+    align-items:center;
+  }
+
+  .module-carousel .carousel-item.active,
+  .module-carousel .carousel-item-next,
+  .module-carousel .carousel-item-prev{
+    display:flex;
+  }
+
+  .module-carousel .feature-card{
+    position:relative;
+    background:linear-gradient(135deg, rgba(250,252,255,1), rgba(232,241,255,.9));
+    box-shadow:none;
+    border-radius:1.8rem;
+    padding:clamp(2.4rem,4vw,3.6rem);
+    width:100%;
+    max-width:100%;
+    margin:0 auto;
+    text-align:center;
+  }
+
+  .module-carousel .feature-card::before{
+    content:"";
+    position:absolute;
+    left:2.4rem;
+    top:2.1rem;
+    width:86px;
+    height:86px;
+    border-radius:26px;
+    background:rgba(14,93,198,.12);
+  }
+
+  .module-carousel .feature-card::after{
+    content:"";
+    position:absolute;
+    right:2.2rem;
+    top:1.6rem;
+    width:150px;
+    height:150px;
+    border-radius:46px 46px 0 0;
+    background:rgba(206,221,255,.5);
+    transform:rotate(12deg);
+  }
+
+  .module-carousel .feature-card::before,
+  .module-carousel .feature-card::after{
+    z-index:0;
+  }
+
+  .module-carousel .feature-card > *{
+    position:relative;
+    z-index:1;
+  }
+
+  .module-carousel .feature-card .icon{
+    position:relative;
+    width:74px;
+    height:74px;
+    border-radius:24px;
+    background:rgba(14,93,198,.12);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--blue-700);
+    font-size:1.8rem;
+    margin:0 auto 1.6rem;
+    box-shadow:0 16px 28px rgba(14,93,198,.18);
+  }
+
+  .module-carousel .feature-card h2{
+    font-size:1.9rem;
+    margin-bottom:.75rem;
+  }
+
+  .module-carousel .feature-card p{
+    color:#4d5f7a;
+    margin-bottom:1.4rem;
+    font-size:1.05rem;
+  }
+
+  .module-carousel .feature-card .d-flex{
+    justify-content:center;
+  }
+
+  .module-carousel .carousel-control-prev,
+  .module-carousel .carousel-control-next{
+    width:44px;
+    height:44px;
+    top:50%;
+    transform:translateY(-50%);
+    border-radius:50%;
+    background:rgba(14,93,198,.15);
+    opacity:1;
+    color:#0E5DC6;
+    box-shadow:0 12px 24px rgba(15,35,58,.1);
+  }
+
+  .module-carousel .carousel-control-prev:hover,
+  .module-carousel .carousel-control-next:hover{
+    background:rgba(14,93,198,.25);
+  }
+
+  .module-carousel .carousel-control-prev-icon,
+  .module-carousel .carousel-control-next-icon{
+    filter:invert(1);
+  }
+
+  .module-carousel .carousel-indicators{
+    position:absolute;
+    bottom:1.4rem;
+    left:0;
+    right:0;
+    justify-content:center;
+    margin:0;
+  }
+
+  .module-carousel .carousel-indicators [data-bs-target]{
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background-color:rgba(14,93,198,.28);
+  }
+
+  .module-carousel .carousel-indicators .active{
+    background-color:var(--blue-700);
+  }
+
+  .quick-tips{
+    border-radius:1.4rem;
+    background:#f4f7fc;
+    padding:1.6rem;
+    box-shadow:0 12px 32px rgba(15,35,58,.07);
+  }
+
+  .quick-tips h3{
+    font-size:1rem;
+    font-weight:700;
+    margin-bottom:1rem;
+    color:#0f1f3a;
+    letter-spacing:.05rem;
+  }
+
+  .quick-tips li{
+    margin-bottom:.5rem;
+    color:#536079;
+  }
+
+  .quick-row{
+    justify-content:center;
+  }
+
+  .quick-row .quick-tips{
+    max-width:640px;
+    margin:0 auto;
+  }
+
+  .home-gallery{
+    border-radius:1.6rem;
+    background:#fff;
+    padding:1.85rem;
+    box-shadow:0 22px 48px rgba(15,35,58,.1);
+  }
+
+  .home-gallery__header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:1rem;
+    flex-wrap:wrap;
+  }
+
+  .home-gallery__title{
+    font-weight:700;
+    margin:0;
+  }
+
+  .home-gallery__subtitle{
+    margin:.35rem 0 0;
+    color:#5a6c84;
+    max-width:520px;
+  }
+
+  .home-gallery__meta{
+    display:flex;
+    align-items:center;
+    gap:.6rem;
+    font-size:.85rem;
+    color:#6a7890;
+  }
+
+  .home-gallery__badge{
+    background:rgba(14,93,198,.12);
+    color:#0E5DC6;
+    border-radius:999px;
+    padding:.25rem .7rem;
+    font-weight:600;
+  }
+
+  .gallery-carousel{
+    margin-top:1.4rem;
+    border-radius:1.2rem;
+    overflow:hidden;
+    background:linear-gradient(135deg,#eef3ff,#f8fbff);
+  }
+
+  .gallery-carousel .carousel-item{
+    position:relative;
+    height:360px;
+    background:#f4f7fc;
+    overflow:hidden;
+  }
+
+  .gallery-carousel .carousel-item::before{
+    content:"";
+    position:absolute;
+    inset:-8%;
+    background-image:var(--gallery-bg);
+    background-size:cover;
+    background-position:center;
+    filter:blur(14px);
+    transform:scale(1.05);
+    opacity:.6;
+  }
+
+  .gallery-carousel img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    position:relative;
+    z-index:1;
+    display:block;
+  }
+
+  .gallery-carousel .carousel-control-prev,
+  .gallery-carousel .carousel-control-next{
+    width:42px;
+    height:42px;
+    top:50%;
+    transform:translateY(-50%);
+    border-radius:50%;
+    background:rgba(15,35,58,.35);
+    opacity:1;
+  }
+
+  .gallery-carousel .carousel-control-prev:hover,
+  .gallery-carousel .carousel-control-next:hover{
+    background:rgba(15,35,58,.55);
+  }
+
+  .gallery-carousel .carousel-indicators [data-bs-target]{
+    background-color:rgba(14,93,198,.4);
+  }
+
+  .home-gallery-empty{
+    padding:2rem;
+    border-radius:1rem;
+    background:#f4f7fc;
+    color:#5a6c84;
+    text-align:center;
+    margin-top:1.2rem;
+  }
+
+  @media (max-width: 767px){
+    .gallery-carousel .carousel-item{
+      height:240px;
+    }
+  }
+
+  /* ======== MODAL DE CELEBRAÇÕES (SEM MUDANÇAS) ======== */
+  .celebration-modal{
+    --celebration-surface:#f1f5ff;
+    --celebration-surface-alt:#ffffff;
+    --celebration-card-border:rgba(11,59,140,.12);
+    --celebration-muted:#5a6c84;
+    --celebration-text:#0f1f3a;
+    --celebration-hero-shadow:0 25px 60px rgba(11,35,90,.18);
+  }
+  html[data-theme="dark"] .celebration-modal{
+    --celebration-surface:#0e1524;
+    --celebration-surface-alt:#141f32;
+    --celebration-card-border:rgba(255,255,255,.08);
+    --celebration-muted:#a8bbde;
+    --celebration-text:#e6edff;
+    --celebration-hero-shadow:0 25px 70px rgba(0,0,0,.6);
+  }
+  .celebration-modal .modal-dialog{max-width:860px;}
+  .celebration-modal .modal-content{
+    border:0;
+    border-radius:1.8rem;
+    overflow:hidden;
+    background:var(--celebration-surface);
+    box-shadow:0 35px 75px rgba(7,25,58,.25);
+  }
+  .celebration-modal .modal-header{
+    border:0;
+    background:linear-gradient(135deg,#0b3b8c,#0e5dc6);
+    color:#fff;
+    align-items:center;
+    padding:1.25rem 1.75rem;
+  }
+  .celebration-modal .modal-title{
+    font-weight:700;
+    letter-spacing:.12rem;
+    text-transform:uppercase;
+    font-size:.95rem;
+  }
+  .celebration-modal .btn-close{filter:invert(1) contrast(200%);opacity:.85;}
+  .celebration-body{
+    padding:1.8rem;
+    background:
+      radial-gradient(circle at top,rgba(255,255,255,.8),transparent 65%),
+      radial-gradient(circle at 120% 20%,rgba(14,93,198,.18),transparent 60%),
+      var(--celebration-surface);
+  }
+  .celebration-section{
+    border-radius:1.5rem;
+    background:var(--celebration-surface-alt);
+    border:1px solid var(--celebration-card-border);
+    padding:1.4rem 1.6rem;
+    margin-bottom:1.5rem;
+    box-shadow:0 25px 45px rgba(10,24,60,.08);
+  }
+  .celebration-section:last-child{margin-bottom:0;}
+
+  .celebration-hero{
+    display:flex;
+    gap:1.5rem;
+    align-items:center;
+    border-radius:1.35rem;
+    padding:1.5rem 1.6rem;
+    position:relative;
+    overflow:hidden;
+    box-shadow:var(--celebration-hero-shadow);
+    color:#fff;
+  }
+  .birthday-hero{
+    background:linear-gradient(135deg,rgba(255,255,255,.2),rgba(14,93,198,.25)),
+      linear-gradient(135deg,#2c6ecf,#9c5af5);
+  }
+  .vacation-hero{
+    background:linear-gradient(135deg,rgba(255,255,255,.2),rgba(3,60,109,.35)),
+      linear-gradient(135deg,#0bb4d4,#0e5dc6);
+  }
+  .hero-copy{flex:1;position:relative;z-index:2;}
+  .hero-label{text-transform:uppercase;letter-spacing:.18em;font-size:.65rem;font-weight:600;opacity:.85;margin-bottom:.4rem;}
+  .hero-headline{font-size:1.35rem;font-weight:700;margin-bottom:.35rem;}
+  .hero-description{margin-bottom:1rem;color:rgba(255,255,255,.83);}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:.9rem;}
+  .hero-metric{
+    background:rgba(8,22,48,.35);
+    border-radius:1rem;
+    padding:.85rem 1rem;
+    min-width:150px;
+    box-shadow:0 20px 30px rgba(3,15,35,.2), inset 0 0 0 1px rgba(255,255,255,.08);
+  }
+  .hero-metric span{
+    display:block;
+    text-transform:uppercase;
+    letter-spacing:.12em;
+    font-size:.62rem;
+    opacity:.8;
+  }
+  .hero-metric strong{
+    display:block;
+    font-size:1.35rem;
+    line-height:1.2;
+  }
+  .hero-metric small{
+    display:block;
+    letter-spacing:.02rem;
+    opacity:.85;
+  }
+  .hero-visual{
+    flex:0 0 190px;
+    position:relative;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:1;
+  }
+
+  .balloon-scene{
+    width:170px;
+    height:150px;
+    border-radius:32px;
+    background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(14,93,198,.25));
+    position:relative;
+    overflow:hidden;
+    box-shadow:0 18px 40px rgba(5,15,35,.3);
+  }
+  .balloon{
+    position:absolute;
+    width:38px;
+    height:52px;
+    border-radius:50% 50% 45% 45%;
+    box-shadow:0 12px 20px rgba(3,5,18,.35);
+    animation:floatBalloon 10s linear infinite;
+  }
+  .balloon::after{
+    content:"";
+    position:absolute;
+    left:50%;
+    bottom:-30px;
+    width:2px;
+    height:32px;
+    background:rgba(255,255,255,.8);
+    transform:translateX(-50%);
+    opacity:.7;
+  }
+  .balloon-one{left:18%;bottom:-8px;background:linear-gradient(180deg,#ffe4f3,#ff83c1);animation-duration:8s;}
+  .balloon-two{left:50%;bottom:-4px;background:linear-gradient(180deg,#f7f0ff,#a68dff);animation-duration:9.5s;animation-delay:1.5s;}
+  .balloon-three{left:72%;bottom:-18px;background:linear-gradient(180deg,#e2f6ff,#6bd4ff);animation-duration:11s;animation-delay:3s;}
+
+  .beach-scene{
+    width:190px;
+    height:150px;
+    border-radius:32px;
+    background:linear-gradient(180deg,#7cd0ff 0%,#2b6ecf 70%);
+    position:relative;
+    overflow:hidden;
+    box-shadow:0 18px 40px rgba(5,15,35,.3);
+  }
+  .beach-scene .sun{
+    position:absolute;
+    top:14px;
+    right:26px;
+    width:56px;
+    height:56px;
+    border-radius:50%;
+    background:#ffd76d;
+    box-shadow:0 0 40px rgba(255,215,109,.55);
+    animation:pulseSun 6s ease-in-out infinite;
+  }
+  .beach-scene .cloud{
+    position:absolute;
+    top:18px;
+    left:18px;
+    width:40px;
+    height:18px;
+    border-radius:999px;
+    background:rgba(255,255,255,.85);
+    filter:blur(.3px);
+    animation:floatCloud 14s linear infinite;
+  }
+  .beach-scene .cloud.cloud-two{
+    top:32px;
+    left:60px;
+    width:55px;
+    height:22px;
+    animation-duration:18s;
+    opacity:.9;
+  }
+  .beach-scene .sea{
+    position:absolute;
+    bottom:35px;
+    left:-10px;
+    right:-10px;
+    height:70px;
+    background:linear-gradient(180deg,rgba(11,140,196,.9),rgba(14,93,198,.95));
+  }
+  .beach-scene .wave{
+    position:absolute;
+    bottom:48px;
+    left:-40px;
+    width:220px;
+    height:45px;
+    border-radius:50%;
+    background:rgba(255,255,255,.18);
+    animation:waveMotion 8s ease-in-out infinite;
+  }
+  .beach-scene .wave.wave-two{bottom:38px;animation-duration:10s;opacity:.6;}
+  .beach-scene .wave.wave-three{bottom:30px;animation-duration:12s;opacity:.45;}
+  .beach-scene .sand{
+    position:absolute;
+    bottom:-5px;
+    left:-25px;
+    right:-25px;
+    height:60px;
+    background:linear-gradient(180deg,#ffe4b3,#f4b873);
+    border-radius:50% 50% 0 0;
+    box-shadow:inset 0 12px 30px rgba(214,151,69,.35);
+  }
+  .beach-scene .palm{
+    position:absolute;
+    bottom:22px;
+    left:32px;
+    width:10px;
+    height:70px;
+    border-radius:6px;
+    background:linear-gradient(180deg,#d5a86b,#a46b32);
+    transform-origin:bottom center;
+    transform:skewX(-8deg);
+  }
+  .beach-scene .palm::before,
+  .beach-scene .palm::after{
+    content:"";
+    position:absolute;
+    top:-8px;
+    width:70px;
+    height:18px;
+    border-radius:999px;
+    background:linear-gradient(90deg,#7ff0ba,#3ecb8a);
+  }
+  .beach-scene .palm::before{left:-58px;transform:rotate(-18deg);}
+  .beach-scene .palm::after{left:-50px;transform:rotate(18deg);}
+
+  .balloon-scene::after,
+  .beach-scene::after{
+    content:"";
+    position:absolute;
+    inset:6px;
+    border-radius:28px;
+    border:1px solid rgba(255,255,255,.4);
+    opacity:.5;
+    pointer-events:none;
+  }
+
+  .celebration-grid{margin-top:1.35rem;}
+  .celebration-card{
+    display:flex;
+    align-items:center;
+    gap:.85rem;
+    border-radius:1.25rem;
+    padding:.95rem 1.1rem;
+    background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(240,247,255,.9));
+    border:1px solid var(--celebration-card-border);
+    box-shadow:0 14px 32px rgba(15,35,58,.08);
+    color:var(--celebration-text);
+  }
+  html[data-theme="dark"] .celebration-card{
+    background:linear-gradient(135deg,rgba(15,21,38,.95),rgba(9,16,28,.9));
+    box-shadow:0 18px 32px rgba(0,0,0,.45);
+  }
+  .celebration-card.birthday{border-color:rgba(156,90,245,.4);}
+  .celebration-card.vacation{border-color:rgba(11,180,212,.45);}
+  .celebration-card.birthday.today{position:relative;overflow:hidden;border-color:rgba(255,196,55,.7);box-shadow:0 16px 32px rgba(255,196,55,.25);background:linear-gradient(135deg,rgba(255,255,255,.92),rgba(255,248,220,.9));}
+  .celebration-card.birthday.today .confetti-layer{
+    position:absolute;
+    inset:0;
+    opacity:0.25;
+    pointer-events:none;
+    z-index:0;
+    background: linear-gradient(-45deg, #0e5dc6, #2c6ecf, #9c5af5, #0bb4d4);
+    background-size: 400% 400%;
+    animation: blueConfettiGradient 10s ease infinite;
+  }
+  @keyframes blueConfettiGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .celebration-card.birthday.today .content-layer{position:relative;z-index:1;}
+  .celebration-card.birthday.today .celebration-avatar{box-shadow:0 10px 24px rgba(255,196,55,.4);}
+  .celebration-card.birthday.today .emoji-badge{position:absolute;right:12px;top:10px;font-size:20px;z-index:1;animation:bounceCelebration 1.6s ease-in-out infinite;}
+  @keyframes bounceCelebration{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+  .celebration-avatar{
+    width:56px;
+    height:56px;
+    border-radius:50%;
+    object-fit:cover;
+    object-position:center;
+    display:block;
+    flex-shrink:0;
+    border:3px solid rgba(255,255,255,.85);
+    box-shadow:0 6px 18px rgba(15,35,58,.15);
+    background:#f7f9ff;
+  }
+  html[data-theme="dark"] .celebration-avatar{
+    border-color:rgba(255,255,255,.25);
+    background:#0c111d;
+  }
+  .celebration-card strong{
+    display:block;
+    font-size:1rem;
+    letter-spacing:.01rem;
+  }
+  .celebration-card small{
+    color:var(--celebration-muted);
+    display:block;
+  }
+  .celebration-card.entering{
+    animation:celebrationCardEnter .6s ease forwards;
+  }
+
+  @keyframes celebrationCardEnter{
+    0%{opacity:0;transform:translateY(12px) scale(.98);}
+    100%{opacity:1;transform:translateY(0) scale(1);}
+  }
+
+  @keyframes twinkle{
+    0%,100%{opacity:.85;filter:drop-shadow(0 0 8px currentColor);}
+    45%{opacity:.35;filter:drop-shadow(0 0 2px currentColor);}
+  }
+
+  @keyframes sway{
+    0%,100%{transform:translateY(0) rotate(-3deg);}
+    50%{transform:translateY(3px) rotate(3deg);}
+  }
+
+  @keyframes firework-burst{
+    0%{transform:scale(.25);opacity:0;}
+    20%{opacity:1;}
+    45%{transform:scale(1);opacity:1;}
+    100%{transform:scale(1.35);opacity:0;}
+  }
+
+  @keyframes firework-halo{
+    0%{transform:scale(.4);opacity:0;}
+    40%{opacity:.55;}
+    100%{transform:scale(1.4);opacity:0;}
+  }
+
+  @keyframes floatBalloon{
+    0%{transform:translateY(25px) scale(.9);opacity:.8;}
+    60%{transform:translateY(-45px) scale(1.03);opacity:1;}
+    100%{transform:translateY(-150px) scale(1.06);opacity:0;}
+  }
+
+  @keyframes waveMotion{
+    0%{transform:translateX(0);}
+    50%{transform:translateX(-30px);}
+    100%{transform:translateX(0);}
+  }
+
+  @keyframes pulseSun{
+    0%,100%{transform:scale(1);box-shadow:0 0 40px rgba(255,215,109,.55);}
+    50%{transform:scale(1.1);box-shadow:0 0 60px rgba(255,215,109,.75);}
+  }
+
+  @keyframes floatCloud{
+    0%{transform:translateX(0);}
+    50%{transform:translateX(12px);}
+    100%{transform:translateX(0);}
+  }
+
+  @media (max-width: 767px){
+    .celebration-hero{
+      flex-direction:column;
+      text-align:center;
+    }
+    .hero-meta{justify-content:center;}
+    .hero-visual{width:100%;}
+  }
+
+  @media (max-width: 991px){
+    .welcome-hero{padding:2rem;}
+    .welcome-illustration{margin-top:2rem;text-align:center;}
+  }
+
+  /* ========= AJUSTE DE LARGURA DOS HEROES NA HOME ========= */
+  /* deixa o container da home bem largo e centralizado */
+  body.module-home main.content > .container-fluid{
+    max-width:1600px;              /* largura máxima da home */
+    margin:0 auto;
+    padding:2.5rem 1.75rem 3rem;   /* pouca margem lateral */
+  }
+
+  /* banner azul e carrossel ocupando toda a largura do container */
+  body.module-home main.content > .container-fluid > .welcome-hero,
+  body.module-home main.content > .container-fluid > .kpi-row,
+  body.module-home main.content > .container-fluid > .module-carousel{
+    max-width:100%;
+    margin-left:auto;
+    margin-right:auto;             /* centralizado */
+  }
+
+  /* KPI Cards Glassmorphism styling */
+  .kpi-row {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 1.4rem;
+    padding: 1.5rem 1.8rem;
+    box-shadow: 0 10px 30px rgba(15, 35, 58, 0.06);
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+    height: 100%;
+  }
+  .glass-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 18px 38px rgba(15, 35, 58, 0.12);
+    border-color: rgba(14, 93, 198, 0.25);
+  }
+  html[data-theme="dark"] .glass-card {
+    background: rgba(20, 26, 38, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  }
+  html[data-theme="dark"] .glass-card:hover {
+    background: rgba(20, 26, 38, 0.75);
+    border-color: rgba(14, 93, 198, 0.4);
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.4);
+  }
+  .kpi-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, rgba(14, 93, 198, 0.12), rgba(14, 93, 198, 0.05));
+    color: #0E5DC6;
+    flex-shrink: 0;
+    transition: all 0.35s ease;
+  }
+  .glass-card:hover .kpi-icon {
+    background: linear-gradient(135deg, #0E5DC6, #0B3B8C);
+    color: #FFF;
+    transform: rotate(-8deg) scale(1.05);
+  }
+  .kpi-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .kpi-value {
+    font-size: 2.1rem;
+    font-weight: 800;
+    color: #0f1f3a;
+    line-height: 1.1;
+    font-family: 'Outfit', 'Inter', sans-serif;
+  }
+  html[data-theme="dark"] .kpi-value {
+    color: #E2E8F0;
+  }
+  .kpi-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #536079;
+    letter-spacing: 0.01rem;
+  }
+  html[data-theme="dark"] .kpi-label {
+    color: #94A3B8;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set birthday_list = birthday_alerts or [] %}
+{% set vacation_list = vacation_alerts or [] %}
+{% set gallery_images = gallery_images or [] %}
+
+<div class="welcome-hero mb-4{{ ' is-christmas' if is_christmas else '' }}{{ ' is-new-year' if is_new_year else '' }}">
+  {% if is_christmas %}
+  <div class="holiday-lights" aria-hidden="true">
+    {% for i in range(14) %}
+    <span class="light" style="--i:{{ i }}"></span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if is_new_year %}
+  <div class="fireworks" aria-hidden="true">
+    <span class="firework" style="--x:14%;--y:28%;--delay:0s;"></span>
+    <span class="firework" style="--x:34%;--y:18%;--delay:.55s;"></span>
+    <span class="firework" style="--x:56%;--y:30%;--delay:1.1s;"></span>
+    <span class="firework" style="--x:72%;--y:16%;--delay:1.65s;"></span>
+    <span class="firework" style="--x:28%;--y:12%;--delay:1.35s;"></span>
+    <span class="firework" style="--x:84%;--y:10%;--delay:2s;"></span>
+  </div>
+  {% endif %}
+
+  <div class="row g-4 align-items-center">
+    <div class="col-lg-7">
+      <div class="welcome-copy">
+        {% set display_name = (session.get('nome') or session.get('usuario') or 'Usuário').strip() %}
+        <span class="campaign-badge">Seja bem-vindo, {{ display_name }}</span>
+        <h1>{{ hero_title }}</h1>
+        <p>{{ hero_message }}</p>
+      </div>
+    </div>
+    <div class="col-lg-5 text-center welcome-illustration">
+      <div class="hero-frame">
+        <img src="{{ url_for('static', filename=hero_image) }}" alt="Sol - mascote IA Sollus">
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="module-carousel">
+  <div id="modulesCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="8000">
+    <div class="carousel-indicators">
+      <button type="button" data-bs-target="#modulesCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Propostas inteligentes"></button>
+      <button type="button" data-bs-target="#modulesCarousel" data-bs-slide-to="1" aria-label="Chamados conectados"></button>
+      <button type="button" data-bs-target="#modulesCarousel" data-bs-slide-to="2" aria-label="Celebrar o time"></button>
+      <button type="button" data-bs-target="#modulesCarousel" data-bs-slide-to="3" aria-label="Mapa de f&eacute;rias"></button>
+      <button type="button" data-bs-target="#modulesCarousel" data-bs-slide-to="4" aria-label="Financeiro e contratos"></button>
+      <button type="button" data-bs-target="#modulesCarousel" data-bs-slide-to="5" aria-label="Solicitação de crachás"></button>
+    </div>
+
+    <div class="carousel-inner">
+      <div class="carousel-item active">
+        <div class="feature-card h-100">
+          <div class="icon"><i class="fa-solid fa-pen-ruler"></i></div>
+          <h2>Propostas inteligentes</h2>
+          <p>Crie propostas e gerencie o pacote comercial com equipamentos, par&acirc;metros e hist&oacute;rico de vers&otilde;es. Tudo integrado para montar e revisar documentos em poucos minutos.</p>
+          <div class="d-flex flex-wrap gap-2 justify-content-center">
+            {% set user_tipo = (session.get('tipo') or '').lower() %}
+            {% if user_tipo == 'administrador' %}{% set user_tipo = 'admin' %}{% endif %}
+            {% set user_depts = [] %}
+            {% if current_user.is_authenticated %}
+              {% for dept_name in (current_user.department_names or []) %}
+                {% if dept_name %}
+                  {% set _ = user_depts.append(dept_name.upper()) %}
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+            {% set user_raw_permissions = (current_user.permissions if current_user.is_authenticated and current_user.permissions else {}) %}
+            {% set can_view_propostas = user_tipo in ['admin','gestor','consultor'] or user_raw_permissions.get('propostas') or ('COMERCIAL' in user_depts) %}
+            {% if can_view_propostas %}
+            <a class="btn btn-primary" href="{{ url_for('propostas_bp.nova_proposta') }}">Iniciar nova proposta</a>
+            <a class="btn btn-outline-primary" href="{{ url_for('propostas_bp.historico_propostas') }}">Ver hist&oacute;rico</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="carousel-item">
+        <div class="feature-card h-100">
+          <div class="icon"><i class="fa-solid fa-headset"></i></div>
+          <h2>Chamados conectados</h2>
+          <p>Centralize Chamados TI, Suporte, T&eacute;cnica e Assist&ecirc;ncia T&eacute;cnica em um fluxo &uacute;nico. Use a Central de Conhecimento e a Auditoria para acompanhar prioridades e atividades da equipe.</p>
+          <div class="d-flex flex-wrap gap-2 justify-content-center">
+            <a class="btn btn-primary" href="{{ url_for('sollus_tickets.dashboard') }}">Ir para os tickets</a>
+            <a class="btn btn-outline-primary" href="{{ url_for('central_conhecimento.board') }}">Abrir conhecimentos</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="carousel-item">
+        <div class="feature-card h-100">
+          <div class="icon"><i class="fa-solid fa-cake-candles"></i></div>
+          <h2>Celebrar o time</h2>
+          <p>Administra&ccedil;&atilde;o reunida com aniversariantes, f&eacute;rias, agenda t&eacute;cnica, usu&aacute;rios, permiss&otilde;es e galeria. O RH tem tudo para cuidar do time sem sair do painel.</p>
+          <div class="d-flex flex-wrap gap-2 justify-content-center">
+            <a class="btn btn-primary" href="{{ url_for('admin_tools_bp.aniversariantes_dashboard') }}">Gerenciar aniversariantes</a>
+            {% if birthday_list or vacation_list %}
+            <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#celebrationModal">Ver alertas do m&ecirc;s</button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="carousel-item">
+        <div class="feature-card h-100">
+          <div class="icon"><i class="fa-solid fa-umbrella-beach"></i></div>
+          <h2>Mapa de f&eacute;rias inteligente</h2>
+          <p>Visualize quem est&aacute; fora, quem retorna e distribua tarefas com anteced&ecirc;ncia usando a vis&atilde;o integrada de f&eacute;rias.</p>
+          <div class="d-flex flex-wrap gap-2 justify-content-center">
+            <a class="btn btn-primary" href="{{ url_for('admin_tools_bp.ferias_dashboard') }}">Abrir mapa de f&eacute;rias</a>
+            {% if vacation_list %}
+            <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#celebrationModal">Alertas de f&eacute;rias</button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="carousel-item">
+        <div class="feature-card h-100">
+          <div class="icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+          <h2>Financeiro e contratos</h2>
+          <p>Acompanhe contas a receber, cancelados e cota mensal no financeiro, e consulte contratos cancelados com hist&oacute;rico detalhado.</p>
+          <div class="d-flex flex-wrap gap-2 justify-content-center">
+            <a class="btn btn-primary" href="{{ url_for('financeiro_bp.contas_receber') }}">Ver financeiro</a>
+            <a class="btn btn-outline-primary" href="{{ url_for('contratos_bp.cancelados') }}">Ver contratos</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="carousel-item">
+        <div class="feature-card h-100">
+          <div class="icon"><i class="fa-solid fa-id-card"></i></div>
+          <h2>Solicitação de crachás</h2>
+          <p>Gerencie pedidos de crachás, histórico de solicitações, extratos de faturamento, recibos de entrega e cortador de fotos para o time.</p>
+          <div class="d-flex flex-wrap gap-2 justify-content-center">
+            <a class="btn btn-primary" href="{{ url_for('cracha_bp.pedidos') }}">Ver pedidos</a>
+            <a class="btn btn-outline-primary" href="{{ url_for('cracha_bp.modelos') }}">Modelos de crachás</a>
+            <a class="btn btn-outline-primary" href="{{ url_for('cracha_bp.recibos') }}">Recibos</a>
+            <a class="btn btn-outline-primary" href="{{ url_for('cracha_bp.cortador_fotos') }}">Cortador de fotos</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="carousel-control-prev" type="button" data-bs-target="#modulesCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Anterior</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#modulesCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Próximo</span>
+    </button>
+  </div>
+</div>
+
+<div class="row g-4 mt-1">
+  <div class="col-12">
+    <div class="home-gallery">
+      <div class="home-gallery__header">
+        <div>
+          <h3 class="home-gallery__title">Quadro de fotos</h3>
+          <p class="home-gallery__subtitle">Momentos do time e eventos recentes em destaque.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <a class="btn btn-primary" href="{{ url_for('galeria') }}">Abrir galeria</a>
+        </div>
+      </div>
+      {% if gallery_images %}
+      <div id="homeGalleryCarousel" class="carousel slide gallery-carousel" data-bs-ride="carousel" data-bs-interval="6000">
+        {% if gallery_images|length > 1 %}
+        <div class="carousel-indicators">
+          {% for filename in gallery_images %}
+          <button type="button" data-bs-target="#homeGalleryCarousel" data-bs-slide-to="{{ loop.index0 }}" class="{{ 'active' if loop.first else '' }}" {% if loop.first %}aria-current="true"{% endif %} aria-label="Foto {{ loop.index }}"></button>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <div class="carousel-inner">
+          {% for filename in gallery_images %}
+          <div class="carousel-item {{ 'active' if loop.first else '' }}" style="--gallery-bg:url('{{ url_for('serve_fotos', filename=filename) }}')">
+            <img src="{{ url_for('serve_fotos', filename=filename) }}" alt="Foto da galeria {{ loop.index }}">
+          </div>
+          {% endfor %}
+        </div>
+        {% if gallery_images|length > 1 %}
+        <button class="carousel-control-prev" type="button" data-bs-target="#homeGalleryCarousel" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Anterior</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#homeGalleryCarousel" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Próximo</span>
+        </button>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="home-gallery-empty">Nenhuma foto cadastrada ainda.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if birthday_list or vacation_list %}
+<div class="modal sollus-modal fade celebration-modal" id="celebrationModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Celebra&ccedil;&otilde;es do m&ecirc;s</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="celebration-body">
+        {% if birthday_list %}
+        {% set next_birthday = birthday_list[0] %}
+        <div class="celebration-section celebration-birthdays">
+          <div class="celebration-hero birthday-hero">
+            <div class="hero-copy">
+              <p class="hero-label">Aniversariantes</p>
+              <h6 class="hero-headline">Celebre {{ birthday_list|length }} momentos especiais</h6>
+              <p class="hero-description">Bal&otilde;es sobem para <span data-hero-names="birthday">{{ birthday_visible | map(attribute='name') | join(', ') }}</span> e para todos que fazem anivers&aacute;rio este m&ecirc;s.</p>
+              <div class="hero-meta">
+                <div class="hero-metric">
+                  <span>Pr&oacute;ximo bolo</span>
+                  <strong>{{ next_birthday.date_label }}</strong>
+                  <small>de {{ next_birthday.name }}</small>
+                </div>
+                <div class="hero-metric">
+                  <span>Na agenda</span>
+                  <strong>{{ birthday_list|length }} {{ 'pessoa' if birthday_list|length == 1 else 'pessoas' }}</strong>
+                  <small>Garanta os parab&eacute;ns em dia</small>
+                </div>
+              </div>
+            </div>
+            <div class="hero-visual balloon-scene">
+              <span class="balloon balloon-one"></span>
+              <span class="balloon balloon-two"></span>
+              <span class="balloon balloon-three"></span>
+            </div>
+          </div>
+
+          <div class="celebration-grid row row-cols-1 row-cols-md-2 g-3 js-rotating-grid"
+               data-mode="birthday"
+               data-visible="4"
+               data-interval="6000"
+               data-today="{{ today_label }}"
+               data-items='{{ birthday_list|tojson|e }}'>
+            {% for person in birthday_list[:4] %}
+            <div class="col">
+              {% set today_flag = person.is_today or (today_label and person.date_label == today_label) %}
+              <div class="celebration-card birthday {% if today_flag %}today{% endif %}">
+                {% if today_flag %}<div class="confetti-layer"></div><div class="emoji-badge" title="Hoje">&#x1F389;</div>{% endif %}
+                <div class="content-layer d-flex align-items-center gap-3">
+                  <img src="{{ person.avatar }}" alt="Foto de {{ person.name }}" class="celebration-avatar">
+                  <div>
+                    <strong>{{ person.name }}</strong>
+                    <small>{% if today_flag %}Comemora hoje{% else %}Comemora em {{ person.date_label }}{% endif %}</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if vacation_list %}
+        {% set vacation_visible = vacation_list[:4] %}
+        {% set highlight_vacation = vacation_list[0] %}
+        <div class="celebration-section celebration-vacations">
+          <div class="celebration-hero vacation-hero">
+            <div class="hero-copy">
+              <p class="hero-label">F&eacute;rias</p>
+              <h6 class="hero-headline">Praia, sol e mar para quem est&aacute; recarregando</h6>
+              <p class="hero-description">Quem est&aacute; recarregando agora: <span data-hero-names="vacation">{{ vacation_visible | map(attribute='name') | join(', ') }}</span>.</p>
+              <div class="hero-meta">
+                <div class="hero-metric">
+                  <span>Em descanso</span>
+                  <strong>{{ vacation_list|length }} {{ 'pessoa' if vacation_list|length == 1 else 'pessoas' }}</strong>
+                  <small>Planeje a cobertura dos times</small>
+                </div>
+                <div class="hero-metric">
+                  <span>Pr&oacute;ximo retorno</span>
+                  <strong>{{ highlight_vacation.end_label }}</strong>
+                  <small>{{ highlight_vacation.name }}</small>
+                </div>
+              </div>
+            </div>
+            <div class="hero-visual beach-scene">
+              <span class="sun"></span>
+              <span class="cloud"></span>
+              <span class="cloud cloud-two"></span>
+              <span class="sea"></span>
+              <span class="wave"></span>
+              <span class="wave wave-two"></span>
+              <span class="wave wave-three"></span>
+              <span class="sand"></span>
+              <span class="palm"></span>
+            </div>
+          </div>
+
+          <div class="celebration-grid row row-cols-1 row-cols-md-2 g-3 js-rotating-grid"
+               data-mode="vacation"
+               data-visible="4"
+               data-interval="6000"
+               data-items='{{ vacation_list|tojson|e }}'>
+            {% for person in vacation_list[:4] %}
+            <div class="col">
+              <div class="celebration-card vacation">
+                <img src="{{ person.avatar }}" alt="Foto de {{ person.name }}" class="celebration-avatar">
+                <div>
+                  <strong>{{ person.name }}</strong>
+                  <small>{{ person.start_label }} a {{ person.end_label }}  {{ person.unit }}</small>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    var modalEl = document.getElementById('celebrationModal');
+    if(modalEl && window.bootstrap){
+      var userKey = "{{ current_user.id if current_user.is_authenticated else 'anon' }}";
+      var cooldownKey = 'celebrationModalDismissedAt_' + userKey;
+      var last = localStorage.getItem(cooldownKey);
+      var now = Date.now();
+      var threeHours = 3 * 60 * 60 * 1000;
+      var skip = false;
+      if(last){
+        var ts = parseInt(last, 10);
+        if(!isNaN(ts) && (now - ts) < threeHours){
+          skip = true;
+        }
+      }
+      var celebrationModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      if(!skip){
+        celebrationModal.show();
+      }
+      modalEl.addEventListener('hidden.bs.modal', function(){
+        localStorage.setItem(cooldownKey, Date.now().toString());
+      });
+    }
+    initCelebrationRotations();
+  });
+
+  function initCelebrationRotations(){
+    var grids = document.querySelectorAll('.js-rotating-grid');
+    grids.forEach(function(grid){
+      var payload = grid.dataset.items;
+      if(!payload){ return; }
+      var todayLabel = (grid.dataset.today || '').trim();
+
+      var items;
+      try { items = JSON.parse(payload); } catch (err) { return; }
+      if(!Array.isArray(items) || !items.length){ return; }
+
+      var visible = parseInt(grid.dataset.visible || '2', 10);
+      if(isNaN(visible) || visible < 1){ visible = 2; }
+
+      var interval = parseInt(grid.dataset.interval || '6000', 10);
+      if(isNaN(interval) || interval < 2000){ interval = 6000; }
+
+      var mode = grid.dataset.mode || 'birthday';
+
+      var chunks = [];
+      for(var i = 0; i < items.length; i += visible){
+        chunks.push(items.slice(i, i + visible));
+      }
+
+      var chunkIndex = 0;
+      var render = function(){
+        grid.innerHTML = '';
+        var current = chunks[chunkIndex] || [];
+        current.forEach(function(person){
+          grid.appendChild(buildCelebrationCard(person, mode, todayLabel));
+        });
+        updateHeroNames(mode, current);
+        chunkIndex = (chunkIndex + 1) % chunks.length;
+      };
+
+      render();
+      if(chunks.length > 1){
+        setInterval(render, interval);
+      }
+    });
+  }
+
+  function updateHeroNames(mode, people){
+    var target = document.querySelector('[data-hero-names="' + mode + '"]');
+    if(!target){ return; }
+
+    var names = people.map(function(person){
+      return (person.name || '').trim();
+    }).filter(Boolean);
+
+    if(!names.length){
+      target.textContent = '';
+      return;
+    }
+    target.textContent = formatNamesList(names);
+  }
+
+  function formatNamesList(names){
+    if(names.length === 1){
+      return names[0];
+    }
+    if(names.length === 2){
+      return names[0] + ' e ' + names[1];
+    }
+    var head = names.slice(0, names.length - 1).join(', ');
+    return head + ' e ' + names[names.length - 1];
+  }
+
+  function buildCelebrationCard(person, mode, todayLabel){
+    var col = document.createElement('div');
+    col.className = 'col';
+
+    var card = document.createElement('div');
+    card.className = 'celebration-card ' + (mode === 'vacation' ? 'vacation' : 'birthday');
+    card.classList.add('entering');
+    setTimeout(function(){ card.classList.remove('entering'); }, 700);
+
+    var img = document.createElement('img');
+    img.className = 'celebration-avatar';
+    img.alt = 'Foto de ' + (person.name || 'colaborador');
+    img.src = person.avatar || "{{ url_for('static', filename='images/sollus_logo.png') }}";
+
+    var info = document.createElement('div');
+    var nameEl = document.createElement('strong');
+    nameEl.textContent = person.name || '';
+
+    var details = document.createElement('small');
+    var todayFlag = (mode !== 'vacation') && isBirthdayToday(person, todayLabel);
+
+    if(todayFlag){
+      card.classList.add('today');
+      var confetti = document.createElement('div');
+      confetti.className = 'confetti-layer';
+      var badge = document.createElement('div');
+      badge.className = 'emoji-badge';
+      badge.textContent = '\uD83C\uDF89';
+      badge.title = 'Hoje';
+      card.appendChild(confetti);
+      card.appendChild(badge);
+    }
+
+    if(mode === 'vacation'){
+      var unit = person.unit ? ' ' + person.unit : '';
+      var start = person.start_label || '';
+      var end = person.end_label || '';
+      var separator = start && end ? ' a ' : '';
+      details.textContent = start + separator + end + unit;
+    } else {
+      details.textContent = todayFlag ? 'Comemora hoje' : 'Comemora em ' + (person.date_label || '');
+    }
+
+    info.appendChild(nameEl);
+    info.appendChild(details);
+
+    var contentWrapper = document.createElement('div');
+    contentWrapper.className = 'd-flex align-items-center gap-3';
+    if(mode !== 'vacation'){
+      contentWrapper.classList.add('content-layer');
+    }
+    contentWrapper.appendChild(img);
+    contentWrapper.appendChild(info);
+
+    card.appendChild(contentWrapper);
+    col.appendChild(card);
+    return col;
+  }
+
+  function isBirthdayToday(person, todayLabel){
+    if(person && person.is_today){ return true; }
+    var label = (person && person.date_label ? person.date_label : '').trim();
+    var today = todayLabel && todayLabel.trim();
+    if(label && today && label === today){ return true; }
+
+    // fallback client-side check
+    var now = new Date();
+    var dm = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth() + 1).padStart(2,'0');
+    if(label && label === dm){ return true; }
+    return false;
+  }
+</script>
+{% endif %}
+{% endblock %}

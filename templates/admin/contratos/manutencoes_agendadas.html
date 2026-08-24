@@ -1,0 +1,386 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Contratos | Manutenções Agendadas{% endblock %}
+
+{% block head %}
+<style>
+  .manut-card{border:0;border-radius:1.1rem;box-shadow:0 10px 24px rgba(15,35,58,.08);}
+  .manut-card .card-header{background:transparent;border:0;padding:1.25rem 1.5rem 0;}
+  .manut-card .card-body{padding:1.25rem 1.5rem 1.5rem;}
+  .manut-table th,.manut-table td{vertical-align:middle;}
+  .manut-table thead{background:#f3f6fb;text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:#5a6782;}
+  .manut-table tbody tr:hover{background:rgba(148,163,184,.08);}
+  .acao-bloco{display:none;}
+  .search-select{position:relative;}
+  .search-select-menu{
+    position:absolute;
+    left:0;
+    right:0;
+    top:calc(100% + 4px);
+    background:#fff;
+    border:1px solid #d6deea;
+    border-radius:.6rem;
+    box-shadow:0 14px 30px rgba(15,35,58,.18);
+    max-height:260px;
+    overflow:auto;
+    z-index:1055;
+    display:none;
+  }
+  .search-select.is-open .search-select-menu{display:block;}
+  .search-select-item{
+    width:100%;
+    text-align:left;
+    border:0;
+    background:transparent;
+    padding:.45rem .85rem;
+    font-size:.95rem;
+  }
+  .search-select-item:hover,
+  .search-select-item:focus{background:#f3f6fb;}
+  .search-select-empty{padding:.55rem .85rem;color:#6b7280;}
+</style>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/contratos_manutencoes.js') }}" defer></script>
+{% endblock %}
+
+{% block content %}
+{% set hero_stats = [
+  {'label': 'Agendamentos', 'value': pagination.total, 'hint': 'grupos'}
+] %}
+{% call page_hero(
+  title='Manutenções Agendadas'|safe,
+  subtitle='Organize as visitas técnicas programadas por contrato.',
+  eyebrow='Contratos'|safe,
+  stats=hero_stats
+) %}
+  <div class="page-hero__actions">
+    <button class="btn btn-light" type="button" data-bs-toggle="modal" data-bs-target="#modalNovaManutencao">
+      <i class="fa-solid fa-plus me-1"></i> Novo agendamento
+    </button>
+  </div>
+{% endcall %}
+
+<div class="card manut-card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label">Nº ficha</label>
+        <input type="text" class="form-control" name="ficha" value="{{ filtros.ficha or '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Cliente</label>
+        <div class="search-select" data-search-select>
+          <input type="text" class="form-control" placeholder="Buscar cliente" data-select-target="clienteFiltro" autocomplete="off">
+          <div class="search-select-menu" data-select-menu></div>
+        </div>
+        <select class="form-select d-none" id="clienteFiltro" name="cliente_id">
+          <option value="">Todos</option>
+          {% for cliente in clientes %}
+          <option value="{{ cliente.id_pk }}" {{ 'selected' if filtros.cliente_id == cliente.id_pk else '' }}>{{ cliente.nome_fantasia }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Localidade</label>
+        <div class="search-select" data-search-select>
+          <input type="text" class="form-control" placeholder="Buscar localidade" data-select-target="localidadeFiltro" autocomplete="off">
+          <div class="search-select-menu" data-select-menu></div>
+        </div>
+        <select class="form-select d-none" id="localidadeFiltro" name="localidade_id">
+          <option value="">Todas</option>
+          {% for loc in localidades %}
+          <option value="{{ loc.id_pk }}" {{ 'selected' if filtros.localidade_id == loc.id_pk else '' }}>{{ loc.localidade }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Mês</label>
+        <div class="search-select" data-search-select>
+          <input type="text" class="form-control" placeholder="Selecionar mês" data-select-target="mesFiltro" autocomplete="off">
+          <div class="search-select-menu" data-select-menu></div>
+        </div>
+        <select class="form-select d-none" id="mesFiltro" name="mes">
+          <option value="">Todos</option>
+          {% for mes in range(1, 13) %}
+          <option value="{{ mes }}" {{ 'selected' if filtros.mes == mes else '' }}>{{ mes }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <div class="form-check mt-2">
+          <input class="form-check-input" type="checkbox" name="nao_realizadas" value="1" {{ 'checked' if filtros.nao_realizadas else '' }}>
+          <label class="form-check-label">Somente não realizadas</label>
+        </div>
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+        <a class="btn btn-outline-secondary w-100" href="{{ url_for('contratos_bp.manutencoes_agendadas') }}">Limpar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card manut-card">
+  <div class="card-header">
+    <h2 class="h6 fw-bold mb-1">Registros</h2>
+    <p class="text-muted mb-0">{{ pagination.total }} grupo(s) encontrado(s).</p>
+  </div>
+  <div class="card-body">
+    <form method="post" action="{{ url_for('contratos_bp.manutencoes_agendadas_ficha') }}" target="_blank" id="formFichas">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="table-responsive">
+        <table class="table table-hover manut-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Nº ficha</th>
+              <th>Nome fantasia</th>
+              <th>Localidade</th>
+              <th>Nº contrato</th>
+              <th>Data atendimento</th>
+              <th>Técnico</th>
+              <th>Data visita</th>
+              <th>Hora entrada</th>
+              <th>Hora saída</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in manutencoes %}
+            <tr>
+              <td><input class="form-check-input" type="checkbox" name="ficha" value="{{ row.id_pk }}"></td>
+              <td>{{ row.id_pk }}</td>
+              <td class="fw-semibold">{{ row.nome_fantasia or '-' }}</td>
+              <td>{{ row.localidade_label }}</td>
+              <td>{{ row.contrato_numero or '-' }}</td>
+              <td>{{ row.data_inicio_br or '-' }}</td>
+              <td>{{ row.tecnico or '-' }}</td>
+              <td>{{ row.data_visita_br or '-' }}</td>
+              <td>{{ row.hora_entrada_br or '-' }}</td>
+              <td>{{ row.hora_saida_br or '-' }}</td>
+              <td class="text-end">
+                <div class="d-flex justify-content-end gap-2">
+                  {% if row.agendamentos_restantes %}
+                  <button
+                    class="btn btn-outline-secondary btn-sm"
+                    type="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalAgendamentosGrupo{{ row.grupo_id }}"
+                  >
+                    <i class="fa-solid fa-layer-group me-1"></i> Agendamentos ({{ row.agendamentos_restantes }})
+                  </button>
+                  {% endif %}
+                  <button class="btn btn-outline-primary btn-sm btn-edit-manutencao" type="button" data-id="{{ row.id_pk }}" data-bs-toggle="modal" data-bs-target="#modalNovaManutencao">
+                    <i class="fa-solid fa-pen me-1"></i> Editar
+                  </button>
+                  <form method="post" action="{{ url_for('contratos_bp.manutencoes_agendadas_excluir', agendamento_id=row.id_pk) }}" onsubmit="return confirm('Deseja excluir este agendamento?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                      <i class="fa-solid fa-trash me-1"></i> Excluir
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+            {% if not manutencoes %}
+            <tr>
+              <td colspan="11" class="text-center text-muted py-4">Nenhum agendamento encontrado.</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <button type="submit" class="btn btn-outline-primary">
+          <i class="fa-solid fa-print me-1"></i> Emitir fichas selecionadas
+        </button>
+        {% if pagination.pages > 1 %}
+        <nav>
+          <ul class="pagination justify-content-end mb-0">
+            <li class="page-item {{ 'disabled' if not pagination.has_prev else '' }}">
+              <a class="page-link" href="{{ build_url('contratos_bp.manutencoes_agendadas', page=pagination.prev_num) }}">Anterior</a>
+            </li>
+            {% for p in range(1, pagination.pages + 1) %}
+            {% if p == 1 or p == pagination.pages or (p >= pagination.page - 1 and p <= pagination.page + 1) %}
+            <li class="page-item {{ 'active' if p == pagination.page else '' }}">
+              <a class="page-link" href="{{ build_url('contratos_bp.manutencoes_agendadas', page=p) }}">{{ p }}</a>
+            </li>
+            {% endif %}
+            {% endfor %}
+            <li class="page-item {{ 'disabled' if not pagination.has_next else '' }}">
+              <a class="page-link" href="{{ build_url('contratos_bp.manutencoes_agendadas', page=pagination.next_num) }}">Próxima</a>
+            </li>
+          </ul>
+        </nav>
+        {% endif %}
+      </div>
+    </form>
+
+    {% if manutencoes %}
+      {% for row in manutencoes %}
+        {% if row.agendamentos_restantes %}
+        <div class="modal sollus-modal fade" id="modalAgendamentosGrupo{{ row.grupo_id }}" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">
+                  Agendamentos - {{ row.nome_fantasia or '-' }} ({{ row.contrato_numero or '-' }})
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+              </div>
+              <div class="modal-body">
+                <div class="table-responsive">
+                  <table class="table table-hover manut-table">
+                    <thead>
+                      <tr>
+                        <th>Nº ficha</th>
+                        <th>Nome fantasia</th>
+                        <th>Localidade</th>
+                        <th>Nº contrato</th>
+                        <th>Data atendimento</th>
+                        <th>Técnico</th>
+                        <th>Data visita</th>
+                        <th>Hora entrada</th>
+                        <th>Hora saída</th>
+                        <th class="text-end">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for item in row.agendamentos_outros %}
+                      <tr>
+                        <td>{{ item.id_pk }}</td>
+                        <td class="fw-semibold">{{ item.nome_fantasia or '-' }}</td>
+                        <td>{{ item.localidade_label }}</td>
+                        <td>{{ item.contrato_numero or '-' }}</td>
+                        <td>{{ item.data_inicio_br or '-' }}</td>
+                        <td>{{ item.tecnico or '-' }}</td>
+                        <td>{{ item.data_visita_br or '-' }}</td>
+                        <td>{{ item.hora_entrada_br or '-' }}</td>
+                        <td>{{ item.hora_saida_br or '-' }}</td>
+                        <td class="text-end">
+                          <div class="d-flex justify-content-end gap-2">
+                            <button class="btn btn-outline-primary btn-sm btn-edit-manutencao" type="button" data-id="{{ item.id_pk }}" data-bs-toggle="modal" data-bs-target="#modalNovaManutencao">
+                              <i class="fa-solid fa-pen me-1"></i> Editar
+                            </button>
+                            <form method="post" action="{{ url_for('contratos_bp.manutencoes_agendadas_excluir', agendamento_id=item.id_pk) }}" onsubmit="return confirm('Deseja excluir este agendamento?');">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                              <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="fa-solid fa-trash me-1"></i> Excluir
+                              </button>
+                            </form>
+                          </div>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="modal sollus-modal fade" id="modalNovaManutencao" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('contratos_bp.manutencoes_agendadas_novo') }}" id="formManutencao">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="origin" value="list">
+        <input type="hidden" name="txtID" value="">
+        <div class="modal-header">
+          <h5 class="modal-title">Novo agendamento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Ação</label>
+              <select class="form-select" name="acao" id="acao">
+                <option value="1">Cadastrar uma ficha</option>
+                <option value="2">Gerar agenda pelo contrato</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label"><span class="text-danger">*</span> Cliente</label>
+              <div class="search-select" data-search-select>
+                <input type="text" class="form-control" placeholder="Buscar cliente" data-select-target="selCliente" autocomplete="off" required>
+                <div class="search-select-menu" data-select-menu></div>
+              </div>
+              <select class="form-select d-none" name="selCliente" id="selCliente">
+                <option value=""></option>
+                {% for cliente in clientes %}
+                <option value="{{ cliente.id_pk }}">{{ cliente.nome_fantasia }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><span class="text-danger">*</span> Nº Contrato</label>
+              <select class="form-select" name="selNumeroContratos" id="selNumeroContratos" required>
+                <option value=""></option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><span class="text-danger">*</span> Localidade</label>
+              <select class="form-select" name="selLocalidade" id="selLocalidade" required>
+                <option value=""></option>
+              </select>
+            </div>
+
+            <div class="col-md-6 acao-bloco" id="acao_2">
+              <label class="form-label"><span class="text-danger">*</span> Dia base de atendimento</label>
+              <input type="text" class="form-control" name="txtDiaBaseAtendimento" value="">
+            </div>
+
+            <div class="col-12 acao-bloco" id="acao_1">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label"><span class="text-danger">*</span> Data atendimento</label>
+                  <input type="text" class="form-control" name="txtDataAtendimento" placeholder="dd/mm/aaaa">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Técnico</label>
+                  <select class="form-select" name="selUsuarios">
+                    <option value=""></option>
+                    {% for usuario in usuarios %}
+                    <option value="{{ usuario.id_pk }}">{{ usuario.nome }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Data visita</label>
+                  <input type="text" class="form-control" name="txtDataVisita" placeholder="dd/mm/aaaa">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Hora entrada</label>
+                  <input type="text" class="form-control" name="txtHoraEntrada" placeholder="HH:MM">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Hora saída</label>
+                  <input type="text" class="form-control" name="txtHoraSaida" placeholder="HH:MM">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" name="save" value="1">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

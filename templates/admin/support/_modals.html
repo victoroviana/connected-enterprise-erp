@@ -1,0 +1,1407 @@
+<style>
+  #modalDetalhesAtendimento .modal-content{
+    border:1px solid rgba(148,163,184,.35);
+    border-radius:18px;
+    box-shadow:0 30px 80px rgba(15,23,42,.22);
+    overflow:hidden;
+    background:#f8fafc;
+  }
+  #modalDetalhesAtendimento .modal-header{
+    background:linear-gradient(120deg,#0b3b8c,#0bb4d4);
+    color:#fff;
+    border-bottom:0;
+  }
+  #modalDetalhesAtendimento .modal-title{font-weight:600;letter-spacing:.02em;}
+  #modalDetalhesAtendimento .btn-close{filter:invert(1) grayscale(100%);opacity:.9;}
+  #modalDetalhesAtendimento .modal-body{
+    background:
+      radial-gradient(120% 120% at 0% 0%, rgba(14,93,198,.12), rgba(248,250,252,0) 55%),
+      radial-gradient(120% 120% at 100% 100%, rgba(11,180,212,.12), rgba(248,250,252,0) 55%);
+  }
+  .support-details-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    gap:14px;
+    margin-bottom:1.2rem;
+  }
+  .support-details-grid .detail-block{
+    position:relative;
+    border-radius:14px;
+    padding:.85rem 1rem;
+    background:#ffffff;
+    border:1px solid rgba(148,163,184,.28);
+    box-shadow:0 10px 24px rgba(15,23,42,.08);
+  }
+  .support-details-grid .detail-block::before{
+    content:"";
+    position:absolute;
+    left:0;
+    top:0;
+    bottom:0;
+    width:3px;
+    background:linear-gradient(180deg,#0b3b8c,#0bb4d4);
+    opacity:.5;
+  }
+  .support-details-grid .detail-label,
+  .support-details-longform .detail-label{
+    display:block;
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:#64748b;
+    margin-bottom:.35rem;
+  }
+  .support-details-grid [data-detail],
+  .support-details-longform [data-detail],
+  .support-details-longform .detail-value {
+    margin:0;
+    font-weight:600;
+    color:#0f172a;
+    font-size:.98rem;
+    line-height:1.4;
+    word-break:break-word;
+    white-space:pre-wrap;
+  }
+  .support-details-grid [data-detail] a{
+    color:#0b3b8c;
+    text-decoration:none;
+    font-weight:600;
+  }
+  .support-details-grid [data-detail] a:hover{text-decoration:underline;}
+  .support-details-grid .status-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:.35rem;
+    padding:.25rem .6rem;
+    border-radius:999px;
+    font-size:.85rem;
+    font-weight:600;
+  }
+  .support-details-grid .status-pill--entrada{background:rgba(14,93,198,.12);color:#0b3b8c;}
+  .support-details-grid .status-pill--atencao{background:rgba(245,158,11,.18);color:#92400e;}
+  .support-details-grid .status-pill--concluído{background:rgba(16,185,129,.18);color:#065f46;}
+  .support-details-longform{
+    display:grid;
+    gap:14px;
+  }
+  .support-details-longform .detail-text-block{
+    border-radius:16px;
+    padding:1rem 1.1rem;
+    background:#ffffff;
+    border:1px solid rgba(148,163,184,.25);
+    box-shadow:0 10px 24px rgba(15,23,42,.06);
+  }
+  .support-details-longform .detail-value{max-height:260px;overflow:auto;padding:.35rem 0 .25rem;}
+  #modalNovoAtendimento .modal-content{
+    border:1px solid rgba(148,163,184,.35);
+    border-radius:18px;
+    box-shadow:0 30px 80px rgba(15,23,42,.22);
+    overflow:hidden;
+    background:#f8fafc;
+  }
+  #modalNovoAtendimento .modal-header{
+    background:linear-gradient(120deg,#0b3b8c,#0bb4d4);
+    color:#fff;
+    border-bottom:0;
+  }
+  #modalNovoAtendimento .modal-title{font-weight:600;letter-spacing:.02em;}
+  #modalNovoAtendimento .btn-close{filter:invert(1) grayscale(100%);opacity:.9;}
+  #modalNovoAtendimento .modal-body{
+    background:
+      radial-gradient(120% 120% at 0% 0%, rgba(14,93,198,.12), rgba(248,250,252,0) 55%),
+      radial-gradient(120% 120% at 100% 100%, rgba(11,180,212,.12), rgba(248,250,252,0) 55%);
+  }
+  #modalNovoAtendimento .modal-footer{
+    background:#f1f5f9;
+    border-top:1px solid rgba(148,163,184,.2);
+  }
+  #modalNovoAtendimento .form-label{
+    font-size:.75rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:#64748b;
+    margin-bottom:.35rem;
+  }
+  #modalNovoAtendimento .form-control,
+  #modalNovoAtendimento .form-select{
+    border-radius:12px;
+    border-color:rgba(148,163,184,.45);
+    box-shadow:none;
+  }
+  #modalNovoAtendimento .form-control:focus,
+  #modalNovoAtendimento .form-select:focus{
+    border-color:rgba(14,93,198,.7);
+    box-shadow:0 0 0 .2rem rgba(14,93,198,.15);
+  }
+  .support-form-section{
+    background:#ffffff;
+    border:1px solid rgba(148,163,184,.25);
+    border-radius:16px;
+    padding:1rem 1.1rem;
+    box-shadow:0 14px 28px rgba(15,23,42,.08);
+    margin-bottom:1rem;
+  }
+  .support-form-section-title{
+    display:flex;
+    align-items:center;
+    gap:.6rem;
+    font-size:.8rem;
+    text-transform:uppercase;
+    letter-spacing:.12em;
+    color:#0b3b8c;
+    font-weight:600;
+    margin-bottom:.9rem;
+  }
+  .support-form-section-title::before{
+    content:"";
+    width:26px;
+    height:2px;
+    background:linear-gradient(90deg,#0b3b8c,#0bb4d4);
+    border-radius:999px;
+  }
+  .meet-preview-group .form-control{
+    background:#f8fafc;
+    font-weight:600;
+  }
+  .meet-preview-group .btn{border-radius:10px;}
+  .is-invalid{border-color:#dc3545 !important;box-shadow:0 0 0 0.25rem rgba(220,53,69,.25);}
+  .invalid-feedback{display:block;color:#dc3545;font-size:.875rem;margin-top:.25rem;}
+</style>
+
+<div class="modal sollus-modal fade" id="modalNovoAtendimento" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+    <form class="modal-content" method="post" action="{{ url_for('support_bp.criar_atendimento') }}" enctype="multipart/form-data">
+      {% if create_form.csrf_token %}
+        {{ create_form.csrf_token }}
+      {% endif %}
+
+      <div class="modal-header">
+        <h5 class="modal-title">Novo atendimento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="support-form-section">
+          <div class="support-form-section-title">Cliente e atendimento</div>
+          <div class="row g-3">
+            <!-- Empresa e CNPJ -->
+            <div class="col-md-8">
+              <label class="form-label">Empresa</label>
+              {{ create_form.cliente(class="form-control", placeholder="Razão social") }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">CNPJ</label>
+              <div class="input-group">
+                {{ create_form.cnpj(class="form-control", placeholder="00.000.000/0000-00", data_cnpj_lookup_url=url_for((chamados_namespace|default('support_bp')) ~ '.api_cnpj')) }}
+                <button class="btn btn-outline-secondary js-fetch-cnpj" type="button" title="Buscar dados">
+                  <i class="bi bi-search"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Sistema e Tipo de Atendimento -->
+            <div class="col-md-6">
+              <label class="form-label">Sistema</label>
+              {{ create_form.sistema(class="form-select") }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Tipo de atendimento</label>
+              {{ create_form.tipo_atendimento(class="form-select") }}
+            </div>
+          </div>
+        </div>
+
+
+        <div class="support-form-section">
+          <div class="support-form-section-title">Operação</div>
+          <div class="row g-3">
+            <!-- Status e Tecnico -->
+            <div class="col-md-6">
+              <label class="form-label">Status</label>
+              {{ create_form.status(class="form-select") }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Técnico responsável</label>
+              {{ create_form.usuario_designado(class="form-select") }}
+            </div>
+
+            <!-- Data e OS -->
+            <div class="col-md-6">
+              <label class="form-label">Data de entrada</label>
+              {{ create_form.data_entrada(class="form-control") }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">OS de entrada</label>
+              {{ create_form.os_entrada(class="form-control") }}
+            </div>
+          </div>
+        </div>
+
+        <div class="support-form-section">
+          <div class="support-form-section-title">Contato e anexos</div>
+          <div class="row g-3">
+            <!-- Quantidade de Pessoas e E-mail -->
+            <div class="col-md-6">
+              <label class="form-label">Qtd. de pessoas</label>
+              {{ create_form.quantidade_pessoas(class="form-control") }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">E-mail</label>
+              {{ create_form.email(class="form-control") }}
+            </div>
+
+            <!-- Arquivo de entrada -->
+            <div class="col-md-12">
+              <label class="form-label">Arquivo de entrada</label>
+              {{ create_form.arquivo_entrada(class="form-control", accept=".pdf,.png,.jpg,.jpeg,.msg") }}
+            </div>
+          </div>
+        </div>
+
+        <div class="support-form-section">
+          <div class="support-form-section-title">Descrição e observações</div>
+          <div class="row g-3">
+            <!-- Descrição (full width) -->
+            <div class="col-md-12">
+              <label class="form-label">Descrição</label>
+              {{ create_form.descricao(class="form-control", rows=3) }}
+            </div>
+
+            <!-- Observações -->
+            <div class="col-md-12">
+              <label class="form-label">Observações</label>
+              {{ create_form.observacoes(class="form-control", rows=2) }}
+            </div>
+
+            <!-- Observações de alerta -->
+            <div class="col-md-12">
+              <label class="form-label">Observações de alerta</label>
+              {{ create_form.observacoes_alerta(class="form-control", rows=2) }}
+            </div>
+
+            <!-- Texto mobile -->
+            <div class="col-md-12">
+              <label class="form-label">Texto mobile</label>
+              {{ create_form.texto_mobile(class="form-control", rows=2) }}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Criar atendimento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+
+
+
+
+<div class="modal sollus-modal fade" id="modalLogsAtendimento" tabindex="-1" aria-hidden="true">
+
+
+
+  <div class="modal-dialog modal-dialog-scrollable">
+
+
+
+    <div class="modal-content">
+
+
+
+      <div class="modal-header">
+
+
+
+        <h5 class="modal-title">Histórico de alterações</h5>
+
+
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
+
+
+      </div>
+
+
+
+      <div class="modal-body">
+
+
+
+        <div class="table-responsive">
+
+
+
+          <table class="table table-sm">
+
+
+
+            <thead>
+
+
+
+              <tr>
+
+
+
+                <th>Campo</th>
+
+
+
+                <th>Anterior</th>
+
+
+
+                <th>Novo</th>
+
+
+
+                <th>Modificado por</th>
+
+
+
+                <th>Data</th>
+
+
+
+              </tr>
+
+
+
+            </thead>
+
+
+
+            <tbody id="supportLogsTableBody">
+
+
+
+              <tr>
+
+
+
+                <td colspan="5" class="text-center text-muted">Carregando…</td>
+
+
+
+              </tr>
+
+
+
+            </tbody>
+
+
+
+          </table>
+
+
+
+        </div>
+
+
+
+      </div>
+
+
+
+      <div class="modal-footer">
+
+
+
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Fechar</button>
+
+
+
+      </div>
+
+
+
+    </div>
+
+
+
+  </div>
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="modal sollus-modal fade" id="modalEditarAtendimento" tabindex="-1" aria-hidden="true">
+
+
+
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+
+
+
+    <form class="modal-content" method="post" enctype="multipart/form-data">
+
+
+
+      {{ edit_form.csrf_token }}
+
+
+
+      {{ edit_form.atendimento_id }}
+
+
+
+      <div class="modal-header">
+
+
+
+        <h5 class="modal-title">Editar atendimento</h5>
+
+
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
+
+
+      </div>
+
+
+
+      <div class="modal-body">
+
+
+
+        <div class="row g-3">
+
+
+
+          <div class="col-md-8">
+
+
+
+            <label class="form-label">Empresa</label>
+
+
+
+            {{ edit_form.cliente(class="form-control") }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-4">
+
+
+
+            <label class="form-label">CNPJ</label>
+
+
+
+            <div class="input-group">
+
+
+
+              {{ edit_form.cnpj(class="form-control", data_cnpj_lookup_url=url_for((chamados_namespace|default('support_bp')) ~ '.api_cnpj')) }}
+
+
+
+              <button class="btn btn-outline-secondary js-fetch-cnpj" type="button" title="Buscar dados">
+
+
+
+                <i class="bi bi-search"></i>
+
+
+
+              </button>
+
+
+
+            </div>
+
+
+
+          </div>
+
+
+
+          <div class="col-md-6">
+
+
+
+            <label class="form-label">Tipo de atendimento</label>
+
+
+
+            {{ edit_form.tipo_atendimento(class="form-control") }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-3">
+
+
+
+            <label class="form-label">Status</label>
+
+
+
+            {{ edit_form.status(class="form-select") }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-3">
+
+
+
+            <label class="form-label">Data de entrada</label>
+
+
+
+            {{ edit_form.data_entrada(class="form-control") }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-6">
+
+
+
+            <label class="form-label">Data do atendimento</label>
+
+
+
+            {{ edit_form.data_atendimento(class="form-control") }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-6">
+
+
+
+            <label class="form-label">Técnico responsável</label>
+
+
+
+            {{ edit_form.usuario_designado(class="form-select") }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-6">
+
+
+
+            <label class="form-label">OS de entrada</label>
+
+
+
+            {{ edit_form.os_entrada(class="form-control") }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-6">
+
+
+
+            <label class="form-label">OS de saída</label>
+
+
+
+            {{ edit_form.os_saida(class="form-control") }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-6">
+
+
+
+            <label class="form-label">Sistema</label>
+
+
+
+            {{ edit_form.sistema(class="form-control") }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-6">
+
+
+
+            <label class="form-label">Qtd. de pessoas</label>
+
+
+
+            {{ edit_form.quantidade_pessoas(class="form-control") }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-12">
+
+
+
+            <label class="form-label">Texto mobile</label>
+
+
+
+            {{ edit_form.texto_mobile(class="form-control", rows=2) }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-12">
+
+
+
+            <label class="form-label">Descrição</label>
+
+
+
+            {{ edit_form.descricao(class="form-control", rows=3) }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-12">
+
+
+
+            <label class="form-label">Resumo do atendimento</label>
+
+
+
+            {{ edit_form.resumo_atendimento(class="form-control", rows=2) }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-12">
+
+
+
+            <label class="form-label">Observações</label>
+
+
+
+            {{ edit_form.observacoes(class="form-control", rows=2) }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-12">
+
+
+
+            <label class="form-label">Observações de alerta</label>
+
+
+
+            {{ edit_form.observacoes_alerta(class="form-control", rows=2) }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-6">
+
+
+
+            <label class="form-label">E-mail</label>
+
+
+
+            {{ edit_form.email(class="form-control") }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-6">
+
+
+
+            <label class="form-label">Arquivo de entrada</label>
+
+
+
+            {{ edit_form.arquivo_entrada(class="form-control", accept=".pdf,.png,.jpg,.jpeg,.msg") }}
+
+
+
+          </div>
+
+
+
+          <div class="col-md-6">
+
+
+
+            <label class="form-label">Arquivo de saída</label>
+
+
+
+            {{ edit_form.arquivo_saida(class="form-control", accept=".pdf,.png,.jpg,.jpeg,.msg") }}
+
+
+
+          </div>
+
+
+
+        </div>
+
+
+
+      </div>
+
+
+
+      <div class="modal-footer">
+
+
+
+        <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+
+
+
+        <button type="submit" class="btn btn-primary">Salvar alterações</button>
+
+
+
+      </div>
+
+
+
+    </form>
+
+
+
+  </div>
+
+
+
+</div>
+
+
+
+<div class="modal sollus-modal fade" id="modalDetalhesAtendimento" tabindex="-1" aria-labelledby="modalDetalhesAtendimentoLabel" aria-hidden="true">
+
+
+
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+
+
+
+    <div class="modal-content">
+
+
+
+      <div class="modal-header">
+
+
+
+        <h5 class="modal-title" id="modalDetalhesAtendimentoLabel">Detalhes do atendimento</h5>
+
+
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
+
+
+      </div>
+
+
+
+      <div class="modal-body">
+
+
+
+        <div class="support-details-grid" data-details-content>
+
+
+
+          <div class="detail-block">
+
+
+
+            <span class="detail-label">Empresa</span>
+
+
+
+            <p data-detail="cliente">—</p>
+
+
+
+          </div>
+
+
+
+          <div class="detail-block">
+
+
+
+            <span class="detail-label">CNPJ</span>
+
+
+
+            <p data-detail="cnpj">—</p>
+
+
+
+          </div>
+
+
+
+          <div class="detail-block">
+
+
+
+            <span class="detail-label">Tipo de atendimento</span>
+
+
+
+            <p data-detail="tipo_atendimento"><span class="support-type--blue"><i class="fa-solid fa-clipboard-list me-1" data-icon></i><span class="type-label" data-text>—</span></span></p>
+
+
+
+          </div>
+
+
+
+          <div class="detail-block">
+
+
+
+            <span class="detail-label">Status</span>
+
+
+
+            <p data-detail="status">—</p>
+
+
+
+          </div>
+
+
+
+          <div class="detail-block">
+
+
+
+            <span class="detail-label">Data de entrada</span>
+
+
+
+            <p data-detail="data_entrada">—</p>
+
+
+
+          </div>
+
+
+
+          <div class="detail-block">
+
+
+
+            <span class="detail-label">Data do atendimento</span>
+
+
+
+            <p data-detail="data_atendimento">—</p>
+
+
+
+          </div>
+
+
+
+          <div class="detail-block">
+
+
+
+            <span class="detail-label">Técnico responsável</span>
+
+
+
+            <p data-detail="usuario_designado_label">—</p>
+
+
+
+          </div>
+
+
+
+          <div class="detail-block">
+
+
+
+            <span class="detail-label">OS de entrada</span>
+
+
+
+            <p data-detail="os_entrada">—</p>
+
+
+
+          </div>
+
+
+
+          <div class="detail-block">
+
+
+
+            <span class="detail-label">OS de saída</span>
+
+
+
+            <p data-detail="os_saida">—</p>
+
+
+
+          </div>
+
+
+
+          <div class="detail-block">
+
+
+
+            <span class="detail-label">Sistema</span>
+
+
+
+            <p data-detail="sistema">—</p>
+
+
+
+          </div>
+
+
+
+          <div class="detail-block">
+
+
+
+            <span class="detail-label">Criado por</span>
+
+
+
+            <p data-detail="criado_por">—</p>
+
+
+
+          </div>
+
+
+
+          <div class="detail-block">
+
+
+
+            <span class="detail-label">Qtd. de pessoas</span>
+
+
+
+            <p data-detail="quantidade_pessoas">—</p>
+
+
+
+          </div>
+
+
+
+          <div class="detail-block">
+
+
+
+            <span class="detail-label">E-mail</span>
+
+
+
+            <p data-detail="email">—</p>
+
+
+
+          </div>
+
+
+
+
+          <div class="detail-block">
+
+
+
+            <span class="detail-label">Texto mobile</span>
+
+
+
+            <p data-detail="texto_mobile">—</p>
+
+
+
+          </div>
+
+
+
+        </div>
+
+
+
+        <div class="support-details-longform">
+
+
+
+          <div class="detail-text-block">
+
+
+
+            <span class="detail-label">Resumo</span>
+
+
+
+            <div class="detail-value" data-detail="resumo_atendimento">—</div>
+
+
+
+          </div>
+
+
+
+          <div class="detail-text-block detail-text-block--description">
+
+            <span class="detail-label">Descrição</span>
+
+            <div class="detail-value detail-value--description" data-detail="descricao">—</div>
+
+          </div>
+
+          <div class="detail-text-block">
+
+            <span class="detail-label">Observações</span>
+
+            <div class="detail-value" data-detail="observacoes">—</div>
+
+          </div>
+
+          <div class="detail-text-block">
+
+            <span class="detail-label">Observações de alerta</span>
+
+            <div class="detail-value" data-detail="observacoes_alerta">—</div>
+
+          </div>
+
+        </div>
+
+
+
+
+
+
+
+      </div>
+
+
+
+
+
+
+
+      <div class="modal-footer">
+
+
+
+        <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Fechar</button>
+
+
+
+        <button type="button" class="btn btn-outline-primary" data-action="open-edit">
+
+
+
+          <i class="bi bi-pencil"></i> Editar
+
+
+
+        </button>
+
+
+
+      </div>
+
+
+
+    </div>
+
+
+
+  </div>
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="modal sollus-modal fade" id="modalDesignarTecnico" tabindex="-1" aria-labelledby="modalDesignarTecnicoLabel" aria-hidden="true">
+
+
+
+  <div class="modal-dialog">
+
+
+
+    <form class="modal-content" method="post" action="{{ url_for('support_bp.designar_tecnico') }}">
+
+
+
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+
+
+      <input type="hidden" name="status" value="{{ status_key }}">
+
+
+
+      <input type="hidden" name="atendimento_id" value="">
+
+
+
+      <div class="modal-header">
+
+
+
+        <h5 class="modal-title" id="modalDesignarTecnicoLabel">Designar técnico</h5>
+
+
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
+
+
+      </div>
+
+
+
+      <div class="modal-body">
+
+
+
+        <label class="form-label">Selecione o técnico</label>
+
+
+
+        <select class="form-select" name="usuario_designado">
+
+
+
+          <option value="0">Não atribudo</option>
+
+
+
+          {% for tech in technicians %}
+
+
+
+          <option value="{{ tech.id }}">{{ tech.nome_completo or tech.email }}</option>
+
+
+
+          {% endfor %}
+
+
+
+        </select>
+
+
+
+      </div>
+
+
+
+      <div class="modal-footer">
+
+
+
+        <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+
+
+
+        <button type="submit" class="btn btn-primary">Salvar</button>
+
+
+
+      </div>
+
+
+
+    </form>
+
+
+
+  </div>
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="modal sollus-modal fade" id="modalLegendaAcoes" tabindex="-1" aria-labelledby="modalLegendaAcoesLabel" aria-hidden="true">
+
+
+
+  <div class="modal-dialog">
+
+
+
+    <div class="modal-content">
+
+
+
+      <div class="modal-header">
+
+
+
+        <h5 class="modal-title" id="modalLegendaAcoesLabel">Legenda das ações</h5>
+
+
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
+
+
+      </div>
+
+
+
+      <div class="modal-body">
+
+
+
+        <ul class="list-group list-group-flush">
+
+
+
+          <li class="list-group-item"><i class="bi bi-pencil text-primary"></i> Editar atendimento</li>
+
+
+
+          <li class="list-group-item"><i class="bi bi-clock-history text-info"></i> Ver histórico</li>
+
+
+
+          <li class="list-group-item"><i class="bi bi-person-plus text-warning"></i> Designar técnico</li>
+
+
+
+          <li class="list-group-item"><i class="bi bi-person-check text-secondary"></i> Assumir atendimento</li>
+
+
+
+          <li class="list-group-item"><i class="bi bi-trash text-danger"></i> Excluir atendimento</li>
+
+
+
+        </ul>
+
+
+
+      </div>
+
+
+
+      <div class="modal-footer">
+
+
+
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendi</button>
+
+
+
+      </div>
+
+
+
+    </div>
+
+
+
+  </div>
+
+
+
+</div>
+
+
+
+
+
+

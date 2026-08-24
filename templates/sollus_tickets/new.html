@@ -1,0 +1,165 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Novo Ticket{% endblock %}
+
+{% block content %}
+<div class="py-4 ticket-premium-container">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-9 col-xl-8">
+      <div class="page-hero mb-4">
+        <p class="page-hero__eyebrow mb-1">Novo Atendimento</p>
+        <h1 class="page-hero__title h2 mb-2">Abrir Ticket</h1>
+        <p class="page-hero__subtitle small mb-0 opacity-75">Preencha os detalhes abaixo para iniciar um novo chamado.</p>
+      </div>
+
+      <div class="card card-premium border-0 shadow-sm overflow-hidden">
+        <div class="card-body p-4 p-md-5">
+          <form class="row g-4 form-premium" method="post" action="{{ url_for('sollus_tickets.create_ticket') }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="col-12">
+              <label class="form-label small fw-bold text-muted" for="subject">Assunto do Chamado</label>
+              <input class="form-control form-control-lg" id="subject" name="subject" maxlength="255" placeholder="Ex: Problema com acesso ao sistema" required>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-bold text-muted" for="department_id">Departamento</label>
+              <select class="form-select" id="department_id" name="department_id">
+                <option value="">Geral</option>
+                {% for dept in departments %}<option value="{{ dept.id }}">{{ dept.name }}</option>{% endfor %}
+              </select>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-bold text-muted" for="topic_id">Tópico de Ajuda</label>
+              <select class="form-select" id="topic_id" name="topic_id">
+                <option value="">Selecione um tópico</option>
+                {% for topic in topics %}<option value="{{ topic.id }}">{{ topic.name }}</option>{% endfor %}
+              </select>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label small fw-bold text-muted" for="priority_key">Prioridade</label>
+              <select class="form-select" id="priority_key" name="priority_key">
+                {% for priority in priorities %}
+                  <option value="{{ priority.key }}" {{ 'selected' if priority.key == 'normal' else '' }}>{{ priority.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label small fw-bold text-muted" for="queue_id">Fila de Atendimento</label>
+              <select class="form-select" id="queue_id" name="queue_id">
+                <option value="">Fila Geral</option>
+                {% for queue in queues %}<option value="{{ queue.id }}">{{ queue.name }}</option>{% endfor %}
+              </select>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label small fw-bold text-muted" for="sla_id">Plano SLA</label>
+              <select class="form-select" id="sla_id" name="sla_id">
+                <option value="">Padrão do Sistema</option>
+                {% for sla in slas %}<option value="{{ sla.id }}">{{ sla.name }}</option>{% endfor %}
+              </select>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small fw-bold text-muted" for="body">Descrição Detalhada</label>
+              <textarea class="form-control" id="body" name="body" rows="6" placeholder="Descreva o problema ou solicitação com o máximo de detalhes possível..." required></textarea>
+            </div>
+
+            {# Campos dinâmicos por tópico — preenchidos via AJAX #}
+            <div id="topicFieldsContainer" class="col-12" style="display:none">
+              <div class="sidebar-section-title mt-2 mb-3">Informações Adicionais do Tópico</div>
+              <div id="topicFieldsBody" class="row g-3 px-2"></div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small fw-bold text-muted" for="attachments">Anexos (Opcional)</label>
+              <div class="input-group">
+                <input class="form-control" id="attachments" name="attachments" type="file" multiple>
+                <span class="input-group-text text-muted small border-start-0" style="background: var(--premium-bg-soft);"><i class="bi bi-paperclip me-1"></i> Múltiplos</span>
+              </div>
+            </div>
+
+            <div class="col-12 mt-5 d-flex justify-content-end gap-3 pt-4 border-top">
+              <a class="btn btn-link text-muted text-decoration-none fw-semibold" href="{{ url_for('sollus_tickets.dashboard') }}">Cancelar</a>
+              <button class="btn btn-primary px-5 rounded-pill fw-bold">
+                <i class="bi bi-check2-circle me-2"></i> Criar Ticket
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+(function () {
+  const topicSelect = document.getElementById('topic_id');
+  const container = document.getElementById('topicFieldsContainer');
+  const body = document.getElementById('topicFieldsBody');
+
+  function renderField(f) {
+    const col = document.createElement('div');
+    col.className = 'col-12 col-md-6';
+    const label = document.createElement('label');
+    label.className = 'form-label';
+    label.setAttribute('for', 'field_' + f.id);
+    label.textContent = f.label + (f.required ? ' *' : '');
+
+    let input;
+    if (f.field_type === 'textarea') {
+      input = document.createElement('textarea');
+      input.className = 'form-control';
+      input.rows = 3;
+    } else if (f.field_type === 'select') {
+      input = document.createElement('select');
+      input.className = 'form-select';
+      const blank = document.createElement('option');
+      blank.value = ''; blank.textContent = 'Selecione';
+      input.appendChild(blank);
+      (f.options || []).forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt; o.textContent = opt;
+        input.appendChild(o);
+      });
+    } else {
+      input = document.createElement('input');
+      input.className = 'form-control';
+      input.type = f.field_type === 'date' ? 'date' : 'text';
+    }
+
+    input.id = 'field_' + f.id;
+    input.name = 'field_' + f.id;
+    if (f.required) input.required = true;
+
+    col.appendChild(label);
+    col.appendChild(input);
+    return col;
+  }
+
+  if (topicSelect) {
+    topicSelect.addEventListener('change', function () {
+      const topicId = this.value;
+      body.innerHTML = '';
+      if (!topicId) { container.style.display = 'none'; return; }
+
+      fetch('{{ url_for("sollus_tickets.api_topic_fields", topic_id=0) }}'.replace('/0/', '/' + topicId + '/'))
+        .then(r => r.ok ? r.json() : [])
+        .then(fields => {
+          if (!fields.length) { container.style.display = 'none'; return; }
+          fields.forEach(f => body.appendChild(renderField(f)));
+          container.style.display = '';
+        })
+        .catch(() => { container.style.display = 'none'; });
+    });
+  }
+})();
+</script>
+{% endblock %}

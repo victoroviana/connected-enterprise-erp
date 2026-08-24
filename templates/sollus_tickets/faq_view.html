@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}FAQ - Sollus Tickets{% endblock %}
+
+{% block content %}
+{{ page_hero(
+  title='Como podemos ajudar?',
+  subtitle='Encontre respostas rápidas para as dúvidas mais comuns.',
+  eyebrow='Central de Ajuda'
+) }}
+
+<div class="row">
+  <div class="col-12 col-lg-8 mx-auto">
+    {% for cat in categories if cat.is_public %}
+      <div class="mb-5">
+        <h4 class="fw-bold mb-3 d-flex align-items-center">
+          <i class="fa-solid fa-folder-open text-primary me-2"></i>
+          {{ cat.name }}
+        </h4>
+        {% if cat.description %}
+          <p class="text-muted small mb-3">{{ cat.description }}</p>
+        {% endif %}
+        
+        <div class="accordion border-0 shadow-sm" id="accordion-cat-{{ cat.id }}">
+          {% for faq in cat.faqs if faq.is_published %}
+            <div class="accordion-item border-0 border-bottom">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed fw-medium" type="button" data-bs-toggle="collapse" data-bs-target="#faq-{{ faq.id }}">
+                  {{ faq.question }}
+                </button>
+              </h2>
+              <div id="faq-{{ faq.id }}" class="accordion-collapse collapse" data-bs-parent="#accordion-cat-{{ cat.id }}">
+                <div class="accordion-body text-secondary">
+                  {{ faq.answer|safe }}
+                </div>
+              </div>
+            </div>
+          {% else %}
+            <div class="p-3 text-muted small">Nenhum artigo nesta categoria.</div>
+          {% endfor %}
+        </div>
+      </div>
+    {% else %}
+      <div class="text-center py-5">
+        <i class="fa-solid fa-book-open fa-3x text-light mb-3"></i>
+        <p class="text-muted">Ainda não temos artigos publicados na nossa base de conhecimento.</p>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

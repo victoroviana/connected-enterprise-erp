@@ -1,0 +1,112 @@
+{% extends "layout.html" %}
+{% block title %}Histórico de propostas de equipamentos{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+  .proposal-wrapper { padding-bottom:3rem; }
+  .proposal-hero { background:linear-gradient(130deg, rgba(15,123,200,.95), rgba(0,59,102,.95)); color:#f7fbff; border-radius:1.5rem; padding:2.25rem 2.6rem; box-shadow:0 22px 46px rgba(9,29,54,.28); }
+  .hero-icon { display:flex; align-items:center; justify-content:center; width:56px; height:56px; border-radius:18px; background:rgba(255,255,255,.18); font-size:1.9rem; }
+  .section-card { border-radius:1.25rem; }
+  .section-card .card-header { background:transparent; border:0; padding:1.5rem 1.75rem 0; }
+  .section-card .card-body { padding:1.5rem 1.75rem 1.75rem; }
+  .proposal-form .form-label { font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; color:#6c7893; font-weight:600; }
+  .proposal-form .form-control, .proposal-form .form-select { border-radius:.9rem; padding:.75rem 1rem; border-color:#d6deed; }
+  .hist-table thead { background:#f1f4fb; text-transform:uppercase; font-size:.7rem; letter-spacing:.08rem; color:#5a6782; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="proposal-wrapper">
+  <div class="proposal-hero mb-4">
+    <div class="d-flex flex-wrap gap-4 align-items-center justify-content-between">
+      <div class="d-flex flex-column gap-3">
+        <div class="hero-icon"><i class="bi bi-clock-history"></i></div>
+        <div>
+          <h1 class="h3 mb-2">Histórico de propostas de equipamentos</h1>
+          <p class="mb-0">Consulte e baixe novamente propostas de venda ou locação de equipamentos.</p>
+        </div>
+      </div>
+      <a class="btn btn-light btn-sm" href="{{ url_for('assist_bp.assistencia_propostas_equipamentos_nova') }}">
+        <i class="bi bi-file-earmark-plus"></i> Nova proposta
+      </a>
+    </div>
+  </div>
+
+  <form class="proposal-form" method="get">
+    <div class="card section-card shadow-sm border-0 mb-4">
+      <div class="card-header">
+        <h2 class="h5 mb-1">Filtros</h2>
+      </div>
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-5">
+            <label class="form-label">Cliente</label>
+            <input class="form-control" name="cliente" value="{{ filters.cliente }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Modalidade</label>
+            <select class="form-select" name="modalidade">
+              <option value="">Todas</option>
+              <option value="venda" {% if filters.modalidade == 'venda' %}selected{% endif %}>Venda</option>
+              <option value="locacao" {% if filters.modalidade == 'locacao' %}selected{% endif %}>Locação</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-outline-primary w-100" type="submit">Filtrar</button>
+          </div>
+          <div class="col-md-2">
+            <a class="btn btn-outline-secondary w-100" href="{{ url_for('assist_bp.assistencia_propostas_equipamentos_historico') }}">Limpar</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="card section-card shadow-sm border-0">
+    <div class="card-header">
+      <h2 class="h5 mb-1">Propostas geradas</h2>
+      <p class="text-muted mb-0">Total: {{ total }}</p>
+    </div>
+    <div class="card-body">
+      {% if rows %}
+      <div class="table-responsive">
+        <table class="table align-middle hist-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Cliente</th>
+              <th>Modalidade</th>
+              <th>Total</th>
+              <th>Responsável</th>
+              <th class="text-end">Arquivo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in rows %}
+            <tr>
+              <td>{{ item.created_at }}</td>
+              <td>
+                <div class="fw-semibold">{{ item.cliente }}</div>
+                <div class="small text-muted">{{ item.cnpj }}</div>
+              </td>
+              <td>{{ item.modalidade }}</td>
+              <td>{{ item.total }}</td>
+              <td>{{ item.created_by }}</td>
+              <td class="text-end">
+                <a class="btn btn-outline-primary btn-sm" href="{{ item.pdf_url }}">
+                  <i class="bi bi-download"></i> Baixar PDF
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="text-muted">Nenhuma proposta encontrada.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
