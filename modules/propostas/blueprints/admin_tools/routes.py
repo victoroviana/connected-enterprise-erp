@@ -139,8 +139,9 @@ def _has_access(flag: str, *, allowed_depts: set[str] | None = None) -> bool:
 
 
 def _deny_access(area_label: str):
-    if _wants_json():
-        return {"ok": False, "message": "Você não tem permissão para acessar esta área."}, 403
+    from flask import request
+    if "/api/" in getattr(request, "path", "") or _wants_json():
+        return jsonify({"error": "Access denied", "success": False, "message": f"Você não tem permissão para acessar {area_label}."}), 403
     flash(
         "Você não tem permissão para acessar esta área. Procure seu superior caso precise de acesso.",
         "warning",
@@ -151,13 +152,19 @@ def _deny_access(area_label: str):
 @admin_tools_bp.before_request
 def _check_admin_tools_access():
     from flask import request
-    if "/api/" in getattr(request, "path", ""):
-        return
     endpoint = getattr(request, "endpoint", "") or ""
     if endpoint and not endpoint.startswith("admin_tools_bp."):
         return
-    if not current_user.is_authenticated:
+    if endpoint == "sem_permissao":
         return
+    if not current_user.is_authenticated and not session.get("usuario_id") and not session.get("user_id"):
+        if "/api/" in getattr(request, "path", "") or _wants_json():
+            return jsonify({"error": "Authentication required", "success": False, "message": "Autenticação necessária"}), 401
+        try:
+            login_url = url_for("auth_bp.login", next=request.full_path if request.method == "GET" else None)
+        except Exception:
+            login_url = "/login"
+        return redirect(login_url)
     role_key = _role_key()
     if role_key in ("admin", "gestor"):
         return
@@ -748,19 +755,19 @@ def agenda_tecnica():
 @admin_tools_bp.route("/agenda-tecnica/criar", methods=["POST"])
 @login_required
 def criar_agendamento():
-    return redirect(url_for("tech_bp.criar_agendamento"))
+    return redirect(url_for("assist_bp.criar_agendamento"))
 
 
 @admin_tools_bp.route("/agenda-tecnica/<int:agenda_id>/atualizar", methods=["POST"])
 @login_required
 def atualizar_agendamento(agenda_id: int):
-    return redirect(url_for("tech_bp.atualizar_agendamento", agenda_id=agenda_id))
+    return redirect(url_for("assist_bp.atualizar_agendamento", entry_id=agenda_id))
 
 
 @admin_tools_bp.route("/agenda-tecnica/<int:agenda_id>/excluir", methods=["POST"])
 @login_required
 def excluir_agendamento(agenda_id: int):
-    return redirect(url_for("tech_bp.excluir_agendamento", agenda_id=agenda_id))
+    return redirect(url_for("assist_bp.excluir_agendamento", entry_id=agenda_id))
 
 
 # -------------------- HELPERS -------------------- #
@@ -1084,7 +1091,7 @@ def online_users():
             ).all()
             audit_map = {log.actor_id: log for log in latest_audits}
         except Exception:
-            pass
+            db.session.rollback()
 
     event_map = {}
     if users:
@@ -1099,7 +1106,7 @@ def online_users():
             ).all()
             event_map = {evt.actor_user_id: evt for evt in latest_events}
         except Exception:
-            pass
+            db.session.rollback()
 
     entry_map = {}
     if users:
@@ -1114,7 +1121,7 @@ def online_users():
             ).all()
             entry_map = {ent.author_user_id: ent for ent in latest_entries}
         except Exception:
-            pass
+            db.session.rollback()
 
     ACTION_TRANSLATIONS = {
         "create": "Criação",
@@ -1248,6 +1255,7 @@ def user_offline():
 
 
 @admin_tools_bp.route("/api/maintenance-check", methods=["GET"])
+@login_required
 def maintenance_check():
     import os
     import json
@@ -1262,7 +1270,7 @@ def maintenance_check():
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         target = data.get("target_timestamp", 0)
-        duration = data.get("duration", 30)
+        duration = data.get("duration", 120)
         now = time.time()
         remaining = int(target - now)
         if remaining > 0:
@@ -1297,7 +1305,7 @@ def trigger_maintenance():
     import time
     file_path = os.path.join(current_app.instance_path, "maintenance.json")
 
-    duration = int(request.form.get("duration", 30))
+    duration = int(request.form.get("duration", 120))
     message = request.form.get("message", "O sistema será reiniciado para manutenção preventiva. Salve o seu trabalho!").strip()
     if not message:
         message = "O sistema será reiniciado para manutenção preventiva."

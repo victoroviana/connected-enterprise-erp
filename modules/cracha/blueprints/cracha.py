@@ -28,6 +28,7 @@ from flask import (
     render_template,
     request,
     send_from_directory,
+    session,
     url_for,
 )
 from flask_login import current_user
@@ -532,17 +533,16 @@ def _is_admin_user() -> bool:
 
 
 def _deny_access():
-    if _wants_json():
-        return jsonify({"ok": False, "message": "Sem permiss\u00e3o para crach\u00e1."}), 403
-    flash("Voc\u00ea n\u00e3o tem permiss\u00e3o para acessar crach\u00e1. Procure seu superior.", "warning")
+    from flask import request
+    if "/api/" in getattr(request, "path", "") or _wants_json():
+        return jsonify({"error": "Access denied", "success": False, "message": "Sem permissão para crachá."}), 403
+    flash("Você não tem permissão para acessar crachá. Procure seu superior.", "warning")
     return redirect(url_for("cracha_bp.sem_permissao"))
 
 
 @cracha_bp.before_request
 def _check_cracha_permissions():
     from flask import request
-    if "/api/" in getattr(request, "path", ""):
-        return
     endpoint = getattr(request, "endpoint", "") or ""
     if endpoint and not endpoint.startswith("cracha_bp."):
         return
@@ -553,8 +553,14 @@ def _check_cracha_permissions():
     if endpoint in {"cracha_bp.pedidos", "cracha_bp.pedidos_historico"}:
         return
 
-    if not current_user.is_authenticated:
-        return
+    if not current_user.is_authenticated and not session.get("usuario_id") and not session.get("user_id"):
+        if "/api/" in getattr(request, "path", "") or _wants_json():
+            return jsonify({"error": "Authentication required", "success": False, "message": "Autenticação necessária"}), 401
+        try:
+            login_url = url_for("auth_bp.login", next=request.full_path if request.method == "GET" else None)
+        except Exception:
+            login_url = "/login"
+        return redirect(login_url)
 
     if _is_admin_user() or (_dept_names() & ALLOWED_DEPTS):
         return
@@ -1134,6 +1140,7 @@ def recibos():
             data["is_signed"] = bool(data.get("url_recibo"))
             items.append(data)
     except SQLAlchemyError:
+        db.session.rollback()
         current_app.logger.exception("Falha ao carregar recibos")
 
     total_pages = max(1, math.ceil(total / per_page)) if total else 1
@@ -1175,7 +1182,6 @@ def recibos():
 @cracha_bp.route("/controle")
 @login_required
 def controle_crachas():
-    return redirect(url_for("cracha_bp.extratos"))
     page = _safe_int(request.args.get("page"), 1)
     search = (request.args.get("search") or "").strip()
     per_page = RESULTS_PER_PAGE
@@ -1214,6 +1220,7 @@ def controle_crachas():
             data["ultima_modificacao_br"] = _format_date(data.get("ultima_modificacao")) or "-"
             clientes_rows.append(data)
     except SQLAlchemyError:
+        db.session.rollback()
         current_app.logger.exception("Falha ao carregar clientes de cracha")
 
     pagination = _paginate(total, page, per_page)
@@ -1370,6 +1377,7 @@ def consultar_estoque():
             {"cnpj": cnpj_clean},
         ).fetchone()
     except SQLAlchemyError:
+        db.session.rollback()
         current_app.logger.exception("Falha ao consultar controle_de_crachas")
         return jsonify({"success": False, "message": "Erro ao consultar estoque."}), 500
     
@@ -1404,6 +1412,7 @@ def consultar_estoque():
                     if ext_row and ext_row[0] is not None:
                         saldo_fallback = int(ext_row[0])
                 except SQLAlchemyError:
+                    db.session.rollback()
                     current_app.logger.warning(
                         "Falha ao calcular saldo do extrato no fallback para CNPJ %s", cnpj_clean
                     )
@@ -1417,6 +1426,7 @@ def consultar_estoque():
                     }
                 )
         except SQLAlchemyError:
+            db.session.rollback()
             current_app.logger.exception("Falha ao consultar ja_cli_clientes como fallback")
             
         return jsonify({"success": False, "message": "CNPJ não encontrado."}), 404
@@ -1457,6 +1467,7 @@ def consultar_estoque():
                         "Não foi possível sincronizar estoque para CNPJ %s", cnpj_clean
                     )
     except SQLAlchemyError:
+        db.session.rollback()
         current_app.logger.warning(
             "Falha ao calcular saldo do extrato para CNPJ %s", cnpj_clean
         )
@@ -1498,6 +1509,7 @@ def criar_recibo():
             {"cnpj": cnpj},
         ).fetchone()
     except SQLAlchemyError:
+        db.session.rollback()
         current_app.logger.exception("Falha ao buscar estoque de crachas")
         flash("Erro ao consultar estoque de crachás.", "danger")
         return redirect(url_for("cracha_bp.recibos"))
@@ -1555,6 +1567,7 @@ def criar_recibo():
         if extrato_row and extrato_row[0] is not None:
             estoque_atual = int(extrato_row[0])
     except SQLAlchemyError:
+        db.session.rollback()
         current_app.logger.warning(
             "Falha ao calcular saldo do extrato para CNPJ %s ao criar recibo; usando cache.", cnpj
         )
@@ -3522,6 +3535,7 @@ def pedidos():
                 data["data_solicitacao_iso"] = ""
             items.append(data)
     except SQLAlchemyError:
+        db.session.rollback()
         current_app.logger.exception("Falha ao carregar pedidos de crachá")
 
     total_pages = max(1, math.ceil(total / per_page)) if total else 1
@@ -3533,7 +3547,7 @@ def pedidos():
         ).fetchall()
         clientes = [dict(r._mapping) for r in c_rows]
     except SQLAlchemyError:
-        pass
+        db.session.rollback()
 
     filtros = {
         "pesquisa": pesquisa,
@@ -3612,6 +3626,7 @@ def pedidos_historico():
                 data["data_solicitacao_iso"] = ""
             items.append(data)
     except SQLAlchemyError:
+        db.session.rollback()
         current_app.logger.exception("Falha ao carregar histórico de pedidos de crachá")
 
     total_pages = max(1, math.ceil(total / per_page)) if total else 1
@@ -3623,7 +3638,7 @@ def pedidos_historico():
         ).fetchall()
         clientes = [dict(r._mapping) for r in c_rows]
     except SQLAlchemyError:
-        pass
+        db.session.rollback()
 
     filtros = {
         "pesquisa": pesquisa,

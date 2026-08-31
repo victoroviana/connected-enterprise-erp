@@ -524,9 +524,11 @@ class Proposal(db.Model):
     is_original = db.Column(db.Boolean, default=True, nullable=False)
     approved_at = db.Column(db.DateTime)
     approved_by_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     equipamentos_payload = db.Column(db.JSON)
 
     approved_by = db.relationship("User", foreign_keys=[approved_by_id])
+    created_by = db.relationship("User", foreign_keys=[created_by_id])
 
     equipamentos = db.relationship(
         "Equipment",

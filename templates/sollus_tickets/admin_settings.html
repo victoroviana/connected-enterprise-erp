@@ -214,8 +214,119 @@
     font-weight: 600;
     color: #4f46e5;
   }
-  html[data-theme="dark"] .checklist-item.selected .form-check-label {
+  html[data-theme="dark"] .checklist-item.selected .form-check-label,
+  [data-theme="dark"] .checklist-item.selected .form-check-label {
     color: #818cf8;
+  }
+
+  /* =========================================================
+     DARK THEME SUPPORT (admin_settings.html)
+     ========================================================= */
+  html[data-theme="dark"],
+  [data-theme="dark"] {
+    --bg-soft: #162036;
+    --border-soft: rgba(148, 163, 184, 0.15);
+  }
+
+  html[data-theme="dark"] .settings-card,
+  [data-theme="dark"] .settings-card {
+    background: #111c30 !important;
+    border-color: rgba(148, 163, 184, 0.15) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  }
+  html[data-theme="dark"] .settings-card-header,
+  [data-theme="dark"] .settings-card-header {
+    background: #0b1329 !important;
+    border-bottom-color: rgba(148, 163, 184, 0.15) !important;
+  }
+  html[data-theme="dark"] .settings-card-title,
+  [data-theme="dark"] .settings-card-title {
+    color: #f1f5f9 !important;
+  }
+  html[data-theme="dark"] .settings-card-subtitle,
+  [data-theme="dark"] .settings-card-subtitle {
+    color: #94a3b8 !important;
+  }
+  html[data-theme="dark"] .settings-nav-link,
+  [data-theme="dark"] .settings-nav-link {
+    color: #94a3b8 !important;
+  }
+  html[data-theme="dark"] .settings-nav-link:hover,
+  [data-theme="dark"] .settings-nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #f1f5f9 !important;
+  }
+  html[data-theme="dark"] .settings-nav-link.active,
+  [data-theme="dark"] .settings-nav-link.active {
+    background-color: rgba(99, 102, 241, 0.25) !important;
+    color: #c7d2fe !important;
+  }
+  html[data-theme="dark"] .form-label-premium,
+  [data-theme="dark"] .form-label-premium {
+    color: #cbd5e1 !important;
+  }
+  html[data-theme="dark"] .premium-input,
+  [data-theme="dark"] .premium-input {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+  }
+  html[data-theme="dark"] .premium-input:focus,
+  [data-theme="dark"] .premium-input:focus {
+    background-color: #1e293b !important;
+    border-color: #6366f1 !important;
+    color: #ffffff !important;
+  }
+  html[data-theme="dark"] .item-row,
+  [data-theme="dark"] .item-row {
+    background: #0f172a !important;
+    border-color: #334155 !important;
+  }
+  html[data-theme="dark"] .item-row:hover,
+  [data-theme="dark"] .item-row:hover {
+    background-color: #162036 !important;
+    border-color: #475569 !important;
+  }
+  html[data-theme="dark"] .card,
+  [data-theme="dark"] .card {
+    background-color: #111c30 !important;
+    border-color: rgba(148, 163, 184, 0.15) !important;
+    color: #f1f5f9 !important;
+  }
+  html[data-theme="dark"] .text-dark,
+  [data-theme="dark"] .text-dark {
+    color: #f1f5f9 !important;
+  }
+  html[data-theme="dark"] .table,
+  [data-theme="dark"] .table {
+    color: #f1f5f9 !important;
+    border-color: rgba(148, 163, 184, 0.15) !important;
+  }
+  html[data-theme="dark"] .table th,
+  [data-theme="dark"] .table th {
+    background-color: #0b1329 !important;
+    color: #cbd5e1 !important;
+    border-color: rgba(148, 163, 184, 0.15) !important;
+  }
+  html[data-theme="dark"] .table td,
+  [data-theme="dark"] .table td {
+    background-color: transparent !important;
+    color: #f1f5f9 !important;
+    border-color: rgba(148, 163, 184, 0.15) !important;
+  }
+  html[data-theme="dark"] .modal-content,
+  [data-theme="dark"] .modal-content {
+    background-color: #111c30 !important;
+    color: #f1f5f9 !important;
+    border-color: rgba(148, 163, 184, 0.2) !important;
+  }
+  html[data-theme="dark"] .modal-header,
+  [data-theme="dark"] .modal-header {
+    border-bottom-color: rgba(148, 163, 184, 0.15) !important;
+  }
+  html[data-theme="dark"] .modal-footer,
+  [data-theme="dark"] .modal-footer {
+    border-top-color: rgba(148, 163, 184, 0.15) !important;
   }
 </style>
 
@@ -838,7 +949,7 @@
               <div class="row g-3">
                 {% for mb in mailboxes %}
                 <div class="col-md-6">
-                  <div class="card h-100 border-0 shadow-sm" style="background: #f8fafc; border-radius: 1rem;">
+                  <div class="card h-100 border shadow-sm" style="border-radius: 1rem;">
                     <div class="card-body">
                       <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
@@ -1284,7 +1395,7 @@ function previewTemplate(templateId, csrfToken) {
   document.getElementById('previewSubject').textContent = 'Carregando assunto...';
   document.getElementById('previewBody').innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
   modal.show();
-  fetch('/tickets/api/templates/' + templateId + '/preview', {
+  fetch('/sollus-tickets/api/templates/' + templateId + '/preview', {
     method: 'POST',
     headers: {'X-CSRFToken': csrfToken, 'Content-Type': 'application/json'},
     body: JSON.stringify({})

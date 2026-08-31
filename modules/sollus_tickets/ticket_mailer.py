@@ -178,6 +178,7 @@ def _send(
         current_app.logger.info("[tickets_mail] e-mail '%s' enfileirado para %s", subject, recipients)
         return True
     except Exception as exc:
+        db.session.rollback()
         current_app.logger.exception("[tickets_mail] falha ao enfileirar e-mail '%s': %s", subject, exc)
         return False
 
@@ -266,13 +267,18 @@ def process_email_queue(app) -> int:
                 sent_count += 1
 
             except Exception as exc:
+                db.session.rollback()
                 app.logger.exception("[tickets_mail_queue] Erro ao enviar item %s: %s", item.id, exc)
                 item.status = "failed"
                 item.last_error = str(exc)
 
-            db.session.commit()
+            try:
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
 
     except Exception as exc:
+        db.session.rollback()
         app.logger.exception("[tickets_mail_queue] Erro geral ao processar a fila")
 
     return sent_count

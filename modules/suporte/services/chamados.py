@@ -553,7 +553,7 @@ def _last_insert_id(result, table_name: str) -> Optional[int]:
         if row and row[0]:
             return int(row[0])
     except Exception:
-        pass
+        db.session.rollback()
     return None
 
 

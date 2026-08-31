@@ -107,23 +107,28 @@ class PdfJobManager:
                     return
                 raise RuntimeError(f'Ação desconhecida: {action}')
             except Exception as exc:  # pragma: no cover
+                db.session.rollback()
                 current_app.logger.exception('Falha no processamento do job de PDF %s', job_id)
                 self._update(job_id, status='error', error=str(exc))
             finally:
                 db.session.remove()
 
     def _update(self, job_id: str, **kwargs) -> Optional[PdfJob]:
-        job = PdfJob.query.get(job_id)
-        if not job:
-            return None
-        for key, value in kwargs.items():
-            if key == 'payload' and isinstance(value, dict):
-                job.payload = value
-            else:
-                setattr(job, key, value)
-        job.updated_at = datetime.utcnow()
-        db.session.commit()
-        return job
+        try:
+            job = PdfJob.query.get(job_id)
+            if not job:
+                return None
+            for key, value in kwargs.items():
+                if key == 'payload' and isinstance(value, dict):
+                    job.payload = value
+                else:
+                    setattr(job, key, value)
+            job.updated_at = datetime.utcnow()
+            db.session.commit()
+            return job
+        except Exception:
+            db.session.rollback()
+            raise
 
     def get(self, job_id: str, owner_id: int) -> Optional[PdfJob]:
         job = PdfJob.query.get(job_id)
@@ -132,18 +137,22 @@ class PdfJobManager:
         return job
 
     def cleanup(self) -> None:
-        now = datetime.utcnow()
-        expired_jobs = PdfJob.query.filter(
-            PdfJob.expires_at.isnot(None),
-            PdfJob.expires_at < now,
-        ).all()
-        if not expired_jobs:
-            return
-        for job in expired_jobs:
-            if job.file_path:
-                Path(job.file_path).unlink(missing_ok=True)
-            db.session.delete(job)
-        db.session.commit()
+        try:
+            now = datetime.utcnow()
+            expired_jobs = PdfJob.query.filter(
+                PdfJob.expires_at.isnot(None),
+                PdfJob.expires_at < now,
+            ).all()
+            if not expired_jobs:
+                return
+            for job in expired_jobs:
+                if job.file_path:
+                    Path(job.file_path).unlink(missing_ok=True)
+                db.session.delete(job)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception('Falha no cleanup de jobs de PDF')
 
 
 manager = PdfJobManager()

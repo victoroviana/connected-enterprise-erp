@@ -9,7 +9,7 @@
       <div class="page-hero mb-4">
         <p class="page-hero__eyebrow mb-1">Novo Atendimento</p>
         <h1 class="page-hero__title h2 mb-2">Abrir Ticket</h1>
-        <p class="page-hero__subtitle small mb-0 opacity-75">Preencha os detalhes abaixo para iniciar um novo chamado.</p>
+        <p class="page-hero__subtitle small mb-0 opacity-75">Preencha os detalhes abaixo para iniciar um novo ticket.</p>
       </div>
 
       <div class="card card-premium border-0 shadow-sm overflow-hidden">
@@ -18,7 +18,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
             <div class="col-12">
-              <label class="form-label small fw-bold text-muted" for="subject">Assunto do Chamado</label>
+              <label class="form-label small fw-bold text-muted" for="subject">Assunto do Ticket</label>
               <input class="form-control form-control-lg" id="subject" name="subject" maxlength="255" placeholder="Ex: Problema com acesso ao sistema" required>
             </div>
 

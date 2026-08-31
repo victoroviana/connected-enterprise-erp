@@ -1,4 +1,4 @@
-{% extends "admin/base_admin.html" %}
+{% extends "layout.html" %}
 
 {% block title %}Gerenciar Tipos de Orçamento - Sollus Connected{% endblock %}
 
@@ -169,7 +169,8 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block scripts %}
+{{ super() }}
 <script>
     const templateModal = new bootstrap.Modal(document.getElementById('templateModal'));
     

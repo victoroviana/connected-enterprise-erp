@@ -79,9 +79,10 @@ from . import sollus_tickets_bp
 
 
 def _deny_access():
-    if _wants_json():
-        return {"ok": False, "message": "Sem permissao."}, 403
-    flash("Voce nao tem permissao para acessar o Sollus Tickets.", "warning")
+    from flask import request, jsonify
+    if "/api/" in getattr(request, "path", "") or _wants_json():
+        return jsonify({"error": "Access denied", "success": False, "message": "Sem permissão para Sollus Tickets."}), 403
+    flash("Você não tem permissão para acessar o Sollus Tickets.", "warning")
     return redirect(url_for("sem_permissao", area="Sollus Tickets"))
 
 
@@ -153,11 +154,18 @@ def _can_use_tickets() -> bool:
 
 @sollus_tickets_bp.before_request
 def _check_access():
-    from flask import request
-    if "/api/" in getattr(request, "path", ""):
+    from flask import request, jsonify
+    endpoint = getattr(request, "endpoint", "") or ""
+    if endpoint == "sem_permissao":
         return
-    if not current_user.is_authenticated:
-        return
+    if not current_user.is_authenticated and not session.get("usuario_id") and not session.get("user_id"):
+        if "/api/" in getattr(request, "path", "") or _wants_json():
+            return jsonify({"error": "Authentication required", "success": False, "message": "Autenticação necessária"}), 401
+        try:
+            login_url = url_for("auth_bp.login", next=request.full_path if request.method == "GET" else None)
+        except Exception:
+            login_url = "/login"
+        return redirect(login_url)
     if _can_use_tickets():
         return
     return _deny_access()
@@ -861,6 +869,7 @@ def reports():
             statuses=status_map(),
         )
     except Exception as exc:
+        db.session.rollback()
         flash(f"Erro ao gerar relatórios: {exc}", "danger")
         return redirect(url_for("sollus_tickets.dashboard"))
 
@@ -1141,6 +1150,7 @@ def admin_settings():
                 message=f"Alteracao de configuracao de administracao de tickets: {action}."
             )
         except Exception as exc:
+            db.session.rollback()
             flash(f"Erro ao salvar configuração: {exc}", "danger")
         return redirect(url_for("sollus_tickets.admin_settings"))
         
@@ -1169,6 +1179,7 @@ def admin_settings():
             system_logs=SollusTicketSystemLog.query.order_by(SollusTicketSystemLog.created_at.desc()).limit(50).all(),
         )
     except Exception as exc:
+        db.session.rollback()
         flash(f"Erro crítico ao carregar página de administração: {exc}", "danger")
         return redirect(url_for("sollus_tickets.dashboard"))
 

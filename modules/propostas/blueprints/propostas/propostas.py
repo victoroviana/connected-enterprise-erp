@@ -72,15 +72,19 @@ def _dept_names() -> set[str]:
 @propostas_bp.before_request
 def _check_propostas_permission():
     from flask import request
-    if "/api/" in getattr(request, "path", ""):
-        return
     endpoint = getattr(request, "endpoint", "") or ""
     if endpoint and not endpoint.startswith("propostas_bp."):
         return
     if endpoint == "propostas_bp.sem_permissao":
         return
-    if not current_user.is_authenticated:
-        return
+    if not current_user.is_authenticated and not session.get("usuario_id"):
+        if "/api/" in getattr(request, "path", "") or _wants_json():
+            return jsonify({"error": "Authentication required", "success": False, "message": "Autenticação necessária"}), 401
+        try:
+            login_url = url_for("auth_bp.login", next=request.full_path if request.method == "GET" else None)
+        except Exception:
+            login_url = "/login"
+        return redirect(login_url)
     current_permissions()
     role_key = normalize_role_key(getattr(current_user, "tipo", None) or session.get("tipo"))
     if role_key in {"admin", "gestor", "consultor"}:
@@ -93,8 +97,8 @@ def _check_propostas_permission():
         False,
     ):
         return
-    if _wants_json():
-        return jsonify({"ok": False, "message": "Você não tem permissão para acessar as propostas."}), 403
+    if "/api/" in getattr(request, "path", "") or _wants_json():
+        return jsonify({"error": "Access denied", "success": False, "message": "Você não tem permissão para acessar as propostas."}), 403
     flash(
         "Você não tem permissão para acessar as Propostas. Procure seu superior caso precise de acesso.",
         "warning",
@@ -344,8 +348,14 @@ def _usuario_atual():
     try:
         return User.query.get(int(uid))
     except (TypeError, ValueError):
-        return User.query.get(uid)
-    return User.query.get(uid) if uid else None
+        try:
+            return User.query.get(uid)
+        except Exception:
+            db.session.rollback()
+            return None
+    except Exception:
+        db.session.rollback()
+        return None
 
 
 def _calcular_validade(data_base: datetime | None) -> str:
@@ -963,11 +973,16 @@ def nova_proposta():                    #  NENHUM espaço antes desta linha
                 flash(str(exc), "danger")
                 return render_form()
             else:
-                if usuario_logado.signature_path and usuario_logado.signature_path != new_signature_path:
-                    _remove_signature_file(usuario_logado.signature_path)
-                usuario_logado.signature_path = new_signature_path
-                db.session.commit()
-                signature_url = url_for('static', filename=new_signature_path)
+                try:
+                    if usuario_logado.signature_path and usuario_logado.signature_path != new_signature_path:
+                        _remove_signature_file(usuario_logado.signature_path)
+                    usuario_logado.signature_path = new_signature_path
+                    db.session.commit()
+                    signature_url = url_for('static', filename=new_signature_path)
+                except Exception as exc:
+                    db.session.rollback()
+                    flash("Erro ao salvar assinatura do usuário.", "danger")
+                    return render_form()
 
         email = (form.email.data or "").strip()
         if email and not email_domain_has_mx(email):
@@ -1093,6 +1108,7 @@ def nova_proposta():                    #  NENHUM espaço antes desta linha
             locacao_qtd_cnpjs=locacao_qtd_cnpjs,
             locacao_qtd_equipamentos=locacao_qtd_equipamentos,
             usuario_id=user.id,
+            created_by_id=usuario_logado.id if usuario_logado else user.id,
             data_criacao=created_at,
             filename=filename,
             enviar_email=enviar_email,
@@ -1432,7 +1448,8 @@ def download_proposta(id):
     prop = Proposal.query.get_or_404(id)
     before_snapshot = _proposal_audit_payload(prop) if request.method == 'POST' else None
 
-    if session.get("tipo") not in ["admin", "gestor"] and prop.usuario_id != session.get("usuario_id"):
+    current_uid = session.get("usuario_id")
+    if session.get("tipo") not in ["admin", "gestor"] and prop.usuario_id != current_uid and getattr(prop, "created_by_id", None) != current_uid:
         flash("Sem permissão.", "danger")
         return redirect(url_for("propostas_bp.historico_propostas"))
 
@@ -1452,7 +1469,7 @@ def api_proposta_pdf(proposal_id: int):
     except (TypeError, ValueError):
         owner_id = 0
     user_role = (getattr(user, "tipo", None) or session.get("tipo") or "").lower()
-    if user_role not in ("admin", "gestor") and prop.usuario_id != owner_id:
+    if user_role not in ("admin", "gestor") and prop.usuario_id != owner_id and getattr(prop, "created_by_id", None) != owner_id:
         return jsonify({"ok": False, "message": "Sem permissão."}), 403
 
     payload = request.get_json(silent=True) or {}
@@ -1491,7 +1508,8 @@ def api_proposta_pdf(proposal_id: int):
 def editar_proposta(id):
     prop = Proposal.query.get_or_404(id)
 
-    if session.get("tipo") not in ["admin", "gestor"] and prop.usuario_id != session.get("usuario_id"):
+    current_uid = session.get("usuario_id")
+    if session.get("tipo") not in ["admin", "gestor"] and prop.usuario_id != current_uid and getattr(prop, "created_by_id", None) != current_uid:
         return jsonify({"error": "Acesso não autorizado."}), 403
     is_admin = session.get("tipo") == "admin"
 
@@ -1685,6 +1703,7 @@ def editar_proposta(id):
             locacao_qtd_cnpjs=locacao_qtd_cnpjs,
             locacao_qtd_equipamentos=locacao_qtd_equipamentos,
             usuario_id=usuario_id,
+            created_by_id=prop.created_by_id or session.get("usuario_id") or prop.usuario_id,
             data_criacao=created_at,
             filename=prop.filename,
             enviar_email=enviar_email,
@@ -1913,7 +1932,7 @@ def aprovar_proposta(id: int):
         user_id = None
     user_role = (getattr(user, "tipo", None) or session.get("tipo") or "").lower()
 
-    if user_role not in ("admin", "gestor") and prop.usuario_id != user_id:
+    if user_role not in ("admin", "gestor") and prop.usuario_id != user_id and getattr(prop, "created_by_id", None) != user_id:
         return jsonify({"ok": False, "message": "Sem permissão para aprovar esta proposta."}), 403
 
     if prop.approved_at:
@@ -1973,7 +1992,8 @@ def historico_propostas():
 
     q = Proposal.query
     if tipo not in ["admin", "gestor"]:
-        q = q.filter_by(usuario_id=session.get("usuario_id"))
+        curr_uid = session.get("usuario_id")
+        q = q.filter(or_(Proposal.usuario_id == curr_uid, Proposal.created_by_id == curr_uid))
     q_options = q
 
     if data_filter:
@@ -1985,8 +2005,8 @@ def historico_propostas():
             flash("Data inválida.", "warning")
 
     if user_filter:
-        q = q.filter_by(usuario_id=user_filter)
-        q_options = q_options.filter_by(usuario_id=user_filter)
+        q = q.filter(or_(Proposal.usuario_id == user_filter, Proposal.created_by_id == user_filter))
+        q_options = q_options.filter(or_(Proposal.usuario_id == user_filter, Proposal.created_by_id == user_filter))
     if company_filter:
         company_digits = re.sub(r"\D", "", company_filter)
         company_like = f"%{company_filter.lower()}%"
@@ -2010,14 +2030,16 @@ def historico_propostas():
         q_options = q_options.filter(Proposal.issuer_company_code == issuer_filter)
 
     empresa_rows = (
-        q_options.with_entities(db.func.trim(Proposal.company).label("company"))
+        q_options.with_entities(Proposal.company)
         .filter(Proposal.company.isnot(None))
-        .filter(db.func.trim(Proposal.company) != "")
+        .filter(Proposal.company != "")
         .distinct()
-        .order_by(db.func.lower(db.func.trim(Proposal.company)))
         .all()
     )
-    empresa_options = [row.company for row in empresa_rows if row.company]
+    empresa_options = sorted(
+        {row[0].strip() for row in empresa_rows if row[0] and row[0].strip()},
+        key=lambda x: x.lower(),
+    )
 
     q = q.filter(or_(Proposal.is_current.is_(True), Proposal.is_current.is_(None)))
     propostas = q.order_by(Proposal.data_criacao.desc()).paginate(page=page, per_page=10)

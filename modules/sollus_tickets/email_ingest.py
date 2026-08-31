@@ -91,9 +91,13 @@ def sync_mailbox(mailbox_id: int, limit: int | None = None) -> dict[str, int]:
                     processed_uids.append(uid)
                 stats[outcome] = stats.get(outcome, 0) + 1
             except Exception as exc:
+                db.session.rollback()
                 stats["failed"] += 1
                 mailbox.last_error = f"UID {uid}: {exc}"
-                db.session.commit()
+                try:
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
         if processed_uids:
             _postfetch(client, mailbox, processed_uids)
         mailbox.last_sync_at = datetime.utcnow()
@@ -109,10 +113,14 @@ def sync_mailbox(mailbox_id: int, limit: int | None = None) -> dict[str, int]:
                 source="cron"
             )
     except Exception as exc:
+        db.session.rollback()
         mailbox.last_error = str(exc)
         mailbox.num_errors = int(mailbox.num_errors or 0) + 1
         mailbox.last_sync_at = datetime.utcnow()
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
         log_system_event(
             f"Email Sync Error: {mailbox.email}",
             str(exc),
@@ -167,9 +175,13 @@ def _sync_pop_mailbox(mailbox: SollusTicketMailbox, limit: int | None = None) ->
                     delete_numbers.append(number)
                 stats[outcome] = stats.get(outcome, 0) + 1
             except Exception as exc:
+                db.session.rollback()
                 stats["failed"] += 1
                 mailbox.last_error = f"POP {number}: {exc}"
-                db.session.commit()
+                try:
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
         if (mailbox.postfetch or "nothing").lower() == "delete":
             for number in delete_numbers:
                 client.dele(number)
@@ -188,10 +200,14 @@ def _sync_pop_mailbox(mailbox: SollusTicketMailbox, limit: int | None = None) ->
                 source="cron"
             )
     except Exception as exc:
+        db.session.rollback()
         mailbox.last_error = str(exc)
         mailbox.num_errors = int(mailbox.num_errors or 0) + 1
         mailbox.last_sync_at = datetime.utcnow()
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
         log_system_event(
             f"Email Sync Error (POP): {mailbox.email}",
             str(exc),
@@ -439,6 +455,7 @@ def _find_existing_ticket(msg: Message, subject: str) -> SollusTicket | None:
             from .models import SollusTicketThreadEntry
             entry = SollusTicketThreadEntry.query.filter_by(email_message_id=message_id).first()
         except Exception:
+            db.session.rollback()
             entry = None
         if entry and entry.ticket:
             return entry.ticket

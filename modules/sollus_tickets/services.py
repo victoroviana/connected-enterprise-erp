@@ -510,6 +510,7 @@ def _is_internal_user_email(email: str) -> bool:
             User.is_active.is_(True)
         ).first())
     except Exception:
+        db.session.rollback()
         return False
 
 
@@ -542,6 +543,7 @@ def notify_ticket(ticket: SollusTicket, event: str, body: str = "", entry: Sollu
         if refs:
             headers["References"] = refs
     except Exception:
+        db.session.rollback()
         labels = {
             "created": "Ticket criado",
             "reply": "Nova resposta",

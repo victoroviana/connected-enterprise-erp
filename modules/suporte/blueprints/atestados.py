@@ -93,8 +93,13 @@ def _has_assist_admin_permission() -> bool:
 
 
 def _deny_access(area_label: str):
-    if _wants_json():
-        return jsonify({"ok": False, "message": "Você não tem permissão para acessar esta área."}), 403
+    from flask import request
+    if "/api/" in getattr(request, "path", "") or _wants_json():
+        return jsonify({
+            "error": "Access denied",
+            "success": False,
+            "message": f"Você não tem permissão para acessar {area_label}."
+        }), 403
     flash(
         "Você não tem permissão para acessar esta área. Procure seu superior caso precise de acesso.",
         "warning",
@@ -113,13 +118,19 @@ def _nav_counts() -> dict[str, int]:
 @atestados_bp.before_request
 def _check_permissions():
     from flask import request
-    if "/api/" in getattr(request, "path", ""):
-        return
     endpoint = getattr(request, "endpoint", "") or ""
     if endpoint and not endpoint.startswith("atestados_bp."):
         return
-    if not current_user.is_authenticated:
+    if endpoint == "sem_permissao":
         return
+    if not current_user.is_authenticated and not session.get("usuario_id") and not session.get("user_id"):
+        if "/api/" in getattr(request, "path", "") or _wants_json():
+            return jsonify({"error": "Authentication required", "success": False, "message": "Autenticação necessária"}), 401
+        try:
+            login_url = url_for("auth_bp.login", next=request.full_path if request.method == "GET" else None)
+        except Exception:
+            login_url = "/login"
+        return redirect(login_url)
     allowed_depts = {"ASSISTENCIA TECNICA", "ESTOQUE", "OFICINA"}
     dept_names = _dept_names()
 
@@ -751,15 +762,19 @@ def _processar_envio(app, task_id: str, novo_texto: str, data_limite: str, arqui
                         os.remove(path)
 
             except Exception as exc:
+                db.session.rollback()
                 failed_count += 1
                 current_app.logger.error("Erro ao processar o arquivo %s: %s", arquivo.nome, exc)
-                db.session.add(AtestadoLogEnvio(
-                    arquivo_id=arquivo.id,
-                    status="error",
-                    mensagem=f"Erro ao processar o arquivo {arquivo.nome}: {exc}",
-                    data_envio=datetime.now(),
-                ))
-                db.session.commit()
+                try:
+                    db.session.add(AtestadoLogEnvio(
+                        arquivo_id=arquivo.id,
+                        status="error",
+                        mensagem=f"Erro ao processar o arquivo {arquivo.nome}: {exc}",
+                        data_envio=datetime.now(),
+                    ))
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
                 continue
             finally:
                 if tmp_docx_file_path and os.path.exists(tmp_docx_file_path):

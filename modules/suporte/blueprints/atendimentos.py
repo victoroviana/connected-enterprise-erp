@@ -659,8 +659,12 @@ def _dept_names(user=None) -> set[str]:
 
 
 def _deny_access(area_label: str):
-    if _wants_json():
-        return jsonify({"ok": False, "message": "Você não tem permissão para acessar esta área."}), 403
+    if "/api/" in getattr(request, "path", "") or _wants_json():
+        return jsonify({
+            "error": "Access denied",
+            "success": False,
+            "message": f"Você não tem permissão para acessar {area_label}."
+        }), 403
     flash(
         "Você não tem permissão para acessar esta área. Procure seu superior caso precise de acesso.",
         "warning",
@@ -671,10 +675,18 @@ def _deny_access(area_label: str):
 @support_bp.before_request
 def _ensure_permission():
     from flask import request
-    if "/api/" in getattr(request, "path", ""):
+    endpoint = getattr(request, "endpoint", "") or ""
+    if endpoint == "sem_permissao":
         return
-    if not current_user.is_authenticated:
-        return
+    if not current_user.is_authenticated and not session.get("usuario_id") and not session.get("user_id"):
+        if "/api/" in getattr(request, "path", "") or _wants_json():
+            return jsonify({"error": "Authentication required", "success": False, "message": "Autenticação necessária"}), 401
+        try:
+            login_url = url_for("auth_bp.login", next=request.full_path if request.method == "GET" else None)
+        except Exception:
+            login_url = "/login"
+        return redirect(login_url)
+
     role_key = normalize_role_key(getattr(current_user, "tipo", None) or session.get("tipo"))
     if role_key in ("admin", "gestor"):
         return
@@ -690,10 +702,18 @@ def _ensure_permission():
 @tech_bp.before_request
 def _ensure_tecnica_permission():
     from flask import request
-    if "/api/" in getattr(request, "path", ""):
+    endpoint = getattr(request, "endpoint", "") or ""
+    if endpoint == "sem_permissao":
         return
-    if not current_user.is_authenticated:
-        return
+    if not current_user.is_authenticated and not session.get("usuario_id") and not session.get("user_id"):
+        if "/api/" in getattr(request, "path", "") or _wants_json():
+            return jsonify({"error": "Authentication required", "success": False, "message": "Autenticação necessária"}), 401
+        try:
+            login_url = url_for("auth_bp.login", next=request.full_path if request.method == "GET" else None)
+        except Exception:
+            login_url = "/login"
+        return redirect(login_url)
+
     role_key = normalize_role_key(getattr(current_user, "tipo", None) or session.get("tipo"))
     if role_key in ("admin", "gestor"):
         return
@@ -1545,7 +1565,11 @@ def criar_atendimento():
             receita_data = fetch_receita_data(entry.cnpj)
             upsert_empresa_from_receita(entry.cnpj, receita_data)
         except ReceitaAPIError as exc:
+            db.session.rollback()
             flash(f"Aviso da ReceitaWS: {exc}", "warning")
+        except Exception as exc:
+            db.session.rollback()
+            current_app.logger.warning("Falha ao consultar ReceitaWS: %s", exc)
     db.session.add(entry)
     db.session.commit()
     meet_email_sent = None
@@ -1721,7 +1745,12 @@ def api_cnpj():
         db.session.commit()
         response = {"cliente": empresa.cliente, "cnpj": empresa.cnpj, "observacoes": empresa.observacoes, "observacoes_alerta": empresa.observacoes_alerta, "email": data.get("email")}
     except ReceitaAPIError as exc:
+        db.session.rollback()
         response = {"error": str(exc)}
+    except Exception as exc:
+        db.session.rollback()
+        current_app.logger.exception("Erro ao buscar dados do CNPJ: %s", exc)
+        response = {"error": "Erro interno ao consultar CNPJ"}
     return jsonify(response)
 
 
@@ -1792,6 +1821,7 @@ def _enum_choices_for(table_name: str, column_name: str) -> list[tuple[str, str]
             {"column": column_name},
         ).first()
     except Exception:
+        db.session.rollback()
         return []
     if not result:
         return []
@@ -1847,6 +1877,7 @@ def _distinct_chamado_choices(region, column_name: str, default_label: str = "Se
             )
         ).fetchall()
     except Exception:
+        db.session.rollback()
         current_app.logger.exception(f"Falha ao carregar choices para {column_name} na tabela {region.table_name if region else 'None'}")
         return [("", default_label)]
 
@@ -1950,6 +1981,7 @@ def _ordem_servico_exists(region, ordem_servico: str, *, exclude_id: int | None 
             {"os": ordem_servico},
         ).first()
     except Exception:
+        db.session.rollback()
         return False
     if not row:
         return False
@@ -2005,6 +2037,7 @@ def _insert_pesquisa_satisfacao(
         if not inspector.has_table("pesquisa_satisfacao"):
             return None
     except Exception:
+        db.session.rollback()
         return None
     try:
         existing = db.session.execute(
@@ -2014,6 +2047,7 @@ def _insert_pesquisa_satisfacao(
         if existing:
             return int(existing[0]) if existing[0] is not None else None
     except Exception:
+        db.session.rollback()
         return None
 
     sigla_os = (str(ordem_servico or "").strip()[-1:] if ordem_servico else "").upper()
@@ -2038,10 +2072,12 @@ def _insert_pesquisa_satisfacao(
                 "unidade": unidade,
             },
         )
+        db.session.commit()
         inserted_id = getattr(result, "lastrowid", None)
         if inserted_id:
             return int(inserted_id)
     except Exception:
+        db.session.rollback()
         current_app.logger.exception("Falha ao inserir pesquisa de satisfação.")
         return None
 
@@ -2055,6 +2091,7 @@ def _insert_pesquisa_satisfacao(
         ).first()
         return int(fallback[0]) if fallback else None
     except Exception:
+        db.session.rollback()
         return None
 
 
@@ -2070,6 +2107,7 @@ def _update_novos_contratos_on_close(
         if not inspector.has_table("novos_contratos"):
             return
     except Exception:
+        db.session.rollback()
         return
     try:
         db.session.execute(
@@ -2084,7 +2122,9 @@ def _update_novos_contratos_on_close(
                 "numero_proposta": numero_proposta,
             },
         )
+        db.session.commit()
     except Exception:
+        db.session.rollback()
         current_app.logger.exception("Falha ao atualizar novos_contratos.")
 
 

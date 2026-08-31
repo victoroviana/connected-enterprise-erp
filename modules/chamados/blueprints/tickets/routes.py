@@ -79,8 +79,13 @@ def _allowed_file(filename: str) -> bool:
 
 
 def _deny_access(area_label: str):
-    if _wants_json():
-        return jsonify({"ok": False, "message": "Você não tem permissão para acessar esta área."}), 403
+    from flask import request
+    if "/api/" in getattr(request, "path", "") or _wants_json():
+        return jsonify({
+            "error": "Access denied",
+            "success": False,
+            "message": f"Você não tem permissão para acessar esta área ({area_label})."
+        }), 403
     flash(
         "Você não tem permissão para acessar esta área. Procure seu superior caso precise de acesso.",
         "warning",
@@ -91,13 +96,19 @@ def _deny_access(area_label: str):
 @tickets_bp.before_request
 def _check_chamados_access():
     from flask import request
-    if "/api/" in getattr(request, "path", ""):
-        return
     endpoint = getattr(request, "endpoint", "") or ""
     if endpoint and not endpoint.startswith("tickets."):
         return
-    if not current_user.is_authenticated:
+    if endpoint == "sem_permissao":
         return
+    if not current_user.is_authenticated and not session.get("usuario_id") and not session.get("user_id"):
+        if "/api/" in getattr(request, "path", "") or _wants_json():
+            return jsonify({"error": "Authentication required", "success": False, "message": "Autenticação necessária"}), 401
+        try:
+            login_url = url_for("auth_bp.login", next=request.full_path if request.method == "GET" else None)
+        except Exception:
+            login_url = "/login"
+        return redirect(login_url)
     role_key = normalize_role_key(
         getattr(current_user, "tipo", None)
         or getattr(current_user, "role", None)

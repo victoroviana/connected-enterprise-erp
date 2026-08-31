@@ -22,8 +22,11 @@ def send_atendimento_concluido_email(entry) -> bool:
     cc_list = current_app.config.get(
         "SUPPORT_EMAIL_CC",
         [
-            "suporte@example.com",
-            "adm@example.com",
+            "suporte@sollustecnologia.com",
+            "adm2@sollustecnologia.com",
+            "adm4@sollustecnologia.com",
+            "adm5@sollustecnologia.com",
+            "adm6@sollustecnologia.com",
         ],
     )
 

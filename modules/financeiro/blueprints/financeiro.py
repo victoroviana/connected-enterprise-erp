@@ -147,15 +147,19 @@ def _has_finance_permission() -> bool:
 @financeiro_bp.before_request
 def _check_financeiro_permissions():
     from flask import request
-    if "/api/" in getattr(request, "path", ""):
-        return
     endpoint = getattr(request, "endpoint", "") or ""
     if endpoint and not endpoint.startswith("financeiro_bp."):
         return
     if endpoint == "financeiro_bp.sem_permissao":
         return
-    if not current_user.is_authenticated:
-        return
+    if not current_user.is_authenticated and not session.get("usuario_id") and not session.get("user_id"):
+        if "/api/" in getattr(request, "path", "") or _wants_json():
+            return jsonify({"error": "Authentication required", "success": False, "message": "Autenticação necessária"}), 401
+        try:
+            login_url = url_for("auth_bp.login", next=request.full_path if request.method == "GET" else None)
+        except Exception:
+            login_url = "/login"
+        return redirect(login_url)
     if _is_admin_user() or _dept_is_financeiro():
         return
     if _has_finance_permission() and endpoint in FINANCEIRO_CONTAS_ENDPOINTS:
@@ -164,8 +168,8 @@ def _check_financeiro_permissions():
         return
     if _has_finance_permission() and endpoint in FINANCEIRO_COTA_ENDPOINTS:
         return
-    if _wants_json():
-        return jsonify({"ok": False, "message": "Você não tem permissão para acessar o financeiro."}), 403
+    if "/api/" in getattr(request, "path", "") or _wants_json():
+        return jsonify({"error": "Access denied", "success": False, "message": "Você não tem permissão para acessar o financeiro."}), 403
     flash(
         "Você não tem permissão para acessar o Financeiro. Procure seu superior caso precise de acesso.",
         "warning",

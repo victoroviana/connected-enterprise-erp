@@ -2780,56 +2780,136 @@
 
 
     html[data-theme="dark"] .task-card,
-
-
+    html[data-theme="dark"] .lane-card,
     html[data-theme="dark"] .diagram-container,
-
-
-    html[data-theme="dark"] .audit-json-block,
-
-
-    html[data-theme="dark"] .audit-diff-item,
-
-
     html[data-theme="dark"] #equipamentos-selecionados > div,
-
-
     html[data-theme="dark"] .history-pdf-frame,
-
-
-    html[data-theme="dark"] .pdf-frame{
-
-
+    html[data-theme="dark"] .pdf-frame,
+    html[data-theme="dark"] .version-item,
+    html[data-theme="dark"] .photo-dropzone,
+    html[data-theme="dark"] .photo-result,
+    html[data-theme="dark"] .recibo-upload,
+    html[data-theme="dark"] .atestados-tab-btn,
+    html[data-theme="dark"] .assist-tab-toggle-btn,
+    html[data-theme="dark"] .assist-tab-menu,
+    html[data-theme="dark"] .glass-panel,
+    html[data-theme="dark"] .file-field.dropzone,
+    html[data-theme="dark"] .file-list{
       background:#0f172a !important;
-
-
       color: var(--text) !important;
-
-
       border-color:#263248 !important;
-
-
     }
 
+    html[data-theme="dark"] .task-chip,
+    html[data-theme="dark"] .agenda-alert__chip,
+    html[data-theme="dark"] .badge-lite,
+    html[data-theme="dark"] .tempo-pill--unknown,
+    html[data-theme="dark"] .badge-email{
+      background:rgba(255,255,255,.08) !important;
+      color:#cbd5e1 !important;
+      border:1px solid rgba(255,255,255,.14) !important;
+    }
 
+    /* AUDITORIA & DIFF MODAL */
+    html[data-theme="dark"] .audit-diff-summary{
+      background:rgba(14,93,198,.16) !important;
+      border:1px solid rgba(14,93,198,.35) !important;
+      color:var(--text) !important;
+      border-radius:.75rem;
+    }
+    html[data-theme="dark"] .audit-diff-summary__header{
+      color:#93c5fd !important;
+      font-weight:600;
+    }
+    html[data-theme="dark"] .audit-diff-summary #auditJsonDiffEmpty{
+      color:#94a3b8 !important;
+    }
+    html[data-theme="dark"] .audit-json-block{
+      background:#0f172a !important;
+      border:1px solid #263248 !important;
+      color:var(--text) !important;
+    }
+    html[data-theme="dark"] .audit-json-block__header{
+      color:#94a3b8 !important;
+    }
+    html[data-theme="dark"] .audit-json-modal pre{
+      background:#060d1a !important;
+      color:#e2e8f0 !important;
+      border:1px solid #1e293b;
+    }
+    html[data-theme="dark"] .audit-diff-item{
+      background:#162033 !important;
+      color:var(--text) !important;
+      border:1px solid #2b364e !important;
+    }
+    html[data-theme="dark"] .audit-diff-item__key{
+      color:#f1f5f9 !important;
+    }
+    html[data-theme="dark"] .audit-diff-item__values{
+      color:#cbd5e1 !important;
+    }
+    html[data-theme="dark"] .audit-diff-item code{
+      background:#1e293b !important;
+      color:#93c5fd !important;
+    }
+    html[data-theme="dark"] .audit-diff-item.is-added{
+      background:rgba(22,163,74,.2) !important;
+      border-color:rgba(34,197,94,.4) !important;
+    }
+    html[data-theme="dark"] .audit-diff-item.is-removed{
+      background:rgba(239,68,68,.2) !important;
+      border-color:rgba(239,68,68,.4) !important;
+    }
     html[data-theme="dark"] .audit-diff-item.is-changed{
-
-
-      background:rgba(120,53,15,.28) !important;
-
-
+      background:rgba(245,158,11,.2) !important;
       border-color:rgba(245,158,11,.4) !important;
-
-
     }
-
-
-
-
+    html[data-theme="dark"] .audit-friendly-table{
+      background:#0f172a !important;
+      border:1px solid #263248 !important;
+      color:var(--text) !important;
+    }
+    html[data-theme="dark"] .audit-friendly-table td{
+      border-bottom:1px solid #263248 !important;
+      color:var(--text) !important;
+    }
+    html[data-theme="dark"] .audit-friendly-table tr:hover{
+      background-color:#1e293b !important;
+    }
+    html[data-theme="dark"] .audit-friendly-label{
+      background:#162033 !important;
+      color:#94a3b8 !important;
+      border-right:1px solid #263248 !important;
+    }
+    html[data-theme="dark"] .audit-friendly-value{
+      color:var(--text) !important;
+    }
+    html[data-theme="dark"] .audit-friendly-card{
+      background:#0f172a !important;
+      border:1px solid #263248 !important;
+    }
+    html[data-theme="dark"] .audit-friendly-card-header{
+      background:#162033 !important;
+      border-bottom:1px solid #263248 !important;
+      color:#e2e8f0 !important;
+    }
+    html[data-theme="dark"] .audit-row-changed,
+    html[data-theme="dark"] .audit-row-changed .audit-friendly-label,
+    html[data-theme="dark"] .audit-row-changed .audit-friendly-value{
+      background-color:rgba(245,158,11,.15) !important;
+    }
+    html[data-theme="dark"] .audit-row-added,
+    html[data-theme="dark"] .audit-row-added .audit-friendly-label,
+    html[data-theme="dark"] .audit-row-added .audit-friendly-value{
+      background-color:rgba(34,197,94,.15) !important;
+    }
+    html[data-theme="dark"] .audit-row-removed,
+    html[data-theme="dark"] .audit-row-removed .audit-friendly-label,
+    html[data-theme="dark"] .audit-row-removed .audit-friendly-value{
+      background-color:rgba(239,68,68,.15) !important;
+    }
 
     /* DROPDOWNS */
-
-
     html[data-theme="dark"] .dropdown-menu{ background:#0f172a; color:var(--text); border-color:#263248; }
 
 
@@ -2839,12 +2919,68 @@
     html[data-theme="dark"] .dropdown-item:hover{ background:rgba(255,255,255,.06); color:var(--text); }
 
 
+    /* SETTINGS CARDS & PAINÉIS ADMINISTRATIVOS (DARK THEME) */
+    html[data-theme="dark"] .settings-card,
+    [data-theme="dark"] .settings-card {
+      background: #111c30 !important;
+      border-color: rgba(148, 163, 184, 0.15) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+    }
+    html[data-theme="dark"] .settings-card-header,
+    [data-theme="dark"] .settings-card-header {
+      background: #0b1329 !important;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15) !important;
+    }
+    html[data-theme="dark"] .settings-card-title,
+    [data-theme="dark"] .settings-card-title {
+      color: #f1f5f9 !important;
+    }
+    html[data-theme="dark"] .settings-card-subtitle,
+    [data-theme="dark"] .settings-card-subtitle {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .settings-nav-link,
+    [data-theme="dark"] .settings-nav-link {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .settings-nav-link:hover,
+    [data-theme="dark"] .settings-nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.05) !important;
+      color: #f1f5f9 !important;
+    }
+    html[data-theme="dark"] .settings-nav-link.active,
+    [data-theme="dark"] .settings-nav-link.active {
+      background-color: rgba(99, 102, 241, 0.25) !important;
+      color: #c7d2fe !important;
+    }
+    html[data-theme="dark"] .form-label-premium,
+    [data-theme="dark"] .form-label-premium {
+      color: #cbd5e1 !important;
+    }
+    html[data-theme="dark"] .premium-input,
+    [data-theme="dark"] .premium-input {
+      background-color: #0f172a !important;
+      border-color: #334155 !important;
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .premium-input:focus,
+    [data-theme="dark"] .premium-input:focus {
+      background-color: #1e293b !important;
+      border-color: #6366f1 !important;
+      color: #ffffff !important;
+    }
+    html[data-theme="dark"] .item-row,
+    [data-theme="dark"] .item-row {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+    }
+    html[data-theme="dark"] .item-row:hover,
+    [data-theme="dark"] .item-row:hover {
+      background-color: #162036 !important;
+      border-color: #475569 !important;
+    }
 
-
-
-    /* Utilitrias que foram dark no Bootstrap */
-
-
+    /* Utilitárias que foram dark no Bootstrap */
     html[data-theme="dark"] .text-dark{ color: var(--text) !important; }
 
 
@@ -2853,9 +2989,166 @@
 
     html[data-theme="dark"] .text-muted{ color:#cbd5e1 !important; }
 
+    /* SOLLUS MODAL, PAGE HELP MODAL & PROFILE MODAL */
+    html[data-theme="dark"] .sollus-modal .modal-content,
+    html[data-theme="dark"] .profile-modal .modal-content,
+    html[data-theme="dark"] .page-help-modal .modal-content{
+      background: #0f172a !important;
+      border: 1px solid #263248 !important;
+      color: var(--text) !important;
+    }
+    html[data-theme="dark"] .sollus-modal .modal-body{
+      background: radial-gradient(120% 120% at 0% 0%, rgba(14,93,198,.18), rgba(15,23,42,0) 55%), radial-gradient(120% 120% at 100% 100%, rgba(11,180,212,.15), rgba(15,23,42,0) 55%), #0f172a !important;
+      color: var(--text) !important;
+    }
+    html[data-theme="dark"] .sollus-modal .modal-footer{
+      background: #0b1220 !important;
+      border-top: 1px solid #263248 !important;
+    }
+    html[data-theme="dark"] .sollus-modal .form-label{
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .modal-header.bg-light,
+    html[data-theme="dark"] .modal-footer.bg-light{
+      background: #0b1220 !important;
+      border-color: #263248 !important;
+      color: var(--text) !important;
+    }
+    html[data-theme="dark"] .modal-body.bg-white{
+      background: #0f172a !important;
+      color: var(--text) !important;
+    }
+    html[data-theme="dark"] .profile-modal .avatar-large{
+      background: #1e293b !important;
+      border-color: rgba(59,130,246,0.3) !important;
+    }
+    html[data-theme="dark"] .profile-modal .avatar-large span{
+      color: #93c5fd !important;
+    }
+    html[data-theme="dark"] .profile-modal .list-group-item{
+      color: #cbd5e1 !important;
+      background: transparent !important;
+    }
+    html[data-theme="dark"] .profile-modal .list-group-item strong{
+      color: #f1f5f9 !important;
+    }
+    html[data-theme="dark"] .page-help-modal .modal-body{
+      background: #0f172a !important;
+    }
+    html[data-theme="dark"] .page-help-modal .list-group-item{
+      background: #162033 !important;
+      color: var(--text) !important;
+      border: 1px solid #2b364e !important;
+      box-shadow: none !important;
+    }
+    html[data-theme="dark"] .page-help-modal .list-group-item:hover{
+      background: #1e293b !important;
+      border-color: #3b82f6 !important;
+    }
+    html[data-theme="dark"] .page-help-modal .list-group-item.active{
+      background: #1e293b !important;
+      border: 2px solid #3b82f6 !important;
+    }
+    html[data-theme="dark"] .page-help-modal .list-group-item i{
+      color: #60a5fa !important;
+    }
 
+    /* NAV TABS & PILLS */
+    html[data-theme="dark"] .nav-tabs{
+      border-bottom-color: #263248 !important;
+    }
+    html[data-theme="dark"] .nav-tabs .nav-link{
+      color: #94a3b8;
+    }
+    html[data-theme="dark"] .nav-tabs .nav-link:hover{
+      color: #e2e8f0;
+      border-color: rgba(255,255,255,0.1);
+    }
+    html[data-theme="dark"] .nav-tabs .nav-link.active,
+    html[data-theme="dark"] .nav-tabs-custom .nav-link.active{
+      color: #60a5fa !important;
+      background-color: #0f172a !important;
+      border-color: #263248 #263248 #0f172a !important;
+    }
+    html[data-theme="dark"] .nav-pills .nav-link{
+      color: #94a3b8;
+    }
+    html[data-theme="dark"] .nav-pills .nav-link.active{
+      background-color: #0e5dc6 !important;
+      color: #fff !important;
+    }
 
+    /* PAGINATION */
+    html[data-theme="dark"] .pagination .page-link{
+      background-color: #1e293b !important;
+      border-color: #334155 !important;
+      color: #93c5fd !important;
+    }
+    html[data-theme="dark"] .pagination .page-link:hover{
+      background-color: #334155 !important;
+      color: #bfdbfe !important;
+      border-color: #475569 !important;
+    }
+    html[data-theme="dark"] .pagination .page-item.active .page-link{
+      background-color: #0e5dc6 !important;
+      border-color: #0e5dc6 !important;
+      color: #fff !important;
+    }
+    html[data-theme="dark"] .pagination .page-item.disabled .page-link{
+      background-color: #0f172a !important;
+      border-color: #1e293b !important;
+      color: #64748b !important;
+    }
 
+    /* BADGES, BUTTONS & SUBTLE CLASSES */
+    html[data-theme="dark"] .badge.bg-light,
+    html[data-theme="dark"] .badge.text-bg-light,
+    html[data-theme="dark"] .badge.bg-white{
+      background-color: rgba(255,255,255,0.1) !important;
+      color: #e2e8f0 !important;
+      border: 1px solid rgba(255,255,255,0.15) !important;
+    }
+    html[data-theme="dark"] .badge.badge-role{
+      background-color: rgba(14,93,198,0.2) !important;
+      color: #93c5fd !important;
+      border-color: rgba(14,93,198,0.4) !important;
+    }
+    html[data-theme="dark"] .btn-light,
+    html[data-theme="dark"] .btn-action-icon.btn-light{
+      background-color: #1e293b !important;
+      border-color: #334155 !important;
+      color: #e2e8f0 !important;
+    }
+    html[data-theme="dark"] .btn-light:hover,
+    html[data-theme="dark"] .btn-action-icon.btn-light:hover{
+      background-color: #334155 !important;
+      border-color: #475569 !important;
+      color: #fff !important;
+    }
+    html[data-theme="dark"] .bg-light-subtle{
+      background-color: rgba(255,255,255,0.05) !important;
+      color: var(--text) !important;
+    }
+    html[data-theme="dark"] .bg-primary-subtle{ background-color: rgba(14,93,198,0.2) !important; color: #93c5fd !important; }
+    html[data-theme="dark"] .bg-success-subtle{ background-color: rgba(34,197,94,0.18) !important; color: #86efac !important; }
+    html[data-theme="dark"] .bg-warning-subtle{ background-color: rgba(245,158,11,0.18) !important; color: #fde047 !important; }
+    html[data-theme="dark"] .bg-danger-subtle{ background-color: rgba(239,68,68,0.2) !important; color: #fca5a5 !important; }
+    html[data-theme="dark"] .bg-info-subtle{ background-color: rgba(14,165,233,0.2) !important; color: #7dd3fc !important; }
+    html[data-theme="dark"] .bg-secondary-subtle{ background-color: rgba(148,163,184,0.15) !important; color: #cbd5e1 !important; }
+
+    html[data-theme="dark"] .text-primary-emphasis{ color: #93c5fd !important; }
+    html[data-theme="dark"] .text-success-emphasis{ color: #86efac !important; }
+    html[data-theme="dark"] .text-warning-emphasis{ color: #fde047 !important; }
+    html[data-theme="dark"] .text-danger-emphasis{ color: #fca5a5 !important; }
+    html[data-theme="dark"] .text-body-emphasis{ color: #f8fafc !important; }
+    html[data-theme="dark"] .text-body-secondary{ color: #94a3b8 !important; }
+
+    html[data-theme="dark"] code{
+      background-color: #1e293b !important;
+      color: #93c5fd !important;
+      border-radius: 4px;
+      padding: 2px 6px;
+    }
 
     /* Links mais claros no dark */
 
@@ -5004,18 +5297,53 @@
 
 
     <div class="container-fluid d-flex align-items-center justify-content-between gap-2 flex-wrap">
-      <div><strong>Connected Enterprise</strong>  <span id="footerYear"></span> &copy; Todos os direitos reservados.</div>
+
+
+      <div><strong>Sollus Tecnologia</strong>  <span id="footerYear"></span> &copy; Todos os direitos reservados.</div>
+
+
       <div class="d-flex align-items-center gap-3 flex-wrap">
-        <a href="mailto:suporte@empresa.com.br" class="text-decoration-none"><i class="bi bi-envelope"></i> suporte@empresa.com.br</a>
-        <span>•</span>
-        <a href="https://www.empresa.com.br/" target="_blank" rel="noopener" class="text-decoration-none"><i class="bi bi-globe2"></i> empresa.com.br</a>
-        <span>•</span>
+
+
+        <a href="mailto:suporte.remoto@sollusgroup.com" class="text-decoration-none"><i class="bi bi-envelope"></i> suporte.remoto@sollusgroup.com</a>
+
+
+        <span></span>
+
+
+        <a href="https://www.sollusgroup.com/" target="_blank" rel="noopener" class="text-decoration-none"><i class="bi bi-globe2"></i> sollusgroup.com</a>
+
+
+        <span></span>
+
+
         <span class="d-flex align-items-center gap-2 flex-wrap">
+
+
           <i class="bi bi-telephone"></i>
-          <a href="tel:+551130000000">SP (11) 3000-0000</a> 
-          <a href="tel:+552130000000">RJ (21) 3000-0000</a> 
+
+
+          <a href="tel:+552124133203">RJ (21) 2413-3203</a> 
+
+
+          <a href="tel:+552227333722">Campos-RJ (22) 2733-3722</a> 
+
+
+          <a href="tel:+552730724863">Vila Velha-ES (27) 3072-4863</a> 
+
+
+          <a href="tel:+554137975093">Curitiba-PR (41) 3797-5093</a> 
+
+
+          <a href="tel:+551140406767">SP (11) 4040-6767</a>
+
+
         </span>
+
+
       </div>
+
+
     </div>
 
 

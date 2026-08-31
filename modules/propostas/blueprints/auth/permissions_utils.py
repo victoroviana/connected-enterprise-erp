@@ -57,14 +57,21 @@ def _full_permission_map() -> dict[str, bool]:
     return {key: True for key in PERMISSION_KEYS}
 
 
-def normalize_permissions(perms: dict[str, bool] | None = None) -> dict[str, bool]:
+def normalize_permissions(perms: dict[str, bool] | str | None = None) -> dict[str, bool]:
     """Ensure a permission mapping contains all known keys and derived flags."""
     base = default_permissions()
     if perms:
-        # Legacy support: if 'kanban' is present but 'central_conhecimento' is not, copy it.
-        if "kanban" in perms and "central_conhecimento" not in perms:
-            perms["central_conhecimento"] = perms["kanban"]
-        base.update(perms)
+        if isinstance(perms, str):
+            try:
+                import json
+                perms = json.loads(perms)
+            except Exception:
+                perms = {}
+        if isinstance(perms, dict):
+            # Legacy support: if 'kanban' is present but 'central_conhecimento' is not, copy it.
+            if "kanban" in perms and "central_conhecimento" not in perms:
+                perms["central_conhecimento"] = perms["kanban"]
+            base.update(perms)
     if base.get("usuarios_gerenciar"):
         base["usuarios_acesso"] = True
     if base.get("permissoes_gerenciar"):

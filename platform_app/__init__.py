@@ -469,6 +469,10 @@ def _register_modules(app: Flask) -> None:
             return User.query.get(int(user_id))
         except (TypeError, ValueError):
             return None
+        except Exception:
+            from extensions import db
+            db.session.rollback()
+            return None
 
     try:
         chamados = import_module("modules.chamados")
@@ -654,14 +658,17 @@ def _register_root_routes(app: Flask) -> None:
                             count = db.session.execute(query).scalar() or 0
                             open_tickets_count += count
                 except Exception as e:
+                    db.session.rollback()
                     app.logger.warning(f"Error counting open tickets for board {board.slug}: {e}")
         except Exception as e:
+            db.session.rollback()
             app.logger.warning(f"Error importing or querying regional boards: {e}")
 
         try:
             from modules.propostas.models import Proposal
             pending_proposals_count = Proposal.query.filter(Proposal.approved_at.is_(None)).count()
         except Exception as e:
+            db.session.rollback()
             app.logger.warning(f"Error querying pending proposals: {e}")
 
         try:
@@ -669,6 +676,7 @@ def _register_root_routes(app: Flask) -> None:
                 text("SELECT COUNT(*) FROM contratos WHERE status = 'Ativo'")
             ).scalar() or 0
         except Exception as e:
+            db.session.rollback()
             app.logger.warning(f"Error querying active contracts: {e}")
 
         gallery_root = Path(app.static_folder) / "galeria"
@@ -846,7 +854,7 @@ def _register_error_handlers(app: Flask) -> None:
                         if lock.expires_at:
                             expires_at_str = lock.expires_at.strftime("%H:%M:%S")
             except Exception:
-                pass
+                db.session.rollback()
 
         return render_template(
             "errors/409.html",
@@ -960,4 +968,8 @@ def _optimize_database_performance(app: Flask) -> None:
                         except Exception:
                             db.session.rollback()
     except Exception:
-        pass
+        try:
+            from extensions import db
+            db.session.rollback()
+        except Exception:
+            pass

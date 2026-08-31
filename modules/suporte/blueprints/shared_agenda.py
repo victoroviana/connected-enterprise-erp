@@ -5,7 +5,9 @@ from datetime import date, datetime
 from flask import (
     Blueprint,
     current_app,
+    flash,
     jsonify,
+    redirect,
     render_template,
     request,
     url_for,
@@ -50,9 +52,44 @@ def _dept_names(user=None) -> set[str]:
                 normalized = unicodedata.normalize("NFKD", cleaned)
                 normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
                 names.add(normalized.upper())
+            elif getattr(actor, "department", None) and getattr(actor.department, "name", None):
+                cleaned_dep = (actor.department.name or "").strip()
+                if cleaned_dep:
+                    normalized = unicodedata.normalize("NFKD", cleaned_dep)
+                    normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+                    names.add(normalized.upper())
     except Exception:
         return set()
     return names
+
+
+def _can_manage_agenda_entry(entry: AgendaEntry | None = None, target_user_id: int | None = None) -> bool:
+    if not current_user.is_authenticated and not session.get("usuario_id"):
+        return False
+    role_key = normalize_role_key(
+        getattr(current_user, "tipo", None)
+        or getattr(current_user, "role", None)
+        or session.get("tipo")
+    )
+    if role_key in ("admin", "gestor"):
+        return True
+    perms = raw_permissions(current_user)
+    if perms.get("admin_agenda_tecnica") or perms.get("admin_assistencia") or perms.get("admin_suporte"):
+        return True
+
+    current_uid = int(session.get("usuario_id") or getattr(current_user, "id", None))
+    # Standard technicians can only mutate their own records
+    if entry is not None:
+        if entry.usuario_id != current_uid:
+            return False
+        if target_user_id is not None and int(target_user_id) != current_uid:
+            return False
+        return True
+
+    if entry is None and target_user_id is not None:
+        return int(target_user_id) == current_uid
+
+    return False
 
 
 def register_agenda_routes(bp: Blueprint):
@@ -103,6 +140,7 @@ def register_agenda_routes(bp: Blueprint):
                 agenda_bp=bp_name,
             )
         except Exception as exc:
+            db.session.rollback()
             current_app.logger.exception("Erro ao renderizar agenda")
             try:
                 from modules.sollus_tickets.services import log_system_event
@@ -182,6 +220,7 @@ def register_agenda_routes(bp: Blueprint):
                 }
             })
         except Exception as exc:
+            db.session.rollback()
             current_app.logger.exception("Erro na API da agenda")
             try:
                 from modules.sollus_tickets.services import log_system_event
@@ -195,25 +234,31 @@ def register_agenda_routes(bp: Blueprint):
     def criar_agendamento():
         data = request.form
         try:
-            usuario_id = data.get("usuario_id") or current_user.id
+            target_user_id = int(data.get("usuario_id") or current_user.id)
+            if not _can_manage_agenda_entry(target_user_id=target_user_id):
+                if "/api/" in getattr(request, "path", "") or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return jsonify({"error": "Access denied", "success": False, "message": "Você não tem permissão para agendar para outro técnico."}), 403
+                flash("Você não tem permissão para agendar para outro técnico.", "warning")
+                return redirect(request.referrer or url_for(f"{bp.name}.agenda_tecnica"))
+
+            unidade_val = (data.get("unidade") or "").strip()
+            if not unidade_val:
+                unidade_val = getattr(current_user, "unit_code", None) or "sollus"
+
             entry = AgendaEntry(
-                usuario_id=int(usuario_id),
-                unidade=data.get("unidade") or "",
+                usuario_id=target_user_id,
+                unidade=unidade_val,
                 data_atendimento=datetime.strptime(data["data_atendimento"], "%Y-%m-%d").date(),
                 periodo=data.get("periodo") or "Dia todo",
                 obs=data.get("obs") or "",
             )
             db.session.add(entry)
             db.session.commit()
-            return db.session.get(AgendaEntry, entry.id) and __import__("flask").redirect(
-                __import__("flask").request.referrer or url_for(f"{bp.name}.agenda_tecnica")
-            )
+            return redirect(request.referrer or url_for(f"{bp.name}.agenda_tecnica"))
         except Exception as exc:
             db.session.rollback()
             current_app.logger.exception("Erro ao criar agendamento")
-            return __import__("flask").redirect(
-                __import__("flask").request.referrer or url_for(f"{bp.name}.agenda_tecnica")
-            )
+            return redirect(request.referrer or url_for(f"{bp.name}.agenda_tecnica"))
 
     @bp.route("/api/agenda/<int:entry_id>/atualizar", methods=["POST"])
     @login_required
@@ -221,8 +266,15 @@ def register_agenda_routes(bp: Blueprint):
         entry = AgendaEntry.query.get_or_404(entry_id)
         data = request.form
         try:
-            if "usuario_id" in data and data["usuario_id"]:
-                entry.usuario_id = int(data["usuario_id"])
+            new_uid = int(data["usuario_id"]) if data.get("usuario_id") else None
+            if not _can_manage_agenda_entry(entry=entry, target_user_id=new_uid):
+                if "/api/" in getattr(request, "path", "") or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return jsonify({"error": "Access denied", "success": False, "message": "Você só pode alterar seus próprios agendamentos."}), 403
+                flash("Você só pode alterar seus próprios agendamentos.", "warning")
+                return redirect(request.referrer or url_for(f"{bp.name}.agenda_tecnica"))
+
+            if new_uid:
+                entry.usuario_id = new_uid
             if "data_atendimento" in data and data["data_atendimento"]:
                 entry.data_atendimento = datetime.strptime(data["data_atendimento"], "%Y-%m-%d").date()
             if "periodo" in data:
@@ -230,25 +282,30 @@ def register_agenda_routes(bp: Blueprint):
             if "obs" in data:
                 entry.obs = data["obs"]
             if "unidade" in data:
-                entry.unidade = data["unidade"]
+                u_val = (data["unidade"] or "").strip()
+                if not u_val:
+                    u_val = getattr(current_user, "unit_code", None) or "sollus"
+                entry.unidade = u_val
             db.session.commit()
         except Exception:
             db.session.rollback()
             current_app.logger.exception("Erro ao atualizar agendamento %s", entry_id)
-        return __import__("flask").redirect(
-            __import__("flask").request.referrer or url_for(f"{bp.name}.agenda_tecnica")
-        )
+        return redirect(request.referrer or url_for(f"{bp.name}.agenda_tecnica"))
 
     @bp.route("/api/agenda/<int:entry_id>/excluir", methods=["POST"])
     @login_required
     def excluir_agendamento(entry_id):
         entry = AgendaEntry.query.get_or_404(entry_id)
         try:
+            if not _can_manage_agenda_entry(entry=entry):
+                if "/api/" in getattr(request, "path", "") or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return jsonify({"error": "Access denied", "success": False, "message": "Você só pode excluir seus próprios agendamentos."}), 403
+                flash("Você só pode excluir seus próprios agendamentos.", "warning")
+                return redirect(request.referrer or url_for(f"{bp.name}.agenda_tecnica"))
+
             db.session.delete(entry)
             db.session.commit()
         except Exception:
             db.session.rollback()
             current_app.logger.exception("Erro ao excluir agendamento %s", entry_id)
-        return __import__("flask").redirect(
-            __import__("flask").request.referrer or url_for(f"{bp.name}.agenda_tecnica")
-        )
+        return redirect(request.referrer or url_for(f"{bp.name}.agenda_tecnica"))

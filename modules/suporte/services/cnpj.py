@@ -107,6 +107,8 @@ def ensure_empresa_record(cnpj: str | None, cliente: str | None) -> None:
             text("INSERT INTO empresa (cliente, cnpj) VALUES (:cliente, :cnpj)"),
             {"cliente": cliente, "cnpj": cnpj},
         )
+        db.session.commit()
     except Exception:
+        db.session.rollback()
         current_app.logger.exception("Falha ao inserir empresa vinculada.")
 
