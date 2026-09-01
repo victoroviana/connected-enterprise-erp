@@ -266,247 +266,242 @@
 <!-- Modal: cadastro de usuário -->
 <div class="modal sollus-modal fade" id="modalNovoUsuario" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content">
-      <form method="post" class="users-form" id="formNovoUsuario">
-        <div class="modal-header">
-          <h5 class="modal-title">Novo usuário</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-        </div>
-        <div class="modal-body">
-          {{ form.hidden_tag() }}
-          <div class="row g-3">
-            <div class="col-md-6">
-              {{ form.usuario.label(class="form-label") }}
-              {{ form.usuario(class="form-control", placeholder="jose.silva", autocomplete="off") }}
-              {% if form.usuario.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.usuario.errors %}
-                    <div>{{ error }}</div>
-                  {% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            <div class="col-md-6">
-              {{ form.nome_completo.label(class="form-label") }}
-              {{ form.nome_completo(class="form-control", placeholder="Nome completo") }}
-              {% if form.nome_completo.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.nome_completo.errors %}
-                    <div>{{ error }}</div>
-                  {% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            <div class="col-md-6">
-              {{ form.email.label(class="form-label") }}
-              {{ form.email(class="form-control", placeholder="seu.email@sollus.com") }}
-              {% if form.email.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.email.errors %}
-                    <div>{{ error }}</div>
-                  {% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            <div class="col-md-6">
-              {{ form.phone.label(class="form-label") }}
-              {{ form.phone(class="form-control", placeholder="21 2413-3203") }}
-              {% if form.phone.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.phone.errors %}
-                    <div>{{ error }}</div>
-                  {% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            <div class="col-12">
-              {% with extra_phones_list=[], wrapper_id='createExtraPhones' %}
-              {% include 'auth/_extra_phone_fields.html' %}
-              {% endwith %}
-            </div>
-            <div class="col-12">
-              <label class="form-label" for="create_department_ids">Departamentos</label>
-              <select class="form-select d-none" id="create_department_ids" name="department_ids" multiple data-tag-select>
-                <option value="0">Sem departamento</option>
-                {% for dept in departments %}
-                <option value="{{ dept.id }}">{{ dept.name }}</option>
+    <form method="post" class="modal-content users-form" id="formNovoUsuario">
+      <div class="modal-header">
+        <h5 class="modal-title">Novo usuário</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        {{ form.hidden_tag() }}
+        <div class="row g-3">
+          <div class="col-md-6">
+            {{ form.usuario.label(class="form-label") }}
+            {{ form.usuario(class="form-control", placeholder="jose.silva", autocomplete="off") }}
+            {% if form.usuario.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.usuario.errors %}
+                  <div>{{ error }}</div>
                 {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-6">
-              {{ form.unit_code.label(class="form-label") }}
-              {{ form.unit_code(class="form-select") }}
-              {% if form.unit_code.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.unit_code.errors %}
-                    <div>{{ error }}</div>
-                  {% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            <div class="col-md-6">
-              {{ form.ramal.label(class="form-label") }}
-              {{ form.ramal(class="form-control", placeholder="Ramal interno") }}
-              {% if form.ramal.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.ramal.errors %}
-                    <div>{{ error }}</div>
-                  {% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            <div class="col-md-6">
-              {{ form.tipo.label(class="form-label") }}
-              {{ form.tipo(class="form-select") }}
-              {% if form.tipo.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.tipo.errors %}
-                    <div>{{ error }}</div>
-                  {% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            <div class="col-md-6">
-              {{ form.prox_num.label(class="form-label") }}
-              {{ form.prox_num(class="form-control", min="1") }}
-              {% if form.prox_num.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.prox_num.errors %}
-                    <div>{{ error }}</div>
-                  {% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            <div class="col-md-6">
-              {{ form.senha.label(class="form-label") }}
-              {{ form.senha(class="form-control", placeholder="Defina uma senha inicial") }}
-              {% if form.senha.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.senha.errors %}
-                    <div>{{ error }}</div>
-                  {% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            <div class="col-md-6 d-flex align-items-center">
-              <div class="form-check form-switch mt-3">
-                {{ form.is_active(class="form-check-input", id="form_is_active") }}
-                <label class="form-check-label" for="form_is_active">Usuário ativo?</label>
               </div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            {{ form.nome_completo.label(class="form-label") }}
+            {{ form.nome_completo(class="form-control", placeholder="Nome completo") }}
+            {% if form.nome_completo.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.nome_completo.errors %}
+                  <div>{{ error }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            {{ form.email.label(class="form-label") }}
+            {{ form.email(class="form-control", placeholder="seu.email@sollus.com") }}
+            {% if form.email.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.email.errors %}
+                  <div>{{ error }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            {{ form.phone.label(class="form-label") }}
+            {{ form.phone(class="form-control", placeholder="21 2413-3203") }}
+            {% if form.phone.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.phone.errors %}
+                  <div>{{ error }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="col-12">
+            {% with extra_phones_list=[], wrapper_id='createExtraPhones' %}
+            {% include 'auth/_extra_phone_fields.html' %}
+            {% endwith %}
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="create_department_ids">Departamentos</label>
+            <select class="form-select d-none" id="create_department_ids" name="department_ids" multiple data-tag-select>
+              <option value="0">Sem departamento</option>
+              {% for dept in departments %}
+              <option value="{{ dept.id }}">{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            {{ form.unit_code.label(class="form-label") }}
+            {{ form.unit_code(class="form-select") }}
+            {% if form.unit_code.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.unit_code.errors %}
+                  <div>{{ error }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            {{ form.ramal.label(class="form-label") }}
+            {{ form.ramal(class="form-control", placeholder="Ramal interno") }}
+            {% if form.ramal.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.ramal.errors %}
+                  <div>{{ error }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            {{ form.tipo.label(class="form-label") }}
+            {{ form.tipo(class="form-select") }}
+            {% if form.tipo.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.tipo.errors %}
+                  <div>{{ error }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            {{ form.prox_num.label(class="form-label") }}
+            {{ form.prox_num(class="form-control", min="1") }}
+            {% if form.prox_num.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.prox_num.errors %}
+                  <div>{{ error }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            {{ form.senha.label(class="form-label") }}
+            {{ form.senha(class="form-control", placeholder="Defina uma senha inicial") }}
+            {% if form.senha.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.senha.errors %}
+                  <div>{{ error }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="col-md-6 d-flex align-items-center">
+            <div class="form-check form-switch mt-3">
+              {{ form.is_active(class="form-check-input", id="form_is_active") }}
+              <label class="form-check-label" for="form_is_active">Usuário ativo?</label>
             </div>
           </div>
-          <div class="mt-4">
-            <small class="text-muted d-block">As permissões são definidas automaticamente pelo tipo selecionado.</small>
-            <a class="small" href="{{ url_for('auth_bp.gerenciar_permissoes') }}">Gerenciar tipos e permissões</a>
-          </div>
         </div>
-        <div class="modal-footer d-flex justify-content-between">
-          <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar usuário</button>
+        <div class="mt-4">
+          <small class="text-muted d-block">As permissões são definidas automaticamente pelo tipo selecionado.</small>
+          <a class="small" href="{{ url_for('auth_bp.gerenciar_permissoes') }}">Gerenciar tipos e permissões</a>
         </div>
-      </form>
-    </div>
+      </div>
+      <div class="modal-footer d-flex justify-content-between">
+        <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar usuário</button>
+      </div>
+    </form>
   </div>
 </div>
 {% endif %}
 
 <!-- Modal: edição de usuário -->
 <div class="modal sollus-modal fade" id="modalEdicaoUsuario" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <form id="formEdicaoUsuario" class="users-form">
-        <div class="modal-header">
-          <h5 class="modal-title">Editar usuário</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <form id="formEdicaoUsuario" class="modal-content users-form">
+      <div class="modal-header">
+        <h5 class="modal-title">Editar usuário</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="usuario_id" name="id">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="text-center mb-4">
+          <div class="avatar-preview mx-auto mb-2">
+            <img id="edit_avatar_preview" src="{{ url_for('static', filename='images/sollus_logo.png') }}" data-placeholder="{{ url_for('static', filename='images/sollus_logo.png') }}" alt="Foto do usuário" class="w-100 h-100">
+          </div>
+          <small id="edit_avatar_caption" class="text-muted d-block">Sem foto cadastrada</small>
         </div>
-                  <div class="modal-body">
-            <input type="hidden" id="usuario_id" name="id">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="text-center mb-4">
-              <div class="avatar-preview mx-auto mb-2">
-                <img id="edit_avatar_preview" src="{{ url_for('static', filename='images/sollus_logo.png') }}" data-placeholder="{{ url_for('static', filename='images/sollus_logo.png') }}" alt="Foto do usuário" class="w-100 h-100">
-              </div>
-              <small id="edit_avatar_caption" class="text-muted d-block">Sem foto cadastrada</small>
-            </div>
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Usuário</label>
-                <input type="text" class="form-control" id="edit_usuario" name="usuario" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Nome completo</label>
-                <input type="text" class="form-control" id="edit_nome_completo" name="nome_completo">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">E-mail</label>
-                <input type="email" class="form-control" id="edit_email" name="email">
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Tipo</label>
-                <select class="form-select" id="edit_tipo" name="tipo">
-                  {% for role in roles %}
-                  <option value="{{ role.name }}">{{ role.label }}</option>
-                  {% endfor %}
-                </select>
-                <small id="edit_tipo_label" class="text-muted"></small>
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Próx. nº proposta</label>
-                <input type="number" min="1" class="form-control" id="edit_prox_num" name="prox_num">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Telefone</label>
-                <input type="text" class="form-control" id="edit_phone" name="phone" placeholder="21 2413-3203">
-              </div>
-              <div class="col-12">
-                {% with extra_phones_list=[], wrapper_id='editExtraPhones' %}
-                {% include 'auth/_extra_phone_fields.html' %}
-                {% endwith %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Ramal</label>
-                <input type="text" class="form-control" id="edit_ramal" name="ramal" placeholder="000">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Departamentos</label>
-                <select class="form-select d-none" id="edit_department_ids" name="department_ids" multiple data-tag-select>
-                  <option value="0">Sem departamento</option>
-                  {% for dept in departments %}
-                  <option value="{{ dept.id }}">{{ dept.name }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Empresa</label>
-                <select class="form-select" id="edit_unit_code" name="unit_code" data-default-unit="{{ issuer_units[0][0] if issuer_units else '' }}">
-                  {% for code, label in issuer_units %}
-                  <option value="{{ code }}">{{ label }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="col-md-6 d-flex align-items-center">
-                <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
-                  <label class="form-check-label" for="edit_is_active">Usuário ativo?</label>
-                </div>
-              </div>
-              <div class="col-12">
-                <label class="form-label">Nova senha (opcional)</label>
-                <input type="password" class="form-control" id="edit_senha" name="senha">
-              </div>
-            </div>
-            <div class="mt-4">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Usuário</label>
+            <input type="text" class="form-control" id="edit_usuario" name="usuario" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Nome completo</label>
+            <input type="text" class="form-control" id="edit_nome_completo" name="nome_completo">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">E-mail</label>
+            <input type="email" class="form-control" id="edit_email" name="email">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Tipo</label>
+            <select class="form-select" id="edit_tipo" name="tipo">
+              {% for role in roles %}
+              <option value="{{ role.name }}">{{ role.label }}</option>
+              {% endfor %}
+            </select>
+            <small id="edit_tipo_label" class="text-muted"></small>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Próx. nº proposta</label>
+            <input type="number" min="1" class="form-control" id="edit_prox_num" name="prox_num">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Telefone</label>
+            <input type="text" class="form-control" id="edit_phone" name="phone" placeholder="21 2413-3203">
+          </div>
+          <div class="col-12">
+            {% with extra_phones_list=[], wrapper_id='editExtraPhones' %}
+            {% include 'auth/_extra_phone_fields.html' %}
+            {% endwith %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Ramal</label>
+            <input type="text" class="form-control" id="edit_ramal" name="ramal" placeholder="000">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Departamentos</label>
+            <select class="form-select d-none" id="edit_department_ids" name="department_ids" multiple data-tag-select>
+              <option value="0">Sem departamento</option>
+              {% for dept in departments %}
+              <option value="{{ dept.id }}">{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Empresa</label>
+            <select class="form-select" id="edit_unit_code" name="unit_code" data-default-unit="{{ issuer_units[0][0] if issuer_units else '' }}">
+              {% for code, label in issuer_units %}
+              <option value="{{ code }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6 d-flex align-items-center">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
+              <label class="form-check-label" for="edit_is_active">Usuário ativo?</label>
             </div>
           </div>
-        <div class="modal-footer d-flex justify-content-between">
-          <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar alterações</button>
+          <div class="col-12">
+            <label class="form-label">Nova senha (opcional)</label>
+            <input type="password" class="form-control" id="edit_senha" name="senha">
+          </div>
         </div>
-      </form>
-    </div>
+        <div class="mt-4">
+        </div>
+      </div>
+      <div class="modal-footer d-flex justify-content-between">
+        <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar alterações</button>
+      </div>
+    </form>
   </div>
 </div>
-
 
 {% endblock %}
 {% block scripts %}
