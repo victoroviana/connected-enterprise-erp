@@ -2,7 +2,7 @@
 {% from "components/page_hero.html" import page_hero %}
 {% set images = gallery_images or [] %}
 
-{% block title %}Galeria{% endblock %}
+{% block title %}Galeria de Fotos{% endblock %}
 
 {% block head %}
 {{ super() }}
@@ -28,6 +28,7 @@
     box-shadow:0 12px 28px rgba(15,35,58,.08);
     transition:transform .15s ease, box-shadow .15s ease;
     cursor:pointer;
+    position: relative;
   }
 
   .gallery-page .gallery-item:hover{
@@ -70,6 +71,8 @@
     width:100%;
     height:auto;
     display:block;
+    max-height: 80vh;
+    object-fit: contain;
   }
 
   .gallery-nav{
@@ -99,6 +102,18 @@
   .gallery-nav-btn:hover{
     background:rgba(15,35,58,.85);
   }
+
+  html[data-theme="dark"] .gallery-page .gallery-panel {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  html[data-theme="dark"] .gallery-page .gallery-item {
+    background: #1e293b;
+  }
+  html[data-theme="dark"] .gallery-page .gallery-empty {
+    background: #1e293b;
+    color: #94a3b8;
+  }
 </style>
 {% endblock %}
 
@@ -106,37 +121,70 @@
 <div class="gallery-page py-4">
   {% set help_tips = [
     'Clique em uma foto para ver o tamanho original.',
-    'Use o botão de seta para navegar entre imagens.',
+    'Use o filtro de eventos acima para ver registros específicos (ex: Setembro Amarelo).',
     'Novas fotos aparecem automaticamente após o envio pelo painel de administração.'
   ] %}
   {{ page_hero(
-    title='Galeria de fotos',
-    subtitle='Veja os registros mais recentes do time e eventos internos.',
+    title='Galeria de fotos & Eventos',
+    subtitle='Veja os registros mais recentes do time e eventos internos da empresa.',
     eyebrow='Galeria',
-    stats=[{'label': 'Fotos disponiveis', 'value': images|length}],
+    stats=[
+      {'label': 'Fotos exibidas', 'value': images|length},
+      {'label': 'Eventos', 'value': gallery_events|length if gallery_events else 1}
+    ],
     help_tips=help_tips,
-    help_intro='Guia rapido para navegar nas imagens.'
+    help_intro='Guia rápido para navegar nas imagens.'
   ) }}
 
   <div class="card gallery-panel">
+    <div class="card-header bg-transparent border-0 d-flex flex-wrap align-items-center justify-content-between gap-2 pt-3 px-4">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="mb-0 fw-bold">Todas as Fotos</h5>
+        <span class="badge bg-primary-subtle text-primary rounded-pill">{{ images|length }} fotos</span>
+      </div>
+
+      {% if gallery_events and gallery_events|length > 0 %}
+      <form method="get" action="{{ url_for('galeria') }}" class="d-flex align-items-center gap-2">
+        <label class="small text-muted mb-0 fw-semibold">Evento:</label>
+        <select name="evento" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 170px; border-radius: 20px;">
+          <option value="">✨ Todos os Eventos</option>
+          {% for ev in gallery_events %}
+          <option value="{{ ev }}" {% if selected_event == ev %}selected{% endif %}>{{ ev }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      {% endif %}
+    </div>
+
     <div class="card-body">
       {% if images %}
       <div class="gallery-grid">
-        {% for filename in images %}
+        {% for item in images %}
+        {% set fname = item.filename if item is mapping else item %}
+        {% set fevent = (item.event if item is mapping else 'Geral') or 'Geral' %}
         <button
           class="gallery-item"
           type="button"
           data-bs-toggle="modal"
           data-bs-target="#galleryModal"
-          data-src="{{ url_for('serve_fotos', filename=filename) }}"
+          data-src="{{ url_for('serve_fotos', filename=fname) }}"
+          data-event="{{ fevent }}"
           aria-label="Abrir foto {{ loop.index }}"
         >
-          <img src="{{ url_for('serve_fotos', filename=filename) }}" alt="Foto da galeria {{ loop.index }}">
+          {% if fevent and fevent != 'Geral' %}
+          <span class="badge bg-dark bg-opacity-75 text-white position-absolute top-0 start-0 m-2 rounded-pill px-2 py-1" style="font-size:0.7rem; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.2); z-index: 2;">
+            <i class="bi bi-tag-fill text-warning me-1"></i>{{ fevent }}
+          </span>
+          {% endif %}
+          <img src="{{ url_for('serve_fotos', filename=fname) }}" alt="{{ fevent }}" loading="lazy">
         </button>
         {% endfor %}
       </div>
       {% else %}
-      <div class="gallery-empty">Nenhuma foto cadastrada ainda.</div>
+      <div class="gallery-empty">
+        <i class="bi bi-images fs-2 text-muted d-block mb-2"></i>
+        Nenhuma foto cadastrada {% if selected_event %}para o evento <strong>{{ selected_event }}</strong>{% endif %}.
+      </div>
       {% endif %}
     </div>
   </div>
@@ -175,8 +223,9 @@
     var prevBtn = document.getElementById('galleryPrevBtn');
     var nextBtn = document.getElementById('galleryNextBtn');
     var galleryImages = [
-      {% for filename in images %}
-      "{{ url_for('serve_fotos', filename=filename) }}"{% if not loop.last %},{% endif %}
+      {% for item in images %}
+      {% set fname = item.filename if item is mapping else item %}
+      "{{ url_for('serve_fotos', filename=fname) }}"{% if not loop.last %},{% endif %}
       {% endfor %}
     ];
     var currentIndex = 0;
@@ -198,6 +247,11 @@
       var trigger = event.relatedTarget;
       if(!imageEl){ return; }
       var src = trigger ? trigger.getAttribute('data-src') : '';
+      var ev = trigger ? trigger.getAttribute('data-event') : '';
+      var titleEl = modal.querySelector('.modal-title');
+      if (titleEl) {
+        titleEl.textContent = ev && ev !== 'Geral' ? 'Evento: ' + ev : 'Foto ampliada';
+      }
       var idx = galleryImages.indexOf(src);
       if(idx < 0){ idx = 0; }
       setImage(idx);

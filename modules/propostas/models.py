@@ -16,13 +16,23 @@ from sqlalchemy.orm import synonym
 from extensions import db
 
 
-from modules.chamados.models import Ticket, TicketMessage, Task
+from modules.chamados.models import Ticket, TicketMessage
 PERMISSION_DEFINITIONS: dict[str, dict[str, object]] = {
     # COMERCIAL
     "propostas": {"label": "Comercial", "default": True},
     "propostas_nova": {"label": "Comercial - Nova Proposta", "default": True},
     "propostas_historico": {"label": "Comercial - Histórico", "default": True},
+    "comercial_agenda": {"label": "Comercial - Agenda dos Consultores", "default": True},
+    "comercial_parceiros": {"label": "Comercial - Empresas Parceiras", "default": True},
     "propostas_parametros": {"label": "Comercial - Parâmetros", "default": False},
+    
+    # SOLLUS CRM
+    "crm": {"label": "Sollus CRM", "default": True},
+    "crm_funis": {"label": "Sollus CRM - Funis de Vendas", "default": True},
+    "crm_empresas": {"label": "Sollus CRM - Empresas & Contatos", "default": True},
+    "crm_leads": {"label": "Sollus CRM - Leads de Marketing", "default": True},
+    "crm_metricas": {"label": "Sollus CRM - Métricas & Relatórios", "default": False},
+    "crm_ver_todos": {"label": "Sollus CRM - Ver todas as negociações", "default": False},
     
     # ESTOQUE
     "estoque": {"label": "Estoque", "default": False},
@@ -36,10 +46,11 @@ PERMISSION_DEFINITIONS: dict[str, dict[str, object]] = {
     "chamados_autoassign": {"label": "Sollus Tickets - Auto-assign", "default": False},
     "chamados_admin": {"label": "Sollus Tickets - Administração", "default": False},
     
-    # CENTRAL DE CONHECIMENTO
-    "central_conhecimento": {"label": "Central de Conhecimento", "default": True},
-    "central_conhecimento_quadro": {"label": "Central - Quadro", "default": True},
-    "central_conhecimento_historico": {"label": "Central - Histórico", "default": False},
+    # SOLLUSFLOW
+    "central_conhecimento": {"label": "SollusFlow", "default": True},
+    "central_conhecimento_quadro": {"label": "SollusFlow - Painel", "default": True},
+    "central_conhecimento_historico": {"label": "SollusFlow - Histórico", "default": False},
+    "central_conhecimento_config": {"label": "SollusFlow - Configurações & Alertas", "default": False},
     
     # ADMIN
     "admin": {"label": "Administração", "default": False},
@@ -173,6 +184,8 @@ proposal_equipments = db.Table(
 
 class ParamCategory(Enum):
     PAGTO_EQUIP = "pagto_equip"
+    PAGTO_SERVICO = "pagto_servico"
+    PAGTO_CONTRATO = "pagto_contrato"
     PRAZO_ENTREGA = "prazo_entrega"
     FRETE = "frete"
     VALIDADE = "validade"
@@ -215,6 +228,7 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), nullable=False, default="usuario")
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     signature_path = db.Column(db.String(256))
+    signature_text = db.Column(db.Text)
     avatar_path = db.Column(db.String(256))
     prox_num = db.Column(db.Integer, default=1)
     permissions = db.Column(db.JSON, nullable=False, default=default_permissions)
@@ -249,10 +263,16 @@ class User(UserMixin, db.Model):
         back_populates="author",
         lazy="dynamic",
     )
-    tasks = db.relationship(
-        "Task",
-        foreign_keys="Task.assignee_id",
-        back_populates="assignee",
+    pedidos_responsavel = db.relationship(
+        "SfPedido",
+        foreign_keys="SfPedido.responsavel_id",
+        back_populates="responsavel",
+        lazy="dynamic",
+    )
+    pedidos_consultor = db.relationship(
+        "SfPedido",
+        foreign_keys="SfPedido.consultor_id",
+        back_populates="consultor",
         lazy="dynamic",
     )
     department = db.relationship("Department", backref=db.backref("users", lazy="dynamic"))
@@ -335,10 +355,19 @@ class Equipment(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128))
+    fabricante = db.Column(db.String(100), nullable=True)
     description = db.Column(db.Text)
     _illustration_path = db.Column("illustration_path", db.String(256))
     unit_price = db.Column(db.Float)
+    preco_locacao = db.Column(db.Float, nullable=True)
     quantity = db.Column(db.Integer)
+    preco_anterior = db.Column(db.Float, nullable=True)
+    preco_locacao_anterior = db.Column(db.Float, nullable=True)
+    preco_alterado_em = db.Column(db.DateTime, nullable=True)
+    preco_locacao_alterado_em = db.Column(db.DateTime, nullable=True)
+    preco_alterado_por = db.Column(db.String(120), nullable=True)
+    preco_locacao_alterado_por = db.Column(db.String(120), nullable=True)
+    tipo_equipamento = db.Column(db.String(64), nullable=True, index=True)
 
     @staticmethod
     def _normalize_illustration_path(value):
@@ -383,6 +412,7 @@ class Part(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128))
+    fabricante = db.Column(db.String(100), nullable=True)
     description = db.Column(db.Text)
     _illustration_path = db.Column("illustration_path", db.String(256))
     unit_price = db.Column(db.Float)
@@ -482,6 +512,8 @@ class Proposal(db.Model):
     issuer_company_code = db.Column(db.String(32))
 
     pagamento = db.Column(db.String(256))
+    pagamento_servico = db.Column(db.String(256))
+    pagamento_contrato = db.Column(db.String(256))
     prazo_entrega = db.Column(db.String(256))
     frete = db.Column(db.String(256))
     validade = db.Column(db.String(256))
@@ -524,11 +556,11 @@ class Proposal(db.Model):
     is_original = db.Column(db.Boolean, default=True, nullable=False)
     approved_at = db.Column(db.DateTime)
     approved_by_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     equipamentos_payload = db.Column(db.JSON)
 
     approved_by = db.relationship("User", foreign_keys=[approved_by_id])
-    created_by = db.relationship("User", foreign_keys=[created_by_id])
+    created_by_id = synonym("usuario_id")
+    created_by = synonym("usuario")
 
     equipamentos = db.relationship(
         "Equipment",
@@ -596,6 +628,60 @@ class SystemOptionOverride(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class SoftwarePlan(db.Model):
+    """Catálogo de Sistemas, Softwares, Licenças SaaS, Planos Recorrentes e Adicionais."""
+    __tablename__ = "software_plans"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(150), nullable=False, index=True)
+    codigo = db.Column(db.String(50), nullable=True)
+    fabricante = db.Column(db.String(100), nullable=False, default="Outros", index=True)
+    categoria = db.Column(db.String(50), nullable=False, default="Ponto", index=True)  # Ponto, Acesso, Gestão / Armários, Outros
+    tipo_item = db.Column(db.String(50), nullable=False, default="Plano Principal")  # Plano Principal, Adicional de Funcionários, Adicional de Equipamento, Módulo Extra, Hospedagem / Nuvem, Aplicativo Mobile
+    faixa_funcionarios = db.Column(db.String(100), nullable=True)
+    qtd_funcionarios_max = db.Column(db.Integer, nullable=True)
+    qtd_equipamentos = db.Column(db.Integer, nullable=True, default=1)
+    qtd_cnpjs = db.Column(db.Integer, nullable=True, default=1)
+    suporte_incluso = db.Column(db.String(80), nullable=True)  # Com suporte, Sem suporte, 90 dias
+    vigencia = db.Column(db.String(50), nullable=True, default="12 meses")
+    valor_mensal = db.Column(db.Float, nullable=False, default=0.0)
+    valor_implantacao = db.Column(db.Float, nullable=True)
+    preco_anterior = db.Column(db.Float, nullable=True)
+    preco_alterado_em = db.Column(db.DateTime, nullable=True)
+    preco_alterado_por = db.Column(db.String(120), nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    illustration_path = db.Column(db.String(256), nullable=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "codigo": self.codigo or "",
+            "fabricante": self.fabricante,
+            "categoria": self.categoria,
+            "tipo_item": self.tipo_item,
+            "faixa_funcionarios": self.faixa_funcionarios or "",
+            "qtd_funcionarios_max": self.qtd_funcionarios_max,
+            "qtd_equipamentos": self.qtd_equipamentos or 1,
+            "qtd_cnpjs": self.qtd_cnpjs or 1,
+            "suporte_incluso": self.suporte_incluso or "",
+            "vigencia": self.vigencia or "",
+            "valor_mensal": self.valor_mensal,
+            "valor_mensal_formatado": f"R$ {self.valor_mensal:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+            "valor_implantacao": self.valor_implantacao,
+            "valor_implantacao_formatado": f"R$ {self.valor_implantacao:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if self.valor_implantacao else None,
+            "preco_anterior": self.preco_anterior,
+            "preco_anterior_formatado": f"R$ {self.preco_anterior:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if self.preco_anterior else None,
+            "description": self.description or "",
+            "illustration_path": self.illustration_path or "",
+            "is_active": self.is_active,
+        }
+
+
+
 
 
 class Birthday(db.Model):
@@ -610,11 +696,19 @@ class Birthday(db.Model):
     def __repr__(self) -> str:  # pragma: no cover - auxlio debug
         return f"<Birthday {self.nome!r}>"
 
+    @property
+    def dia(self) -> int | None:
+        return self.data_nascimento.day if self.data_nascimento else None
+
+    @property
+    def mes(self) -> int | None:
+        return self.data_nascimento.month if self.data_nascimento else None
+
     def to_payload(self) -> dict[str, object]:
         return {
             "id": self.id,
             "nome": self.nome,
-            "data_nascimento": self.data_nascimento.isoformat(),
+            "data_nascimento": self.data_nascimento.isoformat() if self.data_nascimento else None,
         }
 
 
@@ -661,3 +755,112 @@ class AgendaEntry(db.Model):
             "obs": self.obs or "",
             "data_atendimento": self.data_atendimento.isoformat(),
         }
+
+
+class CommercialAgendaEntry(db.Model):
+    """Programação de agenda dos consultores comerciais."""
+
+    __tablename__ = "agenda_comercial"
+
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    tipo_compromisso = db.Column(db.String(32), nullable=False, default="visita")  # visita, demonstracao, reuniao_interna, atividade_externa, ferias, disponivel, outro
+    cliente = db.Column(db.String(150))
+    local = db.Column(db.String(150))
+    data_inicio = db.Column(db.Date, nullable=False, index=True)
+    data_fim = db.Column(db.Date)
+    periodo = db.Column(db.String(32), nullable=False, default="Dia todo")  # Manhã, Tarde, Dia todo ou horário customizado
+    status = db.Column(db.String(20), nullable=False, default="agendado")  # agendado, realizado, cancelado
+    observacoes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    consultor = db.relationship("User", backref=db.backref("commercial_agenda_entries", lazy="dynamic"))
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "id": self.id,
+            "usuario_id": self.usuario_id,
+            "consultor_nome": self.consultor.nome_completo if self.consultor else f"Usuário {self.usuario_id}",
+            "tipo_compromisso": self.tipo_compromisso,
+            "cliente": self.cliente or "",
+            "local": self.local or "",
+            "data_inicio": self.data_inicio.isoformat() if self.data_inicio else None,
+            "data_fim": self.data_fim.isoformat() if self.data_fim else None,
+            "periodo": self.periodo or "Dia todo",
+            "status": self.status,
+            "observacoes": self.observacoes or "",
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class EmpresaParceira(db.Model):
+    """Cadastro de empresas parceiras / terceirizadas de instalação e manutenção."""
+
+    __tablename__ = "empresas_parceiras"
+
+    id = db.Column(db.Integer, primary_key=True)
+    razao_social = db.Column(db.String(150), nullable=False)
+    nome_fantasia = db.Column(db.String(150))
+    cnpj = db.Column(db.String(20))
+    responsavel = db.Column(db.String(100))
+    telefone = db.Column(db.String(40))
+    whatsapp = db.Column(db.String(40))
+    email = db.Column(db.String(120))
+    estado = db.Column(db.String(2), nullable=False, index=True)
+    cidade = db.Column(db.String(100), nullable=False, index=True)
+    regiao_atendimento = db.Column(db.Text)
+    especialidades = db.Column(db.Text)  # Ex: Catracas, Relógio de Ponto, Henry, Control iD
+    status = db.Column(db.String(20), nullable=False, default="ativo")  # ativo, em_homologacao, inativo
+    avaliacao_media = db.Column(db.Float, default=0.0)
+    total_atendimentos = db.Column(db.Integer, default=0)
+    observacoes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    servicos = db.relationship(
+        "ParceiroServicoHistorico",
+        backref="parceiro",
+        cascade="all, delete-orphan",
+        order_by="desc(ParceiroServicoHistorico.data_servico)",
+        lazy="dynamic",
+    )
+
+    def recalcular_avaliacao(self):
+        notas = [s.avaliacao_nota for s in self.servicos.all() if s.avaliacao_nota is not None]
+        if notas:
+            self.avaliacao_media = round(sum(notas) / len(notas), 1)
+            self.total_atendimentos = len(notas)
+        else:
+            self.avaliacao_media = 0.0
+            self.total_atendimentos = 0
+
+
+class ParceiroServicoHistorico(db.Model):
+    """Histórico de serviços e instalações executados por empresas parceiras para a Sollus."""
+
+    __tablename__ = "parceiros_servicos_historico"
+
+    id = db.Column(db.Integer, primary_key=True)
+    parceiro_id = db.Column(
+        db.Integer,
+        db.ForeignKey("empresas_parceiras.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    cliente_nome = db.Column(db.String(150), nullable=False)
+    cliente_cidade = db.Column(db.String(100))
+    cliente_uf = db.Column(db.String(2))
+    data_servico = db.Column(db.Date, nullable=False, index=True)
+    tipo_servico = db.Column(db.String(100), nullable=False)  # Instalação, Manutenção, Treinamento, Troca de Peças
+    equipamento_modelo = db.Column(db.String(100))
+    os_codigo = db.Column(db.String(50))
+    tecnico_parceiro = db.Column(db.String(100))
+    valor_servico = db.Column(db.Numeric(10, 2))
+    avaliacao_nota = db.Column(db.Integer)  # 1 a 5 estrelas
+    avaliacao_parecer = db.Column(db.Text)
+    usuario_registro_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    usuario_registro = db.relationship("User", foreign_keys=[usuario_registro_id])
+

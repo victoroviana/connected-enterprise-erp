@@ -1179,6 +1179,10 @@ def _build_html_context(
 
   ("Condicoes de Pagamento (Equipamento)", getattr(proposta, "pagamento", None)),
 
+  ("Condições de Pagamento (Serviço)", getattr(proposta, "pagamento_servico", None)),
+
+  ("Condições de Pagamento (Contrato)", getattr(proposta, "pagamento_contrato", None)),
+
   ("Prazo de Entrega", getattr(proposta, "prazo_entrega", None)),
 
   ("Frete", getattr(proposta, "frete", None)),

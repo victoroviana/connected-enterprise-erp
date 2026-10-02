@@ -1,7 +1,8 @@
-"""SQLAlchemy models for the chamados module."""
+"""SQLAlchemy models for the chamados module — SollusFlow."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, date
+from decimal import Decimal
 
 from extensions import db
 
@@ -88,245 +89,257 @@ except Exception:  # pragma: no cover - legacy fallback
         after = db.Column(db.Text)
 
 
+# ===========================================================================
+# SollusFlow — Gestao de Pedidos & Processos
+# ===========================================================================
 
-class Task(db.Model):
-    __tablename__ = "tasks"
+# As 16 fases do processo comercial e pós-venda
+SF_FASES = {
+    1:  {"label": "Recebimento da Solicitacao",          "icon": "fa-inbox"},
+    2:  {"label": "Conferencia de Documentos & CNPJ",    "icon": "fa-magnifying-glass"},
+    3:  {"label": "Cadastro no Base ERP",                "icon": "fa-database"},
+    4:  {"label": "Reserva de Equipamento",              "icon": "fa-boxes-stacked"},
+    5:  {"label": "Geracao do Pedido / Contrato",        "icon": "fa-file-contract"},
+    6:  {"label": "Pagamento de Entrada",                "icon": "fa-money-bill-wave"},
+    7:  {"label": "Compra do Equipamento",               "icon": "fa-cart-shopping"},
+    8:  {"label": "Envio do Pedido / Contrato",          "icon": "fa-paper-plane"},
+    9:  {"label": "Envio do Formulario de Instalacao",   "icon": "fa-clipboard-list"},
+    10: {"label": "Agendamento de Instalacao",           "icon": "fa-calendar-check"},
+    11: {"label": "Faturamento & O.S",                   "icon": "fa-receipt"},
+    12: {"label": "Envio de Dados de Acesso",            "icon": "fa-key"},
+    13: {"label": "E-mail de Boas-vindas",               "icon": "fa-envelope-open-text"},
+    14: {"label": "Agendamento de Treinamento",          "icon": "fa-chalkboard-user"},
+    15: {"label": "Aguardando Resposta do Cliente",      "icon": "fa-user-clock"},
+    16: {"label": "Pós-Venda",                           "icon": "fa-headset"},
+}
+
+
+class SfPedido(db.Model):
+    """Card principal de pedido/cliente no SollusFlow."""
+    __tablename__ = "sf_pedidos"
 
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    status = db.Column(db.String(20), nullable=False, default="todo")
-    position = db.Column(db.Integer, nullable=False, default=0)
-    due_date = db.Column(db.Date)
-    scope_key = db.Column(db.String(64), nullable=False, default="chamados")
-    visibility = db.Column(db.String(16), nullable=False, default="public")
-    assignee_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    column_id = db.Column(db.Integer, db.ForeignKey("central_conhecimento_columns.id"))
-    completed_at = db.Column(db.DateTime)
-    archived_at = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    numero_pedido = db.Column(db.String(50), nullable=True)
+    cliente_nome = db.Column(db.String(200), nullable=False)
+    cliente_cnpj = db.Column(db.String(20), nullable=True)
+    tipo_pessoa = db.Column(db.String(10), nullable=False, default="pj")  # pj | pf
+    tipo = db.Column(db.String(20), nullable=False, default="venda")  # venda | contrato
+    valor = db.Column(db.Numeric(14, 2), nullable=True)
+    consultor_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    responsavel_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    fase_atual = db.Column(db.Integer, nullable=False, default=1)
+    prioridade = db.Column(db.String(20), nullable=False, default="normal")  # baixa | normal | alta | urgente
+    data_entrada = db.Column(db.Date, nullable=True)
+    data_prevista = db.Column(db.Date, nullable=True)
+    data_treinamento = db.Column(db.Date, nullable=True)
+    data_ultimo_pos_venda = db.Column(db.Date, nullable=True)
+    status = db.Column(db.String(20), nullable=False, default="ativo")  # ativo | concluido | cancelado
+    descricao = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    consultor = db.relationship("User", foreign_keys=[consultor_id])
+    responsavel = db.relationship("User", foreign_keys=[responsavel_id])
+    historico = db.relationship(
+        "SfFaseHistorico",
+        back_populates="pedido",
+        cascade="all, delete-orphan",
+        order_by="SfFaseHistorico.created_at",
+    )
+    checklist = db.relationship(
+        "SfChecklist",
+        back_populates="pedido",
+        cascade="all, delete-orphan",
+        order_by="SfChecklist.posicao",
+    )
+    observacoes = db.relationship(
+        "SfObservacao",
+        back_populates="pedido",
+        cascade="all, delete-orphan",
+        order_by="SfObservacao.created_at",
+    )
+
+    @property
+    def fase_label(self):
+        return SF_FASES.get(self.fase_atual, {}).get("label", f"Fase {self.fase_atual}")
+
+    @property
+    def checklist_da_fase(self):
+        return [c for c in self.checklist if c.fase == self.fase_atual]
+
+    @property
+    def progresso_fase(self):
+        items = self.checklist_da_fase
+        if not items:
+            return None
+        done = sum(1 for i in items if i.concluido)
+        return {"done": done, "total": len(items)}
+
+    def as_dict(self):
+        prog = self.progresso_fase
+        return {
+            "id": self.id,
+            "numero_pedido": self.numero_pedido,
+            "cliente_nome": self.cliente_nome,
+            "cliente_cnpj": self.cliente_cnpj,
+            "tipo_pessoa": self.tipo_pessoa or ("pf" if (self.cliente_cnpj and len(self.cliente_cnpj.replace(".", "").replace("-", "").replace("/", "").strip()) == 11) else "pj"),
+            "tipo": self.tipo,
+            "valor": float(self.valor) if self.valor is not None else None,
+            "consultor_id": self.consultor_id,
+            "consultor_nome": (self.consultor.nome_completo or self.consultor.email) if self.consultor else None,
+            "responsavel_id": self.responsavel_id,
+            "responsavel_nome": (self.responsavel.nome_completo or self.responsavel.email) if self.responsavel else None,
+            "fase_atual": self.fase_atual,
+            "fase_label": self.fase_label,
+            "prioridade": self.prioridade,
+            "data_entrada": self.data_entrada.isoformat() if self.data_entrada else None,
+            "data_prevista": self.data_prevista.isoformat() if self.data_prevista else None,
+            "data_treinamento": self.data_treinamento.isoformat() if self.data_treinamento else None,
+            "data_ultimo_pos_venda": self.data_ultimo_pos_venda.isoformat() if self.data_ultimo_pos_venda else None,
+            "status": self.status,
+            "descricao": self.descricao,
+            "progresso": prog,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class SfFaseHistorico(db.Model):
+    """Log de mudanca de fase de um pedido."""
+    __tablename__ = "sf_fase_historico"
+
+    id = db.Column(db.Integer, primary_key=True)
+    pedido_id = db.Column(db.Integer, db.ForeignKey("sf_pedidos.id", ondelete="CASCADE"), nullable=False)
+    fase_de = db.Column(db.Integer, nullable=True)
+    fase_para = db.Column(db.Integer, nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    transferido_para_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    observacao = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    pedido = db.relationship("SfPedido", back_populates="historico")
+    usuario = db.relationship("User", foreign_keys=[usuario_id])
+    transferido_para = db.relationship("User", foreign_keys=[transferido_para_id])
+
+    def as_dict(self):
+        return {
+            "id": self.id,
+            "pedido_id": self.pedido_id,
+            "fase_de": self.fase_de,
+            "fase_para": self.fase_para,
+            "fase_de_label": SF_FASES.get(self.fase_de, {}).get("label", "") if self.fase_de else None,
+            "fase_para_label": SF_FASES.get(self.fase_para, {}).get("label", ""),
+            "usuario_id": self.usuario_id,
+            "usuario_nome": (self.usuario.nome_completo or self.usuario.email) if self.usuario else None,
+            "transferido_para_id": self.transferido_para_id,
+            "transferido_para_nome": (self.transferido_para.nome_completo or self.transferido_para.email) if self.transferido_para else None,
+            "observacao": self.observacao,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class SfChecklist(db.Model):
+    """Item de checklist por fase de um pedido."""
+    __tablename__ = "sf_checklist"
+
+    id = db.Column(db.Integer, primary_key=True)
+    pedido_id = db.Column(db.Integer, db.ForeignKey("sf_pedidos.id", ondelete="CASCADE"), nullable=False)
+    fase = db.Column(db.Integer, nullable=False)
+    titulo = db.Column(db.String(300), nullable=False)
+    concluido = db.Column(db.Boolean, nullable=False, default=False)
+    concluido_por_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    criado_por_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    responsavel_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    concluido_at = db.Column(db.DateTime, nullable=True)
+    posicao = db.Column(db.Integer, nullable=False, default=0)
+    data_lembrete = db.Column(db.Date, nullable=True)
+    alerta_5d_enviado = db.Column(db.Boolean, nullable=False, default=False)
+    alerta_3d_enviado = db.Column(db.Boolean, nullable=False, default=False)
+    alerta_0d_enviado = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    pedido = db.relationship("SfPedido", back_populates="checklist")
+    concluido_por = db.relationship("User", foreign_keys=[concluido_por_id])
+    criado_por = db.relationship("User", foreign_keys=[criado_por_id])
+    responsavel = db.relationship("User", foreign_keys=[responsavel_id])
+
+    @property
+    def dias_restantes(self) -> int | None:
+        if not self.data_lembrete:
+            return None
+        return (self.data_lembrete - date.today()).days
+
+    def as_dict(self):
+        hoje = date.today()
+        dias = (self.data_lembrete - hoje).days if self.data_lembrete else None
+        return {
+            "id": self.id,
+            "pedido_id": self.pedido_id,
+            "fase": self.fase,
+            "titulo": self.titulo,
+            "concluido": self.concluido,
+            "concluido_por_id": self.concluido_por_id,
+            "concluido_por_nome": (self.concluido_por.nome_completo or self.concluido_por.email) if self.concluido_por else None,
+            "concluido_at": self.concluido_at.isoformat() if self.concluido_at else None,
+            "criado_por_id": self.criado_por_id,
+            "criado_por_nome": (self.criado_por.nome_completo or self.criado_por.email) if self.criado_por else None,
+            "responsavel_id": self.responsavel_id,
+            "responsavel_nome": (self.responsavel.nome_completo or self.responsavel.email) if self.responsavel else None,
+            "posicao": self.posicao,
+            "data_lembrete": self.data_lembrete.isoformat() if self.data_lembrete else None,
+            "dias_restantes": dias,
+            "alerta_5d_enviado": bool(self.alerta_5d_enviado),
+            "alerta_3d_enviado": bool(self.alerta_3d_enviado),
+            "alerta_0d_enviado": bool(self.alerta_0d_enviado),
+        }
+
+
+class SfObservacao(db.Model):
+    """Comentario/observacao compartilhado em um pedido."""
+    __tablename__ = "sf_observacoes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    pedido_id = db.Column(db.Integer, db.ForeignKey("sf_pedidos.id", ondelete="CASCADE"), nullable=False)
+    autor_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    corpo = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    pedido = db.relationship("SfPedido", back_populates="observacoes")
+    autor = db.relationship("User", foreign_keys=[autor_id])
+
+    def as_dict(self):
+        return {
+            "id": self.id,
+            "pedido_id": self.pedido_id,
+            "autor_id": self.autor_id,
+            "autor_nome": (self.autor.nome_completo or self.autor.email) if self.autor else "Sistema",
+            "corpo": self.corpo,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class SfConfig(db.Model):
+    """Configurações globais chave-valor do SollusFlow (ex: ordem das colunas)."""
+    __tablename__ = "sf_config"
+
+    chave = db.Column(db.String(100), primary_key=True)
+    valor = db.Column(db.Text, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    assignee = db.relationship("User", foreign_keys=[assignee_id], back_populates="tasks")
-    author = db.relationship("User", foreign_keys=[author_id])
-    column = db.relationship("CentralConhecimentoColumn", back_populates="tasks")
-    logs = db.relationship(
-        "TaskLog",
-        back_populates="task",
-        cascade="all, delete-orphan",
-        order_by="TaskLog.log_date",
-    )
-    comments = db.relationship(
-        "TaskComment",
-        back_populates="task",
-        cascade="all, delete-orphan",
-        order_by="TaskComment.created_at",
-        passive_deletes=True,
-    )
-
     def as_dict(self):
         return {
-            "id": self.id,
-            "title": self.title,
-            "description": self.description,
-            "status": self.status,
-            "position": self.position,
-            "due_date": self.due_date.isoformat() if self.due_date else None,
-            "scope_key": self.scope_key,
-            "visibility": self.visibility,
-            "assignee_id": self.assignee_id,
-            "assignee_name": (self.assignee.name if self.assignee and self.assignee.name else (self.assignee.email if self.assignee else None)),
-            "author_id": self.author_id,
-            "column_id": self.column_id,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
-            "archived_at": self.archived_at.isoformat() if self.archived_at else None,
-        }
-
-
-class CentralConhecimentoColumn(db.Model):
-    __tablename__ = "central_conhecimento_columns"
-
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(120), nullable=False)
-    scope_key = db.Column(db.String(64), nullable=False, default="chamados")
-    position = db.Column(db.Integer, nullable=False, default=0)
-    visibility = db.Column(db.String(16), nullable=False, default="public")
-    author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    tasks = db.relationship("Task", back_populates="column")
-
-    def as_dict(self):
-        return {
-            "id": self.id,
-            "title": self.title,
-            "scope_key": self.scope_key,
-            "position": self.position,
-            "visibility": self.visibility,
-            "author_id": self.author_id,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "chave": self.chave,
+            "valor": self.valor,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
 
-class TaskLog(db.Model):
-    __tablename__ = "task_logs"
+# Aliases de compatibilidade para integrações (ex.: Sollus CRM)
+SFPedido = SfPedido
+SFFaseHistorico = SfFaseHistorico
+SFChecklist = SfChecklist
+SFObservacao = SfObservacao
 
-    id = db.Column(db.Integer, primary_key=True)
-    task_id = db.Column(db.Integer, db.ForeignKey("tasks.id"), nullable=False)
-    log_date = db.Column(db.Date, nullable=False)
-    note = db.Column(db.Text, nullable=False)
-    author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-
-    task = db.relationship("Task", back_populates="logs")
-
-
-class TaskComment(db.Model):
-    __tablename__ = "task_comments"
-
-    id = db.Column(db.Integer, primary_key=True)
-    task_id = db.Column(db.Integer, db.ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False)
-    author_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
-    body = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    task = db.relationship("Task", back_populates="comments")
-    author = db.relationship("User")
-    attachments = db.relationship(
-        "TaskCommentAttachment",
-        back_populates="comment",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-    )
-
-
-class TaskCommentAttachment(db.Model):
-    __tablename__ = "task_comment_attachments"
-
-    id = db.Column(db.Integer, primary_key=True)
-    comment_id = db.Column(db.Integer, db.ForeignKey("task_comments.id", ondelete="CASCADE"), nullable=False)
-    original_name = db.Column(db.String(255))
-    stored_name = db.Column(db.String(255), nullable=False)
-    content_type = db.Column(db.String(120))
-    size = db.Column(db.Integer)
-    uploaded_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    uploader_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-
-    comment = db.relationship("TaskComment", back_populates="attachments")
-
-
-class Subtask(db.Model):
-    __tablename__ = "subtasks"
-
-    id = db.Column(db.Integer, primary_key=True)
-    task_id = db.Column(db.Integer, db.ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    work_date = db.Column(db.Date)
-    status = db.Column(db.String(20), nullable=False, default="open")
-    position = db.Column(db.Integer, nullable=False, default=0)
-    assignee_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    assignee = db.relationship("User")
-    flow_nodes = db.relationship(
-        "SubtaskFlowNode",
-        back_populates="subtask",
-        cascade="all, delete-orphan",
-    )
-    flow_edges = db.relationship(
-        "SubtaskFlowEdge",
-        back_populates="subtask",
-        cascade="all, delete-orphan",
-    )
-
-    def as_dict(self):
-        return {
-            "id": self.id,
-            "task_id": self.task_id,
-            "title": self.title,
-            "description": self.description,
-            "status": self.status,
-            "position": self.position,
-            "work_date": self.work_date.isoformat() if self.work_date else None,
-            "assignee_id": self.assignee_id,
-            "assignee_name": (self.assignee.name if self.assignee and getattr(self.assignee, "name", None) else (self.assignee.email if self.assignee else None)),
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-        }
-
-
-class SubtaskFlowNode(db.Model):
-    __tablename__ = "subtask_flow_nodes"
-
-    id = db.Column(db.Integer, primary_key=True)
-    subtask_id = db.Column(db.Integer, db.ForeignKey("subtasks.id", ondelete="CASCADE"), nullable=False)
-    title = db.Column(db.String(200), nullable=False)
-    body = db.Column(db.Text)
-    shape = db.Column(db.String(20), nullable=False, default="rect")
-    color = db.Column(db.String(16), nullable=False, default="#e5e7eb")
-    x = db.Column(db.Integer, nullable=False, default=40)
-    y = db.Column(db.Integer, nullable=False, default=40)
-    w = db.Column(db.Integer, nullable=False, default=180)
-    h = db.Column(db.Integer, nullable=False, default=60)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    subtask = db.relationship("Subtask", back_populates="flow_nodes")
-
-    def as_dict(self):
-        return {
-            "id": self.id,
-            "subtask_id": self.subtask_id,
-            "title": self.title,
-            "body": self.body,
-            "shape": self.shape,
-            "color": self.color,
-            "x": self.x,
-            "y": self.y,
-            "w": self.w,
-            "h": self.h,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-        }
-
-
-class SubtaskFlowEdge(db.Model):
-    __tablename__ = "subtask_flow_edges"
-
-    id = db.Column(db.Integer, primary_key=True)
-    subtask_id = db.Column(db.Integer, db.ForeignKey("subtasks.id", ondelete="CASCADE"), nullable=False)
-    from_id = db.Column(db.Integer, db.ForeignKey("subtask_flow_nodes.id", ondelete="CASCADE"), nullable=False)
-    to_id = db.Column(db.Integer, db.ForeignKey("subtask_flow_nodes.id", ondelete="CASCADE"), nullable=False)
-    label = db.Column(db.String(80))
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-
-    subtask = db.relationship("Subtask", back_populates="flow_edges")
-    from_node = db.relationship(
-        "SubtaskFlowNode",
-        foreign_keys=[from_id],
-        backref=db.backref("outgoing_edges", cascade="all, delete-orphan"),
-    )
-    to_node = db.relationship(
-        "SubtaskFlowNode",
-        foreign_keys=[to_id],
-        backref=db.backref("incoming_edges", cascade="all, delete-orphan"),
-    )
-
-    def as_dict(self):
-        return {
-            "id": self.id,
-            "subtask_id": self.subtask_id,
-            "from_id": self.from_id,
-            "to_id": self.to_id,
-            "label": self.label,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-        }
 

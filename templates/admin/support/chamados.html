@@ -107,6 +107,37 @@
   .assist-tab-title{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:#64748b;font-weight:700;}
   .assist-tab-shell{display:flex;flex-direction:column;gap:1rem;margin-bottom:1rem;}
 
+  html[data-theme="dark"] .chamados-card {
+    background: var(--card-bg, #0b1220) !important;
+    border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08)) !important;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  }
+  html[data-theme="dark"] .chamados-table thead {
+    background: rgba(255, 255, 255, 0.04);
+    color: #94a3b8;
+  }
+  html[data-theme="dark"] .assist-tab-toggle-btn {
+    background: #0f172a;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #94a3b8;
+  }
+  html[data-theme="dark"] .assist-tab-toggle-btn.active {
+    background: var(--brand-blue, #00a4f5);
+    color: #fff;
+    border-color: var(--brand-blue, #00a4f5);
+  }
+  html[data-theme="dark"] .assist-tab-menu {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+  }
+  html[data-theme="dark"] .assist-tab-item {
+    color: #cbd5e1;
+  }
+  html[data-theme="dark"] .assist-tab-item:hover {
+    background: rgba(0, 164, 245, 0.15);
+    color: #38bdf8;
+  }
 </style>
 
 {% endblock %}
@@ -562,9 +593,15 @@ function renderTable(items) {
             <div class="btn-group btn-group-sm">
               <button type="button" class="btn btn-outline-primary" onclick='openEditChamado(${JSON.stringify(item).replace(/'/g, "&apos;")})'><i class="bi bi-pencil"></i></button>
               <button type="button" class="btn btn-outline-success" title="Fechar" onclick='openCloseChamado(${JSON.stringify(item).replace(/'/g, "&apos;")})'><i class="bi bi-gear"></i></button>
-              <form method="post" action="${item.delete_url}" onsubmit="return confirm('Excluir chamado?');" style="display:inline;">
+              <form method="post" action="${item.delete_url}"
+                    data-confirm-delete="true"
+                    data-entity-type="Chamado Técnico"
+                    data-entity-name="Chamado #${item.id} — ${item.cliente || item.empresa || 'Sem cliente'}"
+                    data-entity-detail="Data: ${item.data || '-'} | Técnico: ${item.tecnico || '-'}"
+                    data-confirm-warning="O chamado será excluído definitivamente da fila de atendimento."
+                    style="display:inline;">
                 <input type="hidden" name="csrf_token" value="${CSRF_TOKEN}">
-                <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
+                <button type="submit" class="btn btn-outline-danger" title="Excluir chamado"><i class="bi bi-trash"></i></button>
               </form>
             </div>
           </td>
@@ -760,6 +797,7 @@ window.openDetalhesChamado = function(item) {
         return raw;
     };
 
+    setDetailValue('region_label', item.region_label || item.region_slug || '-');
     setDetailValue('cliente', item.cliente || '-');
     setDetailValue('cnpj', item.cnpj || '-');
     setDetailValue('contrato', item.contrato || '-');

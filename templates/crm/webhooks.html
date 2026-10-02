@@ -1,0 +1,493 @@
+{% extends "layout.html" %}
+
+{% block title %}Central de Integrações & Webhooks - Sollus CRM{% endblock %}
+
+{% block head %}
+  <link href="{{ url_for('static', filename='css/crm_premium.css') }}" rel="stylesheet">
+  <style>
+    .webhook-card {
+      border-radius: 12px;
+      transition: all 0.2s ease-in-out;
+    }
+    .webhook-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    }
+    .status-pill {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+    }
+    .code-block {
+      background-color: #0f172a;
+      color: #38bdf8;
+      font-family: monospace;
+      padding: 0.85rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      position: relative;
+    }
+    .btn-copy {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+    }
+
+    /* Suporte a Dark Mode Local */
+    [data-theme="dark"] .webhook-card,
+    [data-bs-theme="dark"] .webhook-card {
+      background-color: #182235 !important;
+      border-color: #24344d !important;
+      color: #f8fafc !important;
+    }
+    [data-theme="dark"] .webhook-card:hover,
+    [data-bs-theme="dark"] .webhook-card:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="crm-page-container px-3 py-2">
+  <!-- Cabeçalho Principal -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="fw-bold mb-0 d-flex align-items-center gap-2">
+          <i class="fa-solid fa-network-wired text-primary"></i>
+          <span>Central de Integrações & Webhooks</span>
+        </h4>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1">
+          RD Station & Conectores
+        </span>
+      </div>
+      <p class="text-muted small mb-0 mt-1">
+        Gerencie webhooks de entrada (inbound lead capture) e saída (outbound lifecycle dispatch) para automações com ecossistemas externos.
+      </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">
+        <i class="fa-solid fa-arrows-rotate me-1"></i> Atualizar
+      </button>
+      <button class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovoWebhook">
+        <i class="fa-solid fa-plus"></i> Novo Webhook
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card h-100 border-0 shadow-sm webhook-card p-3">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <span class="text-muted small fw-semibold text-uppercase">Configurados</span>
+            <h3 class="fw-bold mb-0 mt-1">{{ stats.total_webhooks }}</h3>
+          </div>
+          <div class="bg-primary-subtle text-primary p-3 rounded-circle">
+            <i class="fa-solid fa-sliders fa-lg"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card h-100 border-0 shadow-sm webhook-card p-3">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <span class="text-muted small fw-semibold text-uppercase">Ativos</span>
+            <h3 class="fw-bold text-success mb-0 mt-1">{{ stats.active_webhooks }}</h3>
+          </div>
+          <div class="bg-success-subtle text-success p-3 rounded-circle">
+            <i class="fa-solid fa-bolt fa-lg"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card h-100 border-0 shadow-sm webhook-card p-3">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <span class="text-muted small fw-semibold text-uppercase">Total de Disparos</span>
+            <h3 class="fw-bold mb-0 mt-1">{{ stats.total_deliveries }}</h3>
+          </div>
+          <div class="bg-info-subtle text-info p-3 rounded-circle">
+            <i class="fa-solid fa-paper-plane fa-lg"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card h-100 border-0 shadow-sm webhook-card p-3">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <span class="text-muted small fw-semibold text-uppercase">Taxa de Sucesso</span>
+            <h3 class="fw-bold mb-0 mt-1 text-primary">{{ stats.success_rate }}%</h3>
+          </div>
+          <div class="bg-warning-subtle text-warning p-3 rounded-circle">
+            <i class="fa-solid fa-chart-pie fa-lg"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inbound Webhook Banner / Instruções -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-bottom py-3">
+      <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+        <i class="fa-solid fa-arrow-right-to-bracket text-primary"></i>
+        <span>Endpoint de Webhook de Entrada (Inbound Lead Capture)</span>
+      </h6>
+    </div>
+    <div class="card-body">
+      <p class="text-muted small">
+        Utilize este endpoint para capturar leads instantâneos a partir de landing pages, formulários do site (Elementor, CF7), RD Station Marketing ou plataformas de mídia paga. O CRM realiza <strong>Smart Lead Deduplication</strong> automático (reutilizando Empresa por CNPJ e Contato por E-mail) e distribui a oportunidade na <strong>Roleta Comercial (Round-Robin)</strong>.
+      </p>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label small fw-bold">URL do Endpoint (POST):</label>
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control font-monospace" id="inboundUrl" value="{{ request.host_url.rstrip('/') }}/crm/api/webhooks/inbound" readonly>
+            <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('inboundUrl').value); alert('URL copiada!')">
+              <i class="fa-solid fa-copy"></i>
+            </button>
+          </div>
+          <div class="form-text small mt-1">
+            Headers: <code>X-API-Token: &lt;seu-token&gt;</code> ou <code>Authorization: Bearer &lt;seu-token&gt;</code>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-bold">Exemplo de Payload JSON:</label>
+          <div class="code-block">
+            <pre class="mb-0 text-white" style="font-size: 0.78rem;">{
+  "nome_negociacao": "Lead Website - Controle de Ponto",
+  "valor": 7500.0,
+  "empresa": {"nome": "Indústria Alfa", "cnpj": "12.345.678/0001-90"},
+  "contato": {"nome": "Marcos Silva", "email": "marcos@alfa.com", "telefone": "11988887777"},
+  "origem": "Formulário Site"
+}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela de Webhooks Cadastrados -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+      <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+        <i class="fa-solid fa-tower-broadcast text-primary"></i>
+        <span>Webhooks Configurados</span>
+      </h6>
+      <span class="badge bg-secondary-subtle text-secondary">{{ webhooks|length }} cadastrados</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light small">
+          <tr>
+            <th style="width: 50px;">#</th>
+            <th>Nome</th>
+            <th>Tipo</th>
+            <th>URL de Destino</th>
+            <th>Eventos Inscritos</th>
+            <th>Assinatura (Secret)</th>
+            <th class="text-center" style="width: 100px;">Ativo</th>
+            <th class="text-end" style="width: 150px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if webhooks %}
+            {% for w in webhooks %}
+              <tr id="webhook-row-{{ w.id }}">
+                <td class="text-muted small">#{{ w.id }}</td>
+                <td class="fw-semibold text-dark">{{ w.nome }}</td>
+                <td>
+                  {% if w.tipo == 'inbound' %}
+                    <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill">Inbound</span>
+                  {% else %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">Outbound</span>
+                  {% endif %}
+                </td>
+                <td class="font-monospace small text-truncate" style="max-width: 280px;" title="{{ w.url }}">
+                  {{ w.url or '-' }}
+                </td>
+                <td>
+                  {% set ev_list = (w.eventos or '*').split(',') %}
+                  {% for ev in ev_list %}
+                    <span class="badge bg-secondary-subtle text-dark border me-1">{{ ev.strip() }}</span>
+                  {% endfor %}
+                </td>
+                <td>
+                  {% if w.secret_key %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                      <i class="fa-solid fa-lock me-1"></i> HMAC-SHA256
+                    </span>
+                  {% else %}
+                    <span class="text-muted small">Sem segredo</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  <div class="form-check form-switch d-inline-block">
+                    <input class="form-check-input" type="checkbox" role="switch" id="switch-{{ w.id }}" {% if w.ativo %}checked{% endif %} onchange="toggleWebhook({{ w.id }})">
+                  </div>
+                </td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-primary me-1" title="Testar Envio" onclick="testWebhook({{ w.id }})">
+                    <i class="fa-solid fa-paper-plane"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger" title="Excluir" onclick="deleteWebhook({{ w.id }})">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">
+                <i class="fa-solid fa-circle-nodes fa-2x mb-2 d-block opacity-50"></i>
+                Nenhum webhook cadastrado ainda. Clique em "Novo Webhook" acima para adicionar.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tabela de Logs Recentes de Disparo e Recepção -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+      <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+        <i class="fa-solid fa-clock-rotate-left text-primary"></i>
+        <span>Histórico de Entregas e Auditoria</span>
+      </h6>
+      <span class="badge bg-secondary-subtle text-secondary">Últimos {{ logs|length }} registros</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light small">
+          <tr>
+            <th>Data / Hora</th>
+            <th>Tipo</th>
+            <th>Evento</th>
+            <th>URL Destino / Origem</th>
+            <th class="text-center">Status</th>
+            <th class="text-center">Latência</th>
+            <th class="text-center">Resultado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if logs %}
+            {% for log in logs %}
+              <tr>
+                <td class="small text-muted font-monospace">
+                  {{ log.criado_em.strftime('%d/%m/%Y %H:%M:%S') if log.criado_em else '-' }}
+                </td>
+                <td>
+                  {% if log.tipo == 'inbound' %}
+                    <span class="badge bg-info-subtle text-info rounded-pill">Inbound</span>
+                  {% else %}
+                    <span class="badge bg-primary-subtle text-primary rounded-pill">Outbound</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge bg-dark-subtle text-dark border">{{ log.evento }}</span>
+                </td>
+                <td class="small font-monospace text-truncate" style="max-width: 300px;" title="{{ log.url or '' }}">
+                  {{ log.url or (log.webhook.url if log.webhook else '-') }}
+                </td>
+                <td class="text-center">
+                  {% if log.status_code and log.status_code >= 200 and log.status_code < 300 %}
+                    <span class="badge bg-success">{{ log.status_code }}</span>
+                  {% elif log.status_code %}
+                    <span class="badge bg-danger">{{ log.status_code }}</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark">Timeout/Err</span>
+                  {% endif %}
+                </td>
+                <td class="text-center small font-monospace">
+                  {{ log.tempo_ms }}ms
+                </td>
+                <td class="text-center">
+                  {% if log.sucesso %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">
+                      <i class="fa-solid fa-check me-1"></i> Sucesso
+                    </span>
+                  {% else %}
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">
+                      <i class="fa-solid fa-triangle-exclamation me-1"></i> Falha
+                    </span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">
+                <i class="fa-solid fa-list-check fa-2x mb-2 d-block opacity-50"></i>
+                Nenhum log de entrega registrado ainda.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Novo Webhook -->
+<div class="modal fade" id="modalNovoWebhook" tabindex="-1" aria-labelledby="modalNovoWebhookLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title fw-bold" id="modalNovoWebhookLabel">
+          <i class="fa-solid fa-network-wired text-primary me-2"></i>Cadastrar Novo Webhook
+        </h5>
+        <button type="button" class="btn-close" data-bs-target="#modalNovoWebhook" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <form id="formNovoWebhook" onsubmit="salvarNovoWebhook(event)">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="whNome" class="form-label small fw-bold">Nome da Integração *</label>
+            <input type="text" class="form-control" id="whNome" required placeholder="Ex: Webhook ERP Parcela, Zapier, RD Market">
+          </div>
+          <div class="mb-3">
+            <label for="whTipo" class="form-label small fw-bold">Tipo de Webhook</label>
+            <select class="form-select" id="whTipo">
+              <option value="outbound" selected>Outbound (Disparo em eventos do CRM)</option>
+              <option value="inbound">Inbound (Recepção de Leads)</option>
+            </select>
+          </div>
+          <div class="mb-3" id="groupUrl">
+            <label for="whUrl" class="form-label small fw-bold">URL de Destino (Endpoint HTTP POST) *</label>
+            <input type="url" class="form-control font-monospace" id="whUrl" placeholder="https://api.empresa.com/crm/webhook">
+            <div class="form-text small">O endpoint receberá requisições POST com payload JSON.</div>
+          </div>
+          <div class="mb-3">
+            <label for="whEventos" class="form-label small fw-bold">Eventos Disparadores</label>
+            <input type="text" class="form-control" id="whEventos" value="*" placeholder="deal.created,deal.stage_changed,deal.won,deal.lost ou *">
+            <div class="form-text small">Separe por vírgula ou use <code>*</code> para todos os eventos.</div>
+          </div>
+          <div class="mb-3">
+            <label for="whSecret" class="form-label small fw-bold">Secret Key (Assinatura HMAC-SHA256)</label>
+            <input type="text" class="form-control font-monospace" id="whSecret" placeholder="Opcional: chave secreta para validar X-Sollus-Signature">
+          </div>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="whAtivo" checked>
+            <label class="form-check-label small fw-semibold" for="whAtivo">Habilitar webhook imediatamente</label>
+          </div>
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btnSalvarWebhook">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Salvar Webhook
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+  async function salvarNovoWebhook(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnSalvarWebhook');
+    btn.disabled = true;
+
+    const payload = {
+      nome: document.getElementById('whNome').value.trim(),
+      tipo: document.getElementById('whTipo').value,
+      url: document.getElementById('whUrl').value.trim(),
+      eventos: document.getElementById('whEventos').value.trim(),
+      secret_key: document.getElementById('whSecret').value.trim(),
+      ativo: document.getElementById('whAtivo').checked
+    };
+
+    try {
+      const res = await fetch('/crm/api/webhooks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': CSRF_TOKEN
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        location.reload();
+      } else {
+        alert('Erro ao salvar webhook: ' + (data.error || 'Erro desconhecido'));
+        btn.disabled = false;
+      }
+    } catch (err) {
+      alert('Falha na comunicação: ' + err);
+      btn.disabled = false;
+    }
+  }
+
+  async function toggleWebhook(id) {
+    try {
+      const res = await fetch(`/crm/api/webhooks/${id}/toggle`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': CSRF_TOKEN
+        }
+      });
+      const data = await res.json();
+      if (!data.success) {
+        alert('Erro ao alterar status do webhook');
+        location.reload();
+      }
+    } catch (err) {
+      alert('Falha de rede: ' + err);
+    }
+  }
+
+  async function testWebhook(id) {
+    if (!confirm('Deseja disparar um evento de teste (ping) para este webhook?')) return;
+    try {
+      const res = await fetch(`/crm/api/webhooks/${id}/test`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': CSRF_TOKEN
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Disparo realizado com sucesso! HTTP Status: ${data.status_code} (${data.tempo_ms}ms)`);
+      } else {
+        alert(`Falha no envio do teste: Status ${data.status_code || 0} (${data.tempo_ms || 0}ms)\n${data.response_body || 'Sem resposta'}`);
+      }
+      location.reload();
+    } catch (err) {
+      alert('Erro ao executar teste: ' + err);
+    }
+  }
+
+  async function deleteWebhook(id) {
+    if (!confirm('Tem certeza de que deseja excluir este webhook? Os logs associados serão removidos.')) return;
+    try {
+      const res = await fetch(`/crm/api/webhooks/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'X-CSRFToken': CSRF_TOKEN
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById(`webhook-row-${id}`)?.remove();
+        location.reload();
+      } else {
+        alert('Erro ao excluir: ' + (data.error || ''));
+      }
+    } catch (err) {
+      alert('Erro de comunicação: ' + err);
+    }
+  }
+</script>
+{% endblock %}

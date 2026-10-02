@@ -113,7 +113,7 @@
 
 <div class="row g-4">
 
-  <div class="col-12 col-xl-4">
+  <div class="col-12 col-md-5 col-lg-4 col-xl-4">
 
     <div class="card profile-card h-100">
 
@@ -167,6 +167,28 @@
           {% include 'auth/_extra_phone_fields.html' %}
           {% endwith %}
 
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Assinatura em Imagem (Rubrica / Digital)</label>
+            {% set user_sig_path = (current_user.signature_path if current_user.is_authenticated else None) or session.get('signature_path') %}
+            {% if user_sig_path %}
+              <div class="p-2 border rounded-3 bg-light text-center mb-2 position-relative">
+                <img src="{{ url_for('static', filename=user_sig_path) }}" alt="Assinatura atual" style="max-height: 180px; max-width: 100%; object-fit: contain;">
+                <div class="form-check mt-2 text-start">
+                  <input class="form-check-input" type="checkbox" id="remove_signature_image_page" name="remove_signature_image" value="1">
+                  <label class="form-check-label text-danger small" for="remove_signature_image_page">Remover imagem de assinatura</label>
+                </div>
+              </div>
+            {% endif %}
+            <input type="file" class="form-control" name="signature_image" accept="image/png,image/jpeg,image/jpg,image/webp">
+            <small class="form-text text-muted">Formatos: PNG, JPG ou WEBP.</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Texto da Assinatura (Sollus Tickets)</label>
+            {% set user_sig_text = (current_user.signature_text if current_user.is_authenticated else None) or session.get('signature_text') or '' %}
+            <textarea class="form-control" name="signature_text" rows="3" placeholder="Ex: Atenciosamente,&#10;{{ user_name }} | Suporte Técnico">{{ user_sig_text }}</textarea>
+          </div>
+
           <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save me-2"></i>Salvar alterações</button>
 
         </form>
@@ -179,7 +201,7 @@
 
 
 
-  <div class="col-12 col-xl-8">
+  <div class="col-12 col-md-7 col-lg-8 col-xl-8">
 
     <div class="card h-100">
 

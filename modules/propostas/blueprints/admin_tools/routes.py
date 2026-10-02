@@ -21,6 +21,14 @@ from modules.audit.models import AuditLog
 from modules.sollus_tickets.models import SollusTicketEvent, SollusTicketThreadEntry
 from ..auth.permissions_utils import normalize_role_key, raw_permissions, current_permissions
 from . import admin_tools_bp
+from modules.propostas.services.gallery_service import (
+    get_gallery_items,
+    add_gallery_image_metadata,
+    remove_gallery_image_metadata,
+    update_image_event,
+    set_active_event,
+    load_gallery_metadata,
+)
 
 from utils.helpers import (
     wants_json as _wants_json,
@@ -215,8 +223,18 @@ def _chunk_entries(entries, size):
 
 def _unit_from_user(user: User | None, fallback: str | None = None) -> str:
     if user and getattr(user, 'unit_code', None):
+        code = (user.unit_code or "").strip().lower()
+        if "campos" in code or "es" in code:
+            return "Technosollus ES"
+        elif "techno" in code:
+            return "Technosollus RJ"
+        elif "santos" in code:
+            return "SS Santos"
+        elif "sollus" in code or "solus" in code:
+            return "Solus RJ"
         return user.unit_code
     return fallback or VACATION_UNITS[0]
+
 
 
 @admin_tools_bp.route("/")
@@ -336,11 +354,17 @@ def galeria_dashboard():
     if guard:
         return guard
 
-    images = _list_gallery_images()
+    selected_event = request.args.get("evento")
+    root = _gallery_root()
+    gallery_data = get_gallery_items(root, event_filter=selected_event)
+
     return render_template(
         "admin/galeria.html",
-        gallery_images=images,
-        total_images=len(images),
+        gallery_images=gallery_data["items"],
+        gallery_events=gallery_data["events"],
+        active_event=gallery_data.get("active_event"),
+        selected_event=selected_event,
+        total_images=gallery_data["all_items_count"],
     )
 
 
@@ -355,6 +379,8 @@ def galeria_upload():
     if not files:
         flash("Selecione ao menos uma imagem.", "warning")
         return redirect(url_for("admin_tools_bp.galeria_dashboard"))
+
+    event_name = (request.form.get("event_name") or "").strip() or "Geral"
 
     saved = 0
     errors = 0
@@ -377,6 +403,7 @@ def galeria_upload():
         target = root / f"{uuid4().hex}{ext}"
         try:
             file_storage.save(target)
+            add_gallery_image_metadata(root, target.name, event_name)
         except Exception:
             current_app.logger.exception("Failed to save gallery image: %s", safe_name)
             errors += 1
@@ -384,12 +411,12 @@ def galeria_upload():
         saved += 1
 
     if saved:
-        flash(f"{saved} foto(s) adicionada(s) com sucesso.", "success")
+        flash(f"{saved} foto(s) adicionada(s) com sucesso para o evento '{event_name}'.", "success")
     if errors or skipped:
         flash("Algumas imagens não puderam ser enviadas.", "warning")
     if not saved and not errors:
         flash("Nenhuma imagem válida foi enviada.", "warning")
-    return redirect(url_for("admin_tools_bp.galeria_dashboard"))
+    return redirect(url_for("admin_tools_bp.galeria_dashboard", evento=event_name if event_name != "Geral" else None))
 
 
 @admin_tools_bp.route("/galeria/excluir", methods=["POST"])
@@ -407,6 +434,7 @@ def galeria_excluir():
 
     try:
         target.unlink()
+        remove_gallery_image_metadata(_gallery_root(), filename)
     except Exception:
         current_app.logger.exception("Failed to delete gallery image: %s", filename)
         flash("Não foi possível remover a imagem.", "danger")
@@ -416,8 +444,46 @@ def galeria_excluir():
     return redirect(url_for("admin_tools_bp.galeria_dashboard"))
 
 
+@admin_tools_bp.route("/galeria/atualizar-evento", methods=["POST"])
+@login_required
+def galeria_atualizar_evento():
+    guard = _require_permission(PERMISSION_MAP["gallery"])
+    if guard:
+        return guard
+
+    filename = (request.form.get("filename") or "").strip()
+    event_name = (request.form.get("event_name") or "").strip() or "Geral"
+    target = _resolve_gallery_file(filename)
+    if not target or not target.exists() or not target.is_file():
+        flash("Imagem não encontrada.", "warning")
+        return redirect(url_for("admin_tools_bp.galeria_dashboard"))
+
+    update_image_event(_gallery_root(), filename, event_name)
+    flash(f"Evento da imagem atualizado para '{event_name}'.", "success")
+    return redirect(url_for("admin_tools_bp.galeria_dashboard"))
+
+
+@admin_tools_bp.route("/galeria/destaque", methods=["POST"])
+@login_required
+def galeria_destaque():
+    guard = _require_permission(PERMISSION_MAP["gallery"])
+    if guard:
+        return guard
+
+    active_event = (request.form.get("active_event") or "").strip()
+    set_active_event(_gallery_root(), active_event)
+    if active_event and active_event.upper() != "ALL":
+        flash(f"Evento em destaque no carrossel da home definido como '{active_event}'.", "success")
+    else:
+        flash("Destaque no carrossel da home definido como 'Todos os eventos'.", "success")
+    return redirect(url_for("admin_tools_bp.galeria_dashboard"))
+
+
 def _active_users_query():
-    return User.query.filter(User.is_active.is_(True)).order_by(User.nome_completo.asc())
+    return User.query.filter(
+        User.is_active.is_(True),
+        (User.nome_completo.isnot(None)) | (User.usuario.isnot(None))
+    ).order_by(func.coalesce(User.nome_completo, User.usuario).asc())
 
 
 def _normalize_name(value: str | None) -> str:
@@ -463,6 +529,9 @@ def aniversariantes_dashboard():
     upcoming = _upcoming_birthdays(all_entries)
     users = _active_users_query().all()
     name_lookup = {_normalize_name(user.nome_completo): user.id for user in users if user.nome_completo}
+    for user in users:
+        if getattr(user, "usuario", None):
+            name_lookup[_normalize_name(user.usuario)] = user.id
     birthday_user_map = {entry.id: name_lookup.get(_normalize_name(entry.nome)) for entry in page_entries}
 
     birthday_pagination = SimpleNamespace(
@@ -533,6 +602,15 @@ def atualizar_aniversariante(birthday_id: int):
 
     entry = Birthday.query.get_or_404(birthday_id)
     
+    usuario_id = request.form.get("usuario_id", type=int)
+    nome_exibicao = (request.form.get("nome_exibicao") or "").strip()
+    if usuario_id:
+        usuario = User.query.get(usuario_id)
+        if usuario and usuario.nome_completo:
+            entry.nome = usuario.nome_completo
+    elif nome_exibicao:
+        entry.nome = nome_exibicao
+
     try:
         dia = int(request.form.get("dia") or 0)
         mes = int(request.form.get("mes") or 0)
@@ -540,7 +618,6 @@ def atualizar_aniversariante(birthday_id: int):
         ano_original = entry.data_nascimento.year if entry.data_nascimento else date.today().year
         
         entry.data_nascimento = date(ano_original, mes, dia)
-        # O nome não é alterado na edição, apenas a data
     except ValueError:
         flash("Data inválida.", "danger")
         return redirect(url_for("admin_tools_bp.aniversariantes_dashboard"))
@@ -610,8 +687,9 @@ def ferias_dashboard():
     ferias_entries = ferias_all[start_idx:start_idx + per_page]
 
     users = _active_users_query().all()
-    id_lookup = {user.id: user for user in users}
-    name_lookup = {_normalize_name(user.nome_completo): user for user in users if user.nome_completo}
+    all_users = User.query.all()
+    id_lookup = {user.id: user for user in all_users}
+    name_lookup = {_normalize_name(user.nome_completo): user for user in all_users if user.nome_completo}
 
     def _resolve_user(entry):
         value = (entry.usuario_id or '').strip()
@@ -673,22 +751,31 @@ def criar_ferias():
         if data_final < data_inicial:
             continue
         unit_value = _unit_from_user(usuario)
-        db.session.add(
-            VacationEntry(
-                usuario_id=str(usuario.id),
-                data_inicial=data_inicial,
-                data_final=data_final,
-                referente_ano=ano,
-                unidade=unit_value,
+        ano_final = ano or (data_inicial.year if data_inicial else date.today().year)
+        try:
+            db.session.add(
+                VacationEntry(
+                    usuario_id=str(usuario.id),
+                    data_inicial=data_inicial,
+                    data_final=data_final,
+                    referente_ano=ano_final,
+                    unidade=unit_value,
+                )
             )
-        )
-        created += 1
+            created += 1
+        except Exception as exc:
+            current_app.logger.exception("Erro ao preparar férias para usuário %s: %s", usuario_id, exc)
 
     if created:
-        db.session.commit()
-        flash(f"{created} período(s) cadastrados.", "success")
+        try:
+            db.session.commit()
+            flash(f"{created} período(s) cadastrados com sucesso.", "success")
+        except Exception as exc:
+            db.session.rollback()
+            current_app.logger.exception("Erro ao salvar férias no banco: %s", exc)
+            flash(f"Erro ao salvar férias: {exc}", "danger")
     else:
-        flash("Nenhum registro vlido informado.", "warning")
+        flash("Nenhum registro válido informado.", "warning")
     return redirect(url_for("admin_tools_bp.ferias_dashboard", ano=ano or date.today().year))
 
 
@@ -718,15 +805,22 @@ def atualizar_ferias(ferias_id: int):
         return redirect(url_for("admin_tools_bp.ferias_dashboard", ano=entry.referente_ano))
 
     if data_final < data_inicial:
-        flash("A data final deve ser igual ou posterior  inicial.", "warning")
+        flash("A data final deve ser igual ou posterior à inicial.", "warning")
         return redirect(url_for("admin_tools_bp.ferias_dashboard", ano=entry.referente_ano))
 
     entry.usuario_id = str(usuario.id)
     entry.data_inicial = data_inicial
     entry.data_final = data_final
     entry.unidade = _unit_from_user(usuario, entry.unidade)
-    db.session.commit()
-    flash("Perodo atualizado.", "success")
+    if not entry.referente_ano:
+        entry.referente_ano = data_inicial.year
+    try:
+        db.session.commit()
+        flash("Período atualizado com sucesso.", "success")
+    except Exception as exc:
+        db.session.rollback()
+        current_app.logger.exception("Erro ao atualizar férias: %s", exc)
+        flash(f"Erro ao atualizar férias: {exc}", "danger")
     return redirect(url_for("admin_tools_bp.ferias_dashboard", ano=entry.referente_ano))
 
 
@@ -739,9 +833,14 @@ def excluir_ferias(ferias_id: int):
 
     entry = VacationEntry.query.get_or_404(ferias_id)
     year = entry.referente_ano
-    db.session.delete(entry)
-    db.session.commit()
-    flash("Registro de férias removido.", "success")
+    try:
+        db.session.delete(entry)
+        db.session.commit()
+        flash("Registro de férias removido com sucesso.", "success")
+    except Exception as exc:
+        db.session.rollback()
+        current_app.logger.exception("Erro ao excluir férias: %s", exc)
+        flash(f"Erro ao excluir férias: {exc}", "danger")
     return redirect(url_for("admin_tools_bp.ferias_dashboard", ano=year))
 
 
@@ -848,7 +947,7 @@ def monitoramento_atrasos():
     from modules.suporte.models import AssistenciaTarefa, AtendimentoSuporte
     from modules.sollus_tickets.models import SollusTicket
     from datetime import date, datetime, timedelta
-    from sqlalchemy import or_
+    from sqlalchemy import or_, func
 
     today = date.today()
     now = datetime.utcnow()
@@ -863,7 +962,11 @@ def monitoramento_atrasos():
     db_tasks = AssistenciaTarefa.query.filter(
         or_(
             AssistenciaTarefa.status.is_(None),
-            AssistenciaTarefa.status.notin_(["concluído", "devolucao_sem_reparo", "descarte"])
+            func.lower(AssistenciaTarefa.status).notin_([
+                "concluído", "concluido", "concluida", "concluída",
+                "devolucao_sem_reparo", "devolução_sem_reparo", "descarte",
+                "finalizado", "finalizada", "entregue", "cancelado", "cancelada"
+            ])
         ),
         AssistenciaTarefa.data_fim < today
     ).all()
@@ -934,7 +1037,10 @@ def monitoramento_atrasos():
     open_support_calls = AtendimentoSuporte.query.filter(
         or_(
             AtendimentoSuporte.status.is_(None),
-            AtendimentoSuporte.status.notin_(["Concluido", "concluido"])
+            func.lower(AtendimentoSuporte.status).notin_([
+                "concluido", "concluído", "concluida", "concluída",
+                "finalizado", "finalizada", "resolvido", "fechado"
+            ])
         ),
         AtendimentoSuporte.data_entrada < datetime.now() - timedelta(hours=24)
     ).all()

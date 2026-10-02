@@ -293,3 +293,64 @@ def test_online_users_page(client):
     login(client, username="admin_master")
     res = client.get("/admin/usuarios-online")
     assert res.status_code in (200, 302)
+
+
+def test_gallery_events_and_ferias(client, app, tmp_path):
+    from modules.propostas.services.gallery_service import (
+        get_gallery_items,
+        add_gallery_image_metadata,
+        update_image_event,
+        set_active_event,
+    )
+    # Test service
+    root = tmp_path / "galeria"
+    root.mkdir()
+    (root / "img1.jpg").write_bytes(b"dummy1")
+    (root / "img2.jpg").write_bytes(b"dummy2")
+
+    add_gallery_image_metadata(root, "img1.jpg", "Setembro Amarelo")
+    add_gallery_image_metadata(root, "img2.jpg", "Outubro Rosa")
+
+    data = get_gallery_items(root)
+    assert len(data["items"]) == 2
+    assert "Setembro Amarelo" in data["events"]
+
+    filtered = get_gallery_items(root, event_filter="Setembro Amarelo")
+    assert len(filtered["items"]) == 1
+
+    update_image_event(root, "img2.jpg", "Setembro Amarelo")
+    assert len(get_gallery_items(root, event_filter="Setembro Amarelo")["items"]) == 2
+
+    # Test pages with login
+    login(client, username="admin_master")
+
+    res = client.get("/")
+    assert res.status_code == 200
+
+    res_galeria = client.get("/galeria")
+    assert res_galeria.status_code == 200
+    assert b"Todas as Fotos" in res_galeria.data
+
+    res_admin_galeria = client.get("/admin/galeria")
+    assert res_admin_galeria.status_code == 200
+    assert b"Nome do Evento" in res_admin_galeria.data
+
+    # Test ferias creation
+    with app.app_context():
+        user = User.query.filter_by(usuario="admin_master").first()
+        uid = str(user.id)
+
+    post_data = {
+        "ano_referencia": "2026",
+        "usuario_id[]": [uid],
+        "data_inicial[]": ["2026-10-01"],
+        "data_final[]": ["2026-10-15"],
+    }
+    res_criar = client.post("/admin/ferias/criar", data=post_data, follow_redirects=True)
+    assert res_criar.status_code == 200
+
+    with app.app_context():
+        created_entry = VacationEntry.query.filter_by(usuario_id=uid, referente_ano=2026).first()
+        assert created_entry is not None
+        assert created_entry.unidade is not None
+

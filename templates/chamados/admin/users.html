@@ -52,9 +52,12 @@
                         <i class="bi bi-pencil-square"></i>
                       </a>
                       <form method="POST" action="{{ url_for('admin.users_delete', user_id=u.id) }}"
-                            onsubmit="return confirm('Excluir usuário {{ u.name or u.username or u.email }}?');">
+                            data-confirm-delete="true"
+                            data-entity-type="Usuário de Chamados"
+                            data-entity-name="{{ u.name or u.username or u.email }}"
+                            data-confirm-warning="O usuário de chamados perderá o acesso e seus vínculos no helpdesk serão alterados.">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button class="btn btn-sm btn-outline-danger">
+                        <button class="btn btn-sm btn-outline-danger" title="Excluir">
                           <i class="bi bi-trash"></i>
                         </button>
                       </form>

@@ -190,3 +190,50 @@ class TestCrachaAndOnlineUsersImprovements(unittest.TestCase):
         self.assertEqual(_sanitize_photo_filename("../../path/injection/file.jpg"), "file.jpg")
         self.assertEqual(_sanitize_photo_filename("file:name*with?invalid<chars>|.png"), "filenamewithinvalidchars.png")
 
+    def test_extratos_lancamentos_excluir(self):
+        """Test deleting an extrato lancamento and verifying UI render of delete button."""
+        # 1. Setup client and product
+        db.session.execute(db.text(
+            "INSERT INTO ja_cli_clientes (id_pk, nome_fantasia, razao_social, cnpj) "
+            "VALUES (188, 'KATRIUM', 'KATRIUM INDÚSTRIA', '28789998000174')"
+        ))
+        db.session.execute(db.text(
+            "INSERT INTO ja_pro_produtos (id_pk, produto) VALUES (4, 'CRACHÁ DE PROXIMIDADE')"
+        ))
+        # 2. Insert 2 extrato rows
+        db.session.execute(db.text(
+            "INSERT INTO ja_cra_crachas_extratos (id_pk, idclientes_fk, quantidade, entrada_saida, idprodutos_fk, descricao, data) "
+            "VALUES (101, 188, 10, 1, 4, 'ENTRADA TESTE', '2026-09-01')"
+        ))
+        db.session.execute(db.text(
+            "INSERT INTO ja_cra_crachas_extratos (id_pk, idclientes_fk, quantidade, entrada_saida, idprodutos_fk, descricao, data) "
+            "VALUES (102, 188, 2, -1, 4, '2771', '2026-09-08')"
+        ))
+        db.session.commit()
+
+        # 3. Check page renders the delete button
+        response = self.client.get("/cracha/extratos/188/4")
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("/cracha/extratos/lancamentos/102/excluir", html)
+        self.assertIn("Remover lançamento", html)
+
+        # 4. Delete the second row
+        del_response = self.client.post(
+            "/cracha/extratos/lancamentos/102/excluir",
+            follow_redirects=True,
+        )
+        self.assertEqual(del_response.status_code, 200)
+
+        # 5. Verify row was deleted
+        row = db.session.execute(
+            db.text("SELECT id_pk FROM ja_cra_crachas_extratos WHERE id_pk = 102")
+        ).fetchone()
+        self.assertIsNone(row)
+
+        # Verify remaining saldo is 10
+        saldo_row = db.session.execute(
+            db.text("SELECT SUM(quantidade * entrada_saida) FROM ja_cra_crachas_extratos WHERE idclientes_fk = 188 AND idprodutos_fk = 4")
+        ).fetchone()
+        self.assertEqual(saldo_row[0], 10)
+

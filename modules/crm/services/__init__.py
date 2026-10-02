@@ -1,0 +1,36 @@
+"""Serviços do Sollus CRM."""
+from .crm_service import (
+    get_pipeline_data,
+    move_deal_stage,
+    get_deal_details,
+    add_note,
+    add_task,
+    toggle_task,
+    mark_deal_won,
+    mark_deal_lost,
+    capture_lead_from_website,
+    create_deal_manual,
+    get_crm_deal_form_metadata,
+    search_crm_entities,
+    format_currency_brl,
+    format_datetime_br,
+    get_consultor_sales_stats,
+)
+
+__all__ = [
+    "get_pipeline_data",
+    "move_deal_stage",
+    "get_deal_details",
+    "add_note",
+    "add_task",
+    "toggle_task",
+    "mark_deal_won",
+    "mark_deal_lost",
+    "capture_lead_from_website",
+    "create_deal_manual",
+    "get_crm_deal_form_metadata",
+    "search_crm_entities",
+    "format_currency_brl",
+    "format_datetime_br",
+    "get_consultor_sales_stats",
+]

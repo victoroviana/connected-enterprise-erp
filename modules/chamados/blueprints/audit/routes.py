@@ -1,10 +1,40 @@
 from __future__ import annotations
 import json
-from flask import render_template, request, jsonify, send_file
-from flask_login import login_required
+from flask import render_template, request, jsonify, send_file, redirect, url_for, flash, session
+from flask_login import login_required, current_user
 from sqlalchemy import desc
 from modules.chamados.models import AuditLog
+from modules.propostas.blueprints.auth.permissions_utils import normalize_role_key, current_permissions
 from . import audit_bp
+
+
+@audit_bp.before_request
+def _check_audit_access():
+    from flask import request
+    is_api = "/api" in getattr(request, "path", "") or request.headers.get("X-Requested-With") == "XMLHttpRequest" or (request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html)
+
+    if not current_user.is_authenticated and not session.get("usuario_id") and not session.get("user_id"):
+        if is_api:
+            return jsonify({"error": "Authentication required", "success": False, "message": "Autenticação necessária"}), 401
+        try:
+            login_url = url_for("auth_bp.login", next=request.full_path if request.method == "GET" else None)
+        except Exception:
+            login_url = "/login"
+        return redirect(login_url)
+
+    role_key = normalize_role_key(
+        getattr(current_user, "tipo", None)
+        or getattr(current_user, "role", None)
+        or session.get("tipo")
+    )
+    perms = current_permissions()
+    is_admin = (role_key == "admin") or bool(perms.get("admin") or perms.get("usuarios_gerenciar"))
+
+    if not is_admin:
+        if is_api or getattr(request, "path", "").endswith("/export"):
+            return jsonify({"error": "Access denied", "success": False, "message": "Acesso negado"}), 403
+        flash("Você não tem permissão para acessar o registro de auditoria.", "warning")
+        return redirect(url_for("sem_permissao", area="Auditoria"))
 
 
 from dataclasses import dataclass

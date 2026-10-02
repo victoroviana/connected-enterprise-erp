@@ -84,6 +84,8 @@ def enviar_email(
             current_app.logger.exception("Falha ao auditar enfileiramento de email.")
         return True
     except Exception as exc:
+        from extensions import db
+        db.session.rollback()
         current_app.logger.exception("[mail] erro ao enfileirar '%s': %s", assunto, exc)
         try:
             write_audit_external(

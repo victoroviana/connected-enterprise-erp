@@ -34,9 +34,28 @@
     padding:.45rem .85rem;
     font-size:.95rem;
   }
-  .search-select-item:hover,
-  .search-select-item:focus{background:#f3f6fb;}
   .search-select-empty{padding:.55rem .85rem;color:#6b7280;}
+
+  html[data-theme="dark"] .contas-card {
+    background: var(--card-bg, #0b1220) !important;
+    border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08)) !important;
+  }
+  html[data-theme="dark"] .contas-table thead {
+    background: rgba(255, 255, 255, 0.04);
+    color: #94a3b8;
+  }
+  html[data-theme="dark"] .search-select-menu {
+    background: #0f172a;
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+  html[data-theme="dark"] .search-select-item {
+    color: #f8fafc;
+  }
+  html[data-theme="dark"] .search-select-item:hover,
+  html[data-theme="dark"] .search-select-item:focus {
+    background: rgba(0, 164, 245, 0.15);
+    color: #38bdf8;
+  }
 </style>
 {% endblock %}
 
@@ -141,7 +160,11 @@
                 >
                   <i class="fa-solid fa-pen me-1"></i> Editar
                 </button>
-                <form method="post" action="{{ url_for('contratos_bp.contas_receber_contratos_excluir', conta_id=row.id_pk) }}" onsubmit="return confirm('Deseja excluir esta conta?');">
+                <form method="post" action="{{ url_for('contratos_bp.contas_receber_contratos_excluir', conta_id=row.id_pk) }}"
+                      data-confirm-delete="true"
+                      data-entity-type="Conta a Receber"
+                      data-entity-name="{{ row.nome_fantasia or row.razao_social or ('Conta #' ~ row.id_pk) }} (Venc: {{ row.data_vencimento_br or '-' }})"
+                      data-confirm-warning="O registro financeiro desta parcela será excluído permanentemente.">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="btn btn-outline-danger btn-sm">
                     <i class="fa-solid fa-trash me-1"></i> Excluir
@@ -211,7 +234,11 @@
                             >
                               <i class="fa-solid fa-pen me-1"></i> Editar
                             </button>
-                            <form method="post" action="{{ url_for('contratos_bp.contas_receber_contratos_excluir', conta_id=parcela.id_pk) }}" onsubmit="return confirm('Deseja excluir esta conta?');">
+                            <form method="post" action="{{ url_for('contratos_bp.contas_receber_contratos_excluir', conta_id=parcela.id_pk) }}"
+                                  data-confirm-delete="true"
+                                  data-entity-type="Conta a Receber"
+                                  data-entity-name="{{ parcela.nome_fantasia or parcela.razao_social or ('Conta #' ~ parcela.id_pk) }} (Venc: {{ parcela.data_vencimento_br or '-' }})"
+                                  data-confirm-warning="O registro financeiro desta parcela será excluído permanentemente.">
                               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                               <button type="submit" class="btn btn-outline-danger btn-sm">
                                 <i class="fa-solid fa-trash me-1"></i> Excluir

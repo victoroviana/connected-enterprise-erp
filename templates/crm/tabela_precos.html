@@ -1,0 +1,2639 @@
+{% extends "layout.html" %}
+
+{% block title %}Tabela de Preços - Sollus CRM{% endblock %}
+
+{% block head %}
+  <link href="{{ url_for('static', filename='css/crm_premium.css') }}" rel="stylesheet">
+  <style>
+    .equip-card {
+      border-radius: 14px;
+      transition: all 0.2s ease-in-out;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      position: relative;
+    }
+    .equip-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+      border-color: #cbd5e1;
+    }
+    .equip-img-container {
+      height: 180px;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      border-bottom: 1px solid #f1f5f9;
+      padding: 12px;
+    }
+    .equip-img {
+      max-height: 156px;
+      max-width: 100%;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+    .badge-price-changed {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #fef08a;
+      color: #854d0e;
+      border: 1px solid #fde047;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      z-index: 4;
+    }
+    .badge-stock {
+      position: absolute;
+      top: 10px;
+      left: 38px;
+      background: rgba(255, 255, 255, 0.92);
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 7px;
+      border-radius: 6px;
+      backdrop-filter: blur(4px);
+      z-index: 4;
+    }
+    .btn-camera-upload {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #2563eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      opacity: 0.85;
+      transition: all 0.2s ease;
+      z-index: 5;
+    }
+    .equip-card:hover .btn-camera-upload {
+      opacity: 1;
+      transform: scale(1.08);
+      border-color: #93c5fd;
+    }
+    .form-check-card {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 6;
+    }
+    .form-check-card input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    .equip-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.3;
+      min-height: 2.6rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .equip-desc {
+      font-size: 0.8rem;
+      color: #64748b;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 3.3rem;
+    }
+    .price-current {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #16a34a;
+      letter-spacing: -0.02em;
+    }
+    .price-old {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      text-decoration: line-through;
+    }
+    .timeline-item {
+      position: relative;
+      padding-left: 28px;
+      padding-bottom: 20px;
+      border-left: 2px solid #e2e8f0;
+    }
+    .timeline-item:last-child {
+      border-left: 2px solid transparent;
+      padding-bottom: 0;
+    }
+    .timeline-dot {
+      position: absolute;
+      left: -7px;
+      top: 2px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #2563eb;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 0 2px #93c5fd;
+    }
+    .preview-table-container {
+      max-height: 280px;
+      overflow-y: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+    .preview-badge-diff-pos {
+      color: #16a34a;
+      font-weight: 700;
+    }
+    .preview-badge-diff-neg {
+      color: #dc2626;
+      font-weight: 700;
+    }
+
+    /* Suporte a Dark Mode Local */
+    [data-theme="dark"] .equip-card,
+    [data-bs-theme="dark"] .equip-card {
+      background: #182235 !important;
+      border-color: #24344d !important;
+    }
+    [data-theme="dark"] .equip-card:hover,
+    [data-bs-theme="dark"] .equip-card:hover {
+      border-color: #3b82f6 !important;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45) !important;
+    }
+    [data-theme="dark"] .equip-img-container,
+    [data-bs-theme="dark"] .equip-img-container {
+      background: #111c30 !important;
+      border-bottom-color: #1e293b !important;
+    }
+    [data-theme="dark"] .badge-stock,
+    [data-bs-theme="dark"] .badge-stock {
+      background: rgba(17, 28, 48, 0.92) !important;
+      color: #cbd5e1 !important;
+      border-color: #334155 !important;
+    }
+    [data-theme="dark"] .badge-price-changed,
+    [data-bs-theme="dark"] .badge-price-changed {
+      background: rgba(234, 179, 8, 0.2) !important;
+      color: #fde047 !important;
+      border-color: rgba(253, 224, 71, 0.4) !important;
+    }
+    [data-theme="dark"] .btn-camera-upload,
+    [data-bs-theme="dark"] .btn-camera-upload {
+      background: #1e293b !important;
+      border-color: #334155 !important;
+      color: #60a5fa !important;
+    }
+    [data-theme="dark"] .btn-camera-upload:hover,
+    [data-bs-theme="dark"] .btn-camera-upload:hover {
+      background: #2563eb !important;
+      color: #ffffff !important;
+      border-color: #3b82f6 !important;
+    }
+    [data-theme="dark"] .equip-title,
+    [data-bs-theme="dark"] .equip-title {
+      color: #f8fafc !important;
+    }
+    [data-theme="dark"] .equip-desc,
+    [data-bs-theme="dark"] .equip-desc {
+      color: #94a3b8 !important;
+    }
+    [data-theme="dark"] .price-current,
+    [data-bs-theme="dark"] .price-current {
+      color: #4ade80 !important;
+    }
+    [data-theme="dark"] .price-old,
+    [data-bs-theme="dark"] .price-old {
+      color: #64748b !important;
+    }
+    [data-theme="dark"] .preview-table-container,
+    [data-bs-theme="dark"] .preview-table-container {
+      background: #111c30 !important;
+      border-color: #24344d !important;
+    }
+    [data-theme="dark"] .timeline-item,
+    [data-bs-theme="dark"] .timeline-item {
+      border-left-color: #24344d !important;
+    }
+    [data-theme="dark"] .timeline-dot,
+    [data-bs-theme="dark"] .timeline-dot {
+      background: #3b82f6 !important;
+      border-color: #182235 !important;
+      box-shadow: 0 0 0 2px #1d4ed8 !important;
+    }
+
+    /* Estilos para Sistemas & Softwares */
+    .sistema-card {
+      border-radius: 14px;
+      transition: all 0.2s ease-in-out;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      position: relative;
+    }
+    .sistema-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+      border-color: #cbd5e1;
+    }
+    [data-theme="dark"] .sistema-card,
+    [data-bs-theme="dark"] .sistema-card {
+      background: #182235 !important;
+      border-color: #24344d !important;
+    }
+    [data-theme="dark"] .sistema-card:hover,
+    [data-bs-theme="dark"] .sistema-card:hover {
+      border-color: #10b981 !important;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45) !important;
+    }
+
+    /* Cards de Métricas Clicáveis */
+    .card-metric-interactive {
+      transition: all 0.2s ease-in-out;
+      border: 1px solid #e2e8f0;
+      text-decoration: none;
+    }
+    .card-metric-interactive:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08) !important;
+      border-color: #3b82f6 !important;
+    }
+    .card-metric-interactive.active-filter {
+      border-color: #f59e0b !important;
+      background: #fefce8 !important;
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25) !important;
+    }
+    [data-theme="dark"] .card-metric-interactive,
+    [data-bs-theme="dark"] .card-metric-interactive {
+      background: #182235 !important;
+      border-color: #24344d !important;
+    }
+    [data-theme="dark"] .card-metric-interactive:hover,
+    [data-bs-theme="dark"] .card-metric-interactive:hover {
+      border-color: #60a5fa !important;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5) !important;
+    }
+    [data-theme="dark"] .card-metric-interactive.active-filter,
+    [data-bs-theme="dark"] .card-metric-interactive.active-filter {
+      background: rgba(245, 158, 11, 0.15) !important;
+      border-color: #f59e0b !important;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="crm-page-container px-3 py-2">
+  <!-- Navegação Principal por Abas -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 border-bottom pb-3">
+    <div>
+      <h4 class="fw-bold mb-0 d-flex align-items-center gap-2">
+        <i class="fa-solid fa-tags text-primary"></i>
+        <span>Tabela Oficial de Preços Sollus</span>
+      </h4>
+      <p class="text-muted small mb-0 mt-1">
+        Consulta e gestão de valores comerciais para equipamentos físicos, peças de reposição e planos de sistemas / licenças SaaS.
+      </p>
+    </div>
+
+    <ul class="nav nav-pills gap-2 p-1 bg-light border rounded-pill shadow-sm" id="tabelaPrecosTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link rounded-pill fw-bold px-3 py-2 {% if aba != 'sistemas' %}active{% endif %}" id="tab-equipamentos-btn" data-bs-toggle="pill" data-bs-target="#pane-equipamentos" type="button" role="tab" aria-controls="pane-equipamentos" aria-selected="{% if aba != 'sistemas' %}true{% else %}false{% endif %}">
+          <i class="fa-solid fa-boxes-stacked me-1"></i> Equipamentos & Peças
+          <span class="badge {% if aba != 'sistemas' %}bg-white text-primary{% else %}bg-secondary text-white{% endif %} rounded-pill ms-1">{{ total_equipamentos }}</span>
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link rounded-pill fw-bold px-3 py-2 {% if aba == 'sistemas' %}active{% endif %}" id="tab-sistemas-btn" data-bs-toggle="pill" data-bs-target="#pane-sistemas" type="button" role="tab" aria-controls="pane-sistemas" aria-selected="{% if aba == 'sistemas' %}true{% else %}false{% endif %}">
+          <i class="fa-solid fa-laptop-code me-1"></i> Sistemas & Softwares
+          <span class="badge {% if aba == 'sistemas' %}bg-white text-success{% else %}bg-secondary text-white{% endif %} rounded-pill ms-1">{{ total_sistemas }}</span>
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <div class="tab-content" id="tabelaPrecosTabContent">
+    <!-- ABA 1: EQUIPAMENTOS & PEÇAS -->
+    <div class="tab-pane fade {% if aba != 'sistemas' %}show active{% endif %}" id="pane-equipamentos" role="tabpanel" aria-labelledby="tab-equipamentos-btn">
+      <!-- Cabeçalho Equipamentos -->
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+        <div>
+          <div class="d-flex align-items-center gap-2">
+            <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+              <i class="fa-solid fa-boxes-stacked text-primary"></i>
+              <span>Equipamentos e Peças Físicas</span>
+            </h5>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1">
+              {{ total_equipamentos }} itens
+            </span>
+          </div>
+          <p class="text-muted small mb-0 mt-1">
+            Consulta oficial de preços e descrições dos equipamentos para a equipe comercial. Sincronizado em tempo real com o Estoque.
+          </p>
+        </div>
+
+    <!-- Barra de busca e filtros rápidos -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <form action="{{ url_for('crm.tabela_precos') }}" method="GET" class="d-flex flex-wrap gap-2">
+        <input type="hidden" name="aba" value="equipamentos">
+        <input type="hidden" name="modalidade" value="{{ modalidade }}">
+        <div class="input-group input-group-sm" style="width: 200px;">
+          <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+          <input type="text" name="q" value="{{ search }}" class="form-control border-start-0" placeholder="Buscar equipamento...">
+          {% if search %}
+            <a href="{{ url_for('crm.tabela_precos', filtro=filtro, modalidade=modalidade, fabricante=fabricante, tipo=tipo, aba='equipamentos') }}" class="btn btn-outline-secondary border-start-0">
+              <i class="fa-solid fa-xmark"></i>
+            </a>
+          {% endif %}
+        </div>
+
+        <!-- Filtro por Fabricante / Fornecedor -->
+        <select name="fabricante" class="form-select form-select-sm" style="width: 155px;" onchange="this.form.submit()" title="Filtrar por Fornecedor / Fabricante">
+          <option value="">Fabricante: Todos</option>
+          {% for f in fabricantes %}
+            <option value="{{ f }}" {% if fabricante == f %}selected{% endif %}>{{ f }}</option>
+          {% endfor %}
+        </select>
+
+        <!-- Filtro por Tipo de Equipamento -->
+        <select name="tipo" class="form-select form-select-sm" style="width: 175px;" onchange="this.form.submit()" title="Filtrar por Tipo de Equipamento">
+          <option value="">Tipo: Todos</option>
+          {% for t in tipos_equipamento %}
+            <option value="{{ t }}" {% if tipo == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+
+        <input type="hidden" name="filtro" value="{{ filtro }}">
+        <input type="hidden" name="modalidade" value="{{ modalidade }}">
+      </form>
+
+      <!-- SELETOR DE MODALIDADE: TODOS / AQUISIÇÃO / LOCAÇÃO -->
+      <div class="btn-group btn-group-sm shadow-sm" role="group" aria-label="Modalidade de Preço">
+        <a href="{{ url_for('crm.tabela_precos', q=search, fabricante=fabricante, tipo=tipo, filtro=filtro, modalidade='todos', aba='equipamentos') }}"
+           class="btn {% if modalidade == 'todos' %}btn-dark active fw-bold{% else %}btn-outline-secondary bg-white text-dark{% endif %}"
+           title="Exibir todos os equipamentos">
+          <i class="fa-solid fa-layer-group me-1"></i> Todos
+        </a>
+        <a href="{{ url_for('crm.tabela_precos', q=search, fabricante=fabricante, tipo=tipo, filtro=filtro, modalidade='aquisicao', aba='equipamentos') }}"
+           class="btn {% if modalidade == 'aquisicao' %}btn-primary active fw-bold{% else %}btn-outline-primary bg-white{% endif %}"
+           title="Filtro rápido: mostrar apenas preços de aquisição/venda">
+          <i class="fa-solid fa-cart-shopping me-1"></i> Aquisição ({{ total_aquisicao }})
+        </a>
+        <a href="{{ url_for('crm.tabela_precos', q=search, fabricante=fabricante, tipo=tipo, filtro=filtro, modalidade='locacao', aba='equipamentos') }}"
+           class="btn {% if modalidade == 'locacao' %}btn-success active fw-bold{% else %}btn-outline-success bg-white{% endif %}"
+           title="Filtro rápido: mostrar apenas itens disponíveis para locação mensal">
+          <i class="fa-solid fa-repeat me-1"></i> Locação ({{ total_locacao }})
+        </a>
+      </div>
+
+      <div class="btn-group btn-group-sm">
+        <a href="{{ url_for('crm.tabela_precos', q=search, fabricante=fabricante, tipo=tipo, modalidade=modalidade, filtro='todos', aba='equipamentos') }}" class="btn {% if filtro != 'recentes' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+          Todos
+        </a>
+        <a href="{{ url_for('crm.tabela_precos', q=search, fabricante=fabricante, tipo=tipo, modalidade=modalidade, filtro='recentes', aba='equipamentos') }}" class="btn {% if filtro == 'recentes' %}btn-warning fw-bold text-dark{% else %}btn-outline-warning text-dark{% endif %}" title="Apenas equipamentos com alteração de preço nos últimos 7 dias">
+          <i class="fa-solid fa-bell me-1"></i> Alterados ({{ total_alterados }})
+        </a>
+      </div>
+
+      <!-- Botão Reajuste em Massa -->
+      <button type="button" class="btn btn-sm btn-success fw-bold d-flex align-items-center gap-2 shadow-sm" onclick="abrirModalReajusteMassa()">
+        <i class="fa-solid fa-calculator"></i>
+        <span>Reajuste em Massa</span>
+        <span class="badge bg-white text-success rounded-pill px-2 py-0 ms-1 d-none" id="badge-top-selecionados">0</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Cards de Resumo -->
+  <div class="row g-3 mb-3">
+    <!-- Card 1: Total Cadastrado (Clique para ver todos) -->
+    <div class="col-6 col-md-3">
+      <a href="{{ url_for('crm.tabela_precos', q=search, fabricante=fabricante, tipo=tipo, modalidade=modalidade, filtro='todos', aba='equipamentos') }}" class="text-decoration-none d-block h-100">
+        <div class="p-3 bg-white rounded-3 shadow-sm d-flex align-items-center gap-3 card-metric-interactive {% if filtro != 'recentes' %}border-primary{% endif %}" title="Clique para ver todos os equipamentos cadastrados">
+          <div class="rounded-circle bg-primary-subtle p-3 text-primary d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+            <i class="fa-solid fa-boxes-stacked fa-lg"></i>
+          </div>
+          <div>
+            <span class="text-muted small d-block">Total Cadastrado</span>
+            <span class="fw-bold text-dark fs-5">{{ total_equipamentos }} itens</span>
+            <small class="text-muted d-block" style="font-size: 0.68rem;">Todos os itens</small>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Card 2: Preços Alterados (Clique para filtrar os últimos 7 dias) -->
+    <div class="col-6 col-md-3">
+      <a href="{{ url_for('crm.tabela_precos', q=search, fabricante=fabricante, tipo=tipo, modalidade=modalidade, filtro='recentes', aba='equipamentos') }}" class="text-decoration-none d-block h-100">
+        <div class="p-3 bg-white rounded-3 shadow-sm d-flex align-items-center gap-3 card-metric-interactive {% if filtro == 'recentes' %}active-filter{% endif %}" title="Clique para filtrar apenas equipamentos com preço alterado nos últimos 7 dias">
+          <div class="rounded-circle bg-warning-subtle p-3 text-warning d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+            <i class="fa-solid fa-tag fa-lg"></i>
+          </div>
+          <div>
+            <div class="d-flex align-items-center gap-1">
+              <span class="text-muted small d-block">Preços Alterados</span>
+              {% if filtro == 'recentes' %}
+                <span class="badge bg-warning text-dark px-1 py-0" style="font-size: 0.65rem;">Filtro Ativo</span>
+              {% endif %}
+            </div>
+            <span class="fw-bold text-dark fs-5">{{ total_alterados }} alterados</span>
+            <small class="text-muted d-block" style="font-size: 0.68rem;"><i class="fa-solid fa-clock-rotate-left me-1"></i>Últimos 7 dias</small>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Card 3: Sincronização Estoque -->
+    <div class="col-6 col-md-3">
+      <div class="p-3 bg-white border rounded-3 shadow-sm d-flex align-items-center gap-3 h-100">
+        <div class="rounded-circle bg-success-subtle p-3 text-success d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+          <i class="fa-solid fa-arrows-rotate fa-lg"></i>
+        </div>
+        <div>
+          <span class="text-muted small d-block">Sincronização</span>
+          <span class="fw-bold text-success fs-6">100% Estoque Ativo</span>
+          <small class="text-muted d-block" style="font-size: 0.68rem;">Bidirecional em tempo real</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Auditoria de Preços (Clique para abrir histórico completo) -->
+    <div class="col-6 col-md-3">
+      <div class="p-3 bg-white rounded-3 shadow-sm d-flex align-items-center gap-3 card-metric-interactive h-100" onclick="abrirModalAuditoriaGeral()" style="cursor: pointer;" title="Clique para abrir o histórico completo da auditoria de preços">
+        <div class="rounded-circle bg-info-subtle p-3 text-info d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+          <i class="fa-solid fa-shield-halved fa-lg"></i>
+        </div>
+        <div>
+          <span class="text-muted small d-block">Auditoria de Preços</span>
+          <span class="fw-bold text-dark fs-6 d-flex align-items-center gap-1">
+            Histórico Completo <i class="fa-solid fa-arrow-up-right-from-square text-info ms-1" style="font-size: 0.72rem;"></i>
+          </span>
+          <small class="text-info d-block fw-semibold" style="font-size: 0.68rem;">Clique para visualizar</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra de Ações em Lote e Seleção Rápida -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between p-2 mb-3 bg-white border rounded-3 shadow-sm gap-2">
+    <div class="d-flex align-items-center gap-3">
+      <div class="form-check mb-0">
+        <input class="form-check-input" type="checkbox" id="check-selecionar-todos" onchange="toggleSelecionarTodos(this)">
+        <label class="form-check-label small fw-semibold text-muted" for="check-selecionar-todos" style="cursor: pointer;">
+          Selecionar todos da página
+        </label>
+      </div>
+      <span class="badge bg-secondary-subtle text-secondary border px-2 py-1 small" id="contador-selecionados-txt">
+        0 selecionados
+      </span>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="desmarcarTodos()" id="btn-limpar-selecao" style="display: none;">
+        <i class="fa-solid fa-xmark me-1"></i> Limpar Seleção
+      </button>
+      <button type="button" class="btn btn-sm btn-success fw-bold d-flex align-items-center gap-1" onclick="abrirModalReajusteMassa()">
+        <i class="fa-solid fa-calculator"></i>
+        <span>Reajustar Preços (<span id="reajuste-btn-qtd">Todos</span>)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Grid de Equipamentos -->
+  {% if equipamentos %}
+    <div class="row g-3">
+      {% for eq in equipamentos %}
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-3" id="card-eq-{{ eq.id }}">
+          <div class="equip-card">
+            <!-- Imagem, Seleção e Badges -->
+            <div class="equip-img-container">
+              <!-- Checkbox de Seleção -->
+              <div class="form-check form-check-card">
+                <input class="form-check-input equip-checkbox" type="checkbox" value="{{ eq.id }}" id="check-eq-{{ eq.id }}" onchange="atualizarContadorSelecao()" title="Selecionar para reajuste em massa">
+              </div>
+
+              <!-- Badge Estoque -->
+              <span class="badge-stock">
+                <i class="fa-solid fa-warehouse me-1 text-muted"></i>{{ eq.quantity or 0 }} un
+              </span>
+
+              <!-- Badge Preço Alterado -->
+              {% if eq.tem_mudanca %}
+                <span class="badge-price-changed" title="Preço alterado em {{ eq.alterado_em_formatado or 'data recente' }}">
+                  <i class="fa-solid fa-clock-rotate-left me-1"></i>Preço Atualizado
+                </span>
+              {% endif %}
+
+              <!-- Wrapper da Imagem -->
+              <div id="img-wrapper-{{ eq.id }}" class="w-100 h-100 d-flex align-items-center justify-content-center">
+                {% if eq.image_src %}
+                  <img src="{{ eq.image_src }}" alt="{{ eq.name }}" class="equip-img" id="img-eq-{{ eq.id }}" loading="lazy">
+                {% else %}
+                  <div class="text-muted text-center py-4" id="img-placeholder-{{ eq.id }}">
+                    <i class="fa-solid fa-image fa-3x text-secondary opacity-25"></i>
+                    <span class="small d-block mt-1 text-secondary">Sem imagem</span>
+                  </div>
+                {% endif %}
+              </div>
+
+              <!-- Botão para Troca Rápida de Foto -->
+              <button type="button" class="btn-camera-upload" onclick="abrirSeletorFoto({{ eq.id }})" title="Alterar foto do equipamento (sincroniza com Estoque)">
+                <i class="fa-solid fa-camera"></i>
+              </button>
+              <input type="file" id="input-foto-{{ eq.id }}" class="d-none" accept="image/png,image/jpeg,image/jpg" onchange="enviarFotoEquipamento({{ eq.id }}, this)">
+            </div>
+
+            <!-- Corpo do Card -->
+            <div class="p-3 d-flex flex-column flex-grow-1">
+              <div class="d-flex align-items-center justify-content-between mb-1 gap-1">
+                <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 0.72rem;" id="mfg-eq-{{ eq.id }}" title="Fabricante do equipamento">
+                  <i class="fa-solid fa-industry me-1 text-primary"></i>{{ eq.fabricante or 'Não definido' }}
+                </span>
+                {% if eq.tipo_equipamento %}
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 text-truncate" style="font-size: 0.72rem; max-width: 140px;" id="tipo-eq-{{ eq.id }}" title="Tipo: {{ eq.tipo_equipamento }}">
+                    <i class="fa-solid fa-tag me-1"></i>{{ eq.tipo_equipamento }}
+                  </span>
+                {% else %}
+                  <span class="badge bg-light text-muted border px-2 py-1" style="font-size: 0.72rem; display: none;" id="tipo-eq-{{ eq.id }}"></span>
+                {% endif %}
+              </div>
+
+              <h6 class="equip-title mb-2" title="{{ eq.name }}" id="title-eq-{{ eq.id }}">{{ eq.name }}</h6>
+              
+              <p class="equip-desc mb-3" title="{{ eq.description or 'Sem descrição cadastrada' }}" id="desc-eq-{{ eq.id }}">
+                {{ eq.description or 'Nenhuma descrição técnica cadastrada para este equipamento.' }}
+              </p>
+
+              <!-- Bloco de Preços (Aquisição e Locação) -->
+              <div class="mt-auto pt-2 border-top">
+                <!-- Preço de Aquisição -->
+                <div class="d-flex align-items-center justify-content-between py-1 px-2 rounded mb-1 {% if modalidade == 'aquisicao' %}bg-primary-subtle border border-primary-subtle{% endif %}">
+                  <div class="d-flex align-items-center gap-1">
+                    <i class="fa-solid fa-cart-shopping text-primary small"></i>
+                    <span class="text-muted small fw-semibold">Aquisição:</span>
+                  </div>
+                  <div class="fw-bold {% if modalidade == 'aquisicao' %}text-primary fs-6{% else %}text-dark{% endif %}" id="preco-atual-{{ eq.id }}">
+                    {{ eq.preco_atual_formatado }}
+                  </div>
+                </div>
+
+                <!-- Preço de Locação -->
+                <div class="d-flex align-items-center justify-content-between py-1 px-2 rounded mb-1 {% if modalidade == 'locacao' %}bg-success-subtle border border-success-subtle{% endif %}">
+                  <div class="d-flex align-items-center gap-1">
+                    <i class="fa-solid fa-repeat text-success small"></i>
+                    <span class="text-muted small fw-semibold">Locação:</span>
+                  </div>
+                  <div id="preco-locacao-{{ eq.id }}">
+                    {% if not eq.preco_locacao_a_definir %}
+                      <span class="fw-bold {% if modalidade == 'locacao' %}text-success fs-6{% else %}text-success{% endif %}">{{ eq.preco_locacao_formatado }}</span>
+                    {% else %}
+                      <span class="text-muted small" title="Valor de locação ainda não definido">R$ 0,00 /mês <em class="text-muted" style="font-size:0.68rem;">(a definir)</em></span>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Sinalização de Mudança de Preço -->
+                <div id="bloco-mudanca-{{ eq.id }}">
+                  {% if eq.tem_mudanca %}
+                    <div class="p-2 rounded bg-light border mb-2 small">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted" style="font-size: 0.75rem;">Aquisição anterior:</span>
+                        <span class="price-old fw-semibold" id="preco-antigo-{{ eq.id }}">{{ eq.preco_anterior_formatado }}</span>
+                      </div>
+                      {% if eq.alterado_em_formatado %}
+                        <div class="text-muted mt-1" style="font-size: 0.7rem;">
+                          <i class="fa-regular fa-calendar-check me-1"></i>Mudou em {{ eq.alterado_em_formatado }}
+                          {% if eq.preco_alterado_por %}
+                            <span class="d-block text-truncate">por <strong>{{ eq.preco_alterado_por }}</strong></span>
+                          {% endif %}
+                        </div>
+                      {% endif %}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="d-flex gap-1 pt-1">
+                  <button class="btn btn-sm btn-outline-secondary flex-grow-1 d-flex align-items-center justify-content-center gap-1" onclick="copiarDescricao('{{ eq.id }}')" title="Copiar descrição e preços (Aquisição e Locação) para área de transferência">
+                    <i class="fa-regular fa-copy"></i>
+                    <span>Copiar</span>
+                  </button>
+
+                  <button class="btn btn-sm btn-outline-info d-flex align-items-center justify-content-center px-2" onclick="abrirModalHistorico({{ eq.id }}, '{{ eq.name|escape }}')" title="Histórico de alterações deste equipamento">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                  </button>
+
+                  <button class="btn btn-sm btn-primary d-flex align-items-center justify-content-center px-2" onclick="abrirModalEditarPreco({{ eq.id }}, '{{ eq.name|escape }}', {{ eq.unit_price or 0.0 }}, {{ eq.preco_locacao or 'null' }}, '{{ (eq.description or '')|escape }}', '{{ eq.image_src or '' }}', '{{ (eq.fabricante or '')|escape }}', '{{ (eq.tipo_equipamento or '')|escape }}')" title="Atualizar Preço de Aquisição, Locação, Fabricante, Tipo, Descrição e Foto">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Paginação -->
+    {% if pagination.pages > 1 %}
+      <div class="d-flex justify-content-center mt-4">
+        <nav aria-label="Paginação de equipamentos">
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+              <a class="page-link" href="{{ url_for('crm.tabela_precos', page=pagination.prev_num, q=search, filtro=filtro, modalidade=modalidade, fabricante=fabricante, tipo=tipo, aba='equipamentos') }}">Anterior</a>
+            </li>
+            {% for p in pagination.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+              {% if p %}
+                <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                  <a class="page-link" href="{{ url_for('crm.tabela_precos', page=p, q=search, filtro=filtro, modalidade=modalidade, fabricante=fabricante, tipo=tipo, aba='equipamentos') }}">{{ p }}</a>
+                </li>
+              {% else %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+              {% endif %}
+            {% endfor %}
+            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+              <a class="page-link" href="{{ url_for('crm.tabela_precos', page=pagination.next_num, q=search, filtro=filtro, modalidade=modalidade, fabricante=fabricante, tipo=tipo, aba='equipamentos') }}">Próxima</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="p-5 bg-white border rounded-3 text-center shadow-sm">
+      <i class="fa-solid fa-boxes-stacked fa-3x text-secondary opacity-50 mb-3"></i>
+      <h5>Nenhum equipamento encontrado</h5>
+      <p class="text-muted small">Não foram localizados equipamentos correspondentes à sua pesquisa ou filtro.</p>
+      <a href="{{ url_for('crm.tabela_precos', aba='equipamentos') }}" class="btn btn-outline-primary btn-sm">Limpar Filtros</a>
+    </div>
+  {% endif %}
+    </div> <!-- Fim #pane-equipamentos -->
+
+    <!-- ABA 2: SISTEMAS & SOFTWARES -->
+    <div class="tab-pane fade {% if aba == 'sistemas' %}show active{% endif %}" id="pane-sistemas" role="tabpanel" aria-labelledby="tab-sistemas-btn">
+      <!-- Cabeçalho e Filtros de Sistemas -->
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+        <div>
+          <div class="d-flex align-items-center gap-2">
+            <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+              <i class="fa-solid fa-cloud-arrow-up text-success"></i>
+              <span>Planos de Software, Licenças e Suporte</span>
+            </h5>
+            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1">
+              {{ software_plans|length }} de {{ total_sistemas }} planos
+            </span>
+          </div>
+          <p class="text-muted small mb-0 mt-1">
+            Valores mensais de softwares homologados (Control iD, Secullum, Sollus Access, Armários Inteligentes, etc.)
+          </p>
+        </div>
+
+        <!-- Barra de busca e filtros rápidos para Sistemas -->
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <form action="{{ url_for('crm.tabela_precos') }}" method="GET" class="d-flex flex-wrap gap-2">
+            <input type="hidden" name="aba" value="sistemas">
+            <div class="input-group input-group-sm" style="width: 220px;">
+              <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+              <input type="text" name="qs" value="{{ search_sistema }}" class="form-control border-start-0" placeholder="Buscar plano/software...">
+              {% if search_sistema %}
+                <a href="{{ url_for('crm.tabela_precos', aba='sistemas', fabricante_sistema=fabricante_sistema, categoria_sistema=categoria_sistema) }}" class="btn btn-outline-secondary border-start-0">
+                  <i class="fa-solid fa-xmark"></i>
+                </a>
+              {% endif %}
+            </div>
+
+            <!-- Filtro por Fabricante de Sistema -->
+            <select name="fabricante_sistema" class="form-select form-select-sm" style="width: 170px;" onchange="this.form.submit()">
+              <option value="">Fabricante: Todos</option>
+              {% for f in sistemas_fabricantes %}
+                <option value="{{ f }}" {% if fabricante_sistema == f %}selected{% endif %}>{{ f }}</option>
+              {% endfor %}
+            </select>
+
+            <!-- Filtro por Categoria de Sistema -->
+            <select name="categoria_sistema" class="form-select form-select-sm" style="width: 170px;" onchange="this.form.submit()">
+              <option value="">Categoria: Todas</option>
+              {% for c in sistemas_categorias %}
+                <option value="{{ c }}" {% if categoria_sistema == c %}selected{% endif %}>{{ c }}</option>
+              {% endfor %}
+            </select>
+          </form>
+
+          <!-- Botão Reajuste em Massa para Sistemas -->
+          <button type="button" class="btn btn-sm btn-success fw-bold d-flex align-items-center gap-2 shadow-sm" onclick="abrirModalReajusteSistemas()">
+            <i class="fa-solid fa-calculator"></i>
+            <span>Reajuste em Massa</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Cards de Resumo Sistemas -->
+      <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+          <div class="p-3 bg-white border rounded-3 shadow-sm d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-success-subtle p-3 text-success d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+              <i class="fa-solid fa-laptop-code fa-lg"></i>
+            </div>
+            <div>
+              <span class="text-muted small d-block">Total de Planos</span>
+              <span class="fw-bold text-dark fs-5">{{ total_sistemas }} licenças</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="p-3 bg-white border rounded-3 shadow-sm d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-primary-subtle p-3 text-primary d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+              <i class="fa-solid fa-industry fa-lg"></i>
+            </div>
+            <div>
+              <span class="text-muted small d-block">Fabricantes</span>
+              <span class="fw-bold text-dark fs-5">{{ sistemas_fabricantes|length }} marcas</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="p-3 bg-white border rounded-3 shadow-sm d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-info-subtle p-3 text-info d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+              <i class="fa-solid fa-layer-group fa-lg"></i>
+            </div>
+            <div>
+              <span class="text-muted small d-block">Categorias</span>
+              <span class="fw-bold text-dark fs-5">{{ sistemas_categorias|length }} módulos</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="p-3 bg-white rounded-3 shadow-sm d-flex align-items-center gap-3 card-metric-interactive h-100" onclick="abrirModalAuditoriaGeral()" style="cursor: pointer;" title="Clique para abrir o histórico completo da auditoria de preços">
+            <div class="rounded-circle bg-warning-subtle p-3 text-warning d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+              <i class="fa-solid fa-shield-halved fa-lg"></i>
+            </div>
+            <div>
+              <span class="text-muted small d-block">Auditoria de Preços</span>
+              <span class="fw-bold text-dark fs-6 d-flex align-items-center gap-1">
+                Histórico Completo <i class="fa-solid fa-arrow-up-right-from-square text-warning ms-1" style="font-size: 0.72rem;"></i>
+              </span>
+              <small class="text-warning d-block fw-semibold" style="font-size: 0.68rem;">Clique para visualizar</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid de Sistemas -->
+      {% if software_plans %}
+        <div class="row g-3">
+          {% for sp in software_plans %}
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-3" id="card-sis-{{ sp.id }}">
+              <div class="sistema-card p-3">
+                <!-- Badges Fabricante e Categoria -->
+                <div class="d-flex align-items-center justify-content-between gap-1 mb-2">
+                  <div class="d-flex align-items-center gap-1 flex-wrap">
+                    <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 0.72rem;" id="mfg-sis-{{ sp.id }}" title="Fabricante do software">
+                      <i class="fa-solid fa-industry me-1 text-primary"></i>{{ sp.fabricante or 'Sollus' }}
+                    </span>
+                    {% if sp.codigo %}
+                      <span class="badge bg-secondary-subtle text-dark border px-2 py-1" style="font-size: 0.72rem;" title="Código Oficial">
+                        <i class="fa-solid fa-barcode me-1 text-primary"></i>Cód {{ sp.codigo }}
+                      </span>
+                    {% endif %}
+                  </div>
+                  <span class="badge bg-info-subtle text-info border px-2 py-1" style="font-size: 0.72rem;" id="cat-sis-{{ sp.id }}">
+                    {{ sp.categoria or 'Software' }}
+                  </span>
+                </div>
+
+                <!-- Título do Sistema / Plano -->
+                <h6 class="equip-title mb-2 text-dark fw-bold" title="{{ sp.name }}" id="title-sis-{{ sp.id }}">
+                  {{ sp.name }}
+                </h6>
+
+                <!-- Badges de Capacidade / Vigência / Suporte -->
+                <div class="d-flex flex-wrap gap-1 mb-2">
+                  {% if sp.faixa_funcionarios %}
+                    <span class="badge bg-light text-dark border" style="font-size: 0.72rem;" id="badge-faixa-{{ sp.id }}" title="Capacidade de funcionários">
+                      <i class="fa-solid fa-users me-1 text-primary"></i>{{ sp.faixa_funcionarios }}
+                    </span>
+                  {% endif %}
+                  <span class="badge bg-light text-dark border" style="font-size: 0.72rem;" id="badge-vigencia-{{ sp.id }}" title="Periodicidade / Vigência">
+                    <i class="fa-solid fa-calendar me-1 text-secondary"></i>{{ sp.vigencia or 'Mensal' }}
+                  </span>
+                  {% if sp.suporte_incluso %}
+                    <span class="badge bg-success-subtle text-success border" style="font-size: 0.72rem;" title="Suporte técnico incluso">
+                      <i class="fa-solid fa-headset me-1"></i>Suporte Incluso
+                    </span>
+                  {% endif %}
+                </div>
+
+                <!-- Descrição Técnica -->
+                <p class="equip-desc mb-3" title="{{ sp.description or 'Sem descrição cadastrada' }}" id="desc-sis-{{ sp.id }}">
+                  {{ sp.description or 'Plano de software para gestão e controle com sincronização em nuvem.' }}
+                </p>
+
+                <!-- Bloco de Preços -->
+                <div class="mt-auto pt-2 border-top">
+                  <div class="d-flex align-items-baseline justify-content-between mb-1">
+                    <span class="text-muted small">Valor Recorrente:</span>
+                    <div class="price-current" id="preco-mensal-sis-{{ sp.id }}">
+                      {{ sp.valor_mensal_formatado }}<span class="text-muted fw-normal" style="font-size: 0.75rem;">{% if 'anual' in (sp.vigencia or '')|lower %}{% if 'pessoa' in (sp.vigencia or '')|lower %}/ano/pess.{% else %}/ano{% endif %}{% elif 'pessoa' in (sp.vigencia or '')|lower %}/mês/pess.{% else %}/mês{% endif %}</span>
+                    </div>
+                  </div>
+
+                  {% if sp.valor_implantacao and sp.valor_implantacao > 0 %}
+                    <div class="text-muted small text-end mb-1" style="font-size: 0.75rem;">
+                      + Implantação: <strong>R$ {{ "%.2f"|format(sp.valor_implantacao)|replace('.', ',') }}</strong>
+                    </div>
+                  {% endif %}
+
+                  <!-- Sinalização de Mudança de Preço -->
+                  <div id="bloco-mudanca-sis-{{ sp.id }}">
+                    {% if sp.tem_mudanca %}
+                      <div class="p-2 rounded bg-light border mb-2 small">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <span class="text-muted" style="font-size: 0.75rem;">Mensalidade anterior:</span>
+                          <span class="price-old fw-semibold" id="preco-antigo-sis-{{ sp.id }}">{{ sp.preco_anterior_formatado }}</span>
+                        </div>
+                        {% if sp.alterado_em_formatado %}
+                          <div class="text-muted mt-1" style="font-size: 0.7rem;">
+                            <i class="fa-regular fa-calendar-check me-1"></i>Mudou em {{ sp.alterado_em_formatado }}
+                            {% if sp.preco_alterado_por %}
+                              <span class="d-block text-truncate">por <strong>{{ sp.preco_alterado_por }}</strong></span>
+                            {% endif %}
+                          </div>
+                        {% endif %}
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <!-- Botões de Ação -->
+                  <div class="d-flex gap-1 pt-1">
+                    <button class="btn btn-sm btn-outline-secondary flex-grow-1 d-flex align-items-center justify-content-center gap-1" onclick="copiarDescricaoSistema({{ sp.id }})" title="Copiar informações do plano">
+                      <i class="fa-regular fa-copy"></i>
+                      <span>Copiar</span>
+                    </button>
+
+                    <button class="btn btn-sm btn-outline-info d-flex align-items-center justify-content-center px-2" onclick="abrirHistoricoPrecosSistema({{ sp.id }}, '{{ sp.name|escape }}')" title="Histórico de alterações de preço deste sistema">
+                      <i class="fa-solid fa-clock-rotate-left"></i>
+                    </button>
+
+                    <button class="btn btn-sm btn-success d-flex align-items-center justify-content-center px-2" onclick="abrirModalEditarPrecoSistema({{ sp.id }}, '{{ sp.name|escape }}', {{ sp.valor_mensal or 0.0 }}, {{ sp.valor_implantacao or 0.0 }}, '{{ (sp.fabricante or '')|escape }}', '{{ (sp.categoria or '')|escape }}', '{{ (sp.faixa_funcionarios or '')|escape }}', '{{ (sp.vigencia or '')|escape }}', '{{ (sp.description or '')|escape }}')" title="Editar preço, fabricante e dados do plano">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="p-5 bg-white border rounded-3 text-center shadow-sm">
+          <i class="fa-solid fa-laptop-code fa-3x text-secondary opacity-50 mb-3"></i>
+          <h5>Nenhum sistema encontrado</h5>
+          <p class="text-muted small">Não foram localizados planos ou sistemas correspondentes à sua pesquisa ou filtro.</p>
+          <a href="{{ url_for('crm.tabela_precos', aba='sistemas') }}" class="btn btn-outline-success btn-sm">Limpar Filtros</a>
+        </div>
+      {% endif %}
+    </div> <!-- Fim #pane-sistemas -->
+  </div> <!-- Fim #tabelaPrecosTabContent -->
+</div> <!-- Fim .crm-page-container -->
+
+<!-- Modal: Editar Preço, Descrição e Foto (Sincronizado) -->
+<div class="modal fade" id="modalEditarPreco" tabindex="-1" aria-labelledby="modalEditarPrecoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold text-dark" id="modalEditarPrecoLabel">
+          <i class="fa-solid fa-pen-to-square text-primary me-2"></i>
+          <span>Atualizar Equipamento</span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <form id="formAtualizarPreco" onsubmit="salvarPrecoEquipamento(event)">
+        <input type="hidden" id="edit_eq_id" value="">
+        <div class="modal-body p-4">
+          <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-3">
+            <i class="fa-solid fa-arrows-rotate fa-lg"></i>
+            <div>
+              A alteração feita aqui atualiza o <strong>Estoque Equipamentos</strong> automaticamente e registra histórico de mudança para a equipe.
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Nome do Equipamento</label>
+            <input type="text" id="edit_eq_nome" class="form-control" required>
+          </div>
+
+          <!-- Fabricante do Equipamento -->
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Fabricante</label>
+            <input type="text" id="edit_eq_fabricante" class="form-control" list="datalist_fabricantes" placeholder="Ex: Control iD, Henry, EVO...">
+            <datalist id="datalist_fabricantes">
+              {% for f in fabricantes %}
+                <option value="{{ f }}">
+              {% endfor %}
+            </datalist>
+            <small class="text-muted" style="font-size: 0.72rem;">Permite agrupar e realizar reajustes específicos por fabricante.</small>
+          </div>
+
+          <!-- Tipo de Equipamento -->
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Tipo de Equipamento</label>
+            <select id="edit_eq_tipo" class="form-select">
+              <option value="">Selecione o tipo de equipamento...</option>
+              {% for t in tipos_equipamento %}
+                <option value="{{ t }}">{{ t }}</option>
+              {% endfor %}
+            </select>
+            <small class="text-muted" style="font-size: 0.72rem;">Classificação técnica: Relógio de Ponto, Catraca, Controle de Acesso, Cancela & Barreira, Acessórios & Suprimentos.</small>
+          </div>
+
+          <!-- Foto do Equipamento -->
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Foto do Equipamento</label>
+            <div class="d-flex align-items-center gap-3">
+              <img id="edit_eq_img_preview" src="" alt="Prévia" class="border rounded bg-light p-1" style="width: 54px; height: 54px; object-fit: contain; display: none;">
+              <div class="flex-grow-1">
+                <input type="file" id="edit_eq_foto" class="form-control form-control-sm" accept="image/png,image/jpeg,image/jpg" onchange="previewNovaFotoModal(this)">
+                <small class="text-muted" style="font-size: 0.72rem;">PNG, JPG ou JPEG. Sincroniza com o menu Estoque.</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-bold">Preço de Aquisição (Venda R$) <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text fw-bold text-primary">R$</span>
+                <input type="number" step="0.01" min="0" id="edit_eq_preco" class="form-control fw-bold text-primary fs-5" required>
+              </div>
+              <small class="text-muted" style="font-size: 0.72rem;">Preço de compra / venda avulsa do item.</small>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-bold">Preço de Locação (R$/mês)</label>
+              <div class="input-group">
+                <span class="input-group-text fw-bold text-success">R$</span>
+                <input type="number" step="0.01" min="0" id="edit_eq_preco_locacao" class="form-control fw-bold text-success fs-5" placeholder="Ex: 130.00">
+                <span class="input-group-text text-muted small">/mês</span>
+              </div>
+              <small class="text-muted" style="font-size: 0.72rem;">Mensalidade para contratos de locação.</small>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Descrição Técnica</label>
+            <textarea id="edit_eq_desc" rows="4" class="form-control" placeholder="Descrição detalhada do equipamento, características e especificações..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary px-4 fw-bold" id="btnSalvarPreco">
+            <i class="fa-solid fa-check me-1"></i> Salvar e Sincronizar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Histórico de Alterações de Preço -->
+<div class="modal fade" id="modalHistoricoPreco" tabindex="-1" aria-labelledby="modalHistoricoPrecoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-light">
+        <div>
+          <h5 class="modal-title fw-bold text-dark" id="modalHistoricoPrecoLabel">
+            <i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>
+            <span>Histórico de Preços</span>
+          </h5>
+          <small class="text-muted" id="modalHistoricoSubtitulo"></small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body p-4" id="modalHistoricoBody" style="max-height: 400px; overflow-y: auto;">
+        <!-- Preenchido via AJAX -->
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Reajuste de Preços em Massa (Opção 1) -->
+<div class="modal fade" id="modalReajusteMassa" tabindex="-1" aria-labelledby="modalReajusteMassaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title fw-bold" id="modalReajusteMassaLabel">
+          <i class="fa-solid fa-calculator me-2"></i>
+          <span>Reajuste de Preços em Massa</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <!-- Escopo de Aplicação -->
+        <div class="mb-3 p-3 bg-light border rounded-3">
+          <label class="form-label fw-bold small text-uppercase text-muted mb-2">Escopo do Reajuste</label>
+          <div class="d-flex flex-wrap gap-4 align-items-center">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="escopo_reajuste" id="escopo_todos" value="todos" checked onchange="atualizarPreviaReajuste()">
+              <label class="form-check-label fw-semibold" for="escopo_todos" style="cursor: pointer;">
+                Todos os equipamentos ({{ total_equipamentos }})
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="escopo_reajuste" id="escopo_selecionados" value="selecionados" onchange="atualizarPreviaReajuste()">
+              <label class="form-check-label fw-semibold" for="escopo_selecionados" id="label_escopo_selecionados" style="cursor: pointer;">
+                Apenas selecionados (0)
+              </label>
+            </div>
+            <div class="form-check d-flex align-items-center gap-2">
+              <input class="form-check-input mt-0" type="radio" name="escopo_reajuste" id="escopo_fabricante" value="fabricante" onchange="atualizarPreviaReajuste()">
+              <label class="form-check-label fw-semibold text-nowrap" for="escopo_fabricante" style="cursor: pointer;">
+                Por Fabricante:
+              </label>
+              <select class="form-select form-select-sm" id="bulk_fabricante" style="width: 170px;" onchange="aoMudarFabricanteReajuste()">
+                <option value="">Selecione o fabricante...</option>
+                {% for f in fabricantes %}
+                  <option value="{{ f }}">{{ f }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Parâmetros de Reajuste -->
+        <div class="row g-3 mb-3">
+          <!-- Tipo de Reajuste -->
+          <div class="col-12 col-md-6">
+            <label class="form-label small fw-bold">Tipo de Reajuste <span class="text-danger">*</span></label>
+            <select class="form-select" id="bulk_adjustment_type" onchange="aoMudarTipoReajuste()">
+              <option value="percentual_aumento">Aumento Percentual (+%)</option>
+              <option value="percentual_desconto">Desconto Percentual (-%)</option>
+              <option value="valor_aumento">Aumento em Valor Fixo (+R$)</option>
+              <option value="valor_desconto">Desconto em Valor Fixo (-R$)</option>
+            </select>
+          </div>
+
+          <!-- Valor do Reajuste -->
+          <div class="col-12 col-md-6">
+            <label class="form-label small fw-bold" id="label_bulk_value">Valor do Aumento (%) <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text fw-bold" id="addon_bulk_type">%</span>
+              <input type="number" step="0.01" min="0" id="bulk_value" class="form-control fw-bold fs-5 text-success" value="10.00" placeholder="Ex: 10" oninput="debouncedPreviaReajuste()">
+            </div>
+          </div>
+
+          <!-- Arredondamento Inteligente -->
+          <div class="col-12">
+            <label class="form-label small fw-bold">Regra de Arredondamento</label>
+            <select class="form-select form-select-sm" id="bulk_rounding_mode" onchange="atualizarPreviaReajuste()">
+              <option value="none" selected>Sem arredondamento (manter centavos calculados normais)</option>
+              <option value="inteiro">Arredondar para número inteiro mais próximo (ex: R$ 1.250,00)</option>
+              <option value="final_90">Final comercial ,90 (ex: R$ 1.249,90)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tabela de Prévia Dinâmica -->
+        <div class="border rounded-3 p-3 bg-white mb-3">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+              <i class="fa-solid fa-eye text-primary"></i>
+              <span>Prévia dos Novos Preços</span>
+            </h6>
+            <span class="badge bg-primary-subtle text-primary border" id="previa_total_itens">0 itens</span>
+          </div>
+
+          <div class="preview-table-container">
+            <table class="table table-sm table-hover align-middle mb-0" id="tabela_previa_reajuste">
+              <thead class="table-light sticky-top">
+                <tr>
+                  <th style="width: 45%;">Equipamento</th>
+                  <th class="text-end" style="width: 20%;">Preço Atual</th>
+                  <th class="text-end" style="width: 20%;">Novo Preço</th>
+                  <th class="text-end" style="width: 15%;">Variação</th>
+                </tr>
+              </thead>
+              <tbody id="corpo_tabela_previa">
+                <tr>
+                  <td colspan="4" class="text-center py-3 text-muted">
+                    <i class="fa-solid fa-spinner fa-spin me-2"></i> Carregando simulação...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="alert alert-warning py-2 px-3 small mb-0 d-flex align-items-center gap-2">
+          <i class="fa-solid fa-triangle-exclamation fa-lg"></i>
+          <div>
+            Esta operação atualizará o preço imediatamente no <strong>Estoque</strong> e registrará o histórico e auditoria individual de cada equipamento com a origem <em>Reajuste em Massa</em>.
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success fw-bold px-4" id="btnConfirmarReajuste" onclick="executarReajusteMassa()">
+          <i class="fa-solid fa-check me-1"></i> Confirmar e Aplicar Reajuste
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Datalists para Sistemas -->
+<datalist id="datalist_sistemas_fabricantes">
+  {% for f in sistemas_fabricantes %}
+    <option value="{{ f }}">
+  {% endfor %}
+</datalist>
+
+<datalist id="datalist_sistemas_categorias">
+  {% for c in sistemas_categorias %}
+    <option value="{{ c }}">
+  {% endfor %}
+</datalist>
+
+<!-- Modal: Editar Preço e Dados do Sistema -->
+<div class="modal fade" id="modalEditarPrecoSistema" tabindex="-1" aria-labelledby="modalEditarPrecoSistemaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold text-dark" id="modalEditarPrecoSistemaLabel">
+          <i class="fa-solid fa-laptop-code text-success me-2"></i>
+          <span>Atualizar Plano de Sistema / Software</span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <form id="formAtualizarPrecoSistema" onsubmit="salvarPrecoSistema(event)">
+        <input type="hidden" id="edit_sis_id" value="">
+        <div class="modal-body p-4">
+          <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-3">
+            <i class="fa-solid fa-shield-halved fa-lg"></i>
+            <div>
+              Esta alteração atualiza o valor padrão do sistema e registra histórico completo de auditoria para a equipe.
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Nome do Plano / Licença <span class="text-danger">*</span></label>
+            <input type="text" id="edit_sis_nome" class="form-control" required>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-bold">Fabricante</label>
+              <input type="text" id="edit_sis_fabricante" class="form-control" list="datalist_sistemas_fabricantes" placeholder="Ex: Control iD, Secullum...">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold">Categoria</label>
+              <input type="text" id="edit_sis_categoria" class="form-control" list="datalist_sistemas_categorias" placeholder="Ex: Ponto, Acesso...">
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-bold">Faixa / Limite</label>
+              <input type="text" id="edit_sis_faixa" class="form-control" placeholder="Ex: Até 20 func">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold">Vigência</label>
+              <input type="text" id="edit_sis_vigencia" class="form-control" placeholder="Ex: Mensal, Anual...">
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-bold">Valor Mensal (R$) <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text fw-bold">R$</span>
+                <input type="number" step="0.01" min="0" id="edit_sis_valor_mensal" class="form-control fw-bold text-success fs-5" required>
+              </div>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold">Implantação (R$)</label>
+              <div class="input-group">
+                <span class="input-group-text fw-bold">R$</span>
+                <input type="number" step="0.01" min="0" id="edit_sis_valor_implantacao" class="form-control" placeholder="0,00">
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Descrição do Plano</label>
+            <textarea id="edit_sis_desc" rows="3" class="form-control" placeholder="Características, limites de funcionários e recursos inclusos..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success px-4 fw-bold" id="btnSalvarPrecoSistema">
+            <i class="fa-solid fa-check me-1"></i> Salvar Alterações
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Histórico de Alterações de Preço de Sistemas -->
+<div class="modal fade" id="modalHistoricoPrecoSistema" tabindex="-1" aria-labelledby="modalHistoricoPrecoSistemaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-light">
+        <div>
+          <h5 class="modal-title fw-bold text-dark" id="modalHistoricoPrecoSistemaLabel">
+            <i class="fa-solid fa-clock-rotate-left text-success me-2"></i>
+            <span>Histórico de Mensalidades</span>
+          </h5>
+          <small class="text-muted" id="modalHistoricoSubtituloSistema"></small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body p-4" id="modalHistoricoBodySistema" style="max-height: 400px; overflow-y: auto;">
+        <!-- Preenchido via AJAX -->
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Reajuste de Mensalidades de Sistemas em Massa -->
+<div class="modal fade" id="modalReajusteSistemas" tabindex="-1" aria-labelledby="modalReajusteSistemasLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title fw-bold" id="modalReajusteSistemasLabel">
+          <i class="fa-solid fa-calculator me-2"></i>
+          <span>Reajuste de Mensalidades de Sistemas em Massa</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <!-- Escopo de Aplicação -->
+        <div class="mb-3 p-3 bg-light border rounded-3">
+          <label class="form-label fw-bold small text-uppercase text-muted mb-2">Escopo do Reajuste</label>
+          <div class="d-flex flex-wrap gap-4 align-items-center">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="escopo_reajuste_sis" id="escopo_sis_todos" value="todos" checked onchange="atualizarPreviaReajusteSistema()">
+              <label class="form-check-label fw-semibold" for="escopo_sis_todos" style="cursor: pointer;">
+                Todos os planos de sistemas ({{ total_sistemas }})
+              </label>
+            </div>
+
+            <div class="form-check d-flex align-items-center gap-2">
+              <input class="form-check-input mt-0" type="radio" name="escopo_reajuste_sis" id="escopo_sis_fabricante" value="fabricante" onchange="atualizarPreviaReajusteSistema()">
+              <label class="form-check-label fw-semibold text-nowrap" for="escopo_sis_fabricante" style="cursor: pointer;">
+                Por Fabricante:
+              </label>
+              <select class="form-select form-select-sm" id="bulk_sis_fabricante" style="width: 170px;" onchange="aoMudarFabricanteReajusteSistemas()">
+                <option value="">Selecione...</option>
+                {% for f in sistemas_fabricantes %}
+                  <option value="{{ f }}">{{ f }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-check d-flex align-items-center gap-2">
+              <input class="form-check-input mt-0" type="radio" name="escopo_reajuste_sis" id="escopo_sis_categoria" value="categoria" onchange="atualizarPreviaReajusteSistema()">
+              <label class="form-check-label fw-semibold text-nowrap" for="escopo_sis_categoria" style="cursor: pointer;">
+                Por Categoria:
+              </label>
+              <select class="form-select form-select-sm" id="bulk_sis_categoria" style="width: 170px;" onchange="aoMudarCategoriaReajusteSistemas()">
+                <option value="">Selecione...</option>
+                {% for c in sistemas_categorias %}
+                  <option value="{{ c }}">{{ c }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Parâmetros de Reajuste -->
+        <div class="row g-3 mb-3">
+          <!-- Tipo de Reajuste -->
+          <div class="col-12 col-md-6">
+            <label class="form-label small fw-bold">Tipo de Reajuste <span class="text-danger">*</span></label>
+            <select class="form-select" id="bulk_sis_adjustment_type" onchange="aoMudarTipoReajusteSistemas()">
+              <option value="percentual_aumento">Aumento Percentual (+%)</option>
+              <option value="percentual_desconto">Desconto Percentual (-%)</option>
+              <option value="valor_aumento">Aumento em Valor Fixo (+R$)</option>
+              <option value="valor_desconto">Desconto em Valor Fixo (-R$)</option>
+            </select>
+          </div>
+
+          <!-- Valor do Reajuste -->
+          <div class="col-12 col-md-6">
+            <label class="form-label small fw-bold" id="label_bulk_sis_value">Valor do Aumento (%) <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text fw-bold" id="addon_bulk_sis_type">%</span>
+              <input type="number" step="0.01" min="0" id="bulk_sis_value" class="form-control fw-bold fs-5 text-success" value="10.00" placeholder="Ex: 10" oninput="debouncedPreviaReajusteSistema()">
+            </div>
+          </div>
+
+          <!-- Arredondamento Inteligente -->
+          <div class="col-12">
+            <label class="form-label small fw-bold">Regra de Arredondamento</label>
+            <select class="form-select form-select-sm" id="bulk_sis_rounding_mode" onchange="atualizarPreviaReajusteSistema()">
+              <option value="none" selected>Sem arredondamento (manter centavos calculados normais)</option>
+              <option value="inteiro">Arredondar para número inteiro mais próximo (ex: R$ 85,00)</option>
+              <option value="final_90">Final comercial ,90 (ex: R$ 84,90)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tabela de Prévia Dinâmica -->
+        <div class="border rounded-3 p-3 bg-white mb-3">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+              <i class="fa-solid fa-eye text-success"></i>
+              <span>Prévia das Novas Mensalidades</span>
+            </h6>
+            <span class="badge bg-success-subtle text-success border" id="previa_sis_total_itens">0 planos</span>
+          </div>
+
+          <div class="preview-table-container">
+            <table class="table table-sm table-hover align-middle mb-0" id="tabela_previa_reajuste_sis">
+              <thead class="table-light sticky-top">
+                <tr>
+                  <th style="width: 45%;">Plano / Software</th>
+                  <th class="text-end" style="width: 20%;">Mensalidade Atual</th>
+                  <th class="text-end" style="width: 20%;">Nova Mensalidade</th>
+                  <th class="text-end" style="width: 15%;">Variação</th>
+                </tr>
+              </thead>
+              <tbody id="corpo_tabela_previa_sis">
+                <tr>
+                  <td colspan="4" class="text-center py-3 text-muted">
+                    <i class="fa-solid fa-spinner fa-spin me-2"></i> Carregando simulação...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="alert alert-warning py-2 px-3 small mb-0 d-flex align-items-center gap-2">
+          <i class="fa-solid fa-triangle-exclamation fa-lg"></i>
+          <div>
+            Esta operação atualizará os preços das mensalidades e registrará auditoria individual para cada plano com a origem <em>Reajuste em Massa</em>.
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success fw-bold px-4" id="btnConfirmarReajusteSis" onclick="executarReajusteMassaSistemas()">
+          <i class="fa-solid fa-check me-1"></i> Confirmar e Aplicar Reajuste
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Histórico Completo de Auditoria de Preços -->
+<div class="modal fade" id="modalAuditoriaCompletaPrecos" tabindex="-1" aria-labelledby="modalAuditoriaCompletaPrecosLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-light py-3 border-bottom">
+        <div class="d-flex align-items-center gap-2">
+          <div class="rounded-circle bg-info-subtle p-2 text-info d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+            <i class="fa-solid fa-shield-halved fa-lg"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold text-dark mb-0" id="modalAuditoriaCompletaPrecosLabel">
+              Relatório e Auditoria Completa de Preços
+            </h5>
+            <small class="text-muted">Registro detalhado de todas as alterações manuais e reajustes em massa</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <!-- Barra de Filtros Interna -->
+      <div class="modal-body p-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 bg-light border rounded-3 mb-3">
+          <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+            <!-- Busca -->
+            <div class="input-group input-group-sm" style="max-width: 280px;">
+              <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+              <input type="text" id="auditoria_busca" class="form-control border-start-0" placeholder="Buscar item, fabricante ou usuário..." oninput="debouncedCarregarAuditoria()">
+            </div>
+
+            <!-- Filtro Tipo -->
+            <select id="auditoria_tipo" class="form-select form-select-sm" style="width: 190px;" onchange="carregarAuditoriaCompleta()">
+              <option value="todos">Tipo: Todos os itens</option>
+              <option value="equipamentos">Apenas Equipamentos & Peças</option>
+              <option value="sistemas">Apenas Sistemas & Softwares</option>
+            </select>
+
+            <!-- Filtro Período -->
+            <select id="auditoria_periodo" class="form-select form-select-sm" style="width: 180px;" onchange="carregarAuditoriaCompleta()">
+              <option value="7">Últimos 7 dias (Semana)</option>
+              <option value="30">Últimos 30 dias</option>
+              <option value="90">Últimos 90 dias</option>
+              <option value="todos" selected>Todo o Histórico</option>
+            </select>
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary-subtle text-primary border px-2 py-1" id="auditoria_total_registros">
+              Carregando...
+            </span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="carregarAuditoriaCompleta()" title="Atualizar dados">
+              <i class="fa-solid fa-arrows-rotate"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabela de Registros -->
+        <div class="table-responsive border rounded-3" style="max-height: 480px; overflow-y: auto;">
+          <table class="table table-sm table-hover align-middle mb-0" id="tabela_auditoria_completa">
+            <thead class="table-light sticky-top" style="z-index: 2;">
+              <tr>
+                <th style="width: 16%;">Data / Hora</th>
+                <th style="width: 15%;">Tipo / Fabricante</th>
+                <th style="width: 25%;">Item / Plano</th>
+                <th class="text-end" style="width: 12%;">Preço Anterior</th>
+                <th class="text-end" style="width: 12%;">Novo Preço</th>
+                <th class="text-end" style="width: 10%;">Variação</th>
+                <th style="width: 10%;">Responsável</th>
+              </tr>
+            </thead>
+            <tbody id="corpo_tabela_auditoria">
+              <tr>
+                <td colspan="7" class="text-center py-4 text-muted">
+                  <i class="fa-solid fa-spinner fa-spin fa-2x text-primary mb-2"></i>
+                  <p class="small mb-0">Carregando histórico completo...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// --- UPLOAD DIRETO DE FOTO PELO CARD ---
+function abrirSeletorFoto(id) {
+  const input = document.getElementById(`input-foto-${id}`);
+  if (input) input.click();
+}
+
+async function enviarFotoEquipamento(id, inputElement) {
+  if (!inputElement.files || inputElement.files.length === 0) return;
+  const file = inputElement.files[0];
+
+  const formData = new FormData();
+  formData.append("foto", file);
+
+  const card = document.getElementById(`card-eq-${id}`);
+  if (card) card.style.opacity = "0.6";
+
+  try {
+    const resp = await fetch(`/crm/api/equipamentos/${id}/upload-foto`, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": "{{ csrf_token() }}",
+      },
+      body: formData,
+    });
+    const data = await resp.json();
+
+    if (!data.success) {
+      alert("Erro ao enviar foto: " + (data.error || "erro desconhecido"));
+      return;
+    }
+
+    // Atualiza a imagem no card com timestamp para burlar cache
+    const imgWrapper = document.getElementById(`img-wrapper-${id}`);
+    if (imgWrapper) {
+      const novaSrc = `${data.image_src}?t=${Date.now()}`;
+      imgWrapper.innerHTML = `<img src="${novaSrc}" alt="Equipamento" class="equip-img" id="img-eq-${id}" loading="lazy">`;
+    }
+
+    if (card) {
+      card.classList.add("border-success");
+      setTimeout(() => card.classList.remove("border-success"), 2000);
+    }
+  } catch (err) {
+    alert("Erro de rede ao enviar foto: " + err.message);
+  } finally {
+    if (card) card.style.opacity = "1";
+    inputElement.value = "";
+  }
+}
+
+// --- MODAL DE EDIÇÃO INDIVIDUAL ---
+function abrirModalEditarPreco(id, nome, preco, precoLocacao, desc, imgSrc, fabricante, tipo) {
+  document.getElementById("edit_eq_id").value = id;
+  document.getElementById("edit_eq_nome").value = nome || "";
+  document.getElementById("edit_eq_fabricante").value = fabricante || "";
+  const tipoInput = document.getElementById("edit_eq_tipo");
+  if (tipoInput) {
+    tipoInput.value = tipo || "";
+  }
+  document.getElementById("edit_eq_preco").value = parseFloat(preco || 0).toFixed(2);
+  const locInput = document.getElementById("edit_eq_preco_locacao");
+  if (locInput) {
+    locInput.value = (precoLocacao !== null && precoLocacao !== undefined && precoLocacao !== "" && precoLocacao !== "null" && !isNaN(precoLocacao)) ? parseFloat(precoLocacao).toFixed(2) : "";
+  }
+  document.getElementById("edit_eq_desc").value = desc || "";
+  
+  const imgPreview = document.getElementById("edit_eq_img_preview");
+  const inputFoto = document.getElementById("edit_eq_foto");
+  if (inputFoto) inputFoto.value = "";
+
+  if (imgPreview) {
+    if (imgSrc) {
+      imgPreview.src = imgSrc;
+      imgPreview.style.display = "block";
+    } else {
+      imgPreview.style.display = "none";
+    }
+  }
+
+  var modal = new bootstrap.Modal(document.getElementById("modalEditarPreco"));
+  modal.show();
+}
+
+function previewNovaFotoModal(input) {
+  const preview = document.getElementById("edit_eq_img_preview");
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      preview.src = e.target.result;
+      preview.style.display = "block";
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+async function salvarPrecoEquipamento(event) {
+  event.preventDefault();
+  const id = document.getElementById("edit_eq_id").value;
+  const nome = document.getElementById("edit_eq_nome").value;
+  const fabricante = document.getElementById("edit_eq_fabricante").value;
+  const tipoInput = document.getElementById("edit_eq_tipo");
+  const tipo = tipoInput ? tipoInput.value : "";
+  const preco = document.getElementById("edit_eq_preco").value;
+  const precoLocInput = document.getElementById("edit_eq_preco_locacao");
+  const precoLocacao = (precoLocInput && precoLocInput.value.trim() !== "") ? precoLocInput.value.trim() : "";
+  const desc = document.getElementById("edit_eq_desc").value;
+  const fotoInput = document.getElementById("edit_eq_foto");
+  const btn = document.getElementById("btnSalvarPreco");
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Salvando...';
+
+  try {
+    // Se selecionou uma nova foto no modal, envia primeiro
+    if (fotoInput && fotoInput.files && fotoInput.files.length > 0) {
+      const formData = new FormData();
+      formData.append("foto", fotoInput.files[0]);
+      const respFoto = await fetch(`/crm/api/equipamentos/${id}/upload-foto`, {
+        method: "POST",
+        headers: { "X-CSRFToken": "{{ csrf_token() }}" },
+        body: formData,
+      });
+      const dataFoto = await respFoto.json();
+      if (dataFoto.success) {
+        const imgWrapper = document.getElementById(`img-wrapper-${id}`);
+        if (imgWrapper) {
+          const novaSrc = `${dataFoto.image_src}?t=${Date.now()}`;
+          imgWrapper.innerHTML = `<img src="${novaSrc}" alt="${nome}" class="equip-img" id="img-eq-${id}" loading="lazy">`;
+        }
+      }
+    }
+
+    const resp = await fetch(`/crm/api/equipamentos/${id}/atualizar-preco`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": "{{ csrf_token() }}",
+      },
+      body: JSON.stringify({
+        nome: nome,
+        fabricante: fabricante,
+        tipo_equipamento: tipo,
+        preco: preco,
+        preco_locacao: precoLocacao,
+        descricao: desc,
+      }),
+    });
+    const data = await resp.json();
+
+    if (!data.success) {
+      alert("Erro ao atualizar equipamento: " + (data.error || "erro desconhecido"));
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Salvar e Sincronizar';
+      return;
+    }
+
+    // Atualiza elementos do card na tela instantaneamente
+    const titleEl = document.getElementById(`title-eq-${id}`);
+    if (titleEl) titleEl.innerText = data.nome;
+
+    const mfgEl = document.getElementById(`mfg-eq-${id}`);
+    if (mfgEl) {
+      mfgEl.innerHTML = `<i class="fa-solid fa-industry me-1 text-primary"></i>${data.fabricante || 'Não definido'}`;
+    }
+
+    const tipoEl = document.getElementById(`tipo-eq-${id}`);
+    if (tipoEl) {
+      if (data.tipo_equipamento) {
+        tipoEl.innerHTML = `<i class="fa-solid fa-tag me-1"></i>${data.tipo_equipamento}`;
+        tipoEl.title = `Tipo: ${data.tipo_equipamento}`;
+        tipoEl.style.display = "inline-block";
+      } else {
+        tipoEl.style.display = "none";
+      }
+    }
+
+    const descEl = document.getElementById(`desc-eq-${id}`);
+    if (descEl) descEl.innerText = desc || "Nenhuma descrição técnica cadastrada para este equipamento.";
+
+    const precoEl = document.getElementById(`preco-atual-${id}`);
+    if (precoEl) precoEl.innerText = data.novo_preco_formatado;
+
+    const precoLocEl = document.getElementById(`preco-locacao-${id}`);
+    if (precoLocEl) {
+      if (data.preco_locacao_formatado && !data.preco_locacao_a_definir) {
+        precoLocEl.innerHTML = `<span class="fw-bold text-success">${data.preco_locacao_formatado}</span>`;
+      } else {
+        precoLocEl.innerHTML = `<span class="text-muted small" title="Valor de locação ainda não definido">R$ 0,00 /mês <em class="text-muted" style="font-size:0.68rem;">(a definir)</em></span>`;
+      }
+    }
+
+    // Atualiza bloco de mudança
+    const blocoMudanca = document.getElementById(`bloco-mudanca-${id}`);
+    if (blocoMudanca && data.preco_anterior_formatado) {
+      blocoMudanca.innerHTML = `
+        <div class="p-2 rounded bg-light border mb-2 small">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted" style="font-size: 0.75rem;">Aquisição anterior:</span>
+            <span class="price-old fw-semibold" id="preco-antigo-${id}">${data.preco_anterior_formatado}</span>
+          </div>
+          <div class="text-muted mt-1" style="font-size: 0.7rem;">
+            <i class="fa-regular fa-calendar-check me-1"></i>Mudou em ${data.alterado_em}
+            <span class="d-block text-truncate">por <strong>${data.alterado_por}</strong></span>
+          </div>
+        </div>
+      `;
+    }
+
+    // Fecha o modal
+    const modalEl = document.getElementById("modalEditarPreco");
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+
+    // Feedback visual
+    const cardEl = document.getElementById(`card-eq-${id}`);
+    if (cardEl) {
+      cardEl.classList.add("border-success");
+      setTimeout(() => cardEl.classList.remove("border-success"), 2500);
+    }
+  } catch (err) {
+    alert("Erro de rede ao salvar: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Salvar e Sincronizar';
+  }
+}
+
+// --- HISTÓRICO DE PREÇOS ---
+async function abrirModalHistorico(id, nome) {
+  document.getElementById("modalHistoricoSubtitulo").innerText = nome;
+  const body = document.getElementById("modalHistoricoBody");
+  body.innerHTML = '<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin text-primary fa-2x"></i><p class="small text-muted mt-2">Carregando histórico...</p></div>';
+
+  var modal = new bootstrap.Modal(document.getElementById("modalHistoricoPreco"));
+  modal.show();
+
+  try {
+    const resp = await fetch(`/crm/api/equipamentos/${id}/historico-precos`);
+    const data = await resp.json();
+
+    if (!data.success || !data.historico || data.historico.length === 0) {
+      body.innerHTML = `
+        <div class="text-center py-4 text-muted">
+          <i class="fa-solid fa-clock-rotate-left fa-2x opacity-50 mb-2"></i>
+          <p class="small mb-0">Nenhuma alteração de preço registrada ainda para este equipamento.</p>
+        </div>
+      `;
+      return;
+    }
+
+    let html = '<div class="ps-2">';
+    data.historico.forEach(item => {
+      html += `
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="d-flex justify-content-between align-items-baseline mb-1">
+            <span class="fw-bold text-success fs-6">${item.preco_novo_formatado}</span>
+            <span class="text-muted" style="font-size: 0.75rem;">${item.alterado_em}</span>
+          </div>
+          <div class="small text-muted">
+            Preço anterior: <span class="text-decoration-line-through">${item.preco_antigo_formatado}</span>
+          </div>
+          <div class="text-muted" style="font-size: 0.72rem; margin-top: 2px;">
+            Alterado por: <strong>${item.alterado_por}</strong> (Origem: ${item.origem})
+          </div>
+        </div>
+      `;
+    });
+    html += '</div>';
+    body.innerHTML = html;
+  } catch (err) {
+    body.innerHTML = `<div class="alert alert-danger small mb-0">Erro ao carregar histórico: ${err.message}</div>`;
+  }
+}
+
+// --- COPIAR DADOS ---
+function copiarDescricao(id) {
+  const title = document.getElementById(`title-eq-${id}`) ? document.getElementById(`title-eq-${id}`).innerText.trim() : '';
+  const desc = document.getElementById(`desc-eq-${id}`) ? document.getElementById(`desc-eq-${id}`).innerText.trim() : '';
+  const preco = document.getElementById(`preco-atual-${id}`) ? document.getElementById(`preco-atual-${id}`).innerText.trim() : '';
+  const precoLocEl = document.getElementById(`preco-locacao-${id}`);
+  const precoLoc = precoLocEl ? precoLocEl.innerText.trim() : '';
+
+  let texto = `${title}\n${desc}\nAquisição (Venda): ${preco}`;
+  if (precoLoc && precoLoc !== "-" && !precoLoc.includes("a definir") && !precoLoc.includes("R$ 0,00")) {
+    texto += `\nLocação: ${precoLoc}`;
+  }
+  navigator.clipboard.writeText(texto).then(() => {
+    alert("Dados do equipamento copiados para a área de transferência!");
+  }).catch(() => {
+    prompt("Copie os dados abaixo:", texto);
+  });
+}
+
+// --- SELEÇÃO EM MASSA ---
+function obterIdsSelecionados() {
+  const checkboxes = document.querySelectorAll(".equip-checkbox:checked");
+  return Array.from(checkboxes).map(cb => parseInt(cb.value)).filter(v => !isNaN(v));
+}
+
+function atualizarContadorSelecao() {
+  const selecionados = obterIdsSelecionados();
+  const total = selecionados.length;
+  
+  const contadorTxt = document.getElementById("contador-selecionados-txt");
+  if (contadorTxt) contadorTxt.innerText = `${total} selecionados`;
+
+  const btnLimpar = document.getElementById("btn-limpar-selecao");
+  if (btnLimpar) btnLimpar.style.display = total > 0 ? "inline-block" : "none";
+
+  const badgeTop = document.getElementById("badge-top-selecionados");
+  if (badgeTop) {
+    badgeTop.innerText = total;
+    badgeTop.classList.toggle("d-none", total === 0);
+  }
+
+  const reajusteBtnQtd = document.getElementById("reajuste-btn-qtd");
+  if (reajusteBtnQtd) {
+    reajusteBtnQtd.innerText = total > 0 ? `${total} itens` : "Todos";
+  }
+
+  const labelEscopo = document.getElementById("label_escopo_selecionados");
+  if (labelEscopo) {
+    labelEscopo.innerText = `Apenas itens selecionados (${total})`;
+  }
+
+  // Se todos da página estão marcados, sincroniza o master check
+  const allPageChecks = document.querySelectorAll(".equip-checkbox");
+  const masterCheck = document.getElementById("check-selecionar-todos");
+  if (masterCheck && allPageChecks.length > 0) {
+    masterCheck.checked = (selecionados.length === allPageChecks.length);
+  }
+}
+
+function toggleSelecionarTodos(masterCheck) {
+  const checkboxes = document.querySelectorAll(".equip-checkbox");
+  checkboxes.forEach(cb => { cb.checked = masterCheck.checked; });
+  atualizarContadorSelecao();
+}
+
+function desmarcarTodos() {
+  const checkboxes = document.querySelectorAll(".equip-checkbox");
+  checkboxes.forEach(cb => { cb.checked = false; });
+  const masterCheck = document.getElementById("check-selecionar-todos");
+  if (masterCheck) masterCheck.checked = false;
+  atualizarContadorSelecao();
+}
+
+// --- MODAL DE REAJUSTE EM MASSA (OPÇÃO 1) ---
+function abrirModalReajusteMassa() {
+  const selecionados = obterIdsSelecionados();
+  const radSelecionados = document.getElementById("escopo_selecionados");
+  const radTodos = document.getElementById("escopo_todos");
+
+  if (selecionados.length > 0) {
+    radSelecionados.checked = true;
+  } else {
+    radTodos.checked = true;
+  }
+
+  atualizarContadorSelecao();
+  aoMudarTipoReajuste();
+  atualizarPreviaReajuste();
+
+  var modal = new bootstrap.Modal(document.getElementById("modalReajusteMassa"));
+  modal.show();
+}
+
+function aoMudarTipoReajuste() {
+  const type = document.getElementById("bulk_adjustment_type").value;
+  const addon = document.getElementById("addon_bulk_type");
+  const label = document.getElementById("label_bulk_value");
+  const input = document.getElementById("bulk_value");
+
+  if (type === "percentual_aumento") {
+    addon.innerText = "%";
+    label.innerText = "Valor do Aumento (%)";
+    if (!input.value || input.value === "0") input.value = "10.00";
+  } else if (type === "percentual_desconto") {
+    addon.innerText = "%";
+    label.innerText = "Valor do Desconto (%)";
+    if (!input.value || input.value === "0") input.value = "5.00";
+  } else if (type === "valor_aumento") {
+    addon.innerText = "R$";
+    label.innerText = "Valor Fixo a Acrescentar (R$)";
+    if (!input.value || input.value === "0") input.value = "100.00";
+  } else if (type === "valor_desconto") {
+    addon.innerText = "R$";
+    label.innerText = "Valor Fixo a Subtrair (R$)";
+    if (!input.value || input.value === "0") input.value = "50.00";
+  }
+  atualizarPreviaReajuste();
+}
+
+let debounceTimer = null;
+function debouncedPreviaReajuste() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(atualizarPreviaReajuste, 350);
+}
+
+function aoMudarFabricanteReajuste() {
+  const rad = document.getElementById("escopo_fabricante");
+  if (rad) rad.checked = true;
+  atualizarPreviaReajuste();
+}
+
+async function atualizarPreviaReajuste() {
+  const corpoTabela = document.getElementById("corpo_tabela_previa");
+  const badgeTotal = document.getElementById("previa_total_itens");
+  corpoTabela.innerHTML = `
+    <tr>
+      <td colspan="4" class="text-center py-3 text-muted">
+        <i class="fa-solid fa-spinner fa-spin me-2"></i> Calculando simulação...
+      </td>
+    </tr>
+  `;
+
+  const escopoSelecionados = document.getElementById("escopo_selecionados").checked;
+  const escopoFabricante = document.getElementById("escopo_fabricante") ? document.getElementById("escopo_fabricante").checked : false;
+  const fabEscolhido = document.getElementById("bulk_fabricante") ? document.getElementById("bulk_fabricante").value : "";
+
+  let eqIds = null;
+  let fabFiltro = null;
+
+  if (escopoSelecionados) {
+    const selecionados = obterIdsSelecionados();
+    if (selecionados.length === 0) {
+      corpoTabela.innerHTML = `
+        <tr>
+          <td colspan="4" class="text-center py-3 text-warning">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> Nenhum equipamento foi selecionado na tela.
+          </td>
+        </tr>
+      `;
+      badgeTotal.innerText = "0 itens";
+      return;
+    }
+    eqIds = selecionados;
+  } else if (escopoFabricante) {
+    if (!fabEscolhido) {
+      corpoTabela.innerHTML = `
+        <tr>
+          <td colspan="4" class="text-center py-3 text-warning">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> Selecione um fabricante no menu ao lado.
+          </td>
+        </tr>
+      `;
+      badgeTotal.innerText = "0 itens";
+      return;
+    }
+    fabFiltro = fabEscolhido;
+  }
+
+  const payload = {
+    equipment_ids: eqIds,
+    fabricante: fabFiltro,
+    adjustment_type: document.getElementById("bulk_adjustment_type").value,
+    value: parseFloat(document.getElementById("bulk_value").value || 0),
+    rounding_mode: document.getElementById("bulk_rounding_mode").value,
+  };
+
+  try {
+    const resp = await fetch("/crm/api/equipamentos/previa-reajuste", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": "{{ csrf_token() }}",
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+
+    if (!data.success || !data.itens || data.itens.length === 0) {
+      corpoTabela.innerHTML = `
+        <tr>
+          <td colspan="4" class="text-center py-3 text-muted">Nenhum equipamento encontrado para o critério selecionado.</td>
+        </tr>
+      `;
+      badgeTotal.innerText = "0 itens";
+      return;
+    }
+
+    badgeTotal.innerText = `${data.total_itens} itens`;
+
+    let html = "";
+    data.itens.forEach(item => {
+      const isPos = item.diferenca >= 0;
+      const classeDiff = isPos ? "preview-badge-diff-pos" : "preview-badge-diff-neg";
+      html += `
+        <tr>
+          <td class="text-truncate fw-semibold" style="max-width: 250px;" title="${item.nome}">
+            ${item.nome}
+            ${item.fabricante ? `<small class="badge bg-secondary-subtle text-secondary ms-1">${item.fabricante}</small>` : ''}
+          </td>
+          <td class="text-end text-muted">${item.preco_atual_formatado}</td>
+          <td class="text-end fw-bold text-dark">${item.novo_preco_formatado}</td>
+          <td class="text-end ${classeDiff}">
+            ${item.diferenca_percentual} <small class="d-block text-muted" style="font-size: 0.68rem;">(${item.diferenca_formatada})</small>
+          </td>
+        </tr>
+      `;
+    });
+    corpoTabela.innerHTML = html;
+  } catch (err) {
+    corpoTabela.innerHTML = `
+      <tr>
+        <td colspan="4" class="text-center py-3 text-danger">Erro ao calcular prévia: ${err.message}</td>
+      </tr>
+    `;
+  }
+}
+
+async function executarReajusteMassa() {
+  const escopoSelecionados = document.getElementById("escopo_selecionados").checked;
+  const escopoFabricante = document.getElementById("escopo_fabricante") ? document.getElementById("escopo_fabricante").checked : false;
+  const fabEscolhido = document.getElementById("bulk_fabricante") ? document.getElementById("bulk_fabricante").value : "";
+
+  let eqIds = null;
+  let fabFiltro = null;
+  let qtdDescricao = "TODOS os equipamentos";
+
+  if (escopoSelecionados) {
+    const selecionados = obterIdsSelecionados();
+    if (selecionados.length === 0) {
+      alert("Selecione pelo menos um equipamento para reajustar ou marque outra opção de escopo.");
+      return;
+    }
+    eqIds = selecionados;
+    qtdDescricao = `${selecionados.length} equipamentos selecionados`;
+  } else if (escopoFabricante) {
+    if (!fabEscolhido) {
+      alert("Por favor, selecione um fabricante para reajustar.");
+      return;
+    }
+    fabFiltro = fabEscolhido;
+    qtdDescricao = `todos os equipamentos do fabricante '${fabEscolhido}'`;
+  }
+
+  const tipo = document.getElementById("bulk_adjustment_type").value;
+  const valor = document.getElementById("bulk_value").value;
+
+  if (!confirm(`Confirma aplicar este reajuste de preços em massa para ${qtdDescricao}?`)) {
+    return;
+  }
+
+  const btn = document.getElementById("btnConfirmarReajuste");
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Aplicando reajuste...';
+
+  const payload = {
+    equipment_ids: eqIds,
+    fabricante: fabFiltro,
+    adjustment_type: tipo,
+    value: parseFloat(valor || 0),
+    rounding_mode: document.getElementById("bulk_rounding_mode").value,
+  };
+
+  try {
+    const resp = await fetch("/crm/api/equipamentos/reajuste-massa", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": "{{ csrf_token() }}",
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+
+    if (!data.success) {
+      alert("Erro ao aplicar reajuste: " + (data.error || "erro desconhecido"));
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Confirmar e Aplicar Reajuste';
+      return;
+    }
+
+    alert(data.message || `Preço de ${data.total_atualizados} equipamentos atualizado com sucesso!`);
+    window.location.reload();
+  } catch (err) {
+    alert("Erro de rede ao aplicar reajuste: " + err.message);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Confirmar e Aplicar Reajuste';
+  }
+}
+
+// ========================================================================= //
+// SISTEMAS & SOFTWARES - JAVASCRIPT
+// ========================================================================= //
+
+function copiarDescricaoSistema(id) {
+  const title = document.getElementById(`title-sis-${id}`) ? document.getElementById(`title-sis-${id}`).innerText.trim() : '';
+  const desc = document.getElementById(`desc-sis-${id}`) ? document.getElementById(`desc-sis-${id}`).innerText.trim() : '';
+  const preco = document.getElementById(`preco-mensal-sis-${id}`) ? document.getElementById(`preco-mensal-sis-${id}`).innerText.trim() : '';
+  const mfg = document.getElementById(`mfg-sis-${id}`) ? document.getElementById(`mfg-sis-${id}`).innerText.trim() : '';
+
+  const texto = `${title} (${mfg})\n${desc}\nValor Recorrente: ${preco}`;
+  navigator.clipboard.writeText(texto).then(() => {
+    alert("Dados do plano copiados para a área de transferência!");
+  }).catch(() => {
+    prompt("Copie os dados abaixo:", texto);
+  });
+}
+
+function abrirModalEditarPrecoSistema(id, nome, valorMensal, valorImplantacao, fabricante, categoria, faixa, vigencia, desc) {
+  document.getElementById("edit_sis_id").value = id;
+  document.getElementById("edit_sis_nome").value = nome || "";
+  document.getElementById("edit_sis_fabricante").value = fabricante || "";
+  document.getElementById("edit_sis_categoria").value = categoria || "";
+  document.getElementById("edit_sis_faixa").value = faixa || "";
+  document.getElementById("edit_sis_vigencia").value = vigencia || "";
+  document.getElementById("edit_sis_valor_mensal").value = parseFloat(valorMensal || 0).toFixed(2);
+  document.getElementById("edit_sis_valor_implantacao").value = (valorImplantacao && parseFloat(valorImplantacao) > 0) ? parseFloat(valorImplantacao).toFixed(2) : "";
+  document.getElementById("edit_sis_desc").value = desc || "";
+
+  var modal = new bootstrap.Modal(document.getElementById("modalEditarPrecoSistema"));
+  modal.show();
+}
+
+async function salvarPrecoSistema(event) {
+  event.preventDefault();
+  const id = document.getElementById("edit_sis_id").value;
+  const nome = document.getElementById("edit_sis_nome").value;
+  const fabricante = document.getElementById("edit_sis_fabricante").value;
+  const categoria = document.getElementById("edit_sis_categoria").value;
+  const faixa = document.getElementById("edit_sis_faixa").value;
+  const vigencia = document.getElementById("edit_sis_vigencia").value;
+  const valorMensal = document.getElementById("edit_sis_valor_mensal").value;
+  const valorImplantacao = document.getElementById("edit_sis_valor_implantacao").value;
+  const desc = document.getElementById("edit_sis_desc").value;
+  const btn = document.getElementById("btnSalvarPrecoSistema");
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Salvando...';
+
+  try {
+    const resp = await fetch(`/crm/api/sistemas/${id}/atualizar-preco`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": "{{ csrf_token() }}",
+      },
+      body: JSON.stringify({
+        nome: nome,
+        fabricante: fabricante,
+        categoria: categoria,
+        faixa_funcionarios: faixa,
+        vigencia: vigencia,
+        valor_mensal: valorMensal,
+        valor_implantacao: valorImplantacao,
+        descricao: desc,
+      }),
+    });
+    const data = await resp.json();
+
+    if (!data.success) {
+      alert("Erro ao atualizar plano: " + (data.error || "erro desconhecido"));
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Salvar Alterações';
+      return;
+    }
+
+    // Atualiza elementos na tela
+    const titleEl = document.getElementById(`title-sis-${id}`);
+    if (titleEl) titleEl.innerText = data.nome;
+
+    const mfgEl = document.getElementById(`mfg-sis-${id}`);
+    if (mfgEl) mfgEl.innerHTML = `<i class="fa-solid fa-industry me-1 text-primary"></i>${data.fabricante || 'Sollus'}`;
+
+    const catEl = document.getElementById(`cat-sis-${id}`);
+    if (catEl) catEl.innerText = data.categoria || 'Software';
+
+    const descEl = document.getElementById(`desc-sis-${id}`);
+    if (descEl) descEl.innerText = desc || "Plano de software para gestão e controle com sincronização em nuvem.";
+
+    const precoEl = document.getElementById(`preco-mensal-sis-${id}`);
+    if (precoEl) precoEl.innerHTML = `${data.novo_preco_formatado}<span class="text-muted fw-normal" style="font-size: 0.75rem;">/mês</span>`;
+
+    // Bloco de mudança
+    const blocoMudanca = document.getElementById(`bloco-mudanca-sis-${id}`);
+    if (blocoMudanca && data.preco_anterior_formatado) {
+      blocoMudanca.innerHTML = `
+        <div class="p-2 rounded bg-light border mb-2 small">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted" style="font-size: 0.75rem;">Mensalidade anterior:</span>
+            <span class="price-old fw-semibold" id="preco-antigo-sis-${id}">${data.preco_anterior_formatado}</span>
+          </div>
+          <div class="text-muted mt-1" style="font-size: 0.7rem;">
+            <i class="fa-regular fa-calendar-check me-1"></i>Mudou em ${data.alterado_em}
+            <span class="d-block text-truncate">por <strong>${data.alterado_por}</strong></span>
+          </div>
+        </div>
+      `;
+    }
+
+    const modalEl = document.getElementById("modalEditarPrecoSistema");
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+
+    const cardEl = document.getElementById(`card-sis-${id}`);
+    if (cardEl) {
+      cardEl.classList.add("border-success");
+      setTimeout(() => cardEl.classList.remove("border-success"), 2500);
+    }
+  } catch (err) {
+    alert("Erro de rede ao salvar: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Salvar Alterações';
+  }
+}
+
+async function abrirHistoricoPrecosSistema(id, nome) {
+  document.getElementById("modalHistoricoSubtituloSistema").innerText = nome;
+  const body = document.getElementById("modalHistoricoBodySistema");
+  body.innerHTML = '<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin text-success fa-2x"></i><p class="small text-muted mt-2">Carregando histórico...</p></div>';
+
+  var modal = new bootstrap.Modal(document.getElementById("modalHistoricoPrecoSistema"));
+  modal.show();
+
+  try {
+    const resp = await fetch(`/crm/api/sistemas/${id}/historico-precos`);
+    const data = await resp.json();
+
+    if (!data.success || !data.historico || data.historico.length === 0) {
+      body.innerHTML = `
+        <div class="text-center py-4 text-muted">
+          <i class="fa-solid fa-clock-rotate-left fa-2x opacity-50 mb-2"></i>
+          <p class="small mb-0">Nenhuma alteração de valor registrada ainda para este plano.</p>
+        </div>
+      `;
+      return;
+    }
+
+    let html = '<div class="ps-2">';
+    data.historico.forEach(item => {
+      html += `
+        <div class="timeline-item">
+          <div class="timeline-dot" style="background: #10b981; box-shadow: 0 0 0 2px #a7f3d0;"></div>
+          <div class="d-flex justify-content-between align-items-baseline mb-1">
+            <span class="fw-bold text-success fs-6">${item.preco_novo_formatado}</span>
+            <span class="text-muted" style="font-size: 0.75rem;">${item.alterado_em}</span>
+          </div>
+          <div class="small text-muted">
+            Valor anterior: <span class="text-decoration-line-through">${item.preco_antigo_formatado}</span>
+          </div>
+          <div class="text-muted" style="font-size: 0.72rem; margin-top: 2px;">
+            Alterado por: <strong>${item.alterado_por}</strong> (Origem: ${item.origem})
+          </div>
+        </div>
+      `;
+    });
+    html += '</div>';
+    body.innerHTML = html;
+  } catch (err) {
+    body.innerHTML = `<div class="alert alert-danger small mb-0">Erro ao carregar histórico: ${err.message}</div>`;
+  }
+}
+
+function abrirModalReajusteSistemas() {
+  aoMudarTipoReajusteSistemas();
+  atualizarPreviaReajusteSistema();
+  var modal = new bootstrap.Modal(document.getElementById("modalReajusteSistemas"));
+  modal.show();
+}
+
+function aoMudarTipoReajusteSistemas() {
+  const type = document.getElementById("bulk_sis_adjustment_type").value;
+  const addon = document.getElementById("addon_bulk_sis_type");
+  const label = document.getElementById("label_bulk_sis_value");
+  const input = document.getElementById("bulk_sis_value");
+
+  if (type === "percentual_aumento") {
+    addon.innerText = "%";
+    label.innerText = "Valor do Aumento (%)";
+    if (!input.value || input.value === "0") input.value = "10.00";
+  } else if (type === "percentual_desconto") {
+    addon.innerText = "%";
+    label.innerText = "Valor do Desconto (%)";
+    if (!input.value || input.value === "0") input.value = "5.00";
+  } else if (type === "valor_aumento") {
+    addon.innerText = "R$";
+    label.innerText = "Valor Fixo a Acrescentar (R$)";
+    if (!input.value || input.value === "0") input.value = "10.00";
+  } else if (type === "valor_desconto") {
+    addon.innerText = "R$";
+    label.innerText = "Valor Fixo a Subtrair (R$)";
+    if (!input.value || input.value === "0") input.value = "5.00";
+  }
+  atualizarPreviaReajusteSistema();
+}
+
+let debounceTimerSis = null;
+function debouncedPreviaReajusteSistema() {
+  clearTimeout(debounceTimerSis);
+  debounceTimerSis = setTimeout(atualizarPreviaReajusteSistema, 350);
+}
+
+function aoMudarFabricanteReajusteSistemas() {
+  const rad = document.getElementById("escopo_sis_fabricante");
+  if (rad) rad.checked = true;
+  atualizarPreviaReajusteSistema();
+}
+
+function aoMudarCategoriaReajusteSistemas() {
+  const rad = document.getElementById("escopo_sis_categoria");
+  if (rad) rad.checked = true;
+  atualizarPreviaReajusteSistema();
+}
+
+async function atualizarPreviaReajusteSistema() {
+  const corpoTabela = document.getElementById("corpo_tabela_previa_sis");
+  const badgeTotal = document.getElementById("previa_sis_total_itens");
+  if (!corpoTabela) return;
+
+  corpoTabela.innerHTML = `
+    <tr>
+      <td colspan="4" class="text-center py-3 text-muted">
+        <i class="fa-solid fa-spinner fa-spin me-2"></i> Calculando simulação...
+      </td>
+    </tr>
+  `;
+
+  const escopoFabricante = document.getElementById("escopo_sis_fabricante") ? document.getElementById("escopo_sis_fabricante").checked : false;
+  const escopoCategoria = document.getElementById("escopo_sis_categoria") ? document.getElementById("escopo_sis_categoria").checked : false;
+  const fabEscolhido = document.getElementById("bulk_sis_fabricante") ? document.getElementById("bulk_sis_fabricante").value : "";
+  const catEscolhida = document.getElementById("bulk_sis_categoria") ? document.getElementById("bulk_sis_categoria").value : "";
+
+  let fabFiltro = null;
+  let catFiltro = null;
+
+  if (escopoFabricante) {
+    if (!fabEscolhido) {
+      corpoTabela.innerHTML = `
+        <tr>
+          <td colspan="4" class="text-center py-3 text-warning">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> Selecione um fabricante no menu.
+          </td>
+        </tr>
+      `;
+      badgeTotal.innerText = "0 planos";
+      return;
+    }
+    fabFiltro = fabEscolhido;
+  } else if (escopoCategoria) {
+    if (!catEscolhida) {
+      corpoTabela.innerHTML = `
+        <tr>
+          <td colspan="4" class="text-center py-3 text-warning">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> Selecione uma categoria no menu.
+          </td>
+        </tr>
+      `;
+      badgeTotal.innerText = "0 planos";
+      return;
+    }
+    catFiltro = catEscolhida;
+  }
+
+  const payload = {
+    fabricante: fabFiltro,
+    categoria: catFiltro,
+    adjustment_type: document.getElementById("bulk_sis_adjustment_type").value,
+    value: parseFloat(document.getElementById("bulk_sis_value").value || 0),
+    rounding_mode: document.getElementById("bulk_sis_rounding_mode").value,
+  };
+
+  try {
+    const resp = await fetch("/crm/api/sistemas/previa-reajuste", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": "{{ csrf_token() }}",
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+
+    if (!data.success || !data.itens || data.itens.length === 0) {
+      corpoTabela.innerHTML = `
+        <tr>
+          <td colspan="4" class="text-center py-3 text-muted">Nenhum plano de sistema encontrado para o critério selecionado.</td>
+        </tr>
+      `;
+      badgeTotal.innerText = "0 planos";
+      return;
+    }
+
+    badgeTotal.innerText = `${data.total_itens} planos`;
+
+    let html = "";
+    data.itens.forEach(item => {
+      const isPos = item.diferenca >= 0;
+      const classeDiff = isPos ? "preview-badge-diff-pos" : "preview-badge-diff-neg";
+      html += `
+        <tr>
+          <td class="text-truncate fw-semibold" style="max-width: 250px;" title="${item.nome}">
+            ${item.nome}
+            ${item.fabricante ? `<small class="badge bg-secondary-subtle text-secondary ms-1">${item.fabricante}</small>` : ''}
+          </td>
+          <td class="text-end text-muted">${item.preco_atual_formatado}</td>
+          <td class="text-end fw-bold text-dark">${item.novo_preco_formatado}</td>
+          <td class="text-end ${classeDiff}">
+            ${item.diferenca_percentual} <small class="d-block text-muted" style="font-size: 0.68rem;">(${item.diferenca_formatada})</small>
+          </td>
+        </tr>
+      `;
+    });
+    corpoTabela.innerHTML = html;
+  } catch (err) {
+    corpoTabela.innerHTML = `
+      <tr>
+        <td colspan="4" class="text-center py-3 text-danger">Erro ao calcular prévia: ${err.message}</td>
+      </tr>
+    `;
+  }
+}
+
+async function executarReajusteMassaSistemas() {
+  const escopoFabricante = document.getElementById("escopo_sis_fabricante") ? document.getElementById("escopo_sis_fabricante").checked : false;
+  const escopoCategoria = document.getElementById("escopo_sis_categoria") ? document.getElementById("escopo_sis_categoria").checked : false;
+  const fabEscolhido = document.getElementById("bulk_sis_fabricante") ? document.getElementById("bulk_sis_fabricante").value : "";
+  const catEscolhida = document.getElementById("bulk_sis_categoria") ? document.getElementById("bulk_sis_categoria").value : "";
+
+  let fabFiltro = null;
+  let catFiltro = null;
+  let qtdDescricao = "TODOS os planos de sistemas e softwares";
+
+  if (escopoFabricante) {
+    if (!fabEscolhido) {
+      alert("Por favor, selecione um fabricante para reajustar.");
+      return;
+    }
+    fabFiltro = fabEscolhido;
+    qtdDescricao = `todos os sistemas do fabricante '${fabEscolhido}'`;
+  } else if (escopoCategoria) {
+    if (!catEscolhida) {
+      alert("Por favor, selecione uma categoria para reajustar.");
+      return;
+    }
+    catFiltro = catEscolhida;
+    qtdDescricao = `todos os sistemas da categoria '${catEscolhida}'`;
+  }
+
+  const tipo = document.getElementById("bulk_sis_adjustment_type").value;
+  const valor = document.getElementById("bulk_sis_value").value;
+
+  if (!confirm(`Confirma aplicar este reajuste de mensalidades em massa para ${qtdDescricao}?`)) {
+    return;
+  }
+
+  const btn = document.getElementById("btnConfirmarReajusteSis");
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Aplicando reajuste...';
+
+  const payload = {
+    fabricante: fabFiltro,
+    categoria: catFiltro,
+    adjustment_type: tipo,
+    value: parseFloat(valor || 0),
+    rounding_mode: document.getElementById("bulk_sis_rounding_mode").value,
+  };
+
+  try {
+    const resp = await fetch("/crm/api/sistemas/reajuste-massa", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": "{{ csrf_token() }}",
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+
+    if (!data.success) {
+      alert("Erro ao aplicar reajuste: " + (data.error || "erro desconhecido"));
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Confirmar e Aplicar Reajuste';
+      return;
+    }
+
+    alert(data.message || `Mensalidades de ${data.total_atualizados} planos atualizadas com sucesso!`);
+    window.location.href = "{{ url_for('crm.tabela_precos') }}?aba=sistemas";
+  } catch (err) {
+    alert("Erro de rede ao aplicar reajuste: " + err.message);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Confirmar e Aplicar Reajuste';
+  }
+}
+
+// ========================================================================= //
+// AUDITORIA GERAL DE PREÇOS - JAVASCRIPT
+// ========================================================================= //
+let debounceAuditoriaTimer = null;
+function debouncedCarregarAuditoria() {
+  clearTimeout(debounceAuditoriaTimer);
+  debounceAuditoriaTimer = setTimeout(carregarAuditoriaCompleta, 300);
+}
+
+function abrirModalAuditoriaGeral() {
+  var modalEl = document.getElementById("modalAuditoriaCompletaPrecos");
+  if (!modalEl) return;
+  var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
+  carregarAuditoriaCompleta();
+}
+
+async function carregarAuditoriaCompleta() {
+  const corpo = document.getElementById("corpo_tabela_auditoria");
+  const badgeTotal = document.getElementById("auditoria_total_registros");
+  const tipo = document.getElementById("auditoria_tipo") ? document.getElementById("auditoria_tipo").value : "todos";
+  const periodo = document.getElementById("auditoria_periodo") ? document.getElementById("auditoria_periodo").value : "todos";
+  const busca = document.getElementById("auditoria_busca") ? document.getElementById("auditoria_busca").value : "";
+
+  if (corpo) {
+    corpo.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center py-4 text-muted">
+          <i class="fa-solid fa-spinner fa-spin fa-2x text-primary mb-2"></i>
+          <p class="small mb-0">Carregando histórico completo...</p>
+        </td>
+      </tr>
+    `;
+  }
+
+  try {
+    const params = new URLSearchParams({
+      tipo: tipo,
+      dias: periodo,
+      q: busca,
+    });
+    const resp = await fetch(`/crm/api/auditoria/historico-completo?${params.toString()}`);
+    const data = await resp.json();
+
+    if (!data.success || !data.registros || data.registros.length === 0) {
+      if (corpo) {
+        corpo.innerHTML = `
+          <tr>
+            <td colspan="7" class="text-center py-4 text-muted">
+              <i class="fa-solid fa-clock-rotate-left fa-2x opacity-50 mb-2"></i>
+              <p class="small mb-0">Nenhum registro de alteração de preço encontrado com os filtros selecionados.</p>
+            </td>
+          </tr>
+        `;
+      }
+      if (badgeTotal) badgeTotal.innerText = "0 alterações";
+      return;
+    }
+
+    if (badgeTotal) badgeTotal.innerText = `${data.total} alterações`;
+
+    let html = "";
+    data.registros.forEach(r => {
+      const isPos = r.is_aumento;
+      const corDiff = isPos ? "text-success" : "text-danger";
+      const badgeTipo = r.tipo === 'sistema'
+        ? '<span class="badge bg-success-subtle text-success border">Sistema</span>'
+        : '<span class="badge bg-primary-subtle text-primary border">Hardware</span>';
+
+      html += `
+        <tr>
+          <td class="small text-muted text-nowrap">
+            <i class="fa-regular fa-calendar-check me-1"></i>${r.alterado_em}
+          </td>
+          <td>
+            <div class="d-flex align-items-center gap-1">
+              ${badgeTipo}
+              <small class="badge bg-light text-secondary border text-truncate" style="max-width: 110px;">${r.fabricante}</small>
+            </div>
+          </td>
+          <td class="fw-semibold text-dark text-truncate" style="max-width: 250px;" title="${r.item_nome}">
+            ${r.item_nome}
+          </td>
+          <td class="text-end text-muted small text-decoration-line-through">
+            ${r.preco_antigo_formatado}
+          </td>
+          <td class="text-end fw-bold text-dark">
+            ${r.preco_novo_formatado}
+          </td>
+          <td class="text-end fw-bold ${corDiff} small">
+            ${r.diferenca_percentual}
+            <small class="d-block text-muted" style="font-size: 0.68rem;">(${r.diferenca_formatada})</small>
+          </td>
+          <td class="small">
+            <span class="d-block text-truncate fw-semibold" style="max-width: 140px;" title="${r.alterado_por}">
+              ${r.alterado_por}
+            </span>
+            <small class="text-muted d-block" style="font-size: 0.68rem;">${r.origem_label}</small>
+          </td>
+        </tr>
+      `;
+    });
+    if (corpo) corpo.innerHTML = html;
+  } catch (err) {
+    if (corpo) {
+      corpo.innerHTML = `
+        <tr>
+          <td colspan="7" class="text-center py-4 text-danger">
+            Erro ao carregar auditoria: ${err.message}
+          </td>
+        </tr>
+      `;
+    }
+  }
+}
+
+// Inicializa contadores e abas
+document.addEventListener("DOMContentLoaded", function() {
+  atualizarContadorSelecao();
+
+  // Ativação inteligente de abas com base na URL ou hash
+  const urlParams = new URLSearchParams(window.location.search);
+  const abaParam = urlParams.get('aba');
+  if (abaParam === 'sistemas' || window.location.hash === '#sistemas' || window.location.hash === '#pane-sistemas') {
+    const tabSisBtn = document.getElementById('tab-sistemas-btn');
+    if (tabSisBtn) {
+      const tab = new bootstrap.Tab(tabSisBtn);
+      tab.show();
+    }
+  }
+
+  // Sincroniza hash ao trocar de aba
+  const tabEquipBtn = document.getElementById('tab-equipamentos-btn');
+  const tabSisBtn = document.getElementById('tab-sistemas-btn');
+  if (tabEquipBtn) {
+    tabEquipBtn.addEventListener('shown.bs.tab', () => {
+      history.replaceState(null, null, '#equipamentos');
+    });
+  }
+  if (tabSisBtn) {
+    tabSisBtn.addEventListener('shown.bs.tab', () => {
+      history.replaceState(null, null, '#sistemas');
+    });
+  }
+});
+</script>
+{% endblock %}

@@ -1,395 +1,1750 @@
 <!DOCTYPE html>
-
-<html lang="pt-BR">
-
+<html lang="pt-BR" data-theme="light">
 <head>
-
-  <meta charset="UTF-8" />
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>Login - Sollus Tecnologia</title>
-
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-  <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}?v=3">
-  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon.png') }}?v=3">
-  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}?v=3">
-
-  <style>
-
-    :root{
-
-      --blue-900:#003B66;
-
-      --blue-800:#0a4f84;
-
-      --blue-700:#0F7BC8;
-
-      --blue-600:#1271b3;
-
-      --blue-500:#4DA0DD;
-
-      --ink:#0d1b2a;
-
-      --muted:#5c6b7a;
-
-      --white:#ffffff;
-
-      --border-color:#d1d9e6;
-
-      --radius-xl:28px;
-
-      --shadow-lg:0 20px 40px rgba(2,20,38,.18);
-
-      --ring:0 0 0 3px rgba(15,123,200,.25);
-
-    }
-
-    *{box-sizing:border-box;}
-
-    html,body{height:100%;}
-
-    body{
-
-      margin:0;
-
-      font-family:'Montserrat',system-ui,sans-serif;
-
-      color:var(--ink);
-
-      background:linear-gradient(145deg,var(--blue-900),var(--blue-700));
-
-      display:flex;
-
-      align-items:center;
-
-      justify-content:center;
-
-      padding:clamp(12px,2vmin,24px);
-
-      min-height:100dvh;
-
-      position:relative;
-
-      overflow:hidden;
-
-    }
-
-    body::before{
-
-      content:"";
-
-      position:absolute;
-
-      inset:-20%;
-
-      background:radial-gradient(circle at 20% 20%,rgba(255,255,255,.12),transparent 52%),radial-gradient(circle at 80% 10%,rgba(255,255,255,.08),transparent 60%);
-
-      filter:blur(12px);
-
-      opacity:.55;
-
-    }
-
-    .container{
-
-      position:relative;
-
-      width:min(96vw,980px);
-
-      min-height:clamp(500px,64svh,620px);
-
-      background:var(--white);
-
-      border-radius:var(--radius-xl);
-
-      box-shadow:var(--shadow-lg);
-
-      display:grid;
-
-      grid-template-columns:1.05fr .95fr;
-
-      overflow:hidden;
-
-      isolation:isolate;
-
-    }
-
-    .pane{padding:clamp(20px,4vw,44px) clamp(24px,4vw,48px);display:flex;flex-direction:column;justify-content:center;}
-
-    .info-section{color:#fff;background:linear-gradient(140deg,var(--blue-900) 0%,var(--blue-700) 100%);position:relative;overflow:hidden;}
-
-    .info-section::before{content:"";position:absolute;inset:-40% -20% -20% -20%;opacity:.1;background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.8) 1px,transparent 1px);background-size:18px 18px;transform:rotate(-12deg);}
-
-    .info-section h3{text-transform:uppercase;letter-spacing:.32em;font-size:.74rem;color:rgba(255,255,255,.7);margin-bottom:12px;}
-
-    .info-section h2{color:#fff;margin:0 0 20px;font-size:clamp(1.5rem,3vw,2.2rem);line-height:1.3;}
-
-    .carousel-container{position:relative;height:130px;overflow:hidden;width:100%;}
-
-    .carousel-content{position:absolute;width:100%;top:0;left:0;opacity:0;transform:translateY(20px);transition:opacity .8s ease,transform .8s ease;}
-
-    .carousel-content.active{opacity:1;transform:translateY(0);}
-
-    .carousel-content h3{font-size:1.3rem;font-weight:700;margin-bottom:8px;color:var(--white);}
-
-    .carousel-content p{font-size:15px;color:rgba(255,255,255,.85);line-height:1.6;margin:0;}
-
-    .info-footer{margin-top:25px;padding-top:16px;border-top:1px solid rgba(255,255,255,.22);font-size:14px;color:rgba(255,255,255,.85);line-height:1.6;}
-
-    .info-footer strong{display:block;font-weight:600;color:var(--white);margin-bottom:4px;}
-
-    .login-section{align-items:center;}
-
-    .brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:24px;text-align:center;}
-
-    .brand img{width:clamp(110px,22vw,150px);}
-
-    h2{margin:0 0 8px;font-weight:700;letter-spacing:.2px;color:var(--blue-900);font-size:clamp(22px,4vw,28px);}
-
-    p.helper{margin:0 0 22px;color:var(--muted);font-size:clamp(13px,2.6vw,14px);}
-
-    .messages{width:100%;max-width:360px;min-height:20px;}
-
-    .messages ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;}
-
-    .messages li{background:#ffe9e9;color:#a40000;border:1px solid #ffc6c6;border-radius:10px;padding:10px 12px;font-size:13px;}
-
-    form#login-form{width:100%;max-width:360px;display:flex;flex-direction:column;gap:20px;}
-
-    .input-group{position:relative;}
-
-    .input-icon{position:absolute;top:50%;left:15px;transform:translateY(-50%);color:var(--muted);pointer-events:none;}
-
-    .input{width:100%;border:1px solid var(--border-color);border-radius:12px;padding:14px 45px;font-size:16px;transition:all .2s ease;font-family:'Montserrat',sans-serif;}
-
-    .input:focus{outline:none;border-color:var(--blue-700);box-shadow:var(--ring);}
-
-    .input-group label{position:absolute;top:15px;left:45px;font-size:16px;color:var(--muted);pointer-events:none;transition:all .2s ease;background:var(--white);padding:0 4px;}
-
-    .input:focus + label,.input:not(:placeholder-shown) + label{top:-8px;left:42px;font-size:12px;color:var(--blue-700);}
-
-    .input::placeholder{color:transparent;}
-
-    #toggle-senha{position:absolute;top:50%;right:12px;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--muted);opacity:.7;transition:all .2s ease;display:grid;place-items:center;}
-
-    #toggle-senha:hover{opacity:1;color:var(--blue-700);}
-
-    .btn-primary{cursor:pointer;border-radius:12px;border:none;padding:14px 18px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;font-size:12px;color:#fff;background:linear-gradient(135deg,var(--blue-500),var(--blue-700));box-shadow:0 10px 20px rgba(15,123,200,.25);transition:transform .2s ease,box-shadow .2s ease;}
-
-    .btn-primary:hover{box-shadow:0 14px 28px rgba(15,123,200,.32);transform:translateY(-2px);}
-
-    .btn-primary:disabled{opacity:.7;cursor:not-allowed;}
-
-    @media (max-width:880px){body{overflow-y:auto;}.container{grid-template-columns:1fr;min-height:auto;}.info-section{order:1;padding:32px 26px;text-align:center;}.login-section{order:-1;padding:35px 28px;}.brand img{width:120px;}form#login-form{gap:16px;max-width:none;}.input{padding-top:11px;padding-bottom:11px;font-size:15px;}.input-group label{top:12px;font-size:15px;}.btn-primary{padding-top:12px;padding-bottom:12px;}.carousel-container{height:110px;}.carousel-content h3{font-size:1.1rem;}.carousel-content p{font-size:13px;}.info-footer{margin-top:20px;font-size:12px;padding-top:12px;}}
-
-  </style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sollus Connected - Login</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+
+    <script>
+        /* Aplica tema salvo imediatamente para evitar flash */
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('sollus:theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                document.documentElement.setAttribute('data-bs-theme', savedTheme);
+            } catch(e) {}
+        })();
+    </script>
+
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            light: '#14b4f0',
+                            DEFAULT: '#0084c8',
+                            dark: '#0e4a7a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* === DESIGN SYSTEM OFICIAL SOLLUS CONNECTED (TEMA CLARO & ESCURO) === */
+        :root {
+            --brand-blue: #0084c8;
+            --brand-blue-hover: #006fa8;
+            --card-bg: #ffffff;
+            --card-border: #e2e8f0;
+            --card-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.08), 0 4px 16px rgba(0, 0, 0, 0.03);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --text-label: #475569;
+            --input-bg: #f8fafc;
+            --input-border: #cbd5e1;
+            --input-focus-bg: #ffffff;
+            --input-placeholder: #94a3b8;
+            --input-icon: #64748b;
+            --body-bg: #f6f8fb;
+            --body-honeycomb: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2241.57%22%20height%3D%2272.0%22%20viewBox%3D%220%200%2041.57%2072.0%22%3E%3Cpath%20d%3D%22M%200%200.0%20L%200%2012.0%20L%2020.79%2024.0%20L%2020.79%2048.0%20L%200%2060.0%20L%200%2072.0%20M%2020.79%2024.0%20L%2041.57%2012.0%20M%2020.79%2048.0%20L%2041.57%2060.0%22%20fill%3D%22none%22%20stroke%3D%22rgba%280%2C132%2C200%2C0.11%29%22%20stroke-width%3D%221%22/%3E%3C/svg%3E");
+            --body-honeycomb-reactive: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2241.57%22%20height%3D%2272.0%22%20viewBox%3D%220%200%2041.57%2072.0%22%3E%3Cpath%20d%3D%22M%200%200.0%20L%200%2012.0%20L%2020.79%2024.0%20L%2020.79%2048.0%20L%200%2060.0%20L%200%2072.0%20M%2020.79%2024.0%20L%2041.57%2012.0%20M%2020.79%2048.0%20L%2041.57%2060.0%22%20fill%3D%22none%22%20stroke%3D%22rgba%280%2C132%2C200%2C0.38%29%22%20stroke-width%3D%221.25%22/%3E%3C/svg%3E");
+            --cursor-glow-color: rgba(0, 132, 200, 0.02);
+            --liquid-wave-color: rgba(0, 132, 200, 0.35);
+            --liquid-color: 0, 132, 200;
+            --liquid-wave-shadow: rgba(0, 132, 200, 0.12);
+            --glow-color: rgba(0, 132, 200, 0.05);
+            --btn-bg: #0084c8;
+            --btn-hover: #006fa8;
+            --btn-glow: rgba(0, 132, 200, 0.35);
+            --theme-toggle-bg: #ffffff;
+            --theme-toggle-border: #cbd5e1;
+            --theme-toggle-color: #334155;
+            --ring-solid: rgba(0, 132, 200, 0.35);
+            --ring-dashed: rgba(0, 132, 200, 0.3);
+            --logo-drop-shadow: rgba(0, 132, 200, 0.25);
+        }
+
+        html[data-theme="dark"] {
+            --brand-blue: #00a4f5;
+            --brand-blue-hover: #14b4f0;
+            --card-bg: #0b1220;
+            --card-border: rgba(255, 255, 255, 0.06);
+            --card-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-label: #718299;
+            --input-bg: #121a2c;
+            --input-border: rgba(255, 255, 255, 0.06);
+            --input-focus-bg: #152238;
+            --input-placeholder: #55667e;
+            --input-icon: #55667e;
+            --body-bg: #040b15;
+            --body-honeycomb: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2241.57%22%20height%3D%2272.0%22%20viewBox%3D%220%200%2041.57%2072.0%22%3E%3Cpath%20d%3D%22M%200%200.0%20L%200%2012.0%20L%2020.79%2024.0%20L%2020.79%2048.0%20L%200%2060.0%20L%200%2072.0%20M%2020.79%2024.0%20L%2041.57%2012.0%20M%2020.79%2048.0%20L%2041.57%2060.0%22%20fill%3D%22none%22%20stroke%3D%22rgba%280%2C164%2C245%2C0.13%29%22%20stroke-width%3D%221%22/%3E%3C/svg%3E");
+            --body-honeycomb-reactive: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2241.57%22%20height%3D%2272.0%22%20viewBox%3D%220%200%2041.57%2072.0%22%3E%3Cpath%20d%3D%22M%200%200.0%20L%200%2012.0%20L%2020.79%2024.0%20L%2020.79%2048.0%20L%200%2060.0%20L%200%2072.0%20M%2020.79%2024.0%20L%2041.57%2012.0%20M%2020.79%2048.0%20L%2041.57%2060.0%22%20fill%3D%22none%22%20stroke%3D%22rgba%280%2C210%2C255%2C0.42%29%22%20stroke-width%3D%221.25%22/%3E%3C/svg%3E");
+            --cursor-glow-color: rgba(0, 200, 255, 0.035);
+            --liquid-wave-color: rgba(0, 210, 255, 0.38);
+            --liquid-color: 0, 210, 255;
+            --liquid-wave-shadow: rgba(0, 180, 245, 0.15);
+            --glow-color: rgba(0, 164, 245, 0.06);
+            --btn-bg: #00a4f5;
+            --btn-hover: #14b4f0;
+            --btn-glow: rgba(0, 164, 245, 0.55);
+            --theme-toggle-bg: #1a2540;
+            --theme-toggle-border: rgba(255, 255, 255, 0.1);
+            --theme-toggle-color: #e2e8f0;
+            --ring-solid: rgba(0, 164, 245, 0.35);
+            --ring-dashed: rgba(0, 164, 245, 0.3);
+            --logo-drop-shadow: rgba(0, 164, 245, 0.45);
+        }
+
+        /* Definição de Pesos da Fonte Inter */
+        *, *::before, *::after, input, button, select, textarea {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+        }
+
+        body {
+            background-color: var(--body-bg);
+            background-image: 
+                radial-gradient(circle at 50% 25%, var(--glow-color) 0%, transparent 65%);
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 24px 0;
+            transition: background-color 0.25s ease, color 0.25s ease;
+        }
+
+        /* Canvas de Fluido Líquido Cibernético - 60/120 FPS Nativo GPU (Fundo Estrito) */
+        #cyberLiquidCanvas {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: -1 !important;
+            pointer-events: none !important;
+        }
+
+        /* Botão de Alternar Tema Flutuante */
+        .login-theme-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: 1px solid var(--theme-toggle-border);
+            background-color: var(--theme-toggle-bg);
+            color: var(--theme-toggle-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            z-index: 50;
+        }
+        .login-theme-btn:hover {
+            border-color: var(--brand-blue);
+            color: var(--brand-blue);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 132, 200, 0.18);
+        }
+
+        /* ================= INTRO ANIMATION ================= */
+        .intro-running #introLogoGroup {
+            transform: translateY(22vh) scale(1.15);
+        }
+
+        .intro-running #brandTitles,
+        .intro-running #login-card,
+        .intro-running #loginFooter {
+            opacity: 0 !important;
+            transform: translateY(28px) !important;
+            pointer-events: none;
+        }
+
+        #introLogoGroup {
+            transform: translateY(0) scale(1);
+            transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        #brandTitles {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.1s, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.1s;
+        }
+
+        #login-card {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.18s, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.18s, border-color 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        #loginFooter {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.25s, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.25s;
+        }
+        /* =================================================== */
+
+        /* Container da Logo com Anéis Pulsantes */
+        .logo-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+            z-index: 10;
+        }
+
+        @keyframes dynamicPulseRing {
+            0% { 
+                transform: translate(-50%, -50%) scale(0.65); 
+                opacity: 0; 
+            }
+            15% {
+                opacity: 0.55;
+            }
+            100% { 
+                transform: translate(-50%, -50%) scale(2.6); 
+                opacity: 0; 
+            }
+        }
+
+        .logo-ring {
+            position: absolute;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            width: 88px;
+            height: 88px;
+            transform: translate(-50%, -50%) scale(0.65);
+            opacity: 0;
+            animation: dynamicPulseRing 8s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+            pointer-events: none;
+        }
+
+        .ring-solid {
+            border: 1.5px solid var(--ring-solid);
+        }
+
+        .ring-dashed {
+            border: 1.5px dashed var(--ring-dashed);
+        }
+
+        .logo-ring-1 { animation-delay: 0s; }
+        .logo-ring-2 { animation-delay: 2s; }
+        .logo-ring-3 { animation-delay: 4s; }
+        .logo-ring-4 { animation-delay: 6s; }
+
+        /* Wrapper da Logo com Glow e Scanner */
+        .logo-glow-wrapper {
+            position: relative;
+            width: 90px;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            filter: drop-shadow(0 0 24px var(--logo-drop-shadow));
+        }
+
+        .logo-masked-layer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            -webkit-mask-image: url("{{ url_for('static', filename='img/logo.png') }}");
+            mask-image: url("{{ url_for('static', filename='img/logo.png') }}");
+            -webkit-mask-size: contain;
+            mask-size: contain;
+            -webkit-mask-position: center;
+            mask-position: center;
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+        }
+
+        .logo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .scanner-beam {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 28px;
+            background: linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.7) 40%,
+                rgba(255, 255, 255, 0.95) 50%,
+                rgba(20, 180, 240, 0.7) 60%,
+                rgba(20, 180, 240, 0) 100%
+            );
+            pointer-events: none;
+            animation: scanBeamAnimation 3.5s ease-in-out infinite;
+            mix-blend-mode: overlay;
+        }
+
+        @keyframes scanBeamAnimation {
+            0% {
+                top: -32px;
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            45% {
+                top: 100%;
+                opacity: 1;
+            }
+            50%, 100% {
+                top: 100%;
+                opacity: 0;
+            }
+        }
+
+        /* Card Panel Tecnológico */
+        .login-card-panel {
+            position: relative;
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            z-index: 10;
+            overflow: hidden;
+            transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        /* Linha Laser Superior */
+        .card-laser-scanner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--brand-blue), #ffffff, var(--brand-blue), transparent);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 30;
+        }
+
+        /* Estado Loading */
+        .login-card-panel.state-loading {
+            border-color: var(--brand-blue);
+            box-shadow: 0 0 35px var(--btn-glow), var(--card-shadow);
+        }
+
+        .login-card-panel.state-loading .card-laser-scanner {
+            opacity: 1;
+            animation: cardLaserScan 1.2s ease-in-out infinite alternate;
+        }
+
+        @keyframes cardLaserScan {
+            0% { transform: scaleX(0.1); opacity: 0.3; }
+            100% { transform: scaleX(1); opacity: 1; filter: drop-shadow(0 0 8px var(--brand-blue)); }
+        }
+
+        /* Estado Erro */
+        .login-card-panel.state-error {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 40px rgba(239, 68, 68, 0.35), var(--card-shadow) !important;
+            animation: cyberShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        }
+
+        @keyframes cyberShake {
+            10%, 90% { transform: translate3d(-3px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
+        }
+
+        /* Estado Sucesso */
+        .login-card-panel.state-success {
+            border-color: #10b981 !important;
+            box-shadow: 0 0 45px rgba(16, 185, 129, 0.4), var(--card-shadow) !important;
+        }
+
+        /* Container Centralizado de Sucesso (Símbolo de Certo) */
+        .login-success-container {
+            min-height: 290px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1.5rem 0.5rem;
+            animation: successContainerFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes successContainerFade {
+            from {
+                opacity: 0;
+                transform: scale(0.92);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .success-icon-wrapper {
+            position: relative;
+            width: 88px;
+            height: 88px;
+            margin-bottom: 1.35rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .success-halo {
+            position: absolute;
+            inset: -14px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.35) 0%, transparent 70%);
+            animation: successHaloPulse 1.6s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes successHaloPulse {
+            0% { transform: scale(0.85); opacity: 0.4; }
+            100% { transform: scale(1.3); opacity: 0.95; }
+        }
+
+        .success-checkmark-svg {
+            width: 88px;
+            height: 88px;
+            color: #10b981;
+            filter: drop-shadow(0 0 18px rgba(16, 185, 129, 0.7));
+        }
+
+        .checkmark-circle {
+            stroke-dasharray: 180;
+            stroke-dashoffset: 180;
+            animation: checkmarkCircleDraw 0.65s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+        }
+
+        .checkmark-check {
+            stroke-dasharray: 50;
+            stroke-dashoffset: 50;
+            animation: checkmarkCheckDraw 0.5s 0.35s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+        }
+
+        @keyframes checkmarkCircleDraw {
+            to { stroke-dashoffset: 0; }
+        }
+
+        @keyframes checkmarkCheckDraw {
+            to { stroke-dashoffset: 0; }
+        }
+
+        .success-text-title {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.01em;
+            margin-bottom: 0.35rem;
+        }
+
+        .success-text-subtitle {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .success-progress-track {
+            width: 150px;
+            height: 4px;
+            background: rgba(16, 185, 129, 0.15);
+            border-radius: 999px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .success-progress-bar {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #10b981, #34d399);
+            border-radius: 999px;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+            animation: successProgressFill 1.0s 0.2s ease-out forwards;
+        }
+
+        @keyframes successProgressFill {
+            to { width: 100%; }
+        }
+
+        /* Container dos Campos */
+        .fields-wrapper {
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .fields-wrapper.form-dimmed {
+            opacity: 0.2;
+            filter: blur(1.5px);
+            transform: scale(0.98);
+            pointer-events: none;
+        }
+
+        /* Labels */
+        .login-field-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-label);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.5rem;
+            margin-left: 0.25rem;
+            transition: color 0.2s ease;
+        }
+
+        /* Inputs Exatos */
+        .exact-input {
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-main);
+            height: 52px;
+            border-radius: 12px;
+            padding-left: 50px;
+            padding-right: 18px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.25s ease;
+            width: 100%;
+            outline: none;
+        }
+
+        .exact-input::placeholder {
+            color: var(--input-placeholder);
+            opacity: 0.85;
+            font-size: 13.5px;
+        }
+
+        .exact-input:focus {
+            background-color: var(--input-focus-bg);
+            border-color: var(--brand-blue);
+            box-shadow: 0 0 0 4px rgba(0, 132, 200, 0.12);
+        }
+
+        html[data-theme="dark"] .exact-input:focus {
+            box-shadow: 0 0 0 4px rgba(0, 164, 245, 0.15);
+        }
+
+        .input-icon-left {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--input-icon);
+            pointer-events: none;
+            transition: color 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .exact-input:focus ~ .input-icon-left,
+        .relative:focus-within .input-icon-left {
+            color: var(--brand-blue);
+        }
+
+        /* Botão com Glow Cibernético */
+        .btn-glow-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .btn-glow-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--btn-bg);
+            filter: blur(14px);
+            opacity: 0.45;
+            border-radius: 12px;
+            z-index: 0;
+            pointer-events: none;
+            transition: background 0.3s ease, opacity 0.3s ease;
+        }
+
+        .btn-glow-container.glow-error::before {
+            background: #ef4444 !important;
+            opacity: 0.7 !important;
+        }
+
+        .btn-glow-container.glow-success::before {
+            background: #10b981 !important;
+            opacity: 0.7 !important;
+        }
+
+        .exact-btn-submit {
+            background-color: var(--btn-bg);
+            height: 50px;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 14.5px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: none;
+        }
+        
+        .exact-btn-submit:hover {
+            background-color: var(--btn-hover);
+            box-shadow: 0 4px 16px var(--btn-glow);
+        }
+
+        .exact-btn-submit:active {
+            transform: scale(0.99);
+        }
+
+        .exact-btn-submit.btn-error {
+            background-color: #ef4444 !important;
+        }
+
+        .exact-btn-submit.btn-success {
+            background-color: #10b981 !important;
+        }
+
+        .brand-text {
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            color: var(--text-main);
+            transition: color 0.25s ease;
+        }
+        .brand-subtitle {
+            color: var(--text-muted);
+            font-size: 12.5px;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            transition: color 0.25s ease;
+        }
+        .login-footer-text {
+            color: var(--text-muted);
+            font-size: 11.5px;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            transition: color 0.25s ease;
+        }
+
+        .cyber-loader {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            border-right-color: var(--brand-blue);
+            animation: spin 0.65s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .exact-btn-submit.loading .btn-icon-svg {
+            display: none;
+        }
+
+        .exact-btn-submit.loading .cyber-loader {
+            display: block;
+        }
+
+        /* ================= BANNER LGPD DE COOKIES & TOKENS ================= */
+        .cookie-banner-wrapper {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            right: 24px;
+            z-index: 99990;
+            display: none;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+        }
+        .cookie-banner-wrapper.banner-visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .cookie-banner-card {
+            max-width: 880px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 132, 200, 0.2);
+            border-radius: 18px;
+            padding: 16px 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .cookie-banner-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex: 1;
+        }
+        .cookie-icon-box {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: rgba(0, 132, 200, 0.12);
+            color: var(--brand-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .cookie-banner-title {
+            font-weight: 700;
+            font-size: 13.5px;
+            color: var(--text-main);
+            margin: 0 0 3px 0;
+            line-height: 1.3;
+        }
+        .cookie-banner-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.45;
+        }
+        .cookie-banner-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .cookie-btn-secondary {
+            padding: 9px 16px;
+            font-size: 12.5px;
+            font-weight: 600;
+            border-radius: 10px;
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .cookie-btn-secondary:hover {
+            background: rgba(0, 132, 200, 0.08);
+            border-color: var(--brand-blue);
+            color: var(--brand-blue);
+        }
+        .cookie-btn-primary {
+            padding: 9px 18px;
+            font-size: 12.5px;
+            font-weight: 700;
+            border-radius: 10px;
+            background: var(--btn-bg);
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 4px 12px var(--btn-glow);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .cookie-btn-primary:hover {
+            background: var(--btn-hover);
+            transform: translateY(-1px);
+        }
+        @media (max-width: 768px) {
+            .cookie-banner-wrapper {
+                bottom: 12px;
+                left: 12px;
+                right: 12px;
+            }
+            .cookie-banner-card {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 14px 16px;
+                gap: 14px;
+            }
+            .cookie-banner-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            .cookie-btn-secondary, .cookie-btn-primary {
+                flex: 1;
+                text-align: center;
+                padding: 10px 14px;
+            }
+        }
+
+        /* ================= MODAL DE TERMOS & PRIVACIDADE LGPD ================= */
+        .lgpd-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 999999;
+            background: rgba(0, 0, 0, 0.72);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        .lgpd-modal-overlay.modal-visible {
+            opacity: 1;
+        }
+        .lgpd-modal-dialog {
+            width: 100%;
+            max-width: 680px;
+            max-height: 88vh;
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 132, 200, 0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(0.95);
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .lgpd-modal-overlay.modal-visible .lgpd-modal-dialog {
+            transform: scale(1);
+        }
+        .lgpd-modal-header {
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--card-bg);
+            flex-shrink: 0;
+        }
+        .lgpd-modal-body {
+            padding: 22px 24px;
+            overflow-y: auto;
+            flex: 1;
+            font-size: 13px;
+            line-height: 1.65;
+            color: var(--text-main);
+        }
+        .lgpd-modal-body::-webkit-scrollbar {
+            width: 6px;
+        }
+        .lgpd-modal-body::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.3);
+            border-radius: 4px;
+        }
+        .lgpd-modal-body::-webkit-scrollbar-thumb:hover {
+            background: var(--brand-blue);
+        }
+        .lgpd-modal-footer {
+            padding: 14px 22px;
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--card-bg);
+            flex-shrink: 0;
+            font-size: 12px;
+        }
+    </style>
 </head>
+<body class="antialiased font-sans intro-running">
+    <!-- Canvas Interativo de Fluido Líquido e Marolas Cibernéticas (60/120 FPS Nativo GPU) -->
+    <canvas id="cyberLiquidCanvas" aria-hidden="true"></canvas>
 
-<body>
+    <!-- Botão de Alternar Tema (Claro / Escuro) -->
+    <button id="btnThemeToggle" class="login-theme-btn" type="button" title="Alternar tema">
+        <span id="themeIcon"></span>
+    </button>
 
-  <div class="container">
-
-    <section class="pane info-section">
-
-      <h3>Seja exclusivo, seja Sollus</h3>
-
-      <h2>Plataforma integrada para proteger e acelerar sua operação.</h2>
-
-      <div class="carousel-container">
-
-        <div class="carousel-content active"><h3>Segurança</h3><p>Plataforma robusta para proteger seus dados e operações críticas.</p></div>
-
-        <div class="carousel-content"><h3>Controle de Acesso</h3><p>Defina permissões precisas e gerencie quem acessa o quê, quando e onde.</p></div>
-
-        <div class="carousel-content"><h3>Produtividade</h3><p>Agilize processos com uma interface intuitiva e centralizada.</p></div>
-
-      </div>
-
-      <div class="info-footer">
-
-        <strong>Não possui um cadastro?</strong>
-
-        <span>Entre em contato com o seu gestor para solicitar acesso ao sistema.</span>
-
-      </div>
-
-    </section>
-
-    <section class="pane login-section">
-
-      <div class="brand">
-
-        <img src="{{ url_for('static', filename='images/sollus_logo.png') }}" alt="Logo Sollus Tecnologia" />
-
-        <h2><span id="bemVindoText">Bem-vindo!</span></h2>
-
-        <p class="helper">Faça login para continuar</p>
-
-      </div>
-
-      <div class="messages">
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-
-          {% if messages %}
-
-            <ul>
-
-              {% for category, message in messages %}
-
-                <li>{{ message }}</li>
-
-              {% endfor %}
-
-            </ul>
-
-          {% endif %}
-
-        {% endwith %}
-
-      </div>
-
-      <form id="login-form" method="POST" action="{{ url_for('auth_bp.login') }}" novalidate>
-
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-        <div class="input-group">
-
-          <span class="input-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span>
-
-          <input class="input" id="usuario" type="text" name="usuario" placeholder="Usuário" autocomplete="username" required />
-
-          <label for="usuario">Usuário</label>
-
+    <main class="w-full max-w-[480px] mx-auto px-6 relative z-10 flex flex-col items-center">
+        
+        <!-- Header / Logo -->
+        <div class="mb-8 w-full flex flex-col items-center">
+            <div id="introLogoGroup" class="logo-container mb-3">
+                <!-- Anéis de Pulso Concêntricos -->
+                <div class="logo-ring ring-solid logo-ring-1"></div>
+                <div class="logo-ring ring-dashed logo-ring-2"></div>
+                <div class="logo-ring ring-solid logo-ring-3"></div>
+                <div class="logo-ring ring-dashed logo-ring-4"></div>
+                
+                <!-- Logo Oficial com Scanner Mascarado -->
+                <div class="logo-glow-wrapper">
+                    <div class="logo-masked-layer" id="logoMaskedLayer">
+                        <img id="mainLogoImg"
+                             src="{{ url_for('static', filename='img/logo.png') }}" 
+                             alt="Sollus Connected" 
+                             class="logo-img select-none"
+                             onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/logo.png') }}'; updateLogoMask('{{ url_for('static', filename='images/logo.png') }}');">
+                        <div class="scanner-beam"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Título e Subtítulo -->
+            <div id="brandTitles" class="text-center">
+                <h1 class="brand-text text-[29px] tracking-wide mb-1 flex items-center justify-center gap-2">
+                    SOLLUS <span style="color: var(--brand-blue);">CONNECTED</span>
+                </h1>
+                <p class="brand-subtitle">Plataforma Integrada de Gestão &amp; Operações</p>
+            </div>
         </div>
 
-        <div class="input-group">
+        <!-- Card de Formulário -->
+        <div class="login-card-panel w-full p-8 sm:p-9 mb-7" id="login-card">
+            
+            <!-- Laser de varredura no topo do card no loading -->
+            <div class="card-laser-scanner"></div>
 
-          <span class="input-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>
+            <form id="login-form" method="POST" action="{{ url_for('auth_bp.login_ajax') }}" class="space-y-6" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <!-- Container de Campos -->
+                <div id="fieldsWrapper" class="fields-wrapper space-y-5">
+                    <!-- Campo Usuário -->
+                    <div>
+                        <label for="usuario" class="login-field-label">
+                            USUÁRIO
+                        </label>
+                        <div class="relative flex items-center">
+                            <div class="input-icon-left">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                            </div>
+                            <input 
+                                type="text" 
+                                id="usuario" 
+                                name="usuario" 
+                                class="exact-input"
+                                placeholder="Digite seu usuário ou e-mail"
+                                autocomplete="username"
+                                required
+                            >
+                        </div>
+                    </div>
 
-          <input class="input" id="senha" type="password" name="senha" placeholder="Senha" autocomplete="current-password" required />
+                    <!-- Campo Senha -->
+                    <div>
+                        <label for="senha" class="login-field-label">
+                            SENHA
+                        </label>
+                        <div class="relative flex items-center">
+                            <div class="input-icon-left">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                            </div>
+                            <input 
+                                type="password" 
+                                id="senha" 
+                                name="senha" 
+                                class="exact-input exact-input-password"
+                                placeholder="••••••••"
+                                autocomplete="current-password"
+                                required
+                            >
+                        </div>
+                    </div>
+                </div>
 
-          <label for="senha">Senha</label>
+                <!-- Botão de Login -->
+                <div class="pt-2 pb-1">
+                    <div class="btn-glow-container" id="btnGlow">
+                        <button 
+                            type="submit" 
+                            id="btnSubmit"
+                            class="exact-btn-submit"
+                        >
+                            <!-- Spinner Cibernético -->
+                            <div class="cyber-loader"></div>
 
-          <button type="button" id="toggle-senha" aria-label="Mostrar senha"></button>
+                            <!-- Ícone do Botão Dinâmico -->
+                            <span id="btnIconWrapper">
+                                <svg class="btn-icon-svg" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                    <polyline points="9 12 11 14 15 10"></polyline>
+                                </svg>
+                            </span>
+                            <span id="btnText">Entrar no Sistema</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
 
+            <!-- Container Central de Sucesso com Símbolo de Certo Animado -->
+            <div id="loginSuccessContainer" class="login-success-container" style="display: none;">
+                <div class="success-icon-wrapper">
+                    <div class="success-halo"></div>
+                    <svg class="success-checkmark-svg" viewBox="0 0 64 64" fill="none">
+                        <circle class="checkmark-circle" cx="32" cy="32" r="28" stroke="currentColor" stroke-width="3" />
+                        <path class="checkmark-check" d="M19 33l9 9 17-18" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <h3 class="success-text-title">Acesso Autorizado!</h3>
+                <p class="success-text-subtitle">Autenticado com sucesso. Entrando no painel...</p>
+                <div class="success-progress-track">
+                    <div class="success-progress-bar"></div>
+                </div>
+            </div>
         </div>
 
-        <button type="submit" class="btn-primary" id="btnSubmit">Entrar</button>
+        <!-- Rodapé -->
+        <div id="loginFooter" class="text-center mt-2 w-full max-w-[440px]">
+            <p class="login-footer-text mb-1">
+                &copy; 2026 Sollus Connected &bull; Tecnologia &amp; Inovação
+            </p>
+            <p class="text-[11px] text-center" style="color: var(--text-muted); line-height: 1.45;">
+                Utilizamos cookies e tokens estritamente necessários para segurança da sessão corporativa.
+                <button type="button" id="btnOpenLgpdModal" onclick="openLgpdModal()" class="underline hover:opacity-80 transition cursor-pointer font-medium inline-block" style="color: var(--brand-blue); background: none; border: none; padding: 0;">
+                    Termos de Uso &amp; Privacidade (LGPD)
+                </button>
+            </p>
+        </div>
 
-      </form>
+    </main>
 
-    </section>
+    <script>
+        // ================= GERENCIADOR DE TEMA (CLARO / ESCURO) =================
+        const themeKey = 'sollus:theme';
+        const root = document.documentElement;
+        const btnTheme = document.getElementById('btnThemeToggle');
+        const themeIcon = document.getElementById('themeIcon');
 
-  </div>
+        const SVG_SUN = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+        `;
 
+        const SVG_MOON = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        `;
+
+        function applyTheme(t) {
+            root.setAttribute('data-theme', t);
+            root.setAttribute('data-bs-theme', t);
+            if (themeIcon) {
+                themeIcon.innerHTML = t === 'dark' ? SVG_SUN : SVG_MOON;
+            }
+            try {
+                localStorage.setItem(themeKey, t);
+            } catch(e) {}
+        }
+
+        let saved = null;
+        try {
+            saved = localStorage.getItem(themeKey);
+        } catch(e) {}
+        if (!saved) {
+            saved = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        }
+        applyTheme(saved);
+
+        if (btnTheme) {
+            btnTheme.addEventListener('click', () => {
+                const current = root.getAttribute('data-theme');
+                applyTheme(current === 'dark' ? 'light' : 'dark');
+            });
+        }
+
+        // Transição de Entrada (Intro Splash ágil de 600ms)
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                document.body.classList.remove('intro-running');
+                setTimeout(() => {
+                    const el = document.getElementById('usuario');
+                    if (el) el.focus();
+                }, 350);
+            }, 600);
+        });
+
+        // Atualiza máscara se carregar imagem de fallback
+        function updateLogoMask(url) {
+            const el = document.getElementById('logoMaskedLayer');
+            if (el) {
+                el.style.webkitMaskImage = `url('${url}')`;
+                el.style.maskImage = `url('${url}')`;
+            }
+        }
+
+        // Elementos de UI
+        const form = document.getElementById('login-form');
+        const card = document.getElementById('login-card');
+        const fieldsWrapper = document.getElementById('fieldsWrapper');
+        const usuarioInput = document.getElementById('usuario');
+        const senhaInput = document.getElementById('senha');
+        const btn = document.getElementById('btnSubmit');
+        const glow = document.getElementById('btnGlow');
+        const btnText = document.getElementById('btnText');
+        const btnIconWrapper = document.getElementById('btnIconWrapper');
+
+        const SVG_SHIELD = `
+            <svg class="btn-icon-svg" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <polyline points="9 12 11 14 15 10"></polyline>
+            </svg>
+        `;
+
+        const SVG_ALERT = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+        `;
+
+        function setLoadingState(on) {
+            btn.disabled = on;
+            if (on) {
+                btn.classList.add('loading');
+                card.classList.add('state-loading');
+                fieldsWrapper.classList.add('form-dimmed');
+                btnText.textContent = 'Autenticando...';
+            } else {
+                btn.classList.remove('loading');
+                card.classList.remove('state-loading');
+            }
+        }
+
+        function showSuccessState(redirectUrl) {
+            // 1. Limpeza imediata da senha e usuário da memória DOM
+            senhaInput.value = '';
+            usuarioInput.value = '';
+            try { form.reset(); } catch(e) {}
+
+            // 2. Transição visual: oculta o formulário e ativa o símbolo de certo centralizado
+            form.style.display = 'none';
+            const successBox = document.getElementById('loginSuccessContainer');
+            if (successBox) {
+                successBox.style.display = 'flex';
+            }
+            card.classList.remove('state-loading', 'state-error');
+            card.classList.add('state-success');
+
+            // 3. Aguarda 1.25s para que o usuário veja a animação completa do símbolo de certo
+            setTimeout(() => {
+                window.location.href = redirectUrl || '/';
+            }, 1250);
+        }
+
+        function showErrorState(msg) {
+            // Reativa campos com foco limpo na senha
+            fieldsWrapper.classList.remove('form-dimmed');
+            senhaInput.value = '';
+            senhaInput.focus();
+
+            card.classList.add('state-error');
+            btn.classList.add('btn-error');
+            glow.classList.add('glow-error');
+            btnIconWrapper.innerHTML = SVG_ALERT;
+            btnText.textContent = msg;
+
+            // Restaura o botão suavemente após 2s
+            setTimeout(() => {
+                card.classList.remove('state-error');
+                btn.classList.remove('btn-error');
+                glow.classList.remove('glow-error');
+                btnIconWrapper.innerHTML = SVG_SHIELD;
+                btnText.textContent = 'Entrar no Sistema';
+            }, 2000);
+        }
+
+        // Submissão AJAX do Formulário
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const usuario = usuarioInput.value.trim();
+            const senha = senhaInput.value.trim();
+
+            // Limpa estados anteriores
+            card.classList.remove('state-error', 'state-success');
+            btn.classList.remove('btn-error', 'btn-success');
+            glow.classList.remove('glow-error', 'glow-success');
+
+            if (!usuario || !senha) {
+                showErrorState('Preencha Usuário e Senha');
+                return;
+            }
+
+            setLoadingState(true);
+            const start = Date.now();
+            const MIN_MS = 650;
+
+            const formData = new FormData(form);
+
+            let data;
+            try {
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                data = await res.json();
+            } catch (err) {
+                data = { ok: false, msg: 'Erro de Conexão' };
+            }
+
+            const elapsed = Date.now() - start;
+            const remaining = Math.max(0, MIN_MS - elapsed);
+
+            setTimeout(() => {
+                setLoadingState(false);
+                if (data.ok) {
+                    showSuccessState(data.redirect || '/');
+                } else if (data.reason === 'csrf' || (data.message && data.message.toLowerCase().includes('csrf'))) {
+                    showErrorState('Sessão expirada. Recarregando página...');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1200);
+                } else {
+                    showErrorState(data.msg || data.message || 'Usuário ou Senha Inválidos');
+                }
+            }, remaining);
+        });
+
+        // Recarrega automaticamente caso a página venha do cache de navegação (bfcache)
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+
+        // ================= CONTROLE DE COOKIES, TOKENS E MODAL LGPD =================
+        function openLgpdModal() {
+            const modal = document.getElementById('loginLgpdModal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+            void modal.offsetWidth; // Força reflow
+            modal.classList.add('modal-visible');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLgpdModal() {
+            const modal = document.getElementById('loginLgpdModal');
+            if (!modal) return;
+            modal.classList.remove('modal-visible');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }, 250);
+        }
+
+        function acceptLgpdConsent() {
+            try {
+                localStorage.setItem('sollus:cookie_consent', 'accepted');
+            } catch(e) {}
+            const banner = document.getElementById('cookieConsentBanner');
+            if (banner) {
+                banner.classList.remove('banner-visible');
+                setTimeout(() => {
+                    banner.style.display = 'none';
+                }, 350);
+            }
+            closeLgpdModal();
+        }
+
+        function handleLgpdBackdropClick(event) {
+            if (event.target && event.target.id === 'loginLgpdModal') {
+                closeLgpdModal();
+            }
+        }
+
+        // Tecla ESC para fechar modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('loginLgpdModal');
+                if (modal && modal.classList.contains('modal-visible')) {
+                    closeLgpdModal();
+                }
+            }
+        });
+
+        // Verificação no carregamento da página (Primeiro Acesso)
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                const consent = localStorage.getItem('sollus:cookie_consent');
+                const banner = document.getElementById('cookieConsentBanner');
+                if (!consent && banner) {
+                    banner.style.display = 'block';
+                    setTimeout(() => {
+                        banner.classList.add('banner-visible');
+                    }, 400);
+                }
+            } catch(e) {}
+        });
+
+        // Torna acessível no escopo global
+        window.openLgpdModal = openLgpdModal;
+        window.closeLgpdModal = closeLgpdModal;
+        window.acceptLgpdConsent = acceptLgpdConsent;
+        window.handleLgpdBackdropClick = handleLgpdBackdropClick;
+    </script>
+
+    <!-- Banner LGPD de Consentimento de Cookies e Tokens (Primeiro Acesso) -->
+    <div id="cookieConsentBanner" class="cookie-banner-wrapper">
+        <div class="cookie-banner-card">
+            <div class="cookie-banner-content">
+                <div class="cookie-icon-box">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <polyline points="9 12 11 14 15 10"></polyline>
+                    </svg>
+                </div>
+                <div>
+                    <p class="cookie-banner-title">Armazenamento de Tokens e Privacidade (LGPD)</p>
+                    <p class="cookie-banner-desc">
+                        Este sistema utiliza cookies essenciais e tokens locais para manter sua sessão autenticada, prevenir fraudes e proteger as operações corporativas, em estrita conformidade com a <strong>LGPD (Lei nº 13.709/2018)</strong>. Nenhum dado é repassado a terceiros ou redes de anúncios.
+                    </p>
+                </div>
+            </div>
+            <div class="cookie-banner-actions">
+                <button type="button" class="cookie-btn-secondary" onclick="openLgpdModal()">
+                    Ler Termos
+                </button>
+                <button type="button" class="cookie-btn-primary" onclick="acceptLgpdConsent()">
+                    Aceitar e Continuar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal LGPD / Termos de Uso no Login -->
+    <div id="loginLgpdModal" class="lgpd-modal-overlay" onclick="handleLgpdBackdropClick(event)">
+        <div class="lgpd-modal-dialog" onclick="event.stopPropagation()">
+            
+            <!-- Header -->
+            <div class="lgpd-modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: rgba(0, 132, 200, 0.12); color: var(--brand-blue);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            <polyline points="9 12 11 14 15 10"></polyline>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm md:text-base font-bold m-0" style="color: var(--text-main);">Termos de Uso &amp; Política de Privacidade</h3>
+                        <p class="text-[11px] m-0" style="color: var(--text-muted);">Lei Geral de Proteção de Dados (Lei nº 13.709/2018 - LGPD)</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeLgpdModal()" class="p-2 rounded-lg hover:opacity-75 transition cursor-pointer border-0 bg-transparent text-xl leading-none" style="color: var(--text-muted);" title="Fechar">
+                    &times;
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="lgpd-modal-body space-y-4">
+                
+                <div class="p-3.5 rounded-xl border" style="background: rgba(0, 132, 200, 0.08); border-color: rgba(0, 132, 200, 0.2);">
+                    <p class="font-bold text-xs mb-1" style="color: var(--brand-blue);">ℹ️ Resumo Corporativo</p>
+                    <p class="text-xs mb-0" style="color: var(--text-muted); line-height: 1.5;">
+                        O <strong>Sollus Connected</strong> é a plataforma integrada de gestão da Sollus Tecnologia para <strong>operações comerciais, chamados, contratos e integrações</strong>. Não vendemos seus dados nem exibimos anúncios.
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-xs md:text-sm mb-1" style="color: var(--brand-blue);">1. O que fica salvo no seu navegador e por quê?</h4>
+                    <p class="text-xs mb-1.5" style="color: var(--text-muted);">
+                        Guardamos apenas arquivos simples (chamados de cookies e tokens de sessão) estritamente necessários para o sistema funcionar perfeitamente:
+                    </p>
+                    <ul class="text-xs space-y-1 mb-2 pl-4 list-disc" style="color: var(--text-muted);">
+                        <li><strong>Manter você conectado:</strong> Para navegar entre as páginas e módulos sem precisar digitar seu usuário e senha a cada clique;</li>
+                        <li><strong>Proteger sua conta:</strong> Garante que apenas você está usando sua sessão, prevenindo fraudes e acessos indevidos;</li>
+                        <li><strong>Lembrar suas preferências:</strong> Guarda se você prefere o modo Claro ou Escuro da interface.</li>
+                    </ul>
+                    <div class="p-2.5 rounded-lg border text-xs" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);">
+                        <strong>🛡️ Garantia de Privacidade:</strong> Nós <u>NÃO</u> rastreamos sua navegação em outros sites, <u>NÃO</u> usamos cookies de publicidade e <u>NÃO</u> compartilhamos nenhuma informação com redes terceiras.
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-xs md:text-sm mb-1" style="color: var(--brand-blue);">2. Controle e Responsabilidade</h4>
+                    <p class="text-xs mb-0" style="color: var(--text-muted); line-height: 1.5;">
+                        • <strong>Sollus Tecnologia:</strong> Empresa responsável pela infraestrutura e segurança da plataforma Sollus Connected.<br>
+                        • <strong>Segurança e Isolamento:</strong> Todas as informações trafegam protegidas por criptografia moderna e camadas rigorosas de controle de acesso.
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-xs md:text-sm mb-1" style="color: var(--brand-blue);">3. Direitos do Usuário (LGPD)</h4>
+                    <p class="text-xs mb-0" style="color: var(--text-muted); line-height: 1.5;">
+                        Você tem o direito de solicitar a conferência ou atualização dos seus dados cadastrais. Para solicitações de privacidade, contate diretamente o administrador do sistema da sua organização.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="lgpd-modal-footer">
+                <span class="text-xs" style="color: var(--text-muted);">Sollus Connected &bull; LGPD Compliance</span>
+                <div class="flex gap-2">
+                    <button type="button" onclick="closeLgpdModal()" class="cookie-btn-secondary" style="padding: 7px 14px; font-size: 12px;">
+                        Fechar
+                    </button>
+                    <button type="button" onclick="acceptLgpdConsent()" class="cookie-btn-primary" style="padding: 7px 18px; font-size: 12px;">
+                        Entendido e Aceitar
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+  <!-- Script Controlador da Rede Colmeia Líquida Viscosa (GPU 60 FPS) -->
   <script>
+  (function initViscousMesh() {
+    var canvas = document.getElementById('cyberLiquidCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-    document.addEventListener('DOMContentLoaded', function(){
+    var width = window.innerWidth;
+    var height = window.innerHeight;
 
-      const form = document.getElementById('login-form');
+    // Geometria da Colmeia: R = 24, HW = 20.7846
+    var HW = 20.7846;
 
-      const btn = document.getElementById('btnSubmit');
+    var nodes = [];
+    var edges = [];
+    var ripples = [];
 
-      if(form && btn){
+    function buildMesh() {
+      nodes = [];
+      edges = [];
+      var nodeMap = new Map();
 
-        form.addEventListener('submit', function(){
+      function getNode(c, rIdx, x0, y0) {
+        var key = c + '_' + rIdx;
+        if (nodeMap.has(key)) return nodeMap.get(key);
+        var node = {
+          x0: x0, y0: y0,
+          x: x0, y: y0,
+          vx: 0, vy: 0,
+          glow: 0,
+          active: false
+        };
+        nodeMap.set(key, node);
+        nodes.push(node);
+        return node;
+      }
 
-          if(form.checkValidity()){
+      var margin = 40;
+      var cols = Math.ceil((width + margin * 2) / HW) + 1;
+      var rows = Math.ceil((height + margin * 2) / 72) + 1;
 
-            btn.disabled = true;
+      for (var c = -1; c <= cols; c++) {
+        var xBase = Math.round(c * HW * 100) / 100;
+        var isOdd = Math.abs(c % 2) === 1;
 
-            btn.textContent = 'Entrando';
+        for (var r = -1; r <= rows; r++) {
+          var yBase = r * 72;
 
+          if (!isOdd) {
+            var nTop = getNode(c, r + '_top', xBase, yBase + 12);
+            var nBot = getNode(c, r + '_bot', xBase, yBase + 60);
+
+            var nPrevBot = getNode(c, (r - 1) + '_bot', xBase, yBase - 12);
+            edges.push([nPrevBot, nTop]);
+
+            var nAdjTop = getNode(c + 1, r + '_midtop', xBase + HW, yBase + 24);
+            var nAdjBot = getNode(c + 1, r + '_midbot', xBase + HW, yBase + 48);
+            edges.push([nTop, nAdjTop]);
+            edges.push([nBot, nAdjBot]);
+          } else {
+            var nTopOdd = getNode(c, r + '_midtop', xBase, yBase + 24);
+            var nBotOdd = getNode(c, r + '_midbot', xBase, yBase + 48);
+
+            edges.push([nTopOdd, nBotOdd]);
+
+            var nNextTop = getNode(c + 1, r + '_top', xBase + HW, yBase + 12);
+            var nNextBot = getNode(c + 1, r + '_bot', xBase + HW, yBase + 60);
+            edges.push([nTopOdd, nNextTop]);
+            edges.push([nBotOdd, nNextBot]);
           }
+        }
+      }
+    }
 
+    function resize() {
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+      buildMesh();
+    }
+    window.addEventListener('resize', resize, { passive: true });
+    resize();
+
+    var mouse = { x: -999, y: -999, px: -999, py: -999, vx: 0, vy: 0, active: false };
+    var animRunning = false;
+
+    function wake() {
+      if (!animRunning) {
+        animRunning = true;
+        requestAnimationFrame(animate);
+      }
+    }
+
+    window.addEventListener('mousemove', function(e) {
+      if (!mouse.active) {
+        mouse.px = e.clientX;
+        mouse.py = e.clientY;
+        mouse.active = true;
+      }
+      mouse.vx = e.clientX - mouse.px;
+      mouse.vy = e.clientY - mouse.py;
+      mouse.px = mouse.x;
+      mouse.py = mouse.y;
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+
+      var spd = Math.hypot(mouse.vx, mouse.vy);
+      if (spd > 48) {
+        ripples.push({
+          x: mouse.x,
+          y: mouse.y,
+          r: 8,
+          maxR: 120,
+          speed: 2.6,
+          strength: 0.18
         });
+        if (ripples.length > 3) ripples.shift();
+      }
+      wake();
+    }, { passive: true });
 
+    window.addEventListener('mouseleave', function() {
+      mouse.active = false;
+      mouse.x = -999;
+      mouse.y = -999;
+    }, { passive: true });
+
+    window.addEventListener('click', function(e) {
+      if (e.target.closest('input, textarea, select, button, a, .modal, .dropdown-menu, .btn, .card, table, tr, td, th, .badge, .nav, .sidebar, #login-card, .lgpd-modal-content, .cookie-banner')) return;
+      ripples.push({
+        x: e.clientX,
+        y: e.clientY,
+        r: 8,
+        maxR: 140,
+        speed: 3.0,
+        strength: 0.28
+      });
+      if (ripples.length > 3) ripples.shift();
+      wake();
+    }, { passive: true });
+
+    var SPRING = 0.055;
+    var DAMPING = 0.78;
+    var RADIUS = 115;
+    var RADIUS_SQ = RADIUS * RADIUS;
+
+    function animate() {
+      // 1. Processa marolas líquidas
+      for (var i = ripples.length - 1; i >= 0; i--) {
+        var rp = ripples[i];
+        rp.r += rp.speed;
+        rp.strength *= 0.94;
+        if (rp.r > rp.maxR || rp.strength < 0.01) {
+          ripples.splice(i, 1);
+        }
       }
 
-      const senhaInput = document.getElementById('senha');
+      // 2. Física viscosa de deformação elástica dos nós
+      var mActive = mouse.active && mouse.x !== -999;
+      var hasMotion = mActive || ripples.length > 0;
 
-      const toggleBtn = document.getElementById('toggle-senha');
+      for (var j = 0; j < nodes.length; j++) {
+        var n = nodes[j];
 
-      if(senhaInput && toggleBtn){
+        // Interação com o cursor do mouse
+        if (mActive) {
+          var dx = n.x - mouse.x;
+          var dy = n.y - mouse.y;
 
-        const eyeIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+          // Rejeição espacial rápida por Bounding Box
+          if (dx > -RADIUS && dx < RADIUS && dy > -RADIUS && dy < RADIUS) {
+            var dSq = dx * dx + dy * dy;
+            if (dSq < RADIUS_SQ) {
+              var dist = Math.sqrt(dSq);
+              var norm = dist / RADIUS;
+              var s = 1 - norm * norm;
 
-        const eyeOffIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+              // Deformação radial suave e sutil
+              var push = s * s * 0.65;
+              if (dist > 1) {
+                n.vx += (dx / dist) * push;
+                n.vy += (dy / dist) * push;
+              }
 
-        toggleBtn.innerHTML = eyeIcon;
+              // Arrasto inercial macio
+              n.vx += mouse.vx * s * 0.03;
+              n.vy += mouse.vy * s * 0.03;
 
-        toggleBtn.addEventListener('click', function(){
+              n.glow = Math.max(n.glow, s * 0.5);
+              n.active = true;
+            }
+          }
+        }
 
-          const isPassword = senhaInput.type === 'password';
+        // Interação com marolas em expansão
+        for (var k = 0; k < ripples.length; k++) {
+          var rip = ripples[k];
+          var rdx = n.x - rip.x;
+          var rdy = n.y - rip.y;
+          if (Math.abs(rdx) < rip.r + 25 && Math.abs(rdy) < rip.r + 25) {
+            var rDist = Math.hypot(rdx, rdy);
+            var diff = Math.abs(rDist - rip.r);
+            if (diff < 24 && rDist > 1) {
+              var wave = Math.sin((rDist - rip.r) * 0.22) * rip.strength * 0.5;
+              n.vx += (rdx / rDist) * wave;
+              n.vy += (rdy / rDist) * wave;
+              n.glow = Math.max(n.glow, rip.strength * (1 - diff / 24) * 0.25);
+              n.active = true;
+            }
+          }
+        }
 
-          senhaInput.type = isPassword ? 'text' : 'password';
+        // Amortecimento viscoso e força restauradora de mola
+        if (n.active || n.glow > 0.01) {
+          var fx = (n.x0 - n.x) * SPRING;
+          var fy = (n.y0 - n.y) * SPRING;
 
-          toggleBtn.innerHTML = isPassword ? eyeOffIcon : eyeIcon;
+          n.vx = (n.vx + fx) * DAMPING;
+          n.vy = (n.vy + fy) * DAMPING;
 
-          toggleBtn.setAttribute('aria-label', isPassword ? 'Ocultar senha' : 'Mostrar senha');
+          n.x += n.vx;
+          n.y += n.vy;
 
-        });
+          n.glow *= 0.88;
 
+          // Repouso completo
+          if (Math.abs(n.vx) < 0.02 && Math.abs(n.vy) < 0.02 &&
+              Math.abs(n.x - n.x0) < 0.04 && Math.abs(n.y - n.y0) < 0.04 && n.glow < 0.01) {
+            n.x = n.x0;
+            n.y = n.y0;
+            n.vx = 0;
+            n.vy = 0;
+            n.glow = 0;
+            n.active = false;
+          } else {
+            hasMotion = true;
+          }
+        }
       }
 
-      const carouselContents = document.querySelectorAll('.carousel-content');
+      mouse.vx *= 0.55;
+      mouse.vy *= 0.55;
 
-      if(carouselContents.length){
+      // 3. Renderização acelerada em lote por GPU
+      ctx.clearRect(0, 0, width, height);
 
-        let index = 0;
+      var isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+      var ambientStroke = isDark ? 'rgba(0, 164, 245, 0.075)' : 'rgba(0, 132, 200, 0.065)';
+      var activeStroke = isDark ? 'rgba(0, 205, 255, 0.18)' : 'rgba(0, 132, 200, 0.16)';
 
-        const show = (i) => {
+      // Caminho 1: Linhas da colmeia em repouso
+      ctx.beginPath();
+      for (var e1 = 0; e1 < edges.length; e1++) {
+        var ed1 = edges[e1];
+        var na1 = ed1[0];
+        var nb1 = ed1[1];
+        if (na1.glow < 0.03 && nb1.glow < 0.03) {
+          ctx.moveTo(na1.x, na1.y);
+          ctx.lineTo(nb1.x, nb1.y);
+        }
+      }
+      ctx.strokeStyle = ambientStroke;
+      ctx.lineWidth = 1.0;
+      ctx.stroke();
 
-          carouselContents.forEach(el => el.classList.remove('active'));
+      // Caminho 2: Linhas ativas em deformação líquida viscosa
+      ctx.beginPath();
+      for (var e2 = 0; e2 < edges.length; e2++) {
+        var ed2 = edges[e2];
+        var na2 = ed2[0];
+        var nb2 = ed2[1];
+        if (na2.glow >= 0.03 || nb2.glow >= 0.03) {
+          ctx.moveTo(na2.x, na2.y);
+          ctx.lineTo(nb2.x, nb2.y);
+        }
+      }
+      ctx.strokeStyle = activeStroke;
+      ctx.lineWidth = 1.0;
+      ctx.stroke();
 
-          carouselContents[i].classList.add('active');
-
-        };
-
-        const next = () => {
-
-          index = (index + 1) % carouselContents.length;
-
-          show(index);
-
-        };
-
-        show(0);
-
-        setInterval(next, 5000);
-
+      // Pausa inteligente do loop quando 100% estabilizado
+      if (!hasMotion && !mActive && ripples.length === 0) {
+        animRunning = false;
+        return;
       }
 
+      requestAnimationFrame(animate);
+    }
 
-
-      const greetingEl = document.getElementById('bemVindoText');
-
-      if(greetingEl){
-
-        const greetings = ['Bem-vindo!', 'Bem-vinda!'];
-
-        let i = 0;
-
-        setInterval(() => {
-
-          i = (i + 1) % greetings.length;
-
-          greetingEl.textContent = greetings[i];
-
-        }, 4000);
-
-      }
-
-    });
-
+    wake();
+  })();
   </script>
-
 </body>
-
 </html>

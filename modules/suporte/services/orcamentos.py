@@ -272,10 +272,10 @@ def build_orcamento_context(orcamento, *, issued_by: str | None = None) -> dict[
     else:
         doc_label = "CNPJ" if cnpj else "Documento"
 
-    issuer_name = current_app.config.get("COMPANY_NAME", "Empresa Matriz")
-    issuer_email = current_app.config.get("COMPANY_EMAIL", "comercial@empresa.com.br")
-    issuer_phone = current_app.config.get("COMPANY_PHONE", "11 3000-0000")
-    issuer_site = current_app.config.get("COMPANY_SITE", "www.empresa.com.br")
+    issuer_name = "Sollus Tecnologia"
+    issuer_email = "comercial@sollusgroup.com"
+    issuer_phone = "21 2413-3203"
+    issuer_site = "sollusgroup.com"
     issuer_address = ""
 
     if "condicoes" in snapshot:

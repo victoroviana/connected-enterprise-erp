@@ -1,0 +1,705 @@
+<!-- Modal RD Station CRM: Nova Oportunidade / Cadastro Manual de Lead -->
+<div class="modal fade" id="modalNovoLead" tabindex="-1" aria-labelledby="modalNovoLeadLabel" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content shadow-lg border-0 rounded-4">
+      <!-- Cabeçalho do Modal -->
+      <div class="modal-header border-bottom py-3 px-4" style="background: linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(16,185,129,0.06) 100%);">
+        <div class="d-flex align-items-center gap-3">
+          <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px; flex-shrink: 0;">
+            <i class="bi bi-plus-lg fs-4"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2" id="modalNovoLeadLabel">
+              <span>Nova Oportunidade / Lead Comercial</span>
+              <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1" style="font-size: 0.72rem;">CRM Rápido</span>
+            </h5>
+            <p class="text-muted small mb-0 mt-1">
+              Cadastre um atendimento ou oportunidade iniciada por WhatsApp, ligação, balcão ou indicação.
+            </p>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar" id="btnModalNovoLeadClose"></button>
+      </div>
+
+      <!-- Formulário -->
+      <form id="formModalNovoLead" autocomplete="off">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+        
+        <div class="modal-body p-4">
+          <!-- Alerta de Erro Dinâmico -->
+          <div id="modalNovoLeadAlert" class="alert alert-danger py-2 px-3 small rounded-3 mb-3 d-none">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            <span id="modalNovoLeadAlertMsg">Preencha os campos obrigatórios.</span>
+          </div>
+
+          <div class="row g-3">
+            <!-- 1. IDENTIFICAÇÃO DA OPORTUNIDADE -->
+            <div class="col-12">
+              <div class="p-3 rounded-3 border bg-light-subtle">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <span class="fw-bold text-primary small text-uppercase letter-spacing-1">
+                    <i class="bi bi-tag-fill me-1"></i> 1. Identificação da Oportunidade
+                  </span>
+                  <span class="text-muted" style="font-size: 0.72rem;">* Campos obrigatórios</span>
+                </div>
+                
+                <div class="row g-2">
+                  <!-- Nome / Título da Oportunidade -->
+                  <div class="col-12">
+                    <label class="form-label small fw-semibold mb-1">Título da Oportunidade *</label>
+                    <div class="input-group">
+                      <span class="input-group-text bg-white"><i class="bi bi-briefcase text-muted"></i></span>
+                      <input type="text" 
+                             class="form-control" 
+                             id="modalLeadNome" 
+                             name="nome" 
+                             placeholder="Ex: Aquisição de Relógio de Ponto - Padaria Real" 
+                             required>
+                    </div>
+                    <div class="form-text text-muted" style="font-size: 0.75rem;">
+                      Sugestão: se você preencher a Empresa ou Contato abaixo, este título é gerado automaticamente.
+                    </div>
+                  </div>
+
+                  <!-- Funil & Etapa -->
+                  <div class="col-md-6">
+                    <label class="form-label small fw-semibold mb-1">Funil de Vendas *</label>
+                    <select class="form-select" id="modalLeadFunilId" name="funil_id" required>
+                      <!-- Populado via JS ou Jinja -->
+                    </select>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label small fw-semibold mb-1">Etapa Inicial *</label>
+                    <select class="form-select" id="modalLeadEtapaId" name="etapa_id" required>
+                      <!-- Populado dinamicamente com base no funil -->
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. CLIENTE (EMPRESA & CONTATO) -->
+            <div class="col-12">
+              <div class="p-3 rounded-3 border bg-light-subtle position-relative">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <span class="fw-bold text-success small text-uppercase letter-spacing-1">
+                    <i class="bi bi-building me-1"></i> 2. Dados do Cliente & Contato
+                  </span>
+                </div>
+
+                <div class="row g-2">
+                  <!-- Empresa -->
+                  <div class="col-md-7 position-relative">
+                    <label class="form-label small fw-semibold mb-1">Empresa / Razão Social</label>
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text bg-white"><i class="bi bi-building text-muted"></i></span>
+                      <input type="text" 
+                             class="form-control" 
+                             id="modalLeadEmpresa" 
+                             name="empresa_nome" 
+                             placeholder="Digite o nome da empresa..."
+                             autocomplete="off">
+                    </div>
+                    <!-- Dropdown de Sugestões de Empresa -->
+                    <div id="modalLeadEmpresaSugestoes" class="list-group position-absolute shadow w-100 mt-1 d-none" style="z-index: 1055; max-height: 180px; overflow-y: auto;"></div>
+                  </div>
+
+                  <!-- CNPJ -->
+                  <div class="col-md-5">
+                    <label class="form-label small fw-semibold mb-1">CNPJ (Opcional)</label>
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text bg-white"><i class="bi bi-hash text-muted"></i></span>
+                      <input type="text" 
+                             class="form-control" 
+                             id="modalLeadCnpj" 
+                             name="cnpj" 
+                             placeholder="00.000.000/0000-00">
+                    </div>
+                  </div>
+
+                  <!-- Nome do Contato Principal -->
+                  <div class="col-md-5">
+                    <label class="form-label small fw-semibold mb-1">Nome do Contato</label>
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text bg-white"><i class="bi bi-person text-muted"></i></span>
+                      <input type="text" 
+                             class="form-control" 
+                             id="modalLeadContatoNome" 
+                             name="contato_nome" 
+                             placeholder="Ex: Carlos Oliveira">
+                    </div>
+                  </div>
+
+                  <!-- WhatsApp / Telefone -->
+                  <div class="col-md-4">
+                    <label class="form-label small fw-semibold mb-1">WhatsApp / Celular *</label>
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text bg-white text-success"><i class="bi bi-whatsapp"></i></span>
+                      <input type="text" 
+                             class="form-control" 
+                             id="modalLeadTelefone" 
+                             name="contato_telefone" 
+                             placeholder="(00) 00000-0000">
+                    </div>
+                  </div>
+
+                  <!-- Cargo -->
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold mb-1">Cargo</label>
+                    <input type="text" 
+                           class="form-control form-control-sm" 
+                           id="modalLeadCargo" 
+                           name="contato_cargo" 
+                           placeholder="Ex: Gerente">
+                  </div>
+
+                  <!-- E-mail -->
+                  <div class="col-md-12">
+                    <label class="form-label small fw-semibold mb-1">E-mail</label>
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text bg-white"><i class="bi bi-envelope text-muted"></i></span>
+                      <input type="email" 
+                             class="form-control" 
+                             id="modalLeadEmail" 
+                             name="contato_email" 
+                             placeholder="contato@empresa.com.br">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. DETALHES COMERCIAIS & QUALIFICAÇÃO -->
+            <div class="col-12">
+              <div class="p-3 rounded-3 border bg-light-subtle">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <span class="fw-bold text-warning-emphasis small text-uppercase letter-spacing-1">
+                    <i class="bi bi-currency-dollar me-1"></i> 3. Valores, Origem & Atribuição
+                  </span>
+                </div>
+
+                <div class="row g-2">
+                  <!-- Responsável / Consultor -->
+                  <div class="col-md-6">
+                    <label class="form-label small fw-semibold mb-1">Responsável Comercial</label>
+                    <select class="form-select form-select-sm" id="modalLeadUserId" name="user_id">
+                      <!-- Populado via JS ou Jinja -->
+                    </select>
+                  </div>
+
+                  <!-- Filial -->
+                  <div class="col-md-6">
+                    <label class="form-label small fw-semibold mb-1">Unidade / Filial</label>
+                    <select class="form-select form-select-sm" id="modalLeadFilial" name="filial">
+                      <option value="RJ">Technosollus RJ (Capital)</option>
+                      <option value="CAMPOS">Sollus Campos (Norte Fluminense)</option>
+                      <option value="SP">Sollus SP (São Paulo)</option>
+                      <option value="PR">Sollus PR (Curitiba)</option>
+                      <option value="ES">Technosollus ES (Vitória)</option>
+                    </select>
+                  </div>
+
+                  <!-- Valor Único (Equipamentos) -->
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold mb-1">Valor Venda (R$)</label>
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text bg-white">R$</span>
+                      <input type="text" 
+                             class="form-control" 
+                             id="modalLeadValorUnico" 
+                             name="valor_unico" 
+                             placeholder="0,00">
+                    </div>
+                  </div>
+
+                  <!-- Valor Mensal (Software/Recorrente) -->
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold mb-1">Mensalidade (R$)</label>
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text bg-white">R$</span>
+                      <input type="text" 
+                             class="form-control" 
+                             id="modalLeadValorMensal" 
+                             name="valor_mensal" 
+                             placeholder="0,00">
+                    </div>
+                  </div>
+
+                  <!-- Origem do Lead -->
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold mb-1">Origem do Lead</label>
+                    <select class="form-select form-select-sm" id="modalLeadOrigem" name="origem">
+                      <option value="WhatsApp">WhatsApp Direto</option>
+                      <option value="Telefone / Ativo">Telefone / Prospecção Ativa</option>
+                      <option value="Indicação">Indicação de Cliente</option>
+                      <option value="Site / Formulário">Site / Formulário</option>
+                      <option value="Google Ads">Google Ads</option>
+                      <option value="Balcão / Loja">Balcão / Presencial</option>
+                      <option value="Outros">Outros</option>
+                    </select>
+                  </div>
+
+                  <!-- Temperatura -->
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold mb-1">Temperatura</label>
+                    <select class="form-select form-select-sm" id="modalLeadTemperatura" name="temperatura">
+                      <option value="quente">🔥 Quente</option>
+                      <option value="morno" selected>🟡 Morno</option>
+                      <option value="frio">❄️ Frio</option>
+                    </select>
+                  </div>
+
+                  <!-- Nível de Interesse -->
+                  <div class="col-md-6">
+                    <label class="form-label small fw-semibold mb-1">Nível de Interesse</label>
+                    <select class="form-select form-select-sm" id="modalLeadNivelInteresse" name="nivel_interesse">
+                      <option value="alto" selected>⭐ Alto (Foco em Fechamento)</option>
+                      <option value="urgente">🚨 Urgente (Decisão Imediata)</option>
+                      <option value="medio">🔹 Médio (Pesquisando Soluções)</option>
+                      <option value="baixo">▫️ Baixo (Estudo Futuro)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. OBSERVAÇÕES / HISTÓRICO DO CONTATO -->
+            <div class="col-12">
+              <label class="form-label small fw-semibold mb-1">
+                <i class="bi bi-chat-left-text me-1 text-primary"></i> Anotação Inicial / Briefing da Conversa
+              </label>
+              <textarea class="form-control" 
+                        id="modalLeadAnotacao" 
+                        name="anotacao_inicial" 
+                        rows="2" 
+                        placeholder="Ex: Cliente solicitou cotação de 2 relógios de ponto para 40 colaboradores. Prefere contato via WhatsApp pela manhã..."></textarea>
+            </div>
+
+            <!-- 5. AGENDAMENTO DE PRÓXIMO PASSO (FOLLOW-UP) -->
+            <div class="col-12">
+              <div class="border rounded-3 p-3 bg-white">
+                <div class="form-check form-switch mb-2">
+                  <input class="form-check-input" type="checkbox" role="switch" id="modalLeadCheckTarefa" checked>
+                  <label class="form-check-label fw-semibold small" for="modalLeadCheckTarefa">
+                    📅 Agendar próxima tarefa de retorno / follow-up para este lead
+                  </label>
+                </div>
+
+                <div id="modalLeadTarefaContainer" class="row g-2 mt-1">
+                  <div class="col-md-4">
+                    <label class="form-label small text-muted mb-1">Tipo de Tarefa</label>
+                    <select class="form-select form-select-sm" id="modalLeadTarefaTipo" name="tarefa_tipo">
+                      <option value="whatsapp" selected>💬 Chamar no WhatsApp</option>
+                      <option value="ligacao">📞 Fazer Ligação</option>
+                      <option value="reuniao">🤝 Reunião / Demonstração</option>
+                      <option value="email">✉️ Enviar E-mail</option>
+                      <option value="visita">🚗 Visita Técnica / Comercial</option>
+                    </select>
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label small text-muted mb-1">Data e Horário</label>
+                    <input type="datetime-local" 
+                           class="form-control form-control-sm" 
+                           id="modalLeadTarefaData" 
+                           name="tarefa_data">
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label small text-muted mb-1">Assunto da Tarefa</label>
+                    <input type="text" 
+                           class="form-control form-control-sm" 
+                           id="modalLeadTarefaTitulo" 
+                           name="tarefa_titulo" 
+                           value="Retornar contato com cliente" 
+                           placeholder="Ex: Enviar proposta de ponto">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rodapé com Ações -->
+        <div class="modal-footer border-top py-3 px-4 d-flex justify-content-between">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary fw-semibold" id="btnSalvarEVerFicha">
+              <i class="bi bi-layout-sidebar-inset me-1"></i> Salvar e Abrir Ficha
+            </button>
+            <button type="submit" class="btn btn-success fw-bold px-4 shadow-sm" id="btnSalvarOportunidade">
+              <i class="bi bi-check-lg me-1"></i> Salvar Oportunidade
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Script do Modal Novo Lead -->
+<script>
+(function() {
+  let formMetaCache = null;
+
+  // Pré-preenchimento vindo do backend se disponível
+  {% if form_meta is defined and form_meta %}
+    formMetaCache = {{ form_meta|tojson }};
+  {% endif %}
+
+  // CSRF Token Helper
+  function getModalCsrf() {
+    const input = document.querySelector('input[name="csrf_token"]');
+    if (input && input.value) return input.value;
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+  }
+
+  // Inicializar dados do modal
+  function initModalNovoLead(preselectedEtapaId = null, preselectedFunilId = null) {
+    const funilSelect = document.getElementById('modalLeadFunilId');
+    const etapaSelect = document.getElementById('modalLeadEtapaId');
+    const userSelect = document.getElementById('modalLeadUserId');
+    const filialSelect = document.getElementById('modalLeadFilial');
+    const origemSelect = document.getElementById('modalLeadOrigem');
+
+    // Configura data padrão para amanhã às 10:00
+    const dtInput = document.getElementById('modalLeadTarefaData');
+    if (dtInput && !dtInput.value) {
+      const now = new Date();
+      now.setDate(now.getDate() + 1);
+      now.setHours(10, 0, 0, 0);
+      const iso = now.toISOString().slice(0, 16);
+      dtInput.value = iso;
+    }
+
+    if (formMetaCache) {
+      renderFormMeta(formMetaCache, preselectedEtapaId, preselectedFunilId);
+    } else {
+      fetch('/crm/api/meta-oportunidade')
+        .then(r => r.json())
+        .then(res => {
+          if (res.success && res.data) {
+            formMetaCache = res.data;
+            renderFormMeta(formMetaCache, preselectedEtapaId, preselectedFunilId);
+          }
+        })
+        .catch(err => console.error("Erro ao buscar metadados do CRM:", err));
+    }
+  }
+
+  function renderFormMeta(meta, preselectedEtapaId = null, preselectedFunilId = null) {
+    const funilSelect = document.getElementById('modalLeadFunilId');
+    const etapaSelect = document.getElementById('modalLeadEtapaId');
+    const userSelect = document.getElementById('modalLeadUserId');
+    const origemSelect = document.getElementById('modalLeadOrigem');
+
+    if (!funilSelect || !etapaSelect) return;
+
+    // 1. Funis
+    funilSelect.innerHTML = '';
+    const currentFunilId = preselectedFunilId || meta.funil_selecionado || (meta.funis[0] ? meta.funis[0].id : '');
+    
+    meta.funis.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.id;
+      opt.textContent = f.nome + (f.tipo ? ` (${f.tipo.toUpperCase()})` : '');
+      if (f.id === currentFunilId) opt.selected = true;
+      funilSelect.appendChild(opt);
+    });
+
+    // 2. Atualizar Etapas do Funil Selecionado
+    updateEtapasSelect(funilSelect.value, preselectedEtapaId);
+
+    // Evento de troca de funil
+    funilSelect.onchange = function() {
+      updateEtapasSelect(this.value);
+      autoSugereTitulo();
+    };
+
+    // 3. Consultores
+    if (userSelect && userSelect.children.length === 0 && meta.consultores) {
+      userSelect.innerHTML = '';
+      const currentUserId = {{ current_user.id if current_user and current_user.is_authenticated else 'null' }};
+      
+      meta.consultores.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.nome;
+        if (currentUserId && c.id == currentUserId) opt.selected = true;
+        userSelect.appendChild(opt);
+      });
+    }
+
+    // 4. Origens
+    if (origemSelect && meta.origens && meta.origens.length > 0) {
+      origemSelect.innerHTML = '';
+      meta.origens.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.nome;
+        opt.textContent = o.nome;
+        origemSelect.appendChild(opt);
+      });
+    }
+  }
+
+  function updateEtapasSelect(funilId, preselectedEtapaId = null) {
+    const etapaSelect = document.getElementById('modalLeadEtapaId');
+    if (!etapaSelect || !formMetaCache || !formMetaCache.funis) return;
+
+    etapaSelect.innerHTML = '';
+    const targetFunil = formMetaCache.funis.find(f => f.id === funilId);
+    if (!targetFunil || !targetFunil.etapas) return;
+
+    targetFunil.etapas.forEach((e, idx) => {
+      const opt = document.createElement('option');
+      opt.value = e.id;
+      opt.textContent = `${e.ordem || (idx + 1)}. ${e.nome}`;
+      if (preselectedEtapaId && e.id === preselectedEtapaId) {
+        opt.selected = true;
+      } else if (!preselectedEtapaId && idx === 0) {
+        opt.selected = true;
+      }
+      etapaSelect.appendChild(opt);
+    });
+  }
+
+  // Auto-sugestão de título ao digitar Empresa ou Contato
+  function autoSugereTitulo() {
+    const nomeInput = document.getElementById('modalLeadNome');
+    const empresaInput = document.getElementById('modalLeadEmpresa');
+    const contatoInput = document.getElementById('modalLeadContatoNome');
+    const funilSelect = document.getElementById('modalLeadFunilId');
+
+    if (!nomeInput) return;
+
+    // Apenas se o usuário não tiver digitado um título personalizado
+    if (!nomeInput.dataset.manualEdited || nomeInput.value.trim() === '') {
+      const emp = empresaInput ? empresaInput.value.trim() : '';
+      const cont = contatoInput ? contatoInput.value.trim() : '';
+      const funilNome = funilSelect && funilSelect.selectedOptions[0] ? funilSelect.selectedOptions[0].textContent.split(' (')[0] : 'Comercial';
+      
+      if (emp) {
+        nomeInput.value = `${emp} - ${funilNome}`;
+      } else if (cont) {
+        nomeInput.value = `${cont} - ${funilNome}`;
+      }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const modalEl = document.getElementById('modalNovoLead');
+    if (!modalEl) return;
+
+    const form = document.getElementById('formModalNovoLead');
+    const checkTarefa = document.getElementById('modalLeadCheckTarefa');
+    const tarefaContainer = document.getElementById('modalLeadTarefaContainer');
+    const nomeInput = document.getElementById('modalLeadNome');
+    const empresaInput = document.getElementById('modalLeadEmpresa');
+    const contatoInput = document.getElementById('modalLeadContatoNome');
+    const empresaSugestoes = document.getElementById('modalLeadEmpresaSugestoes');
+
+    // Ao digitar manualmente no título, marca como editado pelo usuário
+    if (nomeInput) {
+      nomeInput.addEventListener('input', function() {
+        this.dataset.manualEdited = "true";
+      });
+    }
+
+    // Auto-sugestão ao mudar empresa ou contato
+    if (empresaInput) empresaInput.addEventListener('input', autoSugereTitulo);
+    if (contatoInput) contatoInput.addEventListener('input', autoSugereTitulo);
+
+    // Toggle de Tarefa Agendada
+    if (checkTarefa && tarefaContainer) {
+      checkTarefa.addEventListener('change', function() {
+        if (this.checked) {
+          tarefaContainer.classList.remove('d-none');
+        } else {
+          tarefaContainer.classList.add('d-none');
+        }
+      });
+    }
+
+    // Busca rápida de Empresas (Autocomplete)
+    let searchTimeout = null;
+    if (empresaInput && empresaSugestoes) {
+      empresaInput.addEventListener('input', function() {
+        const val = this.value.trim();
+        clearTimeout(searchTimeout);
+        if (val.length < 2) {
+          empresaSugestoes.classList.add('d-none');
+          empresaSugestoes.innerHTML = '';
+          return;
+        }
+
+        searchTimeout = setTimeout(() => {
+          fetch(`/crm/api/busca-rapida?q=${encodeURIComponent(val)}`)
+            .then(r => r.json())
+            .then(data => {
+              if (data.success && data.empresas && data.empresas.length > 0) {
+                empresaSugestoes.innerHTML = '';
+                data.empresas.forEach(emp => {
+                  const item = document.createElement('a');
+                  item.href = 'javascript:void(0)';
+                  item.className = 'list-group-item list-group-item-action py-2 px-3 small';
+                  item.innerHTML = `<strong>${emp.nome}</strong> ${emp.cnpj ? `<span class="text-muted ms-1">(${emp.cnpj})</span>` : ''}`;
+                  item.onclick = function() {
+                    empresaInput.value = emp.nome;
+                    if (emp.cnpj && document.getElementById('modalLeadCnpj')) {
+                      document.getElementById('modalLeadCnpj').value = emp.cnpj;
+                    }
+                    if (emp.telefone && document.getElementById('modalLeadTelefone') && !document.getElementById('modalLeadTelefone').value) {
+                      document.getElementById('modalLeadTelefone').value = emp.telefone;
+                    }
+                    if (emp.email && document.getElementById('modalLeadEmail') && !document.getElementById('modalLeadEmail').value) {
+                      document.getElementById('modalLeadEmail').value = emp.email;
+                    }
+                    empresaSugestoes.classList.add('d-none');
+                    autoSugereTitulo();
+                  };
+                  empresaSugestoes.appendChild(item);
+                });
+                empresaSugestoes.classList.remove('d-none');
+              } else {
+                empresaSugestoes.classList.add('d-none');
+              }
+            })
+            .catch(() => empresaSugestoes.classList.add('d-none'));
+        }, 250);
+      });
+
+      // Fechar sugestões ao clicar fora
+      document.addEventListener('click', function(e) {
+        if (!empresaInput.contains(e.target) && !empresaSugestoes.contains(e.target)) {
+          empresaSugestoes.classList.add('d-none');
+        }
+      });
+    }
+
+    // Abertura do Modal via botões da página
+    modalEl.addEventListener('show.bs.modal', function(e) {
+      const button = e.relatedTarget;
+      let targetEtapaId = null;
+      let targetFunilId = null;
+
+      if (button) {
+        targetEtapaId = button.getAttribute('data-etapa-id') || null;
+        targetFunilId = button.getAttribute('data-funil-id') || null;
+      }
+
+      initModalNovoLead(targetEtapaId, targetFunilId);
+      const alertEl = document.getElementById('modalNovoLeadAlert');
+      if (alertEl) alertEl.classList.add('d-none');
+    });
+
+    // Submissão do Formulário
+    let abrirFichaAoSalvar = false;
+    const btnSalvarEVer = document.getElementById('btnSalvarEVerFicha');
+    if (btnSalvarEVer) {
+      btnSalvarEVer.addEventListener('click', function() {
+        abrirFichaAoSalvar = true;
+        form.requestSubmit();
+      });
+    }
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const btnSalvar = document.getElementById('btnSalvarOportunidade');
+      const alertEl = document.getElementById('modalNovoLeadAlert');
+      const alertMsg = document.getElementById('modalNovoLeadAlertMsg');
+
+      // Validar título
+      const tituloVal = nomeInput ? nomeInput.value.trim() : '';
+      if (!tituloVal) {
+        alertEl.classList.remove('d-none');
+        alertMsg.textContent = "Por favor, informe o título da oportunidade.";
+        if (nomeInput) nomeInput.focus();
+        return;
+      }
+
+      // Preparar payload
+      const formData = new FormData(form);
+      const payload = Object.fromEntries(formData.entries());
+
+      // Se desmarcou tarefa, limpa tarefa
+      if (checkTarefa && !checkTarefa.checked) {
+        delete payload.tarefa_titulo;
+        delete payload.tarefa_data;
+        delete payload.tarefa_tipo;
+      }
+
+      // Loading state
+      btnSalvar.disabled = true;
+      btnSalvar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+      if (btnSalvarEVer) btnSalvarEVer.disabled = true;
+      alertEl.classList.add('d-none');
+
+      fetch('/crm/api/negociacoes/criar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getModalCsrf()
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(r => r.json())
+      .then(res => {
+        btnSalvar.disabled = false;
+        btnSalvar.innerHTML = '<i class="bi bi-check-lg me-1"></i> Salvar Oportunidade';
+        if (btnSalvarEVer) btnSalvarEVer.disabled = false;
+
+        if (!res.success) {
+          alertEl.classList.remove('d-none');
+          alertMsg.textContent = res.error || "Erro ao salvar oportunidade.";
+          return;
+        }
+
+        // Sucesso: fecha o modal
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
+        form.reset();
+
+        // Se estiver no Kanban e puder abrir ficha 360°
+        if (typeof abrirFicha360 === 'function' && abrirFichaAoSalvar) {
+          // Se for no mesmo funil, recarrega e abre a ficha ou abre direto
+          const currentFunilId = '{{ funil.id if funil is defined and funil else "" }}';
+          if (res.funil_id === currentFunilId) {
+            window.location.reload();
+          } else {
+            window.location.href = `/crm/funil/${res.funil_id}`;
+          }
+        } else {
+          // Toast ou redirecionamento suave
+          if (window.location.pathname.includes('/crm/funil/')) {
+            window.location.reload();
+          } else {
+            window.location.href = `/crm/funil/${res.funil_id}`;
+          }
+        }
+      })
+      .catch(err => {
+        btnSalvar.disabled = false;
+        btnSalvar.innerHTML = '<i class="bi bi-check-lg me-1"></i> Salvar Oportunidade';
+        if (btnSalvarEVer) btnSalvarEVer.disabled = false;
+        alertEl.classList.remove('d-none');
+        alertMsg.textContent = "Erro de conexão com o servidor. Tente novamente.";
+        console.error("Erro ao salvar:", err);
+      });
+    });
+  });
+
+  // Função global de disparo para atalhos
+  window.abrirModalNovoLead = function(etapaId = null, funilId = null) {
+    const modalEl = document.getElementById('modalNovoLead');
+    if (!modalEl) return;
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    initModalNovoLead(etapaId, funilId);
+    modal.show();
+  };
+})();
+</script>

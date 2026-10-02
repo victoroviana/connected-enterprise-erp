@@ -5,7 +5,10 @@
 
 {% if current_user.role in ['agent','admin'] or current_user.id == ticket.user.id %}
   <form method="post" action="{{ url_for('tickets.delete_ticket', ticket_id=ticket.id) }}"
-        onsubmit="return confirm('Excluir este chamado? Esta ação não pode ser desfeita.');"
+        data-confirm-delete="true"
+        data-entity-type="Chamado"
+        data-entity-name="#{{ ticket.id }} - {{ ticket.title }}"
+        data-confirm-warning="O chamado e todos os seus anexos serão excluídos permanentemente."
         style="margin:8px 0;">
     {{ csrf_token() }}
     <button class="btn danger">Excluir chamado</button>
@@ -51,9 +54,14 @@
         <li>
           <a href="{{ url_for('tickets.download_attachment', ticket_id=ticket.id, attachment_id=a.id) }}">{{ a.filename }}</a>
           <small>({{ (a.size or 0) // 1024 }} KB, {{ a.content_type or 'arquivo' }})</small>
-          <form method="post" action="{{ url_for('tickets.delete_attachment', ticket_id=ticket.id, attachment_id=a.id) }}" style="display:inline; margin-left:8px;">
+          <form method="post" action="{{ url_for('tickets.delete_attachment', ticket_id=ticket.id, attachment_id=a.id) }}"
+                data-confirm-delete="true"
+                data-entity-type="Anexo do Chamado"
+                data-entity-name="{{ a.filename }}"
+                data-confirm-warning="O anexo será removido permanentemente."
+                style="display:inline; margin-left:8px;">
             {{ csrf_token() }}
-            <button class="btn secondary" onclick="return confirm('Remover este anexo?')">Excluir</button>
+            <button class="btn secondary" type="submit">Excluir</button>
           </form>
         </li>
       {% endfor %}

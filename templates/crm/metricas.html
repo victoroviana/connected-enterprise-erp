@@ -1,0 +1,354 @@
+{% extends "layout.html" %}
+
+{% block title %}Métricas Comerciais - Sollus CRM{% endblock %}
+
+{% block head %}
+  <link href="{{ url_for('static', filename='css/crm_premium.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="crm-page-container px-3 py-2">
+  <!-- Cabeçalho -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h3 class="fw-bold mb-1"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Métricas Comerciais & Conversão</h3>
+      <p class="text-muted small mb-0">Visão executiva de performance de vendas, conversão de funis e ranking de consultores.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('crm.index') }}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-kanban me-1"></i> Ir para Funis de Vendas
+      </a>
+    </div>
+  </div>
+
+  <!-- Cards de Performance por Funil -->
+  <h5 class="fw-bold text-dark mb-3"><i class="bi bi-funnel-fill text-primary me-2"></i>Performance por Funil de Vendas</h5>
+  <div class="row g-3 mb-4">
+    {% for stat in stats_funis %}
+      <div class="col-lg-4 col-md-6">
+        <div class="card h-100 border shadow-sm">
+          <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0 text-primary">{{ stat.funil.nome }}</h6>
+            <span class="badge bg-light text-secondary border">{{ stat.funil.tipo|upper }}</span>
+          </div>
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-baseline mb-2">
+              <span class="text-muted small">Valor Ganho (Faturamento):</span>
+              <span class="fs-5 fw-bold text-success">{{ stat.valor_ganho }}</span>
+            </div>
+
+            <!-- Barra de Taxa de Conversão -->
+            <div class="mb-3">
+              <div class="d-flex justify-content-between small mb-1">
+                <span class="text-muted">Taxa de Conversão:</span>
+                <span class="fw-bold text-dark">{{ stat.taxa_conversao }}%</span>
+              </div>
+              <div class="progress" style="height: 8px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: {{ stat.taxa_conversao }}%;" aria-valuenow="{{ stat.taxa_conversao }}" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div>
+
+            <!-- Grade de Status -->
+            <div class="row g-2 text-center pt-2 border-top">
+              <div class="col-4">
+                <div class="text-muted small">Abertas</div>
+                <div class="fw-bold text-primary">{{ stat.abertos }}</div>
+              </div>
+              <div class="col-4">
+                <div class="text-muted small">Ganhas</div>
+                <div class="fw-bold text-success">{{ stat.ganhos }}</div>
+              </div>
+              <div class="col-4">
+                <div class="text-muted small">Perdidas</div>
+                <div class="fw-bold text-danger">{{ stat.perdidos }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer bg-light text-end py-2">
+            <a href="{{ url_for('crm.kanban', funil_id=stat.funil.id) }}" class="btn btn-sm btn-outline-primary">
+              Ver Funil <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Seção 2: Conversão por Canal de Marketing & Motivos Estruturados de Perda -->
+  <div class="row g-3 mb-4">
+    <!-- Conversão por Canal de Marketing -->
+    <div class="col-lg-7 col-md-12">
+      <div class="card border shadow-sm h-100">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+          <h5 class="fw-bold mb-0 text-dark">
+            <i class="bi bi-diagram-3-fill text-primary me-2"></i>Conversão por Canal de Marketing
+          </h5>
+          <span class="badge bg-primary-subtle text-primary border">RD Marketing & Tráfego</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table crm-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th class="ps-3">Canal / Origem</th>
+                <th class="text-center">Oportunidades</th>
+                <th>Taxa de Conversão</th>
+                <th class="text-end pe-3">Receita Ganha</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if canais_metricas %}
+                {% for canal_nome, c in canais_metricas.items() %}
+                  <tr>
+                    <td class="ps-3">
+                      <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-broadcast text-primary"></i>
+                        <span>{{ c.canal }}</span>
+                      </div>
+                      <div class="small text-muted">
+                        {{ c.ganhos }} ganhas &bull; {{ c.perdidos }} perdidas
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge bg-light text-dark border fw-bold">{{ c.total }}</span>
+                      {% if c.abertos > 0 %}
+                        <div class="small text-muted mt-1">{{ c.abertos }} abertas</div>
+                      {% endif %}
+                    </td>
+                    <td style="min-width: 150px;">
+                      <div class="d-flex justify-content-between small mb-1">
+                        <span class="fw-bold text-dark">{{ c.taxa_conversao }}%</span>
+                        <span class="text-muted">{{ c.ganhos }}/{{ c.ganhos + c.perdidos }} fechados</span>
+                      </div>
+                      <div class="progress" style="height: 6px;">
+                        <div class="progress-bar {% if c.taxa_conversao >= 30 %}bg-success{% elif c.taxa_conversao > 0 %}bg-primary{% else %}bg-secondary{% endif %}"
+                             role="progressbar" style="width: {{ c.taxa_conversao }}%;"
+                             aria-valuenow="{{ c.taxa_conversao }}" aria-valuemin="0" aria-valuemax="100"></div>
+                      </div>
+                    </td>
+                    <td class="text-end pe-3">
+                      <span class="fw-bold text-success">{{ c.valor_formatado }}</span>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox me-1"></i> Nenhum dado de conversão por canal registrado ainda.
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Motivos Estruturados de Perda -->
+    <div class="col-lg-5 col-md-12">
+      <div class="card border shadow-sm h-100">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+          <h5 class="fw-bold mb-0 text-dark">
+            <i class="bi bi-x-octagon-fill text-danger me-2"></i>Motivos de Perda
+          </h5>
+          <span class="badge bg-danger-subtle text-danger border">
+            {{ total_perdido_count }} perdas | {{ total_perdido_valor }}
+          </span>
+        </div>
+        <div class="card-body">
+          <p class="small text-muted mb-3">Distribuição das perdas por categoria canônica registrada pelos consultores no fechamento.</p>
+
+          {% set labels_cat = {
+            'preco': {'nome': 'Preço / Condições Comerciais', 'icon': 'bi-currency-dollar', 'badge': 'bg-warning-subtle text-warning-emphasis border-warning', 'bar': 'bg-warning'},
+            'concorrente': {'nome': 'Perda para Concorrente', 'icon': 'bi-shield-x', 'badge': 'bg-danger-subtle text-danger border-danger', 'bar': 'bg-danger'},
+            'sem_contato': {'nome': 'Sem Contato / Inalcançável', 'icon': 'bi-telephone-x', 'badge': 'bg-secondary-subtle text-secondary border', 'bar': 'bg-secondary'},
+            'descarte': {'nome': 'Descarte / Sem Fit Técnico', 'icon': 'bi-trash', 'badge': 'bg-dark-subtle text-dark border', 'bar': 'bg-dark'},
+            'outros': {'nome': 'Outros Motivos Gerais', 'icon': 'bi-question-circle', 'badge': 'bg-info-subtle text-info-emphasis border-info', 'bar': 'bg-info'}
+          } %}
+
+          <div class="d-flex flex-column gap-3">
+            {% for cat_key, cat_data in motivos_perda.items() %}
+              {% set meta = labels_cat.get(cat_key, {'nome': cat_key|capitalize, 'icon': 'bi-dash-circle', 'badge': 'bg-light text-dark border', 'bar': 'bg-secondary'}) %}
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge {{ meta.badge }} px-2 py-1">
+                      <i class="bi {{ meta.icon }} me-1"></i>{{ meta.nome }}
+                    </span>
+                  </div>
+                  <div class="text-end">
+                    <span class="fw-bold text-dark small">{{ cat_data.count }}</span>
+                    <span class="text-muted small">({{ cat_data.percentage }}%)</span>
+                    <span class="text-muted small ms-1">&bull; {{ cat_data.valor_formatado }}</span>
+                  </div>
+                </div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar {{ meta.bar }}" role="progressbar" style="width: {{ cat_data.percentage }}%;"
+                       aria-valuenow="{{ cat_data.percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seção 3: Ranking de Consultores & Radar Regional GEO -->
+  <div class="row g-3 mb-4">
+    <!-- Ranking de Consultores -->
+    <div class="col-lg-7 col-md-12">
+      <div class="card border shadow-sm h-100">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+          <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-trophy-fill text-warning me-2"></i>Ranking de Consultores (Vendas Fechadas)</h5>
+          <span class="badge bg-warning-subtle text-dark border">Top Performers</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table crm-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th class="ps-3" style="width: 80px;">Posição</th>
+                <th>Consultor Comercial</th>
+                <th class="text-center">Vendas Fechadas</th>
+                <th class="text-end pe-3">Valor Total Vendido</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if ranking %}
+                {% for r in ranking %}
+                  <tr>
+                    <td class="ps-3">
+                      {% if loop.index == 1 %}
+                        <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-trophy-fill me-1"></i> 1º</span>
+                      {% elif loop.index == 2 %}
+                        <span class="badge bg-secondary text-white px-2 py-1"><i class="bi bi-trophy-fill me-1"></i> 2º</span>
+                      {% elif loop.index == 3 %}
+                        <span class="badge bg-warning-subtle text-warning border px-2 py-1"><i class="bi bi-trophy-fill me-1"></i> 3º</span>
+                      {% else %}
+                        <span class="text-muted fw-bold ps-2">{{ loop.index }}º</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <div class="fw-bold text-dark">{{ r.nome }}</div>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge bg-primary-subtle text-primary px-3 py-1 fw-bold">{{ r.vendas }}</span>
+                    </td>
+                    <td class="text-end pe-3">
+                      <span class="fw-bold text-success">{{ r.valor }}</span>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-muted">Nenhuma venda registrada até o momento.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Radar Regional GEO (Distribuição por Estado / UF) -->
+    <div class="col-lg-5 col-md-12">
+      <div class="card border shadow-sm h-100">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+          <h5 class="fw-bold mb-0 text-dark">
+            <i class="bi bi-geo-alt-fill text-info me-2"></i>Radar Regional GEO (por UF)
+          </h5>
+          <span class="badge bg-info-subtle text-info border">Roteamento por DDD</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table crm-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th class="ps-3">Estado (UF)</th>
+                <th class="text-center">Leads/Deals</th>
+                <th class="text-center">Status</th>
+                <th class="text-end pe-3">Volume Negociado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if geo_radar %}
+                {% for uf_nome, g in geo_radar.items() %}
+                  <tr>
+                    <td class="ps-3">
+                      <span class="badge bg-light text-primary border fw-bold px-2 py-1">
+                        <i class="bi bi-pin-map-fill me-1"></i>{% if g.uf == 'CAMPOS' %}Campos (RJ){% else %}{{ g.uf }}{% endif %}
+                      </span>
+                    </td>
+                    <td class="text-center">
+                      <span class="fw-bold text-dark">{{ g.count }}</span>
+                    </td>
+                    <td class="text-center small">
+                      <span class="text-success fw-bold">{{ g.ganhos }}G</span> /
+                      <span class="text-danger fw-bold">{{ g.perdidos }}P</span> /
+                      <span class="text-primary">{{ g.abertos }}A</span>
+                    </td>
+                    <td class="text-end pe-3">
+                      <span class="fw-semibold text-dark">{{ g.valor_formatado }}</span>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-muted">
+                    Nenhum dado geográfico registrado até o momento.
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seção 4: Informações de Coexistência e Autonomia Operacional -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card border shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h6 class="fw-bold mb-0 text-dark">
+            <i class="bi bi-shield-check text-success me-2"></i>Paridade Autônoma & Coexistência com RD Station
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="p-3 bg-light rounded border h-100">
+                <div class="fw-bold text-dark mb-1">
+                  <i class="bi bi-robot text-primary me-1"></i> Automação Inbound Direta
+                </div>
+                <p class="small text-muted mb-0">
+                  Webhooks de conversão recebem leads instantaneamente, executam deduplicação inteligente por CNPJ/e-mail e distribuem via roleta regional entre consultores por DDD.
+                </p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="p-3 bg-light rounded border h-100">
+                <div class="fw-bold text-dark mb-1">
+                  <i class="bi bi-stars text-warning me-1"></i> Lead Scoring e Segmentação
+                </div>
+                <p class="small text-muted mb-0">
+                  Perfil de fit comercial (A/B/C/D) e interesse (1 a 5 estrelas) com filtros dinâmicos por Tags, Estado e exportação nativa em CSV para campanhas segmentadas.
+                </p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="p-3 bg-light rounded border h-100">
+                <div class="fw-bold text-dark mb-1">
+                  <i class="bi bi-arrow-repeat text-success me-1"></i> Dual Coexistence Mode
+                </div>
+                <p class="small text-muted mb-0">
+                  O Sollus CRM opera 100% autônomo sem dependência externa em runtime, mantendo compatibilidade bilateral com o RD Station durante o período de transição.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

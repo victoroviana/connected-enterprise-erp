@@ -1,183 +1,90 @@
 <style>
-  #modalDetalhesAtendimento .modal-content{
-    border:1px solid rgba(148,163,184,.35);
-    border-radius:18px;
-    box-shadow:0 30px 80px rgba(15,23,42,.22);
-    overflow:hidden;
-    background:#f8fafc;
+  /* Harmonização com Design System Sollus e Drawer Lateral */
+  .support-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-bottom: 1.2rem;
   }
-  #modalDetalhesAtendimento .modal-header{
-    background:linear-gradient(120deg,#0b3b8c,#0bb4d4);
-    color:#fff;
-    border-bottom:0;
+  .support-details-grid [data-detail] a {
+    color: #0284c7;
+    text-decoration: none;
+    font-weight: 600;
   }
-  #modalDetalhesAtendimento .modal-title{font-weight:600;letter-spacing:.02em;}
-  #modalDetalhesAtendimento .btn-close{filter:invert(1) grayscale(100%);opacity:.9;}
-  #modalDetalhesAtendimento .modal-body{
-    background:
-      radial-gradient(120% 120% at 0% 0%, rgba(14,93,198,.12), rgba(248,250,252,0) 55%),
-      radial-gradient(120% 120% at 100% 100%, rgba(11,180,212,.12), rgba(248,250,252,0) 55%);
+  .support-details-grid [data-detail] a:hover {
+    text-decoration: underline;
   }
-  .support-details-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
-    gap:14px;
-    margin-bottom:1.2rem;
+  .support-details-grid .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .25rem .65rem;
+    border-radius: 999px;
+    font-size: .82rem;
+    font-weight: 600;
   }
-  .support-details-grid .detail-block{
-    position:relative;
-    border-radius:14px;
-    padding:.85rem 1rem;
-    background:#ffffff;
-    border:1px solid rgba(148,163,184,.28);
-    box-shadow:0 10px 24px rgba(15,23,42,.08);
+  .support-details-grid .status-pill--entrada {
+    background: rgba(14, 165, 233, 0.12);
+    color: #0284c7;
+    border: 1px solid rgba(14, 165, 233, 0.25);
   }
-  .support-details-grid .detail-block::before{
-    content:"";
-    position:absolute;
-    left:0;
-    top:0;
-    bottom:0;
-    width:3px;
-    background:linear-gradient(180deg,#0b3b8c,#0bb4d4);
-    opacity:.5;
+  .support-details-grid .status-pill--atencao {
+    background: rgba(245, 158, 11, 0.15);
+    color: #b45309;
+    border: 1px solid rgba(245, 158, 11, 0.25);
   }
-  .support-details-grid .detail-label,
-  .support-details-longform .detail-label{
-    display:block;
-    font-size:.68rem;
-    text-transform:uppercase;
-    letter-spacing:.1em;
-    color:#64748b;
-    margin-bottom:.35rem;
+  .support-details-grid .status-pill--concluído {
+    background: rgba(16, 185, 129, 0.15);
+    color: #047857;
+    border: 1px solid rgba(16, 185, 129, 0.25);
   }
-  .support-details-grid [data-detail],
-  .support-details-longform [data-detail],
+  .support-details-longform {
+    display: grid;
+    gap: 14px;
+  }
+  .support-details-longform .detail-text-block {
+    border-radius: 12px;
+    padding: 1rem 1.15rem;
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  }
+  html[data-theme="dark"] .support-details-longform .detail-text-block {
+    background: #1e293b !important;
+    border-color: rgba(51, 65, 85, 0.7) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  }
   .support-details-longform .detail-value {
-    margin:0;
-    font-weight:600;
-    color:#0f172a;
-    font-size:.98rem;
-    line-height:1.4;
-    word-break:break-word;
-    white-space:pre-wrap;
+    max-height: 260px;
+    overflow: auto;
+    padding: .35rem 0 .25rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
   }
-  .support-details-grid [data-detail] a{
-    color:#0b3b8c;
-    text-decoration:none;
-    font-weight:600;
+  .meet-preview-group .form-control {
+    background: #f8fafc;
+    font-weight: 600;
   }
-  .support-details-grid [data-detail] a:hover{text-decoration:underline;}
-  .support-details-grid .status-pill{
-    display:inline-flex;
-    align-items:center;
-    gap:.35rem;
-    padding:.25rem .6rem;
-    border-radius:999px;
-    font-size:.85rem;
-    font-weight:600;
-  }
-  .support-details-grid .status-pill--entrada{background:rgba(14,93,198,.12);color:#0b3b8c;}
-  .support-details-grid .status-pill--atencao{background:rgba(245,158,11,.18);color:#92400e;}
-  .support-details-grid .status-pill--concluído{background:rgba(16,185,129,.18);color:#065f46;}
-  .support-details-longform{
-    display:grid;
-    gap:14px;
-  }
-  .support-details-longform .detail-text-block{
-    border-radius:16px;
-    padding:1rem 1.1rem;
-    background:#ffffff;
-    border:1px solid rgba(148,163,184,.25);
-    box-shadow:0 10px 24px rgba(15,23,42,.06);
-  }
-  .support-details-longform .detail-value{max-height:260px;overflow:auto;padding:.35rem 0 .25rem;}
-  #modalNovoAtendimento .modal-content{
-    border:1px solid rgba(148,163,184,.35);
-    border-radius:18px;
-    box-shadow:0 30px 80px rgba(15,23,42,.22);
-    overflow:hidden;
-    background:#f8fafc;
-  }
-  #modalNovoAtendimento .modal-header{
-    background:linear-gradient(120deg,#0b3b8c,#0bb4d4);
-    color:#fff;
-    border-bottom:0;
-  }
-  #modalNovoAtendimento .modal-title{font-weight:600;letter-spacing:.02em;}
-  #modalNovoAtendimento .btn-close{filter:invert(1) grayscale(100%);opacity:.9;}
-  #modalNovoAtendimento .modal-body{
-    background:
-      radial-gradient(120% 120% at 0% 0%, rgba(14,93,198,.12), rgba(248,250,252,0) 55%),
-      radial-gradient(120% 120% at 100% 100%, rgba(11,180,212,.12), rgba(248,250,252,0) 55%);
-  }
-  #modalNovoAtendimento .modal-footer{
-    background:#f1f5f9;
-    border-top:1px solid rgba(148,163,184,.2);
-  }
-  #modalNovoAtendimento .form-label{
-    font-size:.75rem;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-    color:#64748b;
-    margin-bottom:.35rem;
-  }
-  #modalNovoAtendimento .form-control,
-  #modalNovoAtendimento .form-select{
-    border-radius:12px;
-    border-color:rgba(148,163,184,.45);
-    box-shadow:none;
-  }
-  #modalNovoAtendimento .form-control:focus,
-  #modalNovoAtendimento .form-select:focus{
-    border-color:rgba(14,93,198,.7);
-    box-shadow:0 0 0 .2rem rgba(14,93,198,.15);
-  }
-  .support-form-section{
-    background:#ffffff;
-    border:1px solid rgba(148,163,184,.25);
-    border-radius:16px;
-    padding:1rem 1.1rem;
-    box-shadow:0 14px 28px rgba(15,23,42,.08);
-    margin-bottom:1rem;
-  }
-  .support-form-section-title{
-    display:flex;
-    align-items:center;
-    gap:.6rem;
-    font-size:.8rem;
-    text-transform:uppercase;
-    letter-spacing:.12em;
-    color:#0b3b8c;
-    font-weight:600;
-    margin-bottom:.9rem;
-  }
-  .support-form-section-title::before{
-    content:"";
-    width:26px;
-    height:2px;
-    background:linear-gradient(90deg,#0b3b8c,#0bb4d4);
-    border-radius:999px;
-  }
-  .meet-preview-group .form-control{
-    background:#f8fafc;
-    font-weight:600;
-  }
-  .meet-preview-group .btn{border-radius:10px;}
-  .is-invalid{border-color:#dc3545 !important;box-shadow:0 0 0 0.25rem rgba(220,53,69,.25);}
-  .invalid-feedback{display:block;color:#dc3545;font-size:.875rem;margin-top:.25rem;}
+  .meet-preview-group .btn { border-radius: 10px; }
+  .is-invalid { border-color: #dc3545 !important; box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, .25); }
+  .invalid-feedback { display: block; color: #dc3545; font-size: .875rem; margin-top: .25rem; }
 </style>
 
-<div class="modal sollus-modal fade" id="modalNovoAtendimento" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+<div class="modal modal-drawer-end fade" id="modalNovoAtendimento" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
     <form class="modal-content" method="post" action="{{ url_for('support_bp.criar_atendimento') }}" enctype="multipart/form-data">
       {% if create_form.csrf_token %}
         {{ create_form.csrf_token }}
       {% endif %}
 
       <div class="modal-header">
-        <h5 class="modal-title">Novo atendimento</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        <div>
+          <span class="drawer-eyebrow-badge badge bg-primary-subtle text-primary border border-primary-subtle">SUPORTE · ATENDIMENTO</span>
+          <h5 class="modal-title mt-1 mb-0">Novo Atendimento</h5>
+        </div>
+        <button type="button" class="btn-close-drawer" data-bs-dismiss="modal" aria-label="Fechar">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
 
       <div class="modal-body">
@@ -301,30 +208,17 @@
 
 
 
-<div class="modal sollus-modal fade" id="modalLogsAtendimento" tabindex="-1" aria-hidden="true">
-
-
-
-  <div class="modal-dialog modal-dialog-scrollable">
-
-
-
+<div class="modal modal-drawer-end fade" id="modalLogsAtendimento" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
     <div class="modal-content">
-
-
-
       <div class="modal-header">
-
-
-
-        <h5 class="modal-title">Histórico de alterações</h5>
-
-
-
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-
-
-
+        <div>
+          <span class="drawer-eyebrow-badge badge bg-secondary-subtle text-secondary border">AUDITORIA · ATENDIMENTO</span>
+          <h5 class="modal-title mt-1 mb-0">Histórico de Alterações</h5>
+        </div>
+        <button type="button" class="btn-close-drawer" data-bs-dismiss="modal" aria-label="Fechar">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
 
 
@@ -437,38 +331,19 @@
 
 
 
-<div class="modal sollus-modal fade" id="modalEditarAtendimento" tabindex="-1" aria-hidden="true">
-
-
-
-  <div class="modal-dialog modal-dialog-scrollable modal-lg">
-
-
-
+<div class="modal modal-drawer-end fade" id="modalEditarAtendimento" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
     <form class="modal-content" method="post" enctype="multipart/form-data">
-
-
-
       {{ edit_form.csrf_token }}
-
-
-
       {{ edit_form.atendimento_id }}
-
-
-
       <div class="modal-header">
-
-
-
-        <h5 class="modal-title">Editar atendimento</h5>
-
-
-
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-
-
-
+        <div>
+          <span class="drawer-eyebrow-badge badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">EDIÇÃO · ATENDIMENTO</span>
+          <h5 class="modal-title mt-1 mb-0">Editar Atendimento</h5>
+        </div>
+        <button type="button" class="btn-close-drawer" data-bs-dismiss="modal" aria-label="Fechar">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
 
 
@@ -841,30 +716,17 @@
 
 
 
-<div class="modal sollus-modal fade" id="modalDetalhesAtendimento" tabindex="-1" aria-labelledby="modalDetalhesAtendimentoLabel" aria-hidden="true">
-
-
-
-  <div class="modal-dialog modal-dialog-scrollable modal-lg">
-
-
-
+<div class="modal modal-drawer-end fade" id="modalDetalhesAtendimento" tabindex="-1" aria-labelledby="modalDetalhesAtendimentoLabel" aria-hidden="true">
+  <div class="modal-dialog">
     <div class="modal-content">
-
-
-
       <div class="modal-header">
-
-
-
-        <h5 class="modal-title" id="modalDetalhesAtendimentoLabel">Detalhes do atendimento</h5>
-
-
-
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-
-
-
+        <div>
+          <span class="drawer-eyebrow-badge badge bg-primary px-2 py-1 text-white">ATENDIMENTO SUPORTE</span>
+          <h4 class="modal-title mt-1 mb-0" id="modalDetalhesAtendimentoLabel">Detalhes do Atendimento</h4>
+        </div>
+        <button type="button" class="btn-close-drawer" data-bs-dismiss="modal" aria-label="Fechar">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
 
 

@@ -130,6 +130,101 @@
     color: #b91c1c !important;
     border-right-color: #fecaca !important;
   }
+
+  /* MODO ESCURO */
+  html[data-theme="dark"] .audit-diff-summary {
+    background: rgba(14, 93, 198, 0.16) !important;
+    border-color: rgba(14, 93, 198, 0.35) !important;
+    color: var(--text) !important;
+  }
+  html[data-theme="dark"] .audit-diff-summary__header {
+    color: #93c5fd !important;
+  }
+  html[data-theme="dark"] .audit-diff-summary #auditJsonDiffEmpty {
+    color: #94a3b8 !important;
+  }
+  html[data-theme="dark"] .audit-json-block {
+    background: #0f172a !important;
+    border-color: #263248 !important;
+  }
+  html[data-theme="dark"] .audit-json-block__header {
+    color: #94a3b8 !important;
+  }
+  html[data-theme="dark"] .audit-json-modal pre {
+    background: #060d1a !important;
+    color: #e2e8f0 !important;
+    border: 1px solid #1e293b;
+  }
+  html[data-theme="dark"] .audit-diff-item {
+    background: #162033 !important;
+    color: var(--text) !important;
+    border-color: #2b364e !important;
+  }
+  html[data-theme="dark"] .audit-diff-item__key {
+    color: #f1f5f9 !important;
+  }
+  html[data-theme="dark"] .audit-diff-item__values {
+    color: #cbd5e1 !important;
+  }
+  html[data-theme="dark"] .audit-diff-item code {
+    background: #1e293b !important;
+    color: #93c5fd !important;
+  }
+  html[data-theme="dark"] .audit-diff-item.is-added {
+    background: rgba(22, 163, 74, 0.2) !important;
+    border-color: rgba(34, 197, 94, 0.4) !important;
+  }
+  html[data-theme="dark"] .audit-diff-item.is-removed {
+    background: rgba(239, 68, 68, 0.2) !important;
+    border-color: rgba(239, 68, 68, 0.4) !important;
+  }
+  html[data-theme="dark"] .audit-diff-item.is-changed {
+    background: rgba(245, 158, 11, 0.2) !important;
+    border-color: rgba(245, 158, 11, 0.4) !important;
+  }
+  html[data-theme="dark"] .audit-friendly-table {
+    background: #0f172a !important;
+    border-color: #263248 !important;
+  }
+  html[data-theme="dark"] .audit-friendly-table td {
+    border-bottom-color: #263248 !important;
+    color: var(--text) !important;
+  }
+  html[data-theme="dark"] .audit-friendly-table tr:hover {
+    background-color: #1e293b !important;
+  }
+  html[data-theme="dark"] .audit-friendly-label {
+    background: #162033 !important;
+    color: #94a3b8 !important;
+    border-right-color: #263248 !important;
+  }
+  html[data-theme="dark"] .audit-friendly-value {
+    color: var(--text) !important;
+  }
+  html[data-theme="dark"] .audit-friendly-card {
+    background: #0f172a !important;
+    border-color: #263248 !important;
+  }
+  html[data-theme="dark"] .audit-friendly-card-header {
+    background: #162033 !important;
+    border-bottom-color: #263248 !important;
+    color: #e2e8f0 !important;
+  }
+  html[data-theme="dark"] .audit-row-changed,
+  html[data-theme="dark"] .audit-row-changed .audit-friendly-label,
+  html[data-theme="dark"] .audit-row-changed .audit-friendly-value {
+    background-color: rgba(245, 158, 11, 0.15) !important;
+  }
+  html[data-theme="dark"] .audit-row-added,
+  html[data-theme="dark"] .audit-row-added .audit-friendly-label,
+  html[data-theme="dark"] .audit-row-added .audit-friendly-value {
+    background-color: rgba(34, 197, 94, 0.15) !important;
+  }
+  html[data-theme="dark"] .audit-row-removed,
+  html[data-theme="dark"] .audit-row-removed .audit-friendly-label,
+  html[data-theme="dark"] .audit-row-removed .audit-friendly-value {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+  }
 </style>
 <script src="{{ url_for('static', filename='js/audit_diff.js') }}"></script>
 {% endblock %}

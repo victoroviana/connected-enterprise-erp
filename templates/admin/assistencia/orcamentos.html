@@ -6,24 +6,24 @@
 <style>
   .proposal-wrapper { padding-bottom: 3rem; }
   .proposal-hero {
-    background: linear-gradient(130deg, rgba(15,123,200,.95), rgba(0,59,102,.95));
+    background: linear-gradient(135deg, #07172e 0%, #0a254a 50%, #004d7c 100%);
     color: #f7fbff;
-    border-radius: 1.5rem;
+    border: 1px solid rgba(0, 164, 245, 0.25);
+    border-radius: 16px;
     padding: 2.25rem 2.6rem;
-    box-shadow: 0 22px 46px rgba(9,29,54,.28);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 0 0 25px rgba(0, 132, 200, 0.12);
     position: relative;
     overflow: hidden;
   }
   .proposal-hero::after {
     content: "";
     position: absolute;
-    top: -45%;
-    right: -25%;
-    width: 320px;
-    height: 320px;
-    background: radial-gradient(circle, rgba(255,255,255,.45), transparent 65%);
-    filter: blur(6px);
-    opacity: .65;
+    top: -40%;
+    right: -15%;
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, rgba(0, 180, 216, 0.22) 0%, transparent 70%);
+    pointer-events: none;
   }
   .proposal-hero .hero-icon {
     display: flex;
@@ -32,19 +32,21 @@
     width: 56px;
     height: 56px;
     border-radius: 18px;
-    background: rgba(255,255,255,.18);
+    background: rgba(0, 164, 245, 0.18);
+    border: 1px solid rgba(0, 164, 245, 0.3);
     font-size: 1.9rem;
-    color: #fff;
-    box-shadow: 0 12px 28px rgba(0,0,0,.18);
+    color: #38bdf8;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
   }
   .proposal-hero .hero-title { font-weight: 700; letter-spacing: .3px; }
   .proposal-hero .hero-subtitle { color: rgba(240,247,255,.88); max-width: 640px; }
   .proposal-hero .hero-metric {
-    background: rgba(255,255,255,.16);
-    border-radius: 1.2rem;
+    background: rgba(8, 34, 78, 0.35);
+    border: 1px solid rgba(0, 164, 245, 0.2);
+    border-radius: 14px;
     padding: 1.2rem 1.5rem;
     backdrop-filter: blur(6px);
-    box-shadow: 0 16px 36px rgba(0,0,0,.22);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
     min-width: 220px;
   }
   .proposal-hero .hero-metric .label {
@@ -115,14 +117,19 @@
   @keyframes blinker { 50% { opacity: 0; } }
 
   html[data-theme="dark"] .proposal-hero{
-    background: linear-gradient(130deg, rgba(10,48,92,.95), rgba(6,22,46,.95));
-    box-shadow: 0 22px 46px rgba(0,0,0,.45);
+    background: linear-gradient(135deg, #07172e 0%, #0a254a 50%, #004d7c 100%);
+    border: 1px solid rgba(0, 164, 245, 0.25);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 25px rgba(0, 132, 200, 0.15);
   }
-  html[data-theme="dark"] .proposal-hero::after{ opacity:.3; }
+  html[data-theme="dark"] .proposal-hero::after{
+    background: radial-gradient(circle, rgba(0, 180, 216, 0.22) 0%, transparent 70%);
+    opacity: 0.8;
+  }
   html[data-theme="dark"] .proposal-hero .hero-subtitle{ color:rgba(226,232,240,.82); }
   html[data-theme="dark"] .proposal-hero .hero-metric{
-    background: rgba(15,23,42,.6);
-    box-shadow: 0 16px 36px rgba(0,0,0,.4);
+    background: rgba(8, 34, 78, 0.45);
+    border: 1px solid rgba(0, 164, 245, 0.25);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
   }
   html[data-theme="dark"] .section-card{ background: var(--card); border-color: rgba(148,163,184,.2); }
   html[data-theme="dark"] .orc-table{ color: var(--text); }
@@ -368,13 +375,13 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="mb-3">
                           <label class="form-label">Data aprovação</label>
-                          <input type="date" class="form-control" name="dataAprovacao">
+                          <input type="date" class="form-control" name="dataAprovacao" value="{{ item.data_aprovacao_iso or '' }}">
                         </div>
                         <div class="mb-3">
                           <label class="form-label">Status</label>
                           <select class="form-select" name="status" required>
                             {% for status in status_edit_options %}
-                              <option value="{{ status }}">{{ status }}</option>
+                              <option value="{{ status }}" {% if item.status == status %}selected{% endif %}>{{ status }}</option>
                             {% endfor %}
                           </select>
                         </div>
@@ -447,6 +454,11 @@
                       <p><strong>Tipo da visita:</strong> {{ item.tipo_visita or '-' }}</p>
                       <p><strong>Equipamento:</strong> {{ item.equipamento or '-' }}</p>
                       <p><strong>Fábrica:</strong> {{ item.fabrica or '-' }}</p>
+                      <hr class="my-3">
+                      <h6 class="text-primary mb-2"><i class="bi bi-person-lines-fill me-1"></i> Dados de Contato</h6>
+                      <p class="mb-1"><strong>Nome / Contato:</strong> {{ item.contato or '-' }}</p>
+                      <p class="mb-1"><strong>E-mail:</strong> {% if item.email %}<a href="mailto:{{ item.email }}" class="text-decoration-none fw-semibold"><i class="bi bi-envelope me-1"></i>{{ item.email }}</a>{% else %}-{% endif %}</p>
+                      <p class="mb-0"><strong>Telefone:</strong> {% if item.telefone %}<a href="tel:{{ item.telefone }}" class="text-decoration-none fw-semibold"><i class="bi bi-telephone me-1"></i>{{ item.telefone }}</a>{% else %}-{% endif %}</p>
                     </div>
                   </div>
                 </div>
@@ -487,7 +499,12 @@
                     </div>
                     <div class="modal-footer">
                       <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancelar</button>
-                      <form method="post" action="{{ url_for('assist_bp.assistencia_orcamentos_excluir', orcamento_id=item.id) }}">
+                      <form method="post" action="{{ url_for('assist_bp.assistencia_orcamentos_excluir', orcamento_id=item.id) }}"
+                            data-confirm-delete="true"
+                            data-entity-type="Orçamento Técnico"
+                            data-entity-name="Orçamento #{{ item.id }} — {{ item.cliente }}"
+                            data-entity-detail="Tipo: {{ item.tipo }} | Status: {{ item.status }} | Valor: {{ item.valor }}"
+                            data-confirm-warning="O orçamento será excluído do sistema. Esta ação não poderá ser desfeita.">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-danger">
                           <i class="bi bi-trash"></i> Remover
@@ -602,15 +619,25 @@
                 <div class="modal-dialog">
                   <div class="modal-content">
                     <div class="modal-header">
-                      <h5 class="modal-title">Informa&ccedil;&otilde;es adicionais</h5>
+                      <h5 class="modal-title">Informa&ccedil;&otilde;es do orçamento</h5>
                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                     </div>
                     <div class="modal-body">
-                      {% if item.outras_informacoes %}
-                        {{ item.outras_informacoes | safe }}
-                      {% else %}
-                        <span class="text-muted">Sem informa&ccedil;&otilde;es adicionais.</span>
+                      {% if item.contato or item.email or item.telefone %}
+                        <h6 class="text-primary mb-2"><i class="bi bi-person-lines-fill me-1"></i> Dados de Contato</h6>
+                        <p class="mb-1"><strong>Nome / Contato:</strong> {{ item.contato or '-' }}</p>
+                        <p class="mb-1"><strong>E-mail:</strong> {% if item.email %}<a href="mailto:{{ item.email }}" class="text-decoration-none fw-semibold"><i class="bi bi-envelope me-1"></i>{{ item.email }}</a>{% else %}-{% endif %}</p>
+                        <p class="mb-3"><strong>Telefone:</strong> {% if item.telefone %}<a href="tel:{{ item.telefone }}" class="text-decoration-none fw-semibold"><i class="bi bi-telephone me-1"></i>{{ item.telefone }}</a>{% else %}-{% endif %}</p>
+                        <hr class="my-3">
                       {% endif %}
+                      <div>
+                        <strong>Informa&ccedil;&otilde;es adicionais:</strong><br>
+                        {% if item.outras_informacoes %}
+                          {{ item.outras_informacoes | safe }}
+                        {% else %}
+                          <span class="text-muted">Sem informa&ccedil;&otilde;es adicionais.</span>
+                        {% endif %}
+                      </div>
                     </div>
                   </div>
                 </div>

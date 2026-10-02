@@ -7,3 +7,6 @@ propostas_bp = Blueprint(
 
 # IMPORTA as views (rotas) para dentro do blueprint  ↓↓↓
 from . import propostas      # ← mantenha ESTA linha no fim do arquivo
+from . import agenda
+from . import parceiros
+

@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% from "components/page_hero.html" import page_hero %}
 
-{% block title %}Galeria{% endblock %}
+{% block title %}Galeria de Fotos • Administração{% endblock %}
 
 {% block head %}
 {{ super() }}
@@ -24,7 +24,7 @@
 
   .gallery-admin .gallery-grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
     gap:1rem;
     margin-top:1.1rem;
   }
@@ -37,6 +37,7 @@
     display:flex;
     flex-direction:column;
     height:100%;
+    position:relative;
   }
 
   .gallery-item img{
@@ -73,10 +74,48 @@
     margin-top:1.2rem;
   }
 
+  .gallery-event-tag {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(4px);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   @media (max-width: 767px){
     .gallery-item img{height:180px;}
     .gallery-item__footer{flex-direction:column;align-items:flex-start;}
     .gallery-item__footer .file-name{max-width:100%;}
+  }
+
+  html[data-theme="dark"] .gallery-item {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  html[data-theme="dark"] .gallery-item__footer {
+    background: #0f172a;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  html[data-theme="dark"] .gallery-item__footer .file-name {
+    color: #94a3b8;
+  }
+  html[data-theme="dark"] .gallery-empty {
+    background: #0f172a;
+    color: #94a3b8;
   }
 </style>
 {% endblock %}
@@ -85,34 +124,86 @@
 {% set images = gallery_images or [] %}
 <div class="gallery-admin py-4">
   {% set help_tips = [
-    'Use o formulario para adicionar novas fotos ao carrossel da tela inicial.',
-    'Clique em "Remover" para excluir imagens antigas ou duplicadas.',
-    'Evite arquivos muito pesados para manter a home leve.'
+    'Ao enviar fotos, informe o nome do evento (ex: Setembro Amarelo, Confraternização).',
+    'Você pode definir qual evento fica em destaque no carrossel da tela inicial.',
+    'Na página inicial, os usuários também podem filtrar qual evento desejam visualizar.'
   ] %}
   {{ page_hero(
-    title='Galeria de fotos',
-    subtitle='Adicione ou remova imagens exibidas no carrossel da home.',
+    title='Galeria de fotos & Eventos',
+    subtitle='Adicione fotos com nome do evento e configure o carrossel da home.',
     eyebrow='Administração',
-    stats=[{'label': 'Fotos salvas', 'value': total_images or images|length, 'hint': 'Atualizadas em tempo real'}],
+    stats=[
+      {'label': 'Fotos cadastradas', 'value': total_images or images|length, 'hint': 'Total salvo'},
+      {'label': 'Eventos', 'value': gallery_events|length if gallery_events else 1, 'hint': 'Categorias ativas'}
+    ],
     help_tips=help_tips,
-    help_intro='Dicas rápidas para organizar as fotos.'
+    help_intro='Dicas rápidas para organizar as fotos por evento.'
   ) }}
 
   <div class="row g-4">
     <div class="col-lg-4">
+      <!-- Card: Upload com Evento -->
       <div class="card upload-card">
         <div class="card-body">
-          <h5>Adicionar fotos</h5>
-          <p class="text-muted small">Use JPG, PNG, WebP ou GIF. As imagens aparecem no carrossel da home.</p>
+          <h5 class="d-flex align-items-center gap-2">
+            <i class="bi bi-cloud-arrow-up text-primary"></i> Adicionar fotos
+          </h5>
+          <p class="text-muted small">Defina o nome do evento e envie as fotos. Elas serão exibidas no carrossel da home e na galeria.</p>
+          
           <form method="post" action="{{ url_for('admin_tools_bp.galeria_upload') }}" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
             <div class="mb-3">
-              <label class="form-label">Selecionar arquivos</label>
-              <input class="form-control" type="file" name="photos" multiple accept="image/jpeg,image/png,image/webp,image/gif">
-              <div class="form-text">Você pode enviar várias fotos de uma vez.</div>
+              <label class="form-label fw-bold small text-uppercase text-muted">Nome do Evento</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                <input class="form-control" type="text" name="event_name" list="eventos_sugeridos" placeholder="Ex: Setembro Amarelo" required>
+              </div>
+              <datalist id="eventos_sugeridos">
+                {% for ev in gallery_events %}
+                <option value="{{ ev }}">
+                {% endfor %}
+              </datalist>
+              <div class="form-text">Exemplos: <strong>Setembro Amarelo</strong>, <strong>Outubro Rosa</strong>, <strong>Confraternização</strong>.</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold small text-uppercase text-muted">Selecionar imagens</label>
+              <input class="form-control" type="file" name="photos" multiple accept="image/jpeg,image/png,image/webp,image/gif" required>
+              <div class="form-text">Formatos: JPG, PNG, WebP ou GIF.</div>
+            </div>
+
+            <div class="d-grid">
+              <button class="btn btn-primary" type="submit">
+                <i class="bi bi-upload me-1"></i> Salvar na Galeria
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Card: Destaque na Home -->
+      <div class="card upload-card mt-3">
+        <div class="card-body">
+          <h6 class="fw-bold mb-2 d-flex align-items-center gap-2">
+            <i class="bi bi-stars text-warning"></i> Evento em Destaque na Home
+          </h6>
+          <p class="text-muted small">Escolha qual evento deve aparecer selecionado por padrão no carrossel da tela inicial.</p>
+          
+          <form method="post" action="{{ url_for('admin_tools_bp.galeria_destaque') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+              <select class="form-select form-select-sm" name="active_event">
+                <option value="ALL" {% if not active_event or active_event == 'ALL' %}selected{% endif %}>✨ Todos os Eventos (Geral)</option>
+                {% for ev in gallery_events %}
+                <option value="{{ ev }}" {% if active_event == ev %}selected{% endif %}>{{ ev }}</option>
+                {% endfor %}
+              </select>
             </div>
             <div class="d-grid">
-              <button class="btn btn-primary" type="submit">Enviar fotos</button>
+              <button class="btn btn-sm btn-outline-primary" type="submit">
+                <i class="bi bi-check-circle me-1"></i> Definir como Destaque
+              </button>
             </div>
           </form>
         </div>
@@ -121,44 +212,114 @@
       <div class="card upload-card mt-3">
         <div class="card-body">
           <h6 class="fw-semibold">Boas práticas</h6>
-          <ul class="text-muted small mb-0">
-            <li>Prefira imagens horizontais para o carrossel.</li>
-            <li>Evite arquivos muito pesados para acelerar o carregamento.</li>
-            <li>Não publique imagens com informações sensíveis.</li>
+          <ul class="text-muted small mb-0 ps-3">
+            <li>Prefira imagens horizontais (16:9 ou 4:3) para melhor visualização no carrossel.</li>
+            <li>Evite arquivos com mais de 5MB para manter o sistema ágil.</li>
+            <li>Use nomes de eventos padronizados para reunir as fotos corretamente.</li>
           </ul>
         </div>
       </div>
     </div>
 
+    <!-- Coluna Direita: Fotos Cadastradas -->
     <div class="col-lg-8">
       <div class="card gallery-list-card">
         <div class="card-body">
-          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <h5 class="mb-0">Fotos cadastradas</h5>
-            <span class="badge bg-primary-subtle text-primary">{{ images|length }}</span>
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-3 border-bottom">
+            <div class="d-flex align-items-center gap-2">
+              <h5 class="mb-0">Fotos cadastradas</h5>
+              <span class="badge bg-primary-subtle text-primary rounded-pill">{{ images|length }} fotos</span>
+            </div>
+
+            <!-- Filtro por Evento -->
+            <form method="get" action="{{ url_for('admin_tools_bp.galeria_dashboard') }}" class="d-flex align-items-center gap-2">
+              <label class="small text-muted mb-0 fw-semibold">Evento:</label>
+              <select name="evento" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 170px;">
+                <option value="">Todos os Eventos</option>
+                {% for ev in gallery_events %}
+                <option value="{{ ev }}" {% if selected_event == ev %}selected{% endif %}>{{ ev }}</option>
+                {% endfor %}
+              </select>
+            </form>
           </div>
+
           {% if images %}
           <div class="gallery-grid">
-            {% for filename in images %}
+            {% for item in images %}
+            {% set fname = item.filename if item is mapping else item %}
+            {% set fevent = (item.event if item is mapping else 'Geral') or 'Geral' %}
             <div class="gallery-item">
-              <img src="{{ url_for('serve_fotos', filename=filename) }}" alt="Foto {{ loop.index }}">
+              <span class="gallery-event-tag" title="Evento: {{ fevent }}">
+                <i class="bi bi-tag-fill text-warning"></i> {{ fevent }}
+              </span>
+              <img src="{{ url_for('serve_fotos', filename=fname) }}" alt="{{ fevent }}" loading="lazy">
+              
               <div class="gallery-item__footer">
-                <span class="file-name">{{ filename }}</span>
-                <form method="post" action="{{ url_for('admin_tools_bp.galeria_excluir') }}">
+                <button class="btn btn-sm btn-link p-0 text-decoration-none text-muted file-name text-start" 
+                        type="button" 
+                        title="Alterar evento desta foto"
+                        onclick="abrirModalEditarEvento('{{ fname }}', '{{ fevent }}')">
+                  <i class="bi bi-pencil-square text-primary me-1"></i><span class="small">{{ fevent }}</span>
+                </button>
+
+                <form method="post" action="{{ url_for('admin_tools_bp.galeria_excluir') }}"
+                      data-confirm-delete="true"
+                      data-entity-type="Foto da Galeria"
+                      data-entity-name="{{ fname }}"
+                      data-confirm-warning="O arquivo de imagem será excluído permanentemente do servidor.">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <input type="hidden" name="filename" value="{{ filename }}">
-                  <button class="btn btn-sm btn-outline-danger" type="submit">Remover</button>
+                  <input type="hidden" name="filename" value="{{ fname }}">
+                  <button class="btn btn-sm btn-outline-danger" type="submit" title="Excluir"><i class="bi bi-trash"></i></button>
                 </form>
               </div>
             </div>
             {% endfor %}
           </div>
           {% else %}
-          <div class="gallery-empty">Nenhuma foto cadastrada ainda.</div>
+          <div class="gallery-empty">
+            <i class="bi bi-images fs-2 text-muted d-block mb-2"></i>
+            Nenhuma foto cadastrada {% if selected_event %}para o evento <strong>{{ selected_event }}</strong>{% endif %}.
+          </div>
           {% endif %}
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Modal: Editar Evento da Foto -->
+<div class="modal fade" id="modalEditarEvento" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <form class="modal-content" method="post" action="{{ url_for('admin_tools_bp.galeria_atualizar_evento') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="filename" id="editPhotoFilename">
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold"><i class="bi bi-tag-fill text-primary me-1"></i> Alterar Evento</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label small text-muted">Nome do Evento:</label>
+        <input type="text" class="form-control" name="event_name" id="editPhotoEvent" list="eventos_sugeridos_modal" required>
+        <datalist id="eventos_sugeridos_modal">
+          {% for ev in gallery_events %}
+          <option value="{{ ev }}">
+          {% endfor %}
+        </datalist>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function abrirModalEditarEvento(filename, currentEvent) {
+  document.getElementById('editPhotoFilename').value = filename;
+  document.getElementById('editPhotoEvent').value = currentEvent;
+  const modal = new bootstrap.Modal(document.getElementById('modalEditarEvento'));
+  modal.show();
+}
+</script>
 {% endblock %}

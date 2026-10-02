@@ -43,6 +43,8 @@
       .then(data => {
         document.getElementById('equipamentoId').value = data.id;
         document.getElementById('equipamentoNome').value = data.nome;
+        const mfgEl = document.getElementById('equipamentoFabricante');
+        if (mfgEl) { mfgEl.value = data.fabricante || ''; }
         document.getElementById('equipamentoDescricao').value = data.descricao || '';
         document.getElementById('equipamentoPreco').value = (parseFloat(data.preco||0))
           .toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
@@ -57,8 +59,10 @@
 
   function salvarEdicaoEquipamento() {
     const id = document.getElementById('equipamentoId').value;
+    const mfgEl = document.getElementById('equipamentoFabricante');
     const payload = {
       nome: document.getElementById('equipamentoNome').value,
+      fabricante: mfgEl ? mfgEl.value : '',
       descricao: document.getElementById('equipamentoDescricao').value,
       preco: document.getElementById('equipamentoPreco').value,
       quantidade: parseInt(document.getElementById('equipamentoQuantidade').value, 10)
@@ -139,4 +143,3 @@
   window.confirmarExclusao = confirmarExclusao;
   window.excluirEquipamento = excluirEquipamento;
 })();
-

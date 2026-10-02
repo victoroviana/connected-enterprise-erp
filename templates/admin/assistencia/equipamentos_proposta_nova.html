@@ -5,10 +5,11 @@
 {{ super() }}
 <style>
   .proposal-wrapper { padding-bottom: 3rem; }
-  .proposal-hero { background: linear-gradient(130deg, rgba(15,123,200,.95), rgba(0,59,102,.95)); color:#f7fbff; border-radius:1.5rem; padding:2.25rem 2.6rem; box-shadow:0 22px 46px rgba(9,29,54,.28); }
+  .proposal-hero { background: linear-gradient(135deg, #07172e 0%, #0a254a 50%, #004d7c 100%); color:#f7fbff; border:1px solid rgba(0, 164, 245, 0.25); border-radius:16px; padding:2.25rem 2.6rem; box-shadow:0 10px 30px rgba(0, 0, 0, 0.25), 0 0 25px rgba(0, 132, 200, 0.12); position:relative; overflow:hidden; }
+  .proposal-hero::after { content:''; position:absolute; top:-40%; right:-15%; width:350px; height:350px; background:radial-gradient(circle, rgba(0, 180, 216, 0.22) 0%, transparent 70%); pointer-events:none; }
   .proposal-hero .hero-title { font-weight:700; letter-spacing:.3px; }
   .proposal-hero .hero-subtitle { color:rgba(240,247,255,.88); max-width:760px; }
-  .hero-icon { display:flex; align-items:center; justify-content:center; width:56px; height:56px; border-radius:18px; background:rgba(255,255,255,.18); font-size:1.9rem; color:#fff; }
+  .hero-icon { display:flex; align-items:center; justify-content:center; width:56px; height:56px; border-radius:18px; background:rgba(0, 164, 245, 0.18); border:1px solid rgba(0, 164, 245, 0.3); font-size:1.9rem; color:#38bdf8; }
   .section-card { border-radius:1.25rem; }
   .section-card .card-header { background:transparent; border:0; padding:1.5rem 1.75rem 0; }
   .section-card .card-body { padding:1.5rem 1.75rem 1.75rem; }
@@ -59,7 +60,7 @@
   <form method="post" class="proposal-form" id="equipProposalForm">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="row g-4">
-      <div class="col-12 col-xl-8">
+      <div class="col-12 col-lg-8 col-xl-8">
         <div class="card section-card shadow-sm border-0 mb-4">
           <div class="card-header">
             <h2 class="h5 mb-1">Dados da proposta</h2>
@@ -163,7 +164,7 @@
         </div>
       </div>
 
-      <div class="col-12 col-xl-4">
+      <div class="col-12 col-lg-4 col-xl-4">
         <div class="card section-card shadow-sm border-0 position-sticky top-0" style="top:calc(var(--nav-h) + 1.5rem);">
           <div class="card-body">
             <h2 class="h6 fw-bold text-uppercase text-muted mb-3">Escopo</h2>

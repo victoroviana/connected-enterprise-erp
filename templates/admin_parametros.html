@@ -186,6 +186,10 @@
 
   'PAGTO_EQUIP'  : 'Condições de pagamento (equipamento)',
 
+  'PAGTO_SERVICO': 'Condições de pagamento (serviço)',
+
+  'PAGTO_CONTRATO': 'Condições de pagamento (contrato)',
+
 
 
   'PRAZO_ENTREGA': 'Prazo de entrega',
@@ -383,15 +387,14 @@
 
 
 
-                    <form method="POST" action="{{ url_for('parametros_bp.deletar_parametro', id=p.id) }}" class="d-inline" onsubmit="return confirm('Excluir {{ p.label }}?')">
-
-
-
+                    <form method="POST" action="{{ url_for('parametros_bp.deletar_parametro', id=p.id) }}" class="d-inline"
+                          data-confirm-delete="true"
+                          data-entity-type="Parâmetro Comercial"
+                          data-entity-name="{{ p.label }}"
+                          data-confirm-warning="Este parâmetro deixará de ser sugerido nas propostas comerciais.">
                       {{ form.csrf_token }}
-
-
-
                       <button class="btn btn-outline-danger btn-sm">Excluir</button>
+                    </form>
 
 
 
@@ -505,10 +508,13 @@
                 method="POST"
                 action="{{ url_for('parametros_bp.deletar_sistema_de_ponto', key=system_cards[0].option.key) }}"
                 data-action-template="{{ url_for('parametros_bp.deletar_sistema_de_ponto', key='__KEY__') }}"
+                data-confirm-delete="true"
+                data-entity-type="Sistema de Ponto"
+                data-entity-name="Sistema de Ponto Selecionado"
+                data-confirm-warning="O sistema será removido permanentemente do catálogo de parâmetros."
                 class="mt-2">
             {{ form.csrf_token }}
-            <button class="btn btn-outline-danger btn-sm system-delete-btn"
-                    onclick="return confirm('Excluir o sistema selecionado?')">
+            <button type="submit" class="btn btn-outline-danger btn-sm system-delete-btn">
               Excluir sistema selecionado
             </button>
           </form>

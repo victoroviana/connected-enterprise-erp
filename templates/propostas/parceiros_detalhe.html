@@ -1,0 +1,458 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}{{ parceiro.nome_fantasia or parceiro.razao_social }} | Parceiro Sollus Connected{% endblock %}
+
+{% block head %}
+<style>
+  .detail-card {
+    border: 0;
+    border-radius: 1.25rem;
+    box-shadow: 0 10px 28px rgba(15, 35, 58, 0.08);
+    background: var(--bs-card-bg, #fff);
+  }
+  .detail-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 1.25rem;
+    background: linear-gradient(135deg, #0d6efd, #0b3b8c);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    font-weight: 700;
+  }
+  .star-rating {
+    color: #ffc107;
+  }
+  .star-empty {
+    color: rgba(148, 163, 184, 0.35);
+  }
+  .btn-whatsapp {
+    background: #25d366;
+    color: #fff;
+    border: none;
+  }
+  .btn-whatsapp:hover {
+    background: #1ebc59;
+    color: #fff;
+  }
+  .service-card {
+    border-left: 4px solid #0d6efd !important;
+    transition: transform 0.15s ease;
+  }
+  .service-card:hover {
+    transform: translateX(4px);
+  }
+  .service-card-5 { border-left-color: #198754 !important; }
+  .service-card-4 { border-left-color: #0d6efd !important; }
+  .service-card-3 { border-left-color: #ffc107 !important; }
+  .service-card-2, .service-card-1 { border-left-color: #dc3545 !important; }
+
+  html[data-theme="dark"] .detail-card {
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('propostas_bp.parceiros_index') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="fa-solid fa-arrow-left me-1"></i>Voltar para a Rede de Parceiros
+  </a>
+</div>
+
+<!-- Card de Cabeçalho do Parceiro -->
+<div class="card detail-card mb-4">
+  <div class="card-body p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="detail-avatar flex-shrink-0">
+          {{ (parceiro.nome_fantasia or parceiro.razao_social)[:1]|upper }}
+        </div>
+        <div>
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+            <h4 class="fw-bold mb-0 text-dark">{{ parceiro.nome_fantasia or parceiro.razao_social }}</h4>
+            {% if parceiro.status == 'ativo' %}
+            <span class="badge bg-success">Homologado</span>
+            {% elif parceiro.status == 'em_homologacao' %}
+            <span class="badge bg-warning text-dark">Em Homologação</span>
+            {% else %}
+            <span class="badge bg-secondary">Inativo</span>
+            {% endif %}
+          </div>
+          {% if parceiro.razao_social != parceiro.nome_fantasia %}
+          <div class="text-muted small mb-1">{{ parceiro.razao_social }}</div>
+          {% endif %}
+          <div class="d-flex flex-wrap gap-3 small text-muted">
+            <span><i class="fa-solid fa-location-dot text-danger me-1"></i><strong>{{ parceiro.cidade }} - {{ parceiro.estado }}</strong></span>
+            {% if parceiro.cnpj %}<span><i class="fa-solid fa-id-card text-secondary me-1"></i>CNPJ: {{ parceiro.cnpj }}</span>{% endif %}
+            {% if parceiro.responsavel %}<span><i class="fa-solid fa-user-tie text-secondary me-1"></i>Contato: <strong>{{ parceiro.responsavel }}</strong></span>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Ações do Parceiro -->
+      <div class="d-flex flex-wrap gap-2">
+        {% if parceiro.wa_clean %}
+        <a href="https://wa.me/{{ parceiro.wa_clean }}?text=Ol%C3%A1%2C%20falo%20da%20Sollus%20Tecnologia.%20Gostaria%20de%20consultar%20a%20disponibilidade%20para%20uma%20instala%C3%A7%C3%A3o%20t%C3%A9cnica." target="_blank" class="btn btn-whatsapp">
+          <i class="fa-brands fa-whatsapp me-1"></i>Conversar no WhatsApp
+        </a>
+        {% endif %}
+        {% if parceiro.telefone %}
+        <a href="tel:{{ parceiro.telefone }}" class="btn btn-outline-secondary">
+          <i class="fa-solid fa-phone me-1"></i>Ligar
+        </a>
+        {% endif %}
+        {% if can_manage %}
+        <a href="{{ url_for('propostas_bp.parceiros_editar', parceiro_id=parceiro.id) }}" class="btn btn-outline-primary">
+          <i class="fa-solid fa-pencil me-1"></i>Editar
+        </a>
+        <button type="button" class="btn btn-outline-danger" id="btnExcluirParceiro">
+          <i class="fa-solid fa-trash me-1"></i>Excluir
+        </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Coluna da Esquerda: Ficha Técnica & Condições -->
+  <div class="col-12 col-lg-4">
+    <!-- Card de Avaliação Geral -->
+    <div class="card detail-card mb-4 text-center p-4">
+      <h6 class="text-uppercase text-muted fw-bold small mb-2">Desempenho & Avaliação</h6>
+      <div class="display-5 fw-bold text-primary mb-1">
+        {{ "%.1f"|format(parceiro.avaliacao_media) if parceiro.avaliacao_media > 0 else "Novo" }}
+      </div>
+      <div class="star-rating mb-2">
+        {% for i in range(1, 6) %}
+          {% if parceiro.avaliacao_media >= i %}
+            <i class="fa-solid fa-star fa-lg"></i>
+          {% elif parceiro.avaliacao_media >= (i - 0.5) %}
+            <i class="fa-solid fa-star-half-stroke fa-lg"></i>
+          {% else %}
+            <i class="fa-regular fa-star fa-lg star-empty"></i>
+          {% endif %}
+        {% endfor %}
+      </div>
+      <div class="text-muted small">
+        Baseado em <strong>{{ parceiro.total_atendimentos }}</strong> {{ 'serviço executado' if parceiro.total_atendimentos == 1 else 'serviços executados' }} para a Sollus
+      </div>
+    </div>
+
+    <!-- Ficha de Cobertura e Especialidades -->
+    <div class="card detail-card mb-4">
+      <div class="card-header bg-transparent p-3 border-bottom border-secondary border-opacity-10">
+        <h6 class="fw-bold mb-0"><i class="fa-solid fa-clipboard-list text-primary me-2"></i>Ficha Técnica</h6>
+      </div>
+      <div class="card-body p-3">
+        <div class="mb-3">
+          <label class="small text-muted fw-bold d-block text-uppercase">Cidades & Regiões Atendidas</label>
+          <div class="small mt-1 text-dark">
+            {{ parceiro.regiao_atendimento or (parceiro.cidade ~ ' e proximidades') }}
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="small text-muted fw-bold d-block text-uppercase">Especialidades & Fabricantes</label>
+          <div class="d-flex flex-wrap gap-1 mt-1">
+            {% if parceiro.especialidades %}
+              {% for esp in parceiro.especialidades.split(',') %}
+                {% if esp.strip() %}
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{ esp.strip() }}</span>
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              <span class="small text-muted fst-italic">Não informado</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="small text-muted fw-bold d-block text-uppercase">Contatos & E-mail</label>
+          <div class="small mt-1">
+            {% if parceiro.email %}
+            <div><i class="fa-solid fa-envelope text-secondary me-2"></i><a href="mailto:{{ parceiro.email }}">{{ parceiro.email }}</a></div>
+            {% endif %}
+            {% if parceiro.telefone %}
+            <div><i class="fa-solid fa-phone text-secondary me-2"></i>{{ parceiro.telefone }}</div>
+            {% endif %}
+            {% if parceiro.whatsapp %}
+            <div><i class="fa-brands fa-whatsapp text-success me-2"></i>{{ parceiro.whatsapp }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if parceiro.observacoes %}
+        <div class="mb-1">
+          <label class="small text-muted fw-bold d-block text-uppercase">Condições Comerciais & Acordos</label>
+          <div class="small mt-1 p-2 rounded bg-light text-dark font-monospace" style="font-size: 0.82rem; white-space: pre-wrap;">{{ parceiro.observacoes }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Coluna da Direita: Histórico de Instalações e Serviços Realizados -->
+  <div class="col-12 col-lg-8">
+    <div class="card detail-card mb-4">
+      <div class="card-header bg-transparent p-4 d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom border-secondary border-opacity-10">
+        <div>
+          <h5 class="fw-bold mb-1">
+            <i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>Histórico de Instalações e Serviços Realizados
+          </h5>
+          <p class="text-muted small mb-0">Registro histórico de atendimentos executados por esta parceira para clientes da Sollus.</p>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNovoServico">
+          <i class="fa-solid fa-plus me-1"></i>Registrar Novo Serviço
+        </button>
+      </div>
+
+      <div class="card-body p-4">
+        {% if servicos %}
+        <div class="d-flex flex-column gap-3">
+          {% for s in servicos %}
+          <div class="card service-card service-card-{{ s.avaliacao_nota or 4 }} shadow-sm">
+            <div class="card-body p-3">
+              <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                <div>
+                  <h6 class="fw-bold mb-1 text-dark">
+                    <i class="fa-solid fa-screwdriver-wrench text-primary me-1"></i>{{ s.tipo_servico }}
+                    {% if s.equipamento_modelo %}
+                    <span class="text-muted fw-normal">— {{ s.equipamento_modelo }}</span>
+                    {% endif %}
+                  </h6>
+                  <div class="small text-muted">
+                    <i class="fa-solid fa-building me-1 text-secondary opacity-75"></i>Cliente: <strong>{{ s.cliente_nome }}</strong>
+                    {% if s.cliente_cidade or s.cliente_uf %}
+                    ({{ s.cliente_cidade }}{% if s.cliente_uf %}/{{ s.cliente_uf }}{% endif %})
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="text-end">
+                  <div class="fw-semibold small text-primary">
+                    <i class="fa-regular fa-calendar me-1"></i>{{ s.data_servico.strftime('%d/%m/%Y') }}
+                  </div>
+                  {% if s.os_codigo %}
+                  <span class="badge bg-light text-dark border mt-1">O.S. {{ s.os_codigo }}</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Avaliação e Parecer -->
+              <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <span class="small fw-semibold text-muted">Avaliação:</span>
+                <div class="star-rating small">
+                  {% for i in range(1, 6) %}
+                    {% if s.avaliacao_nota and s.avaliacao_nota >= i %}
+                      <i class="fa-solid fa-star"></i>
+                    {% else %}
+                      <i class="fa-regular fa-star star-empty"></i>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+                {% if s.valor_servico %}
+                <span class="badge bg-success bg-opacity-10 text-success ms-auto">
+                  Valor Pago: R$ {{ "%.2f"|format(s.valor_servico)|replace('.', ',') }}
+                </span>
+                {% endif %}
+              </div>
+
+              {% if s.avaliacao_parecer %}
+              <div class="p-2 rounded bg-light text-dark small mb-2 border-start border-3 border-secondary border-opacity-25" style="font-size: 0.85rem;">
+                <strong>Parecer Técnico:</strong> {{ s.avaliacao_parecer }}
+              </div>
+              {% endif %}
+
+              <div class="d-flex justify-content-between align-items-center small text-muted pt-2 border-top border-secondary border-opacity-10" style="font-size: 0.78rem;">
+                <div>
+                  {% if s.tecnico_parceiro %}<span>Técnico de Campo: <strong>{{ s.tecnico_parceiro }}</strong> | </span>{% endif %}
+                  <span>Registrado por {{ s.usuario_registro.nome_completo if s.usuario_registro else 'Colaborador' }}</span>
+                </div>
+                {% if can_manage %}
+                <button type="button" class="btn btn-xs btn-outline-danger btn-excluir-servico" data-id="{{ s.id }}" data-title="{{ s.tipo_servico }} em {{ s.cliente_nome }}" title="Excluir este registro">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+          <i class="fa-solid fa-folder-open fa-3x text-muted opacity-40 mb-3"></i>
+          <h6 class="fw-bold">Nenhum serviço registrado ainda</h6>
+          <p class="text-muted small mb-3">Quando esta parceira realizar uma instalação ou manutenção, registre o atendimento para alimentar a avaliação e o histórico.</p>
+          <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNovoServico">
+            <i class="fa-solid fa-plus me-1"></i>Registrar Primeiro Atendimento
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Novo Serviço no Histórico -->
+<div class="modal fade" id="modalNovoServico" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <form class="modal-content" method="post" action="{{ url_for('propostas_bp.parceiros_servico_novo', parceiro_id=parceiro.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">
+          <i class="fa-solid fa-clipboard-check text-primary me-2"></i>Registrar Serviço Executado pelo Parceiro
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <!-- Cliente da Sollus -->
+          <div class="col-12 col-md-6">
+            <label class="form-label small fw-semibold">Cliente da Sollus Atendido <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="cliente_nome" required placeholder="Ex: Hotel Fazenda Chapada / Condomínio Amadeus">
+          </div>
+
+          <!-- Cidade / UF do Cliente -->
+          <div class="col-12 col-md-4">
+            <label class="form-label small fw-semibold">Cidade do Cliente</label>
+            <input type="text" class="form-control" name="cliente_cidade" value="{{ parceiro.cidade }}" placeholder="Ex: Lençóis">
+          </div>
+          <div class="col-12 col-md-2">
+            <label class="form-label small fw-semibold">UF</label>
+            <select class="form-select" name="cliente_uf">
+              {% for sigla, nome in ufs %}
+              <option value="{{ sigla }}" {% if parceiro.estado == sigla %}selected{% endif %}>{{ sigla }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Data do Serviço -->
+          <div class="col-12 col-md-4">
+            <label class="form-label small fw-semibold">Data da Execução <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" name="data_servico" required>
+          </div>
+
+          <!-- Tipo de Serviço -->
+          <div class="col-12 col-md-4">
+            <label class="form-label small fw-semibold">Tipo de Serviço Realizado <span class="text-danger">*</span></label>
+            <select class="form-select" name="tipo_servico" required>
+              {% for ts in tipos_servico %}
+              <option value="{{ ts }}">{{ ts }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Equipamento / Modelo -->
+          <div class="col-12 col-md-4">
+            <label class="form-label small fw-semibold">Equipamento / Modelo</label>
+            <input type="text" class="form-control" name="equipamento_modelo" placeholder="Ex: Catraca Henry Lumen / iDClass">
+          </div>
+
+          <!-- O.S. ou Pedido -->
+          <div class="col-12 col-md-4">
+            <label class="form-label small fw-semibold">Nº da O.S. ou Pedido Sollus</label>
+            <input type="text" class="form-control" name="os_codigo" placeholder="Ex: OS 87506359">
+          </div>
+
+          <!-- Técnico do Parceiro -->
+          <div class="col-12 col-md-4">
+            <label class="form-label small fw-semibold">Técnico de Campo do Parceiro</label>
+            <input type="text" class="form-control" name="tecnico_parceiro" placeholder="Nome do técnico terceirizado">
+          </div>
+
+          <!-- Valor Pago -->
+          <div class="col-12 col-md-4">
+            <label class="form-label small fw-semibold">Valor Pago pelo Serviço (R$)</label>
+            <input type="text" class="form-control" name="valor_servico" placeholder="Ex: 350,00">
+          </div>
+
+          <!-- Avaliação em Estrelas -->
+          <div class="col-12 col-md-6">
+            <label class="form-label small fw-semibold">Avaliação da Execução (1 a 5 Estrelas)</label>
+            <select class="form-select" name="avaliacao_nota">
+              <option value="5" selected>★★★★★ - Excelente (Pontual, executou 100%, cliente satisfeito)</option>
+              <option value="4">★★★★☆ - Muito Bom (Executou com qualidade, pequenos detalhes)</option>
+              <option value="3">★★★☆☆ - Regular (Houve imprevistos ou pequeno atraso)</option>
+              <option value="2">★★☆☆☆ - Ruim (Dificuldade técnica ou reclamação do cliente)</option>
+              <option value="1">★☆☆☆☆ - Péssimo (Serviço não finalizado / retrabalho)</option>
+            </select>
+          </div>
+
+          <!-- Parecer Técnico -->
+          <div class="col-12">
+            <label class="form-label small fw-semibold">Parecer / Feedback Técnico da Execução</label>
+            <textarea class="form-control" name="avaliacao_parecer" rows="3" placeholder="Descreva como correu a instalação, testes realizados, se precisou de apoio remoto do suporte, etc..."></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check me-1"></i>Registrar Atendimento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Form Excluir Parceiro Oculto -->
+<form id="formExcluirParceiroOculto" method="post" action="{{ url_for('propostas_bp.parceiros_excluir', parceiro_id=parceiro.id) }}" class="d-none" data-confirm-delete="true" data-entity-name="{{ parceiro.razao_social }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
+
+<!-- Form Excluir Serviço Oculto -->
+<form id="formExcluirServicoOculto" method="post" action="" class="d-none" data-confirm-delete="true" data-entity-name="Serviço do Histórico">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Exclusão do Parceiro
+  const btnExcluir = document.getElementById('btnExcluirParceiro');
+  if (btnExcluir) {
+    btnExcluir.addEventListener('click', function() {
+      const form = document.getElementById('formExcluirParceiroOculto');
+      if (window.showConfirmDeleteModal) {
+        window.showConfirmDeleteModal({
+          entityType: 'Empresa Parceira',
+          entityName: '{{ parceiro.razao_social }}',
+          entityDetail: 'Esta ação removerá a parceira e todo o histórico de serviços cadastrado.',
+          form: form
+        });
+      } else if (confirm('Deseja realmente excluir esta empresa parceira?')) {
+        form.submit();
+      }
+    });
+  }
+
+  // Exclusão de Serviço
+  document.querySelectorAll('.btn-excluir-servico').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const id = btn.getAttribute('data-id');
+      const title = btn.getAttribute('data-title');
+      const form = document.getElementById('formExcluirServicoOculto');
+      form.action = `/comercial/parceiros/servicos/${id}/excluir`;
+      form.setAttribute('data-entity-name', title);
+
+      if (window.showConfirmDeleteModal) {
+        window.showConfirmDeleteModal({
+          entityType: 'Registro de Serviço',
+          entityName: title,
+          entityDetail: 'Esta ação removerá o atendimento do histórico do parceiro.',
+          form: form
+        });
+      } else if (confirm(`Deseja realmente excluir o registro "${title}"?`)) {
+        form.submit();
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

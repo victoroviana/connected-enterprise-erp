@@ -1,0 +1,39 @@
+{
+  "active_event": null,
+  "events": [
+    "Setembro Amarelo",
+    "Geral"
+  ],
+  "images": {
+    "d1d5be631b32db5e0df511ca90e37fb9.jpeg": {
+      "event": "Geral"
+    },
+    "09d8bd11dc58815d6e3e627d364c3d1d.jpeg": {
+      "event": "Geral"
+    },
+    "3401782172134e48a52acd9d2186103a.jpg": {
+      "event": "Setembro Amarelo",
+      "created_at": "2026-09-25T14:14:53.731270"
+    },
+    "de2605a949354612a7ad0fe9970306cf.jpeg": {
+      "event": "Setembro Amarelo",
+      "created_at": "2026-09-25T14:14:53.742332"
+    },
+    "6345ded1d22b470aa91edc2d5b5a8ce7.jpeg": {
+      "event": "Setembro Amarelo",
+      "created_at": "2026-09-25T14:14:53.743697"
+    },
+    "79969620e63a4d2fa5cfb479c33a425c.jpeg": {
+      "event": "Setembro Amarelo",
+      "created_at": "2026-09-25T14:14:53.744911"
+    },
+    "faafe8b422214e85b653110010aa2530.jpeg": {
+      "event": "Setembro Amarelo",
+      "created_at": "2026-09-25T14:14:53.746215"
+    },
+    "9dde695966564196a1008b6734720f30.jpeg": {
+      "event": "Setembro Amarelo",
+      "created_at": "2026-09-25T14:14:53.747560"
+    }
+  }
+}

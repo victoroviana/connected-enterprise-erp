@@ -304,7 +304,8 @@ def _decorate_chamados(
         )
 
         created_at = _parse_os_datetime(data.get("data_os_criada"))
-        base_date = created_at or _parse_os_datetime(data.get("data"))
+        visit_date = _parse_os_datetime(data.get("data"))
+        base_date = created_at or visit_date
 
         opened_at = (
             _parse_os_datetime(data.get("hora_entrada"), date_hint=base_date)
@@ -312,19 +313,28 @@ def _decorate_chamados(
             or base_date
         )
 
-        closed_at = None
-        if closed:
-            tecnico_at = _parse_os_datetime(data.get("data_os_tecnico"))
-            closed_date_hint = tecnico_at or base_date or opened_at
-            closed_at = (
-                tecnico_at
-                or _parse_os_datetime(
-                    data.get("hora_saida"), date_hint=closed_date_hint
-                )
-                or base_date
-            )
+        # Determina se este chamado específico está concluído / com baixa
+        retorno_val = str(data.get("retorno") or "").strip().upper()
+        status_val = str(data.get("status") or "").strip().upper()
+        entry_is_closed = (
+            closed
+            or (retorno_val in {"FECHADO", "CONCLUIDO", "CONCLUÍDO", "FINALIZADO"})
+            or (status_val in {"FECHADO", "CONCLUIDO", "CONCLUÍDO", "FINALIZADO", "DEVOLUCAO_SEM_REPARO", "DESCARTE"})
+        )
 
-        tempo_label, total_minutes = _format_os_duration(opened_at, closed_at or now)
+        closed_at = None
+        if entry_is_closed:
+            tecnico_at = _parse_os_datetime(data.get("data_os_tecnico"))
+            # Nas unidades regionais (como chamadoses), a data da visita concluída fica em 'data'
+            closed_date_hint = tecnico_at or visit_date or base_date or opened_at
+            hora_saida_parsed = _parse_os_datetime(
+                data.get("hora_saida"), date_hint=closed_date_hint
+            )
+            closed_at = tecnico_at or hora_saida_parsed or visit_date or base_date or opened_at
+
+        # Para chamados fechados, nunca caímos no 'now' atual para evitar cálculo falso de atraso
+        target_end = closed_at if entry_is_closed else (closed_at or now)
+        tempo_label, total_minutes = _format_os_duration(opened_at, target_end)
         tempo_display = f"{tempo_label}h" if tempo_label else None
 
         sla_minutes = _sla_minutes(data.get("contrato"))
@@ -334,9 +344,12 @@ def _decorate_chamados(
             tempo_text = None
         else:
             within_sla = total_minutes <= sla_minutes
-            if closed:
-                tempo_class = "ok" if within_sla else "danger"
-                tempo_text = f"Atendimento em {tempo_label}h"
+            if entry_is_closed:
+                tempo_class = "ok" if within_sla else "warning"
+                if tempo_label:
+                    tempo_text = f"Atendimento em {tempo_label}h"
+                else:
+                    tempo_text = "Atendimento concluído"
                 if not within_sla:
                     tempo_text += " · Fora do período"
             else:
@@ -350,7 +363,7 @@ def _decorate_chamados(
         data["tempo_os_text"] = tempo_text
         data["tempo_os_hint"] = (
             f"Encerrada em {closed_at.strftime('%d/%m/%Y %H:%M')}"
-            if closed and closed_at
+            if entry_is_closed and closed_at
             else (f"Criada em {opened_at.strftime('%d/%m/%Y %H:%M')}" if opened_at else None)
         )
 
@@ -794,7 +807,7 @@ def atendimentos_dashboard():
             AtendimentoSuporte.status.notin_(["Concluido", "concluido"])
         ),
         AtendimentoSuporte.data_entrada < overdue_limit
-    ).order_by(AtendimentoSuporte.data_entrada.asc()).all()
+    ).order_by(AtendimentoSuporte.data_entrada.asc()).limit(100).all()
 
     overdue_calls = []
     for c in db_overdue:
@@ -997,6 +1010,7 @@ def chamados_api():
         item["close_url"] = url_for(f"{namespace}.fechar_chamado", region_slug=region.slug, chamado_id=item["id"])
         item["delete_url"] = url_for(f"{namespace}.excluir_chamado", region_slug=region.slug, chamado_id=item["id"])
         item["region_slug"] = region.slug
+        item["region_label"] = region.label
         arquivo_entrada = _resolve_chamado_file_ref(item, "entrada")
         arquivo_saida = _resolve_chamado_file_ref(item, "saida")
         item["download_entrada"] = (
@@ -1223,28 +1237,69 @@ def criar_chamado():
 def editar_chamado(region_slug: str, chamado_id: int):
     form = EditarChamadoForm()
     regions = _set_region_choices(form)
-    region = get_region(region_slug) or get_region(form.region.data) if form.region.data else None
-    if region:
-        _populate_chamado_form_choices(region, edit_form=form)
-    if not form.validate_on_submit():
-        flash("Não foi possível atualizar o chamado.", "danger")
-        return redirect(_redirect_chamados(region_slug, regions))
-
-    if not region:
+    source_region = get_region(region_slug)
+    if not source_region:
         flash("Unidade inválida.", "danger")
         return redirect(url_for("support_bp.chamados_dashboard"))
 
-    before_snapshot = _fetch_chamado_snapshot(region, chamado_id)
+    target_slug = (form.region.data or "").strip() or region_slug
+    target_region = get_region(target_slug) or source_region
+
+    _populate_chamado_form_choices(source_region, edit_form=form)
+    if not form.validate_on_submit():
+        flash("Não foi possível atualizar o chamado. Verifique os campos informados.", "danger")
+        return redirect(_redirect_chamados(region_slug, regions))
+
+    before_snapshot = _fetch_chamado_snapshot(source_region, chamado_id)
     payload = _build_chamado_payload(form)
     arquivo_entrada = save_support_file(form.arquivo_entrada.data, form.ordem_servico.data, "entrada")
     arquivo_saida = save_support_file(form.arquivo_saida.data, form.ordem_servico.data, "saida")
     _set_chamado_file_payload(payload, entrada=arquivo_entrada, saida=arquivo_saida)
-    update_chamado(region, chamado_id, payload)
-    after_snapshot = _fetch_chamado_snapshot(region, chamado_id) or _snapshot_payload(region, payload, chamado_id)
-    _log_chamado_audit("update", region, chamado_id=chamado_id, before=before_snapshot, after=after_snapshot)
-    db.session.commit()
-    flash("Chamado atualizado.", "success")
-    return redirect(_redirect_chamados(region.slug, regions))
+
+    # Verifica se houve transferência de filial
+    if target_region.slug != source_region.slug:
+        ordem_servico = payload.get("ordem_servico") or ""
+        if ordem_servico and _ordem_servico_exists(target_region, ordem_servico):
+            flash(f"A ordem de serviço '{ordem_servico}' já existe na unidade de destino ({target_region.label}).", "danger")
+            return redirect(_redirect_chamados(source_region.slug, regions))
+
+        old_record = get_chamado(source_region, chamado_id) or {}
+        combined_payload = dict(old_record)
+        combined_payload.pop("id", None)
+        for k, v in payload.items():
+            if v is not None or k in ("bairro", "tecnico", "email_responsavel", "cnpj"):
+                combined_payload[k] = v
+        if arquivo_entrada:
+            _set_chamado_file_payload(combined_payload, entrada=arquivo_entrada)
+        if arquivo_saida:
+            _set_chamado_file_payload(combined_payload, saida=arquivo_saida)
+
+        new_chamado_id = create_chamado(target_region, combined_payload)
+        if new_chamado_id:
+            delete_chamado(source_region, chamado_id)
+            after_snapshot = _fetch_chamado_snapshot(target_region, new_chamado_id) or _snapshot_payload(target_region, combined_payload, new_chamado_id)
+            _log_chamado_audit(
+                "transfer",
+                target_region,
+                chamado_id=new_chamado_id,
+                before=before_snapshot,
+                after=after_snapshot,
+                message=f"Chamado transferido de {source_region.label} para {target_region.label}",
+            )
+            db.session.commit()
+            flash(f"Chamado transferido com sucesso para {target_region.label}!", "success")
+            return redirect(_redirect_chamados(target_region.slug, regions))
+        else:
+            db.session.rollback()
+            flash("Erro ao transferir chamado para a nova filial.", "danger")
+            return redirect(_redirect_chamados(source_region.slug, regions))
+    else:
+        update_chamado(source_region, chamado_id, payload)
+        after_snapshot = _fetch_chamado_snapshot(source_region, chamado_id) or _snapshot_payload(source_region, payload, chamado_id)
+        _log_chamado_audit("update", source_region, chamado_id=chamado_id, before=before_snapshot, after=after_snapshot)
+        db.session.commit()
+        flash("Chamado atualizado.", "success")
+        return redirect(_redirect_chamados(source_region.slug, regions))
 
 
 @support_bp.route("/chamados/<string:region_slug>/<int:chamado_id>/fechar", methods=["POST"])
@@ -2269,7 +2324,7 @@ def _fetch_concluded_entries(form: ConcluidoFilterForm):
     if form.usuario_designado.data: query = query.filter(AtendimentoSuporte.usuario_designado == form.usuario_designado.data)
     if form.data_inicial.data: query = query.filter(AtendimentoSuporte.data_atendimento >= datetime.combine(form.data_inicial.data, datetime.min.time()))
     if form.data_final.data: query = query.filter(AtendimentoSuporte.data_atendimento <= datetime.combine(form.data_final.data, datetime.max.time()))
-    return query.order_by(AtendimentoSuporte.data_atendimento.desc()).all()
+    return query.order_by(AtendimentoSuporte.data_atendimento.desc()).limit(2000).all()
 
 
 def _touch_last_assignment(user_id: int | None) -> None:

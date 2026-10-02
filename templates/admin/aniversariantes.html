@@ -4,16 +4,63 @@
 
 {% block head %}
 <style>
-  .anniv-card{border:0;border-radius:1.5rem;box-shadow:0 18px 40px rgba(15,35,58,.08);} 
+  /* ===== ANIVERSARIANTES - NOVO DESIGN SYSTEM ===== */
+  .anniv-card{border:0;border-radius:1.5rem;box-shadow:0 18px 40px rgba(15,35,58,.08);}
   .anniv-card__header{padding:1.5rem 1.5rem 0;}
   .anniv-card__body{padding:1.5rem;}
-  .anniv-table thead{background:#f1f4fb;text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;color:#5a6782;}
+  .anniv-table thead{
+    background:var(--nav-bg-start, #f1f4fb);
+    text-transform:uppercase;font-size:.7rem;letter-spacing:.08rem;
+    color:var(--nav-text-color, #5a6782);
+  }
+  html[data-theme="dark"] .anniv-table thead{background:rgba(255,255,255,.05);color:#94a3b8;}
   .anniv-table tbody tr{transition:background .2s ease;}
-  .anniv-table tbody tr:hover{background:#f7f9ff;}
-  .anniv-highlight{background:linear-gradient(135deg,#0059c8,#4390ff);color:#fff;border-radius:1.5rem;padding:1.75rem;box-shadow:0 20px 40px rgba(7,56,129,.35);}
+  .anniv-table tbody tr:hover{background:rgba(14,93,198,.04);}
+  html[data-theme="dark"] .anniv-table tbody tr:hover{background:rgba(255,255,255,.04);}
+
+  /* Painel de próximos aniversários — novo estilo */
+  .anniv-highlight{
+    background:linear-gradient(135deg, #0B3B8C, #0E5DC6);
+    color:#fff;
+    border-radius:1.5rem;
+    padding:1.75rem;
+    box-shadow:0 20px 40px rgba(11,59,140,.28);
+    position:relative;
+    overflow:hidden;
+  }
+  .anniv-highlight::before{
+    content:'';
+    position:absolute;
+    top:-40px;right:-40px;
+    width:200px;height:200px;
+    border-radius:50%;
+    background:radial-gradient(circle,rgba(255,255,255,.15),transparent 70%);
+    pointer-events:none;
+  }
+  html[data-theme="dark"] .anniv-highlight{
+    background:linear-gradient(135deg, #0d2855, #0B3B8C);
+    box-shadow:0 20px 40px rgba(0,0,0,.4);
+  }
   .anniv-highlight small{letter-spacing:.08rem;text-transform:uppercase;color:rgba(255,255,255,.75);}
-  .anniv-highlight__item{border-radius:1rem;background:rgba(255,255,255,.15);padding:1rem;margin-top:1rem;display:flex;justify-content:space-between;align-items:center;backdrop-filter:blur(4px);}
+  .anniv-highlight h2{color:#fff;}
+  .anniv-highlight__item{
+    border-radius:1rem;
+    background:rgba(255,255,255,.14);
+    padding:1rem;
+    margin-top:.85rem;
+    display:flex;justify-content:space-between;align-items:center;
+    backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px);
+    border:1px solid rgba(255,255,255,.12);
+    transition:background .2s;
+  }
+  .anniv-highlight__item:hover{background:rgba(255,255,255,.22);}
+  .anniv-highlight__item strong{color:#fff;}
+  .anniv-highlight__item .small{color:rgba(255,255,255,.75);}
+  .anniv-highlight .btn-light{border-radius:.75rem;font-weight:600;}
+
   .badge-month{font-weight:600;background:#eef3ff;color:#1e3a8a;border-radius:.75rem;padding:.35rem .8rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.08rem;}
+  html[data-theme="dark"] .badge-month{background:rgba(14,93,198,.2);color:#93c5fd;}
 </style>
 {% endblock %}
 
@@ -37,7 +84,7 @@
 ) }}
 
 <div class="row g-4">
-  <div class="col-xl-4">
+  <div class="col-12 col-lg-4 col-xl-4">
     <div class="anniv-highlight h-100">
       <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
@@ -63,7 +110,7 @@
       {% endif %}
     </div>
   </div>
-  <div class="col-xl-8">
+  <div class="col-12 col-lg-8 col-xl-8">
     <div class="card anniv-card">
       <div class="anniv-card__header d-flex justify-content-between align-items-center">
         <div>
@@ -97,9 +144,14 @@
                       <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalEditarAniversariante" data-birthday='{{ entry.to_payload() | tojson }}' data-user-id="{{ birthday_user_map.get(entry.id) or '' }}" data-update-url="{{ url_for('admin_tools_bp.atualizar_aniversariante', birthday_id=entry.id) }}">
                         <i class="bi bi-pencil"></i>
                       </button>
-                      <form method="post" action="{{ url_for('admin_tools_bp.excluir_aniversariante', birthday_id=entry.id) }}" onsubmit="return confirm('Confirma a exclusão de {{ entry.nome }}?');">
+                      <form method="post" action="{{ url_for('admin_tools_bp.excluir_aniversariante', birthday_id=entry.id) }}"
+                            data-confirm-delete="true"
+                            data-entity-type="Aniversariante"
+                            data-entity-name="{{ entry.nome }}"
+                            data-entity-detail="Data: {{ entry.data_nascimento.strftime('%d/%m') if entry.data_nascimento else '-' }}"
+                            data-confirm-warning="O aniversariante deixará de ser exibido no calendário e lembretes do sistema.">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-outline-danger">
+                        <button type="submit" class="btn btn-outline-danger" title="Excluir aniversariante">
                           <i class="bi bi-trash"></i>
                         </button>
                       </form>
@@ -201,7 +253,13 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="mb-3">
           <label class="form-label">Colaborador</label>
-          <input type="text" class="form-control bg-light" name="nome_exibicao" readonly>
+          <select name="usuario_id" class="form-select mb-2" id="selectEditarColaborador">
+            <option value="">(Selecione um usuário ou mantenha nome personalizado)</option>
+            {% for user in users %}
+            <option value="{{ user.id }}">{{ user.nome_completo }}</option>
+            {% endfor %}
+          </select>
+          <input type="text" class="form-control form-control-sm bg-light" name="nome_exibicao" placeholder="Nome digitado / personalizado">
         </div>
         <div class="row g-2">
           <div class="col-4">

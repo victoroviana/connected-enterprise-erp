@@ -91,7 +91,11 @@
                 <a class="btn btn-outline-primary btn-sm" href="{{ url_for('cracha_bp.produtos_editar', produto_id=row.id_pk) }}">
                   <i class="fa-solid fa-pen me-1"></i> Editar
                 </a>
-                <form method="post" action="{{ url_for('cracha_bp.produtos_excluir', produto_id=row.id_pk) }}" onsubmit="return confirm('Deseja excluir este produto?');">
+                <form method="post" action="{{ url_for('cracha_bp.produtos_excluir', produto_id=row.id_pk) }}"
+                      data-confirm-delete="true"
+                      data-entity-type="Produto"
+                      data-entity-name="{{ row.produto }}"
+                      data-confirm-warning="O cadastro deste produto será excluído permanentemente.">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="btn btn-outline-danger btn-sm">
                     <i class="fa-solid fa-trash me-1"></i> Excluir

@@ -49,6 +49,8 @@ graph TD
     
     subgraph "Modular Blueprints Layer"
         Gateway --> M_Auth[Auth & User Management]
+        Gateway --> M_CRM[Sollus CRM & Lead Scoring]
+        Gateway --> M_Flow[SollusFlow BPM Order Pipeline]
         Gateway --> M_Tickets[Helpdesk & Ticketing Module]
         Gateway --> M_Proposals[Commercial Proposals & PDF Engine]
         Gateway --> M_Contracts[Contracts & Financial Workflows]
@@ -79,9 +81,13 @@ graph TD
 * **Multi-tiered Permissions:** Administrative, Managerial, and Agent tiers with per-feature override flags (`can_delete`, `can_edit_all`, `department_scope`).
 * **Department-Scoped Visibility:** Restricts standard agents to their department's tickets while giving managers cross-functional analytics.
 
-### 4. 📬 Resilient Background Email Queue
-* **Transactional Queue (`SollusEmailQueue`):** Emails are enqueued within the database transaction, preventing message loss in case of SMTP server dropouts.
-* **Exponential Backoff & Retries:** Background worker processes queued messages every minute with max-retry thresholds and error logging.
+### 5. 🎯 Native CRM, Sales Funnels & Lead Scoring
+* **Dual-Track Kanban Pipelines:** Multi-funnel Kanban (Time Attendance, Access Control, Tech Support) with SortableJS drag-and-drop, automated round-robin seller assignment, and 360° Deal Drawers.
+* **Daily Sales Cockpit:** Unified daily seller task dashboard (`/crm/tarefas`) with visual SLA traffic lights (overdue, today, upcoming) and 1-Click WhatsApp integration.
+
+### 6. 🔄 SollusFlow BPM Order Fulfillment Lifecycle
+* **16-Stage Operations Pipeline:** Order fulfillment process tracking from intake, documentation, and equipment procurement to installation scheduling, invoicing, and onboarding.
+* **Dynamic SLA Alerts & Checklists:** Automated recurring reminder engine with stage-by-stage checklists and manager delay notifications.
 
 ---
 
@@ -92,7 +98,7 @@ graph TD
 | **Backend Core** | Python 3.10+, Flask, Jinja2, Werkzeug, Gevent |
 | **ORM & Database** | SQLAlchemy 2.0, Alembic, PyMySQL, SQLite (Dev) |
 | **Background Tasks** | APScheduler, Gevent Monkey Patching |
-| **Frontend & UI** | Bootstrap 5, Select2, Vanilla JS, Premium Glassmorphism CSS |
+| **Frontend & UI** | Bootstrap 5, Select2, SortableJS, FullCalendar 6, Cyber Design System |
 | **Document Generation** | `wkhtmltopdf`, `html2pdf.js`, `python-docx` |
 | **Security & Auth** | Flask-Login, CSRF Protection, PBKDF2 Password Hashing |
 
@@ -102,7 +108,7 @@ graph TD
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/your-username/connected-enterprise-erp.git
+git clone https://github.com/victoroviana/connected-enterprise-erp.git
 cd connected-enterprise-erp
 ```
 

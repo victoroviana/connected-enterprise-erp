@@ -374,9 +374,14 @@ function renderTable(items) {
                           data-bs-target="#modalDesignarTecnico">
                     <i class="bi bi-person-plus"></i>
                   </button>
-                  <form method="post" action="/admin/suporte/atendimentos/${item.id}/excluir" class="d-inline" onsubmit="return confirm('Confirma a exclusão?');">
+                  <form method="post" action="/admin/suporte/atendimentos/${item.id}/excluir" class="d-inline"
+                        data-confirm-delete="true"
+                        data-entity-type="Atendimento de Suporte"
+                        data-entity-name="Atendimento #${item.id} — ${item.cliente || 'Sem cliente'}"
+                        data-entity-detail="Tipo: ${item.tipo_atendimento || '-'} | Sistema: ${item.sistema || '-'}"
+                        data-confirm-warning="O atendimento será excluído permanentemente.">
                     <input type="hidden" name="csrf_token" value="${CSRF_TOKEN}">
-                    <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    <button type="submit" class="btn btn-outline-danger" title="Excluir atendimento"><i class="bi bi-trash"></i></button>
                   </form>
                 </div>
               </td>

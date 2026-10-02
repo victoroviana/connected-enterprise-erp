@@ -559,32 +559,64 @@
 
       if (event.target.closest('.js-reverter')) {
         event.preventDefault();
+        const executeReverter = async () => {
+          const data = new FormData();
+          data.set('id', contratoId);
+          const resp = await postForm(endpoints.reverter, data);
+          const payload = await readPayload(resp);
+          alert(payload.message || 'Cancelamento revertido.');
+          if (resp.ok && payload.ok !== false) {
+            location.reload();
+          }
+        };
+
+        if (window.showConfirmDeleteModal) {
+          window.showConfirmDeleteModal({
+            entityType: 'Contrato',
+            entityName: `Contrato #${contratoId}`,
+            prompt: 'Tem certeza que deseja reverter o cancelamento deste contrato?',
+            warning: 'O contrato voltará ao status ativo.',
+            confirmButtonText: 'Sim, Reverter',
+            onConfirm: executeReverter
+          });
+          return;
+        }
+
         if (!confirm('Tem certeza que deseja reverter o cancelamento deste contrato?')) {
           return;
         }
-        const data = new FormData();
-        data.set('id', contratoId);
-        const resp = await postForm(endpoints.reverter, data);
-        const payload = await readPayload(resp);
-        alert(payload.message || 'Cancelamento revertido.');
-        if (resp.ok && payload.ok !== false) {
-          location.reload();
-        }
+        await executeReverter();
       }
 
       if (event.target.closest('.js-inativar')) {
         event.preventDefault();
+        const executeInativar = async () => {
+          const data = new FormData();
+          data.set('id', contratoId);
+          const resp = await postForm(endpoints.inativar, data);
+          const payload = await readPayload(resp);
+          alert(payload.message || 'Contrato inativado.');
+          if (resp.ok && payload.ok !== false) {
+            location.reload();
+          }
+        };
+
+        if (window.showConfirmDeleteModal) {
+          window.showConfirmDeleteModal({
+            entityType: 'Contrato',
+            entityName: `Contrato #${contratoId}`,
+            prompt: 'Tem certeza que deseja inativar este contrato?',
+            warning: 'O contrato será marcado como inativo no sistema.',
+            confirmButtonText: 'Sim, Inativar',
+            onConfirm: executeInativar
+          });
+          return;
+        }
+
         if (!confirm('Tem certeza que deseja inativar o contrato?')) {
           return;
         }
-        const data = new FormData();
-        data.set('id', contratoId);
-        const resp = await postForm(endpoints.inativar, data);
-        const payload = await readPayload(resp);
-        alert(payload.message || 'Contrato inativado.');
-        if (resp.ok && payload.ok !== false) {
-          location.reload();
-        }
+        await executeInativar();
       }
     });
 

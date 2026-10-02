@@ -1,0 +1,146 @@
+{% extends "layout.html" %}
+
+{% block title %}Contatos - Sollus CRM{% endblock %}
+
+{% block head %}
+  <link href="{{ url_for('static', filename='css/crm_premium.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="crm-page-container px-2 py-0">
+  <!-- Cabeçalho -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+    <div>
+      <h4 class="fw-bold mb-1 d-flex align-items-center gap-2">
+        <i class="bi bi-person-lines-fill text-primary"></i>
+        <span>Contatos Comerciais</span>
+      </h4>
+      <p class="text-muted small mb-0">Base de tomadores de decisão, compradores e pontos focais de clientes e leads.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('crm.index') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
+        <i class="bi bi-filter"></i> Ir para Funis de Vendas
+      </a>
+    </div>
+  </div>
+
+  <!-- Barra de Busca -->
+  <div class="card border shadow-sm mb-3">
+    <div class="card-body p-2">
+      <form method="GET" action="{{ url_for('crm.contatos') }}" class="row g-2 align-items-center">
+        <div class="col-md-10">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" name="q" value="{{ search or '' }}" class="form-control border-start-0" placeholder="Buscar por Nome do Contato, E-mail, Celular ou WhatsApp...">
+          </div>
+        </div>
+        <div class="col-md-2 d-flex gap-1">
+          <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-search me-1"></i> Buscar</button>
+          {% if search %}
+            <a href="{{ url_for('crm.contatos') }}" class="btn btn-sm btn-outline-secondary" title="Limpar"><i class="bi bi-x-circle"></i></a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabela de Contatos -->
+  <div class="card border shadow-sm">
+    <div class="table-responsive">
+      <table class="table crm-table align-middle mb-0">
+        <thead>
+          <tr>
+            <th class="ps-3">Contato</th>
+            <th>Empresa</th>
+            <th>Cargo</th>
+            <th>Telefone / WhatsApp</th>
+            <th>E-mail</th>
+            <th class="text-end pe-3">Ações Rápidas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if contatos %}
+            {% for ct in contatos %}
+              <tr>
+                <td class="ps-3">
+                  <div class="fw-bold" style="font-size: 0.95rem;">{{ ct.nome }}</div>
+                  <small class="text-muted">Cadastrado em {% if ct.created_at %}{% if ct.created_at is string %}{{ ct.created_at[:10] }}{% else %}{{ ct.created_at.strftime('%d/%m/%Y') }}{% endif %}{% else %}-{% endif %}</small>
+                </td>
+                <td>
+                  {% if ct.empresa %}
+                    <span class="fw-semibold text-primary"><i class="bi bi-building me-1"></i>{{ ct.empresa.nome }}</span>
+                  {% else %}
+                    <span class="text-muted small">-</span>
+                  {% endif %}
+                </td>
+                <td>{{ ct.cargo or '<span class="text-muted small">-</span>'|safe }}</td>
+                <td>
+                  {% set wa_num = (ct.celular or ct.telefone or '')|replace(' ', '')|replace('-', '')|replace('(', '')|replace(')', '') %}
+                  {% if wa_num %}
+                    {% set wa_full = wa_num if wa_num.startswith('55') else '55' ~ wa_num %}
+                    <a href="https://wa.me/{{ wa_full }}?text=Olá {{ ct.nome }}, tudo bem? Sou da Sollus Tecnologia." 
+                       target="_blank" 
+                       class="badge bg-success-subtle text-success text-decoration-none px-2 py-1 border border-success-subtle d-inline-flex align-items-center gap-1">
+                      <i class="bi bi-whatsapp"></i> {{ ct.celular or ct.telefone }}
+                    </a>
+                  {% else %}
+                    <span class="text-muted small">-</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if ct.email %}
+                    <a href="mailto:{{ ct.email }}" class="text-decoration-none text-secondary">
+                      <i class="bi bi-envelope me-1"></i>{{ ct.email }}
+                    </a>
+                  {% else %}
+                    <span class="text-muted small">-</span>
+                  {% endif %}
+                </td>
+                <td class="text-end pe-3">
+                  <div class="btn-group btn-group-sm">
+                    {% if wa_num %}
+                      <a href="https://wa.me/{{ wa_full }}?text=Olá {{ ct.nome }}, tudo bem? Sou da Sollus Tecnologia." target="_blank" class="btn btn-outline-success" title="Chamar no WhatsApp">
+                        <i class="bi bi-whatsapp"></i>
+                      </a>
+                    {% endif %}
+                    <a href="/propostas/nova?empresa_nome={{ (ct.empresa.nome if ct.empresa else ct.nome)|urlencode }}&contato_nome={{ ct.nome|urlencode }}&contato_email={{ (ct.email or '')|urlencode }}&contato_telefone={{ (ct.celular or ct.telefone or '')|urlencode }}" 
+                       class="btn btn-outline-primary" 
+                       title="Criar Proposta Comercial">
+                      <i class="bi bi-file-earmark-plus"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="6" class="text-center py-5 text-muted">
+                <i class="bi bi-person-x fs-1 d-block mb-2"></i>
+                Nenhum contato comercial encontrado.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginação -->
+    {% if pagination.pages > 1 %}
+      <div class="card-footer d-flex justify-content-between align-items-center py-2 px-3">
+        <small class="text-muted">Página <strong>{{ pagination.page }}</strong> de <strong>{{ pagination.pages }}</strong> (Total: {{ pagination.total }} contatos)</small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            {% if pagination.has_prev %}
+              <li class="page-item"><a class="page-link" href="{{ url_for('crm.contatos', page=pagination.prev_num, q=search) }}">Anterior</a></li>
+            {% endif %}
+            <li class="page-item disabled"><span class="page-link">{{ pagination.page }}</span></li>
+            {% if pagination.has_next %}
+              <li class="page-item"><a class="page-link" href="{{ url_for('crm.contatos', page=pagination.next_num, q=search) }}">Próxima</a></li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

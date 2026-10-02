@@ -1,66 +1,43 @@
-﻿# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Environment variables & secrets
 .env
-.env.local
-.env.*.local
-*.pem
-*.key
-*.cert
-
-# Database files & dumps
+.env.*
 *.db
 *.sqlite
 *.sqlite3
 *.sql
 *.bak
-*.dump
-instance/
-
-# Uploads & Attachments (keep directory with .gitkeep)
-uploads/*
-!uploads/.gitkeep
-temp/
-tmp/
-*.pdf
-*.docx
-
-# Virtual environments
-venv/
-.venv/
-env/
-ENV/
-env.bak/
-venv.bak/
-
-# Logs and databases
-*.log
-logs/
-*.out
-
-# Testing & Coverage
+*.py[cod]
+__pycache__/
 .pytest_cache/
-.coverage
-htmlcov/
-.tox/
-
-# IDE & OS files
 .idea/
 .vscode/
-*.swp
-*.swo
-.DS_Store
-Thumbs.db
-desktop.ini
+instance/
+logs/
+*.log
+uploads/*
+!uploads/.gitkeep
+~$*.docx
+*.tmp
 
-# Build & Deploy artifacts
-dist/
-build/
-*.egg-info/
-_mudancas/
+# Grandes arquivos de snapshot — nunca versionados
+repomix-output.xml
 
-repomix-output.*
-*.xml
+# Bancos de backup local e legados
+bkp_bancos/
+backups/
+legacy_archive/
+temporario/
+implementar/
+tmp/
+tmp_previews/
+anexos/
+os_suporte/
+.agents/
+
+# Saídas de scripts de migração
+outputs/
+
+# Scripts de diagnóstico e dados brutos/sensíveis
+scratch/
+scratch_*.py
+data/rd_station/
+data/*.txt

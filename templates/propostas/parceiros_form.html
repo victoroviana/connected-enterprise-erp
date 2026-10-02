@@ -1,0 +1,133 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}{{ 'Editar' if parceiro else 'Novo' }} Parceiro | Sollus Connected{% endblock %}
+
+{% block content %}
+{{ page_hero(
+    title=('Editar Empresa Parceira' if parceiro else 'Cadastrar Empresa Parceira'),
+    subtitle='Mantenha atualizados os dados de contato, áreas de cobertura e marcas atendidas pelo prestador.',
+    eyebrow='Rede Credenciada',
+    help_tips=[
+      'Preencha o WhatsApp com DDD para habilitar o botão de conversa instantânea.',
+      'Especifique as marcas e modelos que a parceira domina (ex: Catracas Henry, Control iD, Secullum).',
+      'Descreva as cidades ou raio de quilômetros que a parceira atende na região de cobertura.'
+    ],
+    help_intro='Formulário de cadastro da rede de terceirizados.'
+) }}
+
+<div class="row justify-content-center">
+  <div class="col-12 col-xl-10">
+    <div class="card mb-4" style="border: 0; border-radius: 1.25rem; box-shadow: 0 10px 28px rgba(15, 35, 58, 0.08);">
+      <div class="card-header bg-transparent p-4 border-bottom border-secondary border-opacity-10">
+        <h5 class="fw-bold mb-0">
+          <i class="fa-solid fa-building-user text-primary me-2"></i>
+          {{ 'Alterar Informações do Parceiro' if parceiro else 'Dados Cadastrais da Empresa Parceira' }}
+        </h5>
+      </div>
+      <div class="card-body p-4">
+        <form method="post" action="{{ action_url }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <!-- Seção 1: Identificação -->
+          <h6 class="text-uppercase text-primary fw-bold small mb-3 letter-spacing-1">1. Identificação da Empresa</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold">Razão Social <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="razao_social" value="{{ parceiro.razao_social if parceiro else '' }}" required placeholder="Ex: Eletro Segurança e Serviços Ltda">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold">Nome Fantasia</label>
+              <input type="text" class="form-control" name="nome_fantasia" value="{{ parceiro.nome_fantasia if parceiro else '' }}" placeholder="Ex: EletroSeg Chapada">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold">CNPJ</label>
+              <input type="text" class="form-control" name="cnpj" id="cnpjInput" value="{{ parceiro.cnpj if parceiro else '' }}" placeholder="00.000.000/0000-00">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold">Status de Homologação</label>
+              <select class="form-select" name="status">
+                <option value="ativo" {% if not parceiro or parceiro.status == 'ativo' %}selected{% endif %}>Ativo (Homologado para Serviços)</option>
+                <option value="em_homologacao" {% if parceiro and parceiro.status == 'em_homologacao' %}selected{% endif %}>Em Homologação / Teste</option>
+                <option value="inativo" {% if parceiro and parceiro.status == 'inativo' %}selected{% endif %}>Inativo / Descontinuado</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Seção 2: Contatos Diretos -->
+          <h6 class="text-uppercase text-primary fw-bold small mb-3 letter-spacing-1">2. Contato & Atendimento Rápido</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold">Responsável / Pessoa de Contato</label>
+              <input type="text" class="form-control" name="responsavel" value="{{ parceiro.responsavel if parceiro else '' }}" placeholder="Ex: Carlos Oliveira (Diretor Técnico)">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold">E-mail</label>
+              <input type="email" class="form-control" name="email" value="{{ parceiro.email if parceiro else '' }}" placeholder="contato@empresa.com.br">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold">Telefone Principal</label>
+              <input type="text" class="form-control" name="telefone" id="telInput" value="{{ parceiro.telefone if parceiro else '' }}" placeholder="(75) 3331-0000">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold">WhatsApp (para acionamento imediato)</label>
+              <div class="input-group">
+                <span class="input-group-text bg-transparent text-success"><i class="fa-brands fa-whatsapp fa-lg"></i></span>
+                <input type="text" class="form-control" name="whatsapp" id="whatsInput" value="{{ parceiro.whatsapp if parceiro else '' }}" placeholder="(75) 99999-0000">
+              </div>
+              <div class="form-text small">Utilizado pelo botão de envio direto de mensagem no portal.</div>
+            </div>
+          </div>
+
+          <!-- Seção 3: Localização & Cobertura -->
+          <h6 class="text-uppercase text-primary fw-bold small mb-3 letter-spacing-1">3. Região de Atuação Geográfica</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-md-4">
+              <label class="form-label small fw-semibold">Estado (UF) Sede <span class="text-danger">*</span></label>
+              <select class="form-select" name="estado" required>
+                <option value="">Selecione a UF</option>
+                {% for sigla, nome in ufs %}
+                <option value="{{ sigla }}" {% if parceiro and parceiro.estado == sigla %}selected{% endif %}>
+                  {{ sigla }} - {{ nome }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12 col-md-8">
+              <label class="form-label small fw-semibold">Cidade Sede <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="cidade" value="{{ parceiro.cidade if parceiro else '' }}" required placeholder="Ex: Lençóis, Seabra, Feira de Santana...">
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold">Cidades e Regiões Cobertas (Abrangência)</label>
+              <textarea class="form-control" name="regiao_atendimento" rows="2" placeholder="Ex: Atende toda a Chapada Diamantina (Lençóis, Palmeiras, Mucugê, Seabra) e até 150 km de distância com diária de deslocamento.">{{ parceiro.regiao_atendimento if parceiro else '' }}</textarea>
+            </div>
+          </div>
+
+          <!-- Seção 4: Especialidades e Condições -->
+          <h6 class="text-uppercase text-primary fw-bold small mb-3 letter-spacing-1">4. Especialidades Técnicas & Observações</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-12">
+              <label class="form-label small fw-semibold">Especialidades e Fabricantes Homologados</label>
+              <input type="text" class="form-control" name="especialidades" value="{{ parceiro.especialidades if parceiro else '' }}" placeholder="Ex: Catracas Henry Lumen, Relógios Control iD, Dimep, Topdata, Fechaduras Eletroímã, Secullum Ponto">
+              <div class="form-text small">Separe as especialidades por vírgula para geração automática de etiquetas na busca.</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold">Condições Comerciais & Observações Internas</label>
+              <textarea class="form-control" name="observacoes" rows="3" placeholder="Ex: Valor padrão de visita: R$ 250,00. Instalação de catraca: R$ 450,00. Fornece NF-e com vencimento para 15 dias.">{{ parceiro.observacoes if parceiro else '' }}</textarea>
+            </div>
+          </div>
+
+          <!-- Botões de Ação -->
+          <div class="d-flex justify-content-between align-items-center pt-3 border-top border-secondary border-opacity-10">
+            <a href="{{ url_for('propostas_bp.parceiros_detalhe', parceiro_id=parceiro.id) if parceiro else url_for('propostas_bp.parceiros_index') }}" class="btn btn-outline-secondary">
+              Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="fa-solid fa-check me-1"></i>{{ 'Salvar Alterações' if parceiro else 'Concluir Cadastro' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

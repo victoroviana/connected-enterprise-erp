@@ -36,8 +36,28 @@
     font-size:.95rem;
   }
   .search-select-item:hover,
-  .search-select-item:focus{background:#f3f6fb;}
   .search-select-empty{padding:.55rem .85rem;color:#6b7280;}
+
+  html[data-theme="dark"] .manut-card {
+    background: var(--card-bg, #0b1220) !important;
+    border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08)) !important;
+  }
+  html[data-theme="dark"] .manut-table thead {
+    background: rgba(255, 255, 255, 0.04);
+    color: #94a3b8;
+  }
+  html[data-theme="dark"] .search-select-menu {
+    background: #0f172a;
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+  html[data-theme="dark"] .search-select-item {
+    color: #f8fafc;
+  }
+  html[data-theme="dark"] .search-select-item:hover,
+  html[data-theme="dark"] .search-select-item:focus {
+    background: rgba(0, 164, 245, 0.15);
+    color: #38bdf8;
+  }
 </style>
 {% endblock %}
 
@@ -175,7 +195,11 @@
                   <button class="btn btn-outline-primary btn-sm btn-edit-manutencao" type="button" data-id="{{ row.id_pk }}" data-bs-toggle="modal" data-bs-target="#modalNovaManutencao">
                     <i class="fa-solid fa-pen me-1"></i> Editar
                   </button>
-                  <form method="post" action="{{ url_for('contratos_bp.manutencoes_agendadas_excluir', agendamento_id=row.id_pk) }}" onsubmit="return confirm('Deseja excluir este agendamento?');">
+                  <form method="post" action="{{ url_for('contratos_bp.manutencoes_agendadas_excluir', agendamento_id=row.id_pk) }}"
+                        data-confirm-delete="true"
+                        data-entity-type="Agendamento de Manutenção"
+                        data-entity-name="{{ row.nome_fantasia or row.razao_social or ('Agendamento #' ~ row.id_pk) }} ({{ row.data_visita_br or '-' }})"
+                        data-confirm-warning="O agendamento da visita técnica será cancelado e excluído permanentemente.">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-outline-danger btn-sm">
                       <i class="fa-solid fa-trash me-1"></i> Excluir
@@ -265,7 +289,11 @@
                             <button class="btn btn-outline-primary btn-sm btn-edit-manutencao" type="button" data-id="{{ item.id_pk }}" data-bs-toggle="modal" data-bs-target="#modalNovaManutencao">
                               <i class="fa-solid fa-pen me-1"></i> Editar
                             </button>
-                            <form method="post" action="{{ url_for('contratos_bp.manutencoes_agendadas_excluir', agendamento_id=item.id_pk) }}" onsubmit="return confirm('Deseja excluir este agendamento?');">
+                            <form method="post" action="{{ url_for('contratos_bp.manutencoes_agendadas_excluir', agendamento_id=item.id_pk) }}"
+                                  data-confirm-delete="true"
+                                  data-entity-type="Agendamento de Manutenção"
+                                  data-entity-name="{{ item.nome_fantasia or item.razao_social or ('Agendamento #' ~ item.id_pk) }} ({{ item.data_visita_br or '-' }})"
+                                  data-confirm-warning="O agendamento da visita técnica será cancelado e excluído permanentemente.">
                               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                               <button type="submit" class="btn btn-outline-danger btn-sm">
                                 <i class="fa-solid fa-trash me-1"></i> Excluir

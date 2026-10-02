@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import calendar
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from flask import Flask, redirect, render_template, request, url_for, flash, send_from_directory
 from markupsafe import Markup
@@ -194,9 +194,9 @@ def create_app(config_object: Any | None = None) -> Flask:
             return ""
         import re
         # Clean mangled bullet points starting with ?
-        text = re.sub(r"(?m)^\s*\?\s+", "• ", text)
-        # Add a blank line before list markers (•, -, *) if not already preceded by one
-        text = re.sub(r'(?<!\n)\n\s*([•\-\*])\s+', r'\n\n\1 ', text)
+        text = re.sub(r"(?m)^\s*\?\s+", "â€¢ ", text)
+        # Add a blank line before list markers (â€¢, -, *) if not already preceded by one
+        text = re.sub(r'(?<!\n)\n\s*([â€¢\-\*])\s+', r'\n\n\1 ', text)
         return text
 
     def split_email_history(text):
@@ -432,7 +432,7 @@ def _load_config(app: Flask, config_object: Any | None) -> None:
         _generated_key = secrets.token_hex(32)
         app.config["SECRET_KEY"] = _generated_key
         sys.stdout.write(
-            "[SECURITY WARNING] SECRET_KEY not set — generated a random key for this session. "
+            "[SECURITY WARNING] SECRET_KEY not set â€” generated a random key for this session. "
             "All existing sessions will be invalidated on every restart. "
             "Set SECRET_KEY in your .env file for persistent sessions.\n"
         )
@@ -515,6 +515,13 @@ def _register_modules(app: Flask) -> None:
             cracha.init_app(app)
     except Exception as exc:  # pragma: no cover - logged for visibility
         app.logger.exception("Failed to initialise cracha module: %s", exc)
+
+    try:
+        crm = import_module("modules.crm")
+        if hasattr(crm, "init_app"):
+            crm.init_app(app)
+    except Exception as exc:  # pragma: no cover - logged for visibility
+        app.logger.exception("Failed to initialise crm module: %s", exc)
 
     # Ensure audit listeners are bound globally so CRUD em qualquer módulo
     # seja registrado, inclusive fora do contexto de chamados.
@@ -679,8 +686,92 @@ def _register_root_routes(app: Flask) -> None:
             db.session.rollback()
             app.logger.warning(f"Error querying active contracts: {e}")
 
+        crm_deals_count = 0
+        try:
+            from modules.crm.models import CrmNegociacao
+            crm_deals_count = CrmNegociacao.query.filter_by(status='aberto').count()
+        except Exception as e:
+            db.session.rollback()
+            app.logger.warning(f"Error querying CRM deals: {e}")
+
         gallery_root = Path(app.static_folder) / "galeria"
-        gallery_images = _list_gallery_images(gallery_root, limit=10)
+        from modules.propostas.services.gallery_service import get_gallery_items
+        gallery_data = get_gallery_items(gallery_root)
+        gallery_images = gallery_data["items"]
+        gallery_events = gallery_data["events"]
+        active_gallery_event = gallery_data.get("active_event")
+
+        # Agenda Técnica & Tarefas Agendadas pós-login
+        agenda_tarefas_hoje = []
+        agenda_tarefas_proximas = []
+        agenda_total_hoje_count = 0
+        chamados_sem_agendamento_count = 0
+
+        try:
+            from modules.propostas.models import AgendaEntry
+            from flask_login import current_user
+
+            user_role = (getattr(current_user, "tipo", None) or getattr(current_user, "role", None) or "").strip().lower()
+            is_tecnico = user_role in {"tecnico", "técnico", "tecnico_externo", "assistencia"}
+            is_gestor = user_role in {"admin", "gestor", "gerente", "coordenador"}
+
+            base_agenda_q = AgendaEntry.query
+            if is_tecnico and not is_gestor:
+                base_agenda_q = base_agenda_q.filter(AgendaEntry.usuario_id == current_user.id)
+
+            hoje_entries = base_agenda_q.filter(AgendaEntry.data_atendimento == today).order_by(AgendaEntry.id.desc()).all()
+            for entry in hoje_entries:
+                agenda_tarefas_hoje.append({
+                    "id": entry.id,
+                    "tecnico": entry.tecnico.nome_completo if entry.tecnico else "Técnico",
+                    "unidade": entry.unidade or "Unidade",
+                    "periodo": (entry.periodo or "Integral").capitalize(),
+                    "obs": entry.obs or "",
+                    "data": entry.data_atendimento.strftime("%d/%m/%Y"),
+                })
+            agenda_total_hoje_count = len(agenda_tarefas_hoje)
+
+            proximas_entries = base_agenda_q.filter(
+                AgendaEntry.data_atendimento > today,
+                AgendaEntry.data_atendimento <= today + timedelta(days=7)
+            ).order_by(AgendaEntry.data_atendimento.asc()).limit(6).all()
+            for entry in proximas_entries:
+                agenda_tarefas_proximas.append({
+                    "id": entry.id,
+                    "tecnico": entry.tecnico.nome_completo if entry.tecnico else "Técnico",
+                    "unidade": entry.unidade or "Unidade",
+                    "periodo": (entry.periodo or "Integral").capitalize(),
+                    "obs": entry.obs or "",
+                    "data": entry.data_atendimento.strftime("%d/%m/%Y"),
+                })
+        except Exception as e:
+            db.session.rollback()
+            app.logger.warning(f"Error querying agenda entries: {e}")
+
+        # Chamados pendentes sem técnico / aguardando agendamento na unidade
+        try:
+            from modules.suporte.services.chamados import REGIONAL_BOARDS, _table_exists, _available_column_map
+            from flask_login import current_user
+            user_unit = (getattr(current_user, "unit_code", None) or "").strip().lower()
+            user_role = (getattr(current_user, "tipo", None) or "").strip().lower()
+            is_admin_gestor = user_role in {"admin", "gestor", "gerente", "coordenador"}
+
+            for board in REGIONAL_BOARDS:
+                if user_unit and not is_admin_gestor and board.slug != user_unit:
+                    continue
+                try:
+                    if _table_exists(board.table_name):
+                        column_map = _available_column_map(board.table_name)
+                        if 'retorno' in column_map and 'tecnico' in column_map:
+                            ret_col = column_map['retorno']
+                            tec_col = column_map['tecnico']
+                            q_sem_tec = text(f"SELECT COUNT(*) FROM `{board.table_name}` WHERE `{ret_col}` IN ('ABERTO', 'OFICINA') AND (`{tec_col}` IS NULL OR TRIM(`{tec_col}`) = '')")
+                            count_sem = db.session.execute(q_sem_tec).scalar() or 0
+                            chamados_sem_agendamento_count += count_sem
+                except Exception as e:
+                    db.session.rollback()
+        except Exception as e:
+            db.session.rollback()
 
         return render_template(
             "home.html",
@@ -688,9 +779,16 @@ def _register_root_routes(app: Flask) -> None:
             vacation_alerts=vacation_alerts,
             today_label=today.strftime("%d/%m"),
             gallery_images=gallery_images,
+            gallery_events=gallery_events,
+            active_gallery_event=active_gallery_event,
             open_tickets_count=open_tickets_count,
             pending_proposals_count=pending_proposals_count,
             active_contracts_count=active_contracts_count,
+            crm_deals_count=crm_deals_count,
+            agenda_tarefas_hoje=agenda_tarefas_hoje,
+            agenda_tarefas_proximas=agenda_tarefas_proximas,
+            agenda_total_hoje_count=agenda_total_hoje_count,
+            chamados_sem_agendamento_count=chamados_sem_agendamento_count,
         )
 
     @app.route("/favicon.ico")
@@ -711,10 +809,15 @@ def _register_root_routes(app: Flask) -> None:
     @login_required
     def galeria() -> Any:
         gallery_root = Path(app.static_folder) / "galeria"
-        gallery_images = _list_gallery_images(gallery_root)
+        from modules.propostas.services.gallery_service import get_gallery_items
+        selected_event = request.args.get("evento")
+        gallery_data = get_gallery_items(gallery_root, event_filter=selected_event)
         return render_template(
             "galeria.html",
-            gallery_images=gallery_images,
+            gallery_images=gallery_data["items"],
+            gallery_events=gallery_data["events"],
+            active_gallery_event=gallery_data.get("active_event"),
+            selected_event=selected_event,
         )
 
     @app.route("/galeria/arquivo/<path:filename>", endpoint="serve_fotos")
@@ -743,11 +846,146 @@ def _register_root_routes(app: Flask) -> None:
     def sollus_tickets_dashboard_alias() -> Any:
         return redirect(url_for("sollus_tickets.dashboard"))
 
+    @app.route("/admin/assistencia/chamados")
+    @login_required
+    def admin_assistencia_chamados_redirect() -> Any:
+        return redirect(url_for("assist_bp.assistencia_chamados"))
+
     @app.route("/sem-permissao")
     @login_required
     def sem_permissao() -> Any:
         area = request.args.get("area") or "esta área"
         return render_template("errors/403.html", area_label=area)
+
+    @app.route("/api/alertas-suporte")
+    @login_required
+    def api_alertas_suporte() -> Any:
+        """API JSON para o modal periódico de alertas do time de suporte/técnica."""
+        from flask import jsonify
+        from flask_login import current_user
+        from datetime import date as _date
+
+        ROLES_SUPORTE = {
+            "suporte", "tecnico", "técnico", "assistencia", "assistência", 
+            "gestor", "gerente", "coordenador", "admin", 
+            "supervisorofcina", "supervisorsuporte"
+        }
+        user_role = (getattr(current_user, "tipo", None) or "").strip().lower()
+        user_name = (getattr(current_user, "nome_completo", "") or "").strip().lower()
+        user_email = (getattr(current_user, "email", "") or "").strip().lower()
+
+        is_authorized = False
+        if user_role in ROLES_SUPORTE or "rodolfo" in user_name or "rodolfo" in user_email or "tecnica" in user_email:
+            is_authorized = True
+        else:
+            try:
+                from modules.propostas.models import Department
+                user_dept_names = set()
+                if hasattr(current_user, "departments") and current_user.departments:
+                    user_dept_names = {d.name.upper() for d in current_user.departments}
+                elif getattr(current_user, "department_id", None):
+                    d = Department.query.get(current_user.department_id)
+                    if d:
+                        user_dept_names.add(d.name.upper())
+
+                target_depts = {"ASSISTENCIA TECNICA", "ASSISTÊNCIA TÉCNICA", "OFICINA", "SUPORTE", "ESTOQUE"}
+                if user_dept_names & target_depts:
+                    is_authorized = True
+
+                if not is_authorized:
+                    perms = getattr(current_user, "permissions", {}) or {}
+                    if isinstance(perms, str):
+                        import json
+                        try:
+                            perms = json.loads(perms)
+                        except Exception:
+                            perms = {}
+                    if any(perms.get(k) for k in ["assistencia_chamados", "admin_assistencia", "admin_suporte", "admin_agenda_tecnica", "suporte_atendimentos", "tecnica_chamados"]):
+                        is_authorized = True
+            except Exception:
+                pass
+
+        if not is_authorized:
+            return jsonify({"permitido": False}), 200
+
+        today = _date.today()
+        agenda_hoje = []
+        chamados_count = 0
+
+        try:
+            from modules.propostas.models import AgendaEntry
+            is_tecnico = user_role in {"tecnico", "técnico", "tecnico_externo", "assistencia"}
+            is_gestor = user_role in {"admin", "gestor", "gerente", "coordenador"}
+            q = AgendaEntry.query
+            if is_tecnico and not is_gestor:
+                q = q.filter(AgendaEntry.usuario_id == current_user.id)
+            entries = q.filter(AgendaEntry.data_atendimento == today).order_by(AgendaEntry.id.desc()).limit(10).all()
+            for e in entries:
+                agenda_hoje.append({
+                    "tecnico": e.tecnico.nome_completo if e.tecnico else "Técnico",
+                    "unidade": e.unidade or "—",
+                    "periodo": (e.periodo or "Integral").capitalize(),
+                    "obs": e.obs or "",
+                })
+        except Exception:
+            db.session.rollback()
+
+        chamados_por_unidade = []
+        try:
+            from modules.suporte.services.chamados import REGIONAL_BOARDS, _table_exists, _available_column_map
+            user_unit = (getattr(current_user, "unit_code", None) or "").strip().lower()
+            is_admin_gestor = user_role in {"admin", "gestor", "gerente", "coordenador"}
+            for board in REGIONAL_BOARDS:
+                if user_unit and not is_admin_gestor and board.slug != user_unit:
+                    continue
+                try:
+                    if _table_exists(board.table_name):
+                        column_map = _available_column_map(board.table_name)
+                        if "retorno" in column_map and "tecnico" in column_map:
+                            ret_col = column_map["retorno"]
+                            tec_col = column_map["tecnico"]
+                            q_sql = text(f"SELECT COUNT(*) FROM `{board.table_name}` WHERE `{ret_col}` IN ('ABERTO', 'OFICINA') AND (`{tec_col}` IS NULL OR TRIM(`{tec_col}`) = '')")
+                            cnt = db.session.execute(q_sql).scalar() or 0
+                            chamados_count += cnt
+                            if cnt > 0:
+                                chamados_por_unidade.append({
+                                    "unidade": board.label,
+                                    "slug": board.slug,
+                                    "count": cnt,
+                                })
+                except Exception:
+                    db.session.rollback()
+        except Exception:
+            db.session.rollback()
+
+        atendimentos_fila_count = 0
+        try:
+            from modules.suporte.models import AtendimentoSuporte
+            from sqlalchemy import or_
+            atendimentos_fila_count = AtendimentoSuporte.query.filter(
+                or_(
+                    AtendimentoSuporte.status.is_(None),
+                    AtendimentoSuporte.status.notin_(["Concluido", "concluido"])
+                )
+            ).count()
+        except Exception:
+            db.session.rollback()
+
+        return jsonify({
+            "permitido": True,
+            "agenda_hoje": agenda_hoje,
+            "agenda_count": len(agenda_hoje),
+            "chamados_sem_agendamento": chamados_count,
+            "chamados_por_unidade": chamados_por_unidade,
+            "atendimentos_fila_count": atendimentos_fila_count,
+            "data_hoje": today.strftime("%d/%m/%Y"),
+        })
+
+
+    @app.route("/preview/navbar-themes")
+    @login_required
+    def preview_navbar_themes() -> Any:
+        return render_template("preview_navbar_themes.html")
 
     @app.route("/__ping__")
     def ping():
@@ -805,7 +1043,7 @@ def _register_error_handlers(app: Flask) -> None:
             or (request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html)
         )
         if wants_json:
-            return jsonify({"ok": False, "reason": "csrf", "message": message}), 400
+            return jsonify({"ok": False, "reason": "csrf", "message": message, "msg": message}), 400
         flash(message, "warning")
         target = request.headers.get("Referer") or url_for("auth_bp.login")
         return redirect(target)

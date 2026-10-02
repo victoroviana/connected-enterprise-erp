@@ -1,0 +1,1472 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Agenda Comercial | Sollus Connected{% endblock %}
+
+{% block head %}
+<style>
+  :root {
+    --agenda-primary: #0d6efd;
+    --agenda-primary-rgb: 13, 110, 253;
+    --agenda-border: rgba(226, 232, 240, 0.85);
+    --agenda-card-bg: #ffffff;
+    --agenda-card-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.05), 0 4px 8px -2px rgba(15, 23, 42, 0.03);
+    --agenda-card-shadow-hover: 0 20px 35px -5px rgba(15, 23, 42, 0.09), 0 8px 12px -3px rgba(15, 23, 42, 0.04);
+  }
+
+  html[data-theme="dark"] {
+    --agenda-border: rgba(255, 255, 255, 0.08);
+    --agenda-card-bg: #111827;
+    --agenda-card-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    --agenda-card-shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.6);
+  }
+
+  /* ── Base Container & Cards ── */
+  .agenda-main-card {
+    background: var(--agenda-card-bg);
+    border: 1px solid var(--agenda-border);
+    border-radius: 1.25rem;
+    box-shadow: var(--agenda-card-shadow);
+    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+
+  /* ── Top Stat Ribbon ── */
+  .agenda-stat-card {
+    background: var(--agenda-card-bg);
+    border: 1px solid var(--agenda-border);
+    border-radius: 1rem;
+    padding: 1.15rem 1.25rem;
+    box-shadow: var(--agenda-card-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .agenda-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--agenda-card-shadow-hover);
+    border-color: rgba(var(--agenda-primary-rgb), 0.3);
+  }
+  .agenda-stat-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+  }
+  .agenda-stat-num {
+    font-size: 1.85rem;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+  }
+  .pulse-dot-live {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    background-color: #10b981;
+    box-shadow: 0 0 0 rgba(16, 185, 129, 0.4);
+    animation: pulseLive 2s infinite;
+  }
+  @keyframes pulseLive {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  }
+
+  /* ── Consultant Quick Filter Chips ── */
+  .consultant-scroll-ribbon {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.35rem;
+    scrollbar-width: thin;
+  }
+  .consultant-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 9999px;
+    border: 1px solid var(--agenda-border);
+    background: var(--agenda-card-bg);
+    color: #475569;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  html[data-theme="dark"] .consultant-chip {
+    color: #cbd5e1;
+  }
+  .consultant-chip:hover {
+    border-color: #0d6efd;
+    background: rgba(13, 110, 253, 0.05);
+    transform: translateY(-1px);
+  }
+  .consultant-chip.active {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    color: #ffffff !important;
+    border-color: #0d6efd;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+  }
+  .consultant-chip.active .chip-avatar {
+    background: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+  }
+  .chip-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(13, 110, 253, 0.12);
+    color: #0d6efd;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+
+  /* ── Interactive Type Filter Tags ── */
+  .type-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.32rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+  .type-filter-chip:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+  }
+  .type-filter-chip.active {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    border-color: currentColor;
+    font-weight: 700;
+  }
+
+  /* ── Controls & Actions Toolbar ── */
+  .control-panel-card {
+    background: var(--agenda-card-bg);
+    border: 1px solid var(--agenda-border);
+    border-radius: 1.15rem;
+    padding: 1rem 1.25rem;
+    box-shadow: var(--agenda-card-shadow);
+  }
+  .view-switch-group {
+    background: rgba(148, 163, 184, 0.12);
+    padding: 3px;
+    border-radius: 10px;
+    display: inline-flex;
+  }
+  html[data-theme="dark"] .view-switch-group {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .view-switch-btn {
+    border: 0;
+    background: transparent;
+    color: #64748b;
+    padding: 0.4rem 0.9rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: all 0.18s ease;
+  }
+  html[data-theme="dark"] .view-switch-btn {
+    color: #94a3b8;
+  }
+  .view-switch-btn.active {
+    background: var(--agenda-card-bg);
+    color: #0d6efd;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    font-weight: 700;
+  }
+  html[data-theme="dark"] .view-switch-btn.active {
+    color: #60a5fa;
+  }
+
+  .btn-novo-compromisso {
+    background: linear-gradient(135deg, #0d6efd 0%, #0052cc 100%);
+    border: 0;
+    color: #fff;
+    border-radius: 0.75rem;
+    padding: 0.55rem 1.25rem;
+    font-weight: 600;
+    box-shadow: 0 6px 18px rgba(13, 110, 253, 0.28);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .btn-novo-compromisso:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(13, 110, 253, 0.35);
+    color: #fff;
+  }
+
+  /* ── FullCalendar 6 Custom Styling ── */
+  #calendarComercial {
+    min-height: 680px;
+    font-family: inherit;
+  }
+  .fc {
+    --fc-border-color: var(--agenda-border);
+    --fc-page-bg-color: transparent;
+    --fc-neutral-bg-color: rgba(148, 163, 184, 0.05);
+    --fc-today-bg-color: rgba(13, 110, 253, 0.035);
+  }
+  .fc-theme-standard td, .fc-theme-standard th {
+    border-color: var(--agenda-border) !important;
+  }
+  .fc .fc-header-toolbar {
+    margin-bottom: 1.25rem !important;
+    padding: 0.25rem 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .fc .fc-toolbar-title {
+    font-size: 1.35rem !important;
+    font-weight: 800 !important;
+    color: #0f172a;
+    letter-spacing: -0.025em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  html[data-theme="dark"] .fc .fc-toolbar-title {
+    color: #f8fafc;
+  }
+  .fc .fc-button {
+    background: var(--agenda-card-bg) !important;
+    border: 1px solid var(--agenda-border) !important;
+    color: #334155 !important;
+    border-radius: 0.6rem !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    padding: 0.42rem 0.85rem !important;
+    text-transform: capitalize !important;
+    transition: all 0.15s ease !important;
+  }
+  html[data-theme="dark"] .fc .fc-button {
+    color: #cbd5e1 !important;
+  }
+  .fc .fc-button:hover {
+    background: rgba(148, 163, 184, 0.1) !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+  }
+  html[data-theme="dark"] .fc .fc-button:hover {
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+  }
+  .fc .fc-button-primary:not(:disabled).fc-button-active,
+  .fc .fc-button-primary:not(:disabled):active {
+    background: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(13, 110, 253, 0.28) !important;
+  }
+  .fc .fc-today-button {
+    background: rgba(13, 110, 253, 0.08) !important;
+    color: #0d6efd !important;
+    border-color: rgba(13, 110, 253, 0.25) !important;
+    font-weight: 700 !important;
+  }
+  html[data-theme="dark"] .fc .fc-today-button {
+    color: #60a5fa !important;
+    background: rgba(96, 165, 250, 0.12) !important;
+  }
+  .fc .fc-col-header-cell {
+    background: rgba(148, 163, 184, 0.06);
+    padding: 10px 0 !important;
+    font-size: 0.74rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    color: #64748b;
+    border-bottom: 2px solid var(--agenda-border) !important;
+  }
+  html[data-theme="dark"] .fc .fc-col-header-cell {
+    background: rgba(255, 255, 255, 0.03);
+    color: #94a3b8;
+  }
+  .fc .fc-daygrid-day-number {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #475569;
+    padding: 6px 8px !important;
+    text-decoration: none !important;
+  }
+  /* ── Ocultar completamente os quadrados/células sem data (dias fora do mês corrente) ── */
+  .fc .fc-day-other,
+  .fc .fc-daygrid-day.fc-day-other,
+  .fc td.fc-day-other {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    border-color: transparent !important;
+    background: transparent !important;
+    pointer-events: none !important;
+  }
+  .fc .fc-day-other * {
+    visibility: hidden !important;
+    display: none !important;
+  }
+
+
+  .fc .fc-day-today .fc-daygrid-day-number {
+    background: linear-gradient(135deg, #0d6efd, #0052cc);
+    color: #ffffff !important;
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    margin: 4px;
+    box-shadow: 0 4px 10px rgba(13, 110, 253, 0.35);
+  }
+
+  /* ── Custom Event Card Rendering ── */
+  .fc-event, .fc-h-event, .fc-daygrid-event {
+    background: transparent !important;
+    border: none !important;
+    margin: 2px 3px !important;
+    padding: 0 !important;
+  }
+  .fc-event-pill-card {
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-left: 4px solid #0d6efd;
+    padding: 4px 6px;
+    cursor: pointer;
+    transition: all 0.16s ease;
+    overflow: hidden;
+  }
+  html[data-theme="dark"] .fc-event-pill-card {
+    background: #1e293b;
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  .fc-event-pill-card:hover {
+    transform: translateY(-1.5px) scale(1.015);
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.14);
+    z-index: 10;
+  }
+  html[data-theme="dark"] .fc-event-pill-card:hover {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  }
+  .fc-event-pill-title {
+    font-size: 0.77rem;
+    font-weight: 700;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.25;
+  }
+  html[data-theme="dark"] .fc-event-pill-title {
+    color: #f1f5f9;
+  }
+  .fc-event-pill-meta {
+    font-size: 0.69rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    margin-top: 2px;
+  }
+  html[data-theme="dark"] .fc-event-pill-meta {
+    color: #94a3b8;
+  }
+  .fc-event-pill-time {
+    background: rgba(148, 163, 184, 0.14);
+    color: #334155;
+    font-size: 0.64rem;
+    font-weight: 600;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  html[data-theme="dark"] .fc-event-pill-time {
+    background: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+  }
+
+  /* Specific Event Accent Borders */
+  .fc-tipo-demonstracao { border-left-color: #0d6efd !important; }
+  .fc-tipo-visita { border-left-color: #8b5cf6 !important; }
+  .fc-tipo-reuniao_interna { border-left-color: #10b981 !important; }
+  .fc-tipo-atividade_externa { border-left-color: #06b6d4 !important; }
+  .fc-tipo-ferias { border-left-color: #f97316 !important; }
+  .fc-tipo-disponivel { border-left-color: #14b8a6 !important; }
+  .fc-tipo-outro { border-left-color: #64748b !important; }
+
+  /* More Popover & Links */
+  .fc .fc-more-link {
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    color: #0d6efd !important;
+    background: rgba(13, 110, 253, 0.08) !important;
+    border-radius: 9999px !important;
+    padding: 1px 8px !important;
+    margin: 2px !important;
+    display: inline-block !important;
+    text-decoration: none !important;
+  }
+  .fc .fc-popover {
+    border: 0 !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18) !important;
+    background: var(--agenda-card-bg) !important;
+    overflow: hidden;
+  }
+  .fc .fc-popover-header {
+    background: rgba(148, 163, 184, 0.08) !important;
+    padding: 8px 12px !important;
+    font-weight: 700 !important;
+  }
+
+  /* ── Modern Table View ── */
+  .agenda-modern-table thead th {
+    background: rgba(148, 163, 184, 0.06);
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    border-top: 0;
+    border-bottom: 2px solid var(--agenda-border);
+    padding: 1rem 1.25rem;
+  }
+  html[data-theme="dark"] .agenda-modern-table thead th {
+    background: rgba(255, 255, 255, 0.02);
+    color: #94a3b8;
+  }
+  .agenda-modern-table tbody tr {
+    transition: background 0.15s ease;
+  }
+  .agenda-modern-table tbody tr:hover {
+    background: rgba(13, 110, 253, 0.035);
+  }
+  .agenda-modern-table td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--agenda-border);
+  }
+  .consultor-avatar-circle {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #ffffff;
+    background: linear-gradient(135deg, #0d6efd, #0052cc);
+    box-shadow: 0 3px 8px rgba(13, 110, 253, 0.25);
+  }
+
+  /* ── Modals Polish ── */
+  .modal-hero-header {
+    background: linear-gradient(135deg, #0d3b66 0%, #0e5dc6 100%);
+    color: #ffffff;
+    border-top-left-radius: calc(1.25rem - 1px);
+    border-top-right-radius: calc(1.25rem - 1px);
+    padding: 1.25rem 1.5rem;
+  }
+  .modal-hero-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(8px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+  }
+  .period-pill-option {
+    border: 1px solid var(--agenda-border);
+    border-radius: 8px;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s ease;
+    background: var(--agenda-card-bg);
+  }
+  html[data-theme="dark"] .period-pill-option {
+    color: #cbd5e1;
+  }
+  .period-pill-option:hover {
+    border-color: #0d6efd;
+    background: rgba(13, 110, 253, 0.04);
+  }
+  .btn-check:checked + .period-pill-option {
+    background: #0d6efd;
+    color: #ffffff !important;
+    border-color: #0d6efd;
+    box-shadow: 0 4px 10px rgba(13, 110, 253, 0.28);
+  }
+
+  .detail-field-box {
+    background: rgba(148, 163, 184, 0.05);
+    border: 1px solid var(--agenda-border);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    height: 100%;
+  }
+  html[data-theme="dark"] .detail-field-box {
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .detail-field-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+  }
+  .detail-field-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  html[data-theme="dark"] .detail-field-value {
+    color: #f8fafc;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{{ page_hero(
+    title='Agenda dos Consultores Comerciais',
+    subtitle='Gerencie demonstrações, visitas externas, férias e acompanhe a disponibilidade da equipe comercial em tempo real.',
+    eyebrow='Comercial',
+    stats=[
+      {'label': 'Consultores', 'value': stats.total_consultores, 'hint': 'equipe ativa'},
+      {'label': 'Disponíveis Hoje', 'value': stats.disponiveis_hoje, 'hint': 'no escritório'},
+      {'label': 'Em Visita / Externa', 'value': stats.em_visita_hoje, 'hint': 'atividades externas'},
+      {'label': 'Em Férias', 'value': stats.em_ferias_hoje, 'hint': 'ausentes'}
+    ],
+    help_tips=[
+      'Clique diretamente em qualquer dia no calendário para agendar rapidamente um compromisso.',
+      'Use os botões de consultor para alternar instantaneamente entre a equipe toda ou um consultor específico.',
+      'Clique nos chips de legenda coloridos para filtrar por Demonstrações, Visitas ou Férias na hora.',
+      'Alterne entre a visão visual de Calendário e a visão detalhada de Lista com paginação.'
+    ],
+    help_intro='Painel executivo da agenda comercial Sollus Connected.'
+) }}
+
+<!-- ── 1. KPI Cards com Design Moderno ── -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="agenda-stat-card d-flex align-items-center gap-3">
+      <div class="agenda-stat-icon bg-primary bg-opacity-10 text-primary">
+        <i class="fa-solid fa-users"></i>
+      </div>
+      <div>
+        <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em; font-size: 0.7rem;">Equipe Comercial</div>
+        <div class="agenda-stat-num text-primary">{{ stats.total_consultores }}</div>
+        <div class="small text-muted" style="font-size: 0.72rem;">Consultores cadastrados</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-lg-3">
+    <div class="agenda-stat-card d-flex align-items-center gap-3">
+      <div class="agenda-stat-icon bg-success bg-opacity-10 text-success">
+        <i class="fa-solid fa-building-circle-check"></i>
+      </div>
+      <div>
+        <div class="text-muted small fw-semibold text-uppercase d-flex align-items-center gap-1" style="letter-spacing: 0.05em; font-size: 0.7rem;">
+          <span class="pulse-dot-live"></span> Disponíveis Hoje
+        </div>
+        <div class="agenda-stat-num text-success">{{ stats.disponiveis_hoje }}</div>
+        <div class="small text-muted" style="font-size: 0.72rem;">No escritório / online</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-lg-3">
+    <div class="agenda-stat-card d-flex align-items-center gap-3">
+      <div class="agenda-stat-icon text-info" style="background: rgba(6, 182, 212, 0.12); color: #0891b2 !important;">
+        <i class="fa-solid fa-car-side"></i>
+      </div>
+      <div>
+        <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em; font-size: 0.7rem;">Em Campo Hoje</div>
+        <div class="agenda-stat-num" style="color: #0891b2;">{{ stats.em_visita_hoje }}</div>
+        <div class="small text-muted" style="font-size: 0.72rem;">Visitas e demonstrações</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-lg-3">
+    <div class="agenda-stat-card d-flex align-items-center gap-3">
+      <div class="agenda-stat-icon text-warning" style="background: rgba(249, 115, 22, 0.12); color: #ea580c !important;">
+        <i class="fa-solid fa-umbrella-beach"></i>
+      </div>
+      <div>
+        <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em; font-size: 0.7rem;">Em Férias / Ausentes</div>
+        <div class="agenda-stat-num" style="color: #ea580c;">{{ stats.em_ferias_hoje }}</div>
+        <div class="small text-muted" style="font-size: 0.72rem;">Ausências programadas</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 2. Barra de Filtro Rápido por Consultor (Chips Interativos) ── -->
+<div class="agenda-main-card p-3 mb-4">
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <span class="small text-muted fw-bold text-uppercase" style="letter-spacing: 0.06em;">
+      <i class="fa-solid fa-user-tie text-primary me-1"></i>Filtrar por Consultor:
+    </span>
+    <span class="small text-muted d-none d-md-inline" id="consultorAtivoLabel">Visualizando: Todos</span>
+  </div>
+  <div class="consultant-scroll-ribbon" id="consultantRibbon">
+    <button type="button" class="consultant-chip active" data-consultor-id="">
+      <span class="chip-avatar"><i class="fa-solid fa-layer-group"></i></span>
+      <span>Todos os Consultores</span>
+      <span class="badge rounded-pill bg-light text-dark ms-1">{{ stats.total_consultores }}</span>
+    </button>
+    {% for c in consultants %}
+    {% set initials = ((c.nome_completo or c.usuario).split()[0][0] ~ ((c.nome_completo or c.usuario).split()[-1][0] if (c.nome_completo or c.usuario).split()|length > 1 else ''))|upper %}
+    <button type="button" class="consultant-chip" data-consultor-id="{{ c.id }}">
+      <span class="chip-avatar">{{ initials }}</span>
+      <span>{{ c.nome_completo or c.usuario }}</span>
+    </button>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ── 3. Barra de Controles, Busca, Filtros e Alternância ── -->
+<div class="control-panel-card mb-4">
+  <div class="row g-3 align-items-center">
+    <!-- Seletor Select oculto para sincronização e testes -->
+    <div class="col-12 col-md-3 d-none">
+      <select class="form-select" id="filtroConsultor">
+        <option value="">Todos os Consultores</option>
+        {% for c in consultants %}
+        <option value="{{ c.id }}" {% if not is_manager and c.id == current_user.id %}selected{% endif %}>
+          {{ c.nome_completo or c.usuario }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Filtro de Tipos (Dropdown e Chips) -->
+    <div class="col-12 col-lg-6">
+      <div class="d-flex flex-wrap gap-1 align-items-center" id="typeFilterChips">
+        <span class="type-filter-chip active text-primary" style="background: rgba(13, 110, 253, 0.1);" data-tipo="">
+          <i class="fa-solid fa-border-all"></i> Todos os Tipos
+        </span>
+        <span class="type-filter-chip" style="background: rgba(13, 110, 253, 0.08); color: #0d6efd;" data-tipo="demonstracao">
+          <i class="fa-solid fa-desktop"></i> Demonstração
+        </span>
+        <span class="type-filter-chip" style="background: rgba(139, 92, 246, 0.08); color: #7c3aed;" data-tipo="visita">
+          <i class="fa-solid fa-car-side"></i> Visita Comercial
+        </span>
+        <span class="type-filter-chip" style="background: rgba(16, 185, 129, 0.08); color: #059669;" data-tipo="reuniao_interna">
+          <i class="fa-solid fa-users"></i> Reunião
+        </span>
+        <span class="type-filter-chip" style="background: rgba(249, 115, 22, 0.08); color: #ea580c;" data-tipo="ferias">
+          <i class="fa-solid fa-umbrella-beach"></i> Férias
+        </span>
+        <select class="d-none" id="filtroTipo">
+          <option value="">Todos os Tipos</option>
+          {% for chave, meta in tipos_compromisso.items() %}
+          <option value="{{ chave }}">{{ meta.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Alternador de Visualização (Segmented Control) -->
+    <div class="col-12 col-sm-6 col-lg-3 text-lg-end">
+      <div class="view-switch-group">
+        <button type="button" class="view-switch-btn active" id="btnViewCalendar">
+          <i class="fa-solid fa-calendar-days me-1"></i>Calendário
+        </button>
+        <button type="button" class="view-switch-btn" id="btnViewTable">
+          <i class="fa-solid fa-list-ul me-1"></i>Lista / Tabela
+        </button>
+      </div>
+    </div>
+
+    <!-- Botão de Criação -->
+    <div class="col-12 col-sm-6 col-lg-3 text-end">
+      <button class="btn btn-novo-compromisso w-100" data-bs-toggle="modal" data-bs-target="#modalNovoCompromisso">
+        <i class="fa-solid fa-plus-circle me-1"></i>Novo Compromisso
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 4. Container do Calendário Interativo ── -->
+<div id="containerCalendar" class="agenda-main-card p-3 p-md-4 mb-4">
+  <!-- Legenda Superior Elegante -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pb-3 mb-3 border-bottom border-secondary border-opacity-10 small">
+    <div class="d-flex flex-wrap gap-3 align-items-center">
+      <span class="text-muted fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Legenda:</span>
+      {% for chave, meta in tipos_compromisso.items() %}
+      <div class="d-flex align-items-center gap-1">
+        <span class="d-inline-block rounded-circle" style="width: 9px; height: 9px; background-color: {{ meta.color }};"></span>
+        <span style="font-size: 0.78rem; font-weight: 500;">{{ meta.label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-muted small fst-italic">
+      <i class="fa-regular fa-lightbulb text-warning me-1"></i>Clique em um dia para agendar
+    </div>
+  </div>
+
+  <div id="calendarComercial"></div>
+</div>
+
+<!-- ── 5. Container da Lista / Tabela Moderna ── -->
+<div id="containerTable" class="agenda-main-card mb-4 d-none overflow-hidden">
+  <div class="p-3 p-md-4 border-bottom border-secondary border-opacity-10 d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div>
+      <h5 class="fw-bold mb-1"><i class="fa-solid fa-list-check text-primary me-2"></i>Compromissos Comerciais</h5>
+      <p class="text-muted small mb-0">Tabela analítica com histórico e detalhamento das atividades.</p>
+    </div>
+    <div class="input-group" style="max-width: 340px;">
+      <span class="input-group-text bg-transparent border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+      <input type="text" class="form-control border-start-0" id="tableSearch" placeholder="Buscar cliente, consultor ou local...">
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table agenda-modern-table align-middle mb-0" id="tabelaCompromissos">
+      <thead>
+        <tr>
+          <th>Data & Período</th>
+          <th>Consultor</th>
+          <th>Tipo</th>
+          <th>Cliente / Oportunidade</th>
+          <th>Localização</th>
+          <th>Status</th>
+          <th class="text-end pe-4">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaCompromissosBody">
+        <tr>
+          <td colspan="7" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="p-3 border-top border-secondary border-opacity-10 d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span class="small text-muted fw-semibold" id="tableInfo">Carregando...</span>
+    <nav>
+      <ul class="pagination pagination-sm mb-0" id="tablePagination"></ul>
+    </nav>
+  </div>
+</div>
+
+<!-- ── 6. Modal: Novo Compromisso Comercial ── -->
+<div class="modal fade" id="modalNovoCompromisso" tabindex="-1" aria-labelledby="modalNovoCompromissoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <form class="modal-content border-0 shadow-lg" style="border-radius: 1.25rem;" method="post" action="{{ url_for('propostas_bp.agenda_comercial_novo') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      
+      <div class="modal-header modal-hero-header">
+        <div class="d-flex align-items-center gap-3">
+          <div class="modal-hero-icon">
+            <i class="fa-solid fa-calendar-plus text-white"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold mb-0" id="modalNovoCompromissoLabel">Novo Compromisso Comercial</h5>
+            <small class="text-white text-opacity-75">Registre visitas, demonstrações ou atividades na rotina comercial</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <div class="row g-3">
+          <!-- Consultor -->
+          <div class="col-12 col-md-6">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+              <i class="fa-solid fa-user-tie text-primary me-1"></i>Consultor Responsável <span class="text-danger">*</span>
+            </label>
+            {% if is_manager %}
+            <select class="form-select rounded-3" name="usuario_id" required>
+              {% for c in consultants %}
+              <option value="{{ c.id }}" {% if c.id == current_user.id %}selected{% endif %}>
+                {{ c.nome_completo or c.usuario }}
+              </option>
+              {% endfor %}
+            </select>
+            {% else %}
+            <input type="text" class="form-control rounded-3" value="{{ current_user.nome_completo or current_user.usuario }}" disabled>
+            <input type="hidden" name="usuario_id" value="{{ current_user.id }}">
+            {% endif %}
+          </div>
+
+          <!-- Tipo de Compromisso -->
+          <div class="col-12 col-md-6">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+              <i class="fa-solid fa-tags text-primary me-1"></i>Tipo de Compromisso <span class="text-danger">*</span>
+            </label>
+            <select class="form-select rounded-3" name="tipo_compromisso" id="novoTipoCompromisso" required>
+              {% for chave, meta in tipos_compromisso.items() %}
+              <option value="{{ chave }}">{{ meta.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Cliente / Oportunidade -->
+          <div class="col-12 col-md-6">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+              <i class="fa-solid fa-building text-primary me-1"></i>Cliente / Oportunidade
+            </label>
+            <input type="text" class="form-control rounded-3" name="cliente" id="novoCliente" placeholder="Ex: Indústria Katrium / Condomínio Sol">
+          </div>
+
+          <!-- Local / Cidade -->
+          <div class="col-12 col-md-6">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+              <i class="fa-solid fa-location-dot text-primary me-1"></i>Local / Cidade / Online
+            </label>
+            <input type="text" class="form-control rounded-3" name="local" placeholder="Ex: Centro - Rio de Janeiro / Google Meet">
+          </div>
+
+          <!-- Data Inicial -->
+          <div class="col-12 col-md-4">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+              <i class="fa-regular fa-calendar text-primary me-1"></i>Data Inicial <span class="text-danger">*</span>
+            </label>
+            <input type="date" class="form-control rounded-3" name="data_inicio" id="novoDataInicio" value="{{ hoje.isoformat() }}" required>
+          </div>
+
+          <!-- Data Final -->
+          <div class="col-12 col-md-4">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+              <i class="fa-regular fa-calendar-check text-primary me-1"></i>Data Final (opcional)
+            </label>
+            <input type="date" class="form-control rounded-3" name="data_fim" id="novoDataFim" placeholder="Se múltiplos dias">
+          </div>
+
+          <!-- Status -->
+          <div class="col-12 col-md-4">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+              <i class="fa-solid fa-traffic-light text-primary me-1"></i>Status Inicial
+            </label>
+            <select class="form-select rounded-3" name="status">
+              <option value="agendado" selected>Agendado</option>
+              <option value="realizado">Realizado</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+          </div>
+
+          <!-- Período com Botões Estilo Pills -->
+          <div class="col-12">
+            <label class="form-label small fw-bold text-muted text-uppercase d-block" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+              <i class="fa-regular fa-clock text-primary me-1"></i>Período / Horário
+            </label>
+            <div class="row g-2">
+              <div class="col-3">
+                <input type="radio" class="btn-check" name="periodo" id="periodoDiaTodo" value="Dia todo" checked>
+                <label class="period-pill-option w-100" for="periodoDiaTodo">📅 Dia todo</label>
+              </div>
+              <div class="col-3">
+                <input type="radio" class="btn-check" name="periodo" id="periodoManha" value="Manhã">
+                <label class="period-pill-option w-100" for="periodoManha">☀️ Manhã</label>
+              </div>
+              <div class="col-3">
+                <input type="radio" class="btn-check" name="periodo" id="periodoTarde" value="Tarde">
+                <label class="period-pill-option w-100" for="periodoTarde">⛅ Tarde</label>
+              </div>
+              <div class="col-3">
+                <input type="radio" class="btn-check" name="periodo" id="periodoNoite" value="Noite">
+                <label class="period-pill-option w-100" for="periodoNoite">🌙 Noite</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Observações -->
+          <div class="col-12">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+              <i class="fa-regular fa-message text-primary me-1"></i>Observações / Pauta
+            </label>
+            <textarea class="form-control rounded-3" name="observacoes" rows="3" placeholder="Detalhes do que será apresentado, equipamentos a demonstrar, propostas vinculadas..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer p-3 bg-light bg-opacity-50 border-top border-secondary border-opacity-10">
+        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary rounded-pill px-4">
+          <i class="fa-solid fa-check me-1"></i>Salvar Compromisso
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── 7. Modal: Detalhes do Compromisso (Design Executivo) ── -->
+<div class="modal modal-drawer-end fade" id="modalDetalhesCompromisso" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-bottom">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge rounded-pill px-3 py-2" id="detalheTipoBadge">Tipo</span>
+          <span class="badge rounded-pill px-3 py-2" id="detalheStatusBadge">Status</span>
+        </div>
+        <button type="button" class="btn-close-drawer" data-bs-dismiss="modal" aria-label="Fechar">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="modal-body p-4 pt-3">
+        <!-- Título / Cliente -->
+        <h4 class="fw-bold mb-1" id="detalheTitulo">-</h4>
+        <div class="d-flex align-items-center gap-2 text-muted small mb-4">
+          <div class="consultor-avatar-circle" id="detalheAvatarCircle" style="width: 28px; height: 28px; font-size: 0.72rem;">GL</div>
+          <span class="fw-semibold text-dark" id="detalheConsultor">-</span>
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <div class="detail-field-box">
+              <div class="detail-field-label"><i class="fa-regular fa-calendar me-1"></i>Data & Período</div>
+              <div class="detail-field-value text-primary" id="detalheData" style="font-size: 0.88rem;">-</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="detail-field-box">
+              <div class="detail-field-label"><i class="fa-solid fa-location-dot me-1"></i>Local / Cidade</div>
+              <div class="detail-field-value" id="detalheLocal" style="font-size: 0.88rem;">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-field-box mb-2">
+          <div class="detail-field-label"><i class="fa-regular fa-comment-dots me-1"></i>Observações</div>
+          <div class="text-muted small text-break" id="detalheObs" style="line-height: 1.5;">-</div>
+        </div>
+      </div>
+
+      <div class="modal-footer p-3 border-top border-secondary border-opacity-10 justify-content-between">
+        <div id="detalheAcoesAutorizadas" class="d-flex gap-2">
+          <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" id="btnDetalheExcluir">
+            <i class="fa-solid fa-trash me-1"></i>Excluir
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" id="btnDetalheEditar">
+            <i class="fa-solid fa-pencil me-1"></i>Editar
+          </button>
+        </div>
+        <button type="button" class="btn btn-sm btn-secondary rounded-pill px-4 ms-auto" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 8. Modal: Edição de Compromisso ── -->
+<div class="modal fade" id="modalEditarCompromisso" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <form class="modal-content border-0 shadow-lg" style="border-radius: 1.25rem;" id="formEditarCompromisso" method="post" action="">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      
+      <div class="modal-header modal-hero-header">
+        <div class="d-flex align-items-center gap-3">
+          <div class="modal-hero-icon">
+            <i class="fa-solid fa-pencil text-white"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold mb-0">Editar Compromisso Comercial</h5>
+            <small class="text-white text-opacity-75">Atualize as informações do agendamento comercial</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <div class="row g-3">
+          {% if is_manager %}
+          <div class="col-12 col-md-6">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Consultor</label>
+            <select class="form-select rounded-3" name="usuario_id" id="editUsuarioId">
+              {% for c in consultants %}
+              <option value="{{ c.id }}">{{ c.nome_completo or c.usuario }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+          <div class="col-12 col-md-6">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Tipo de Compromisso</label>
+            <select class="form-select rounded-3" name="tipo_compromisso" id="editTipoCompromisso" required>
+              {% for chave, meta in tipos_compromisso.items() %}
+              <option value="{{ chave }}">{{ meta.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Cliente / Oportunidade</label>
+            <input type="text" class="form-control rounded-3" name="cliente" id="editCliente">
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Local / Cidade / Online</label>
+            <input type="text" class="form-control rounded-3" name="local" id="editLocal">
+          </div>
+
+          <div class="col-12 col-md-4">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Data Inicial</label>
+            <input type="date" class="form-control rounded-3" name="data_inicio" id="editDataInicio" required>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Data Final (opcional)</label>
+            <input type="date" class="form-control rounded-3" name="data_fim" id="editDataFim">
+          </div>
+
+          <div class="col-12 col-md-4">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Status</label>
+            <select class="form-select rounded-3" name="status" id="editStatus">
+              <option value="agendado">Agendado</option>
+              <option value="realizado">Realizado</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Período / Horário</label>
+            <input type="text" class="form-control rounded-3" name="periodo" id="editPeriodo" placeholder="Ex: Manhã, Tarde, Dia todo ou horário">
+          </div>
+
+          <div class="col-12">
+            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Observações</label>
+            <textarea class="form-control rounded-3" name="observacoes" id="editObservacoes" rows="3"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer p-3 bg-light bg-opacity-50 border-top border-secondary border-opacity-10">
+        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary rounded-pill px-4">
+          <i class="fa-solid fa-check me-1"></i>Salvar Alterações
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Formulário Oculto de Exclusão (Universal Confirm Delete) -->
+<form id="formExcluirCompromisso" method="post" action="" class="d-none" data-confirm-delete="true" data-entity-name="Compromisso Comercial">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.10/locales/pt-br.global.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const calendarEl = document.getElementById('calendarComercial');
+  const filtroConsultor = document.getElementById('filtroConsultor');
+  const filtroTipo = document.getElementById('filtroTipo');
+  const btnViewCalendar = document.getElementById('btnViewCalendar');
+  const btnViewTable = document.getElementById('btnViewTable');
+  const containerCalendar = document.getElementById('containerCalendar');
+  const containerTable = document.getElementById('containerTable');
+  const tabelaBody = document.getElementById('tabelaCompromissosBody');
+  const tableSearch = document.getElementById('tableSearch');
+  const consultantRibbon = document.getElementById('consultantRibbon');
+  const consultorAtivoLabel = document.getElementById('consultorAtivoLabel');
+  const typeFilterChips = document.getElementById('typeFilterChips');
+
+  let currentItem = null;
+  let currentPage = 1;
+
+  // Mapa de ícones para compromissos
+  function getTipoIcon(tipo) {
+    const icons = {
+      'demonstracao': 'fa-solid fa-desktop',
+      'visita': 'fa-solid fa-car-side',
+      'reuniao_interna': 'fa-solid fa-users',
+      'atividade_externa': 'fa-solid fa-location-dot',
+      'ferias': 'fa-solid fa-umbrella-beach',
+      'disponivel': 'fa-solid fa-building-circle-check',
+      'outro': 'fa-solid fa-calendar-check'
+    };
+    return icons[tipo] || 'fa-solid fa-calendar-day';
+  }
+
+  // Inicialização do FullCalendar com visual moderno
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    locale: 'pt-br',
+    initialView: 'dayGridMonth',
+    fixedWeekCount: false,
+    showNonCurrentDates: false,
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,listWeek'
+    },
+    buttonText: {
+      today: 'Hoje',
+      month: 'Mês',
+      week: 'Semana',
+      list: 'Lista'
+    },
+    navLinks: true,
+    editable: false,
+    dayMaxEvents: 3,
+    // Customização visual de cada evento na grade
+    eventContent: function(arg) {
+      const p = arg.event.extendedProps || {};
+      const tipo = p.tipo_compromisso || 'outro';
+      const icon = getTipoIcon(tipo);
+      const consultorShort = p.consultor_nome ? p.consultor_nome.split(' ')[0] : '';
+      const clienteText = p.cliente || p.tipo_label || arg.event.title;
+      const periodoText = (p.periodo && p.periodo !== 'Dia todo') ? p.periodo : '';
+
+      return {
+        html: `
+          <div class="fc-event-pill-card fc-tipo-${tipo}" title="${clienteText} (${consultorShort})">
+            <div class="fc-event-pill-title">
+              <i class="${icon} me-1 opacity-75"></i>${clienteText}
+            </div>
+            <div class="fc-event-pill-meta">
+              <span><i class="fa-solid fa-user-tie me-1 opacity-50"></i>${consultorShort}</span>
+              ${periodoText ? `<span class="fc-event-pill-time">${periodoText}</span>` : ''}
+            </div>
+          </div>
+        `
+      };
+    },
+    events: function(fetchInfo, successCallback, failureCallback) {
+      const params = new URLSearchParams({
+        start: fetchInfo.startStr,
+        end: fetchInfo.endStr,
+        view_mode: 'calendar',
+        usuario_id: filtroConsultor.value,
+        tipo: filtroTipo.value
+      });
+      fetch(`{{ url_for('propostas_bp.agenda_comercial_api') }}?${params}`)
+        .then(res => res.json())
+        .then(data => successCallback(data))
+        .catch(err => {
+          console.error(err);
+          failureCallback(err);
+        });
+    },
+    dateClick: function(info) {
+      if (info.dayEl && info.dayEl.classList.contains('fc-day-other')) return;
+      document.getElementById('novoDataInicio').value = info.dateStr;
+      document.getElementById('novoDataFim').value = '';
+      const modal = new bootstrap.Modal(document.getElementById('modalNovoCompromisso'));
+      modal.show();
+    },
+    eventClick: function(info) {
+      abrirDetalhes(info.event.extendedProps);
+    }
+  });
+
+  calendar.render();
+
+  // ── Interação: Fitas de Consultores (Avatares) ──
+  consultantRibbon.querySelectorAll('.consultant-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      consultantRibbon.querySelectorAll('.consultant-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const uid = chip.getAttribute('data-consultor-id');
+      filtroConsultor.value = uid;
+      
+      const nome = chip.querySelector('span:nth-child(2)').textContent;
+      if (consultorAtivoLabel) {
+        consultorAtivoLabel.textContent = uid ? `Visualizando: ${nome}` : 'Visualizando: Todos';
+      }
+
+      calendar.refetchEvents();
+      if (!containerTable.classList.contains('d-none')) carregarTabela(1);
+    });
+  });
+
+  // ── Interação: Chips de Tipo de Compromisso ──
+  typeFilterChips.querySelectorAll('.type-filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      typeFilterChips.querySelectorAll('.type-filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const tipo = chip.getAttribute('data-tipo');
+      filtroTipo.value = tipo;
+
+      calendar.refetchEvents();
+      if (!containerTable.classList.contains('d-none')) carregarTabela(1);
+    });
+  });
+
+  // ── Alternância Calendário vs Tabela ──
+  btnViewCalendar.addEventListener('click', () => {
+    btnViewCalendar.classList.add('active');
+    btnViewTable.classList.remove('active');
+    containerCalendar.classList.remove('d-none');
+    containerTable.classList.add('d-none');
+    calendar.refetchEvents();
+  });
+
+  btnViewTable.addEventListener('click', () => {
+    btnViewTable.classList.add('active');
+    btnViewCalendar.classList.remove('active');
+    containerCalendar.classList.add('d-none');
+    containerTable.classList.remove('d-none');
+    carregarTabela(1);
+  });
+
+  // ── Busca na Tabela com Debounce ──
+  let searchTimeout;
+  tableSearch.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => carregarTabela(1), 300);
+  });
+
+  // ── Carregamento da Tabela Analítica ──
+  function carregarTabela(page = 1) {
+    currentPage = page;
+    tabelaBody.innerHTML = '<tr><td colspan="7" class="text-center py-5"><div class="spinner-border text-primary spinner-border-sm"></div> Carregando compromissos...</td></tr>';
+    
+    const params = new URLSearchParams({
+      view_mode: 'table',
+      page: page,
+      per_page: 15,
+      usuario_id: filtroConsultor.value,
+      tipo: filtroTipo.value,
+      search: tableSearch.value
+    });
+
+    fetch(`{{ url_for('propostas_bp.agenda_comercial_api') }}?${params}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.items || data.items.length === 0) {
+          tabelaBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-5"><i class="fa-regular fa-calendar-xmark fa-2x mb-2 d-block opacity-40"></i>Nenhum compromisso comercial encontrado para os filtros selecionados.</td></tr>';
+          document.getElementById('tableInfo').textContent = '0 compromissos';
+          document.getElementById('tablePagination').innerHTML = '';
+          return;
+        }
+
+        let html = '';
+        data.items.forEach(item => {
+          const dataFmt = item.data_fim && item.data_fim !== item.data_inicio
+            ? `${formatarData(item.data_inicio)} até ${formatarData(item.data_fim)}`
+            : formatarData(item.data_inicio);
+
+          const consultorNome = item.consultor_nome || 'Consultor';
+          const initials = (consultorNome.split(' ')[0][0] + (consultorNome.split(' ').length > 1 ? consultorNome.split(' ')[consultorNome.split(' ').length - 1][0] : '')).toUpperCase();
+          const icon = getTipoIcon(item.tipo_compromisso);
+
+          let statusDotColor = '#0d6efd';
+          if (item.status === 'realizado') statusDotColor = '#10b981';
+          if (item.status === 'cancelado') statusDotColor = '#ef4444';
+
+          html += `
+            <tr>
+              <td>
+                <div class="fw-bold text-dark">${dataFmt}</div>
+                <div class="small text-muted"><i class="fa-regular fa-clock me-1 opacity-75"></i>${item.periodo || 'Dia todo'}</div>
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="consultor-avatar-circle" style="width: 32px; height: 32px; font-size: 0.75rem;">${initials}</div>
+                  <div class="fw-semibold text-dark">${consultorNome}</div>
+                </div>
+              </td>
+              <td>
+                <span class="badge ${item.tipo_badge_class || 'bg-secondary'} rounded-pill px-3 py-1">
+                  <i class="${icon} me-1"></i>${item.tipo_label}
+                </span>
+              </td>
+              <td>
+                <div class="fw-bold text-dark">${item.cliente || '<span class="text-muted fw-normal">Não informado</span>'}</div>
+              </td>
+              <td>
+                <div class="small text-muted"><i class="fa-solid fa-location-dot me-1 text-primary opacity-75"></i>${item.local || 'Interno / Online'}</div>
+              </td>
+              <td>
+                <span class="badge rounded-pill px-3 py-1" style="background: rgba(148, 163, 184, 0.12); color: #334155; border: 1px solid rgba(148, 163, 184, 0.25);">
+                  <span class="d-inline-block rounded-circle me-1" style="width: 7px; height: 7px; background-color: ${statusDotColor};"></span>
+                  ${item.status_label}
+                </span>
+              </td>
+              <td class="text-end pe-4">
+                <button class="btn btn-sm btn-light border rounded-pill px-2 me-1 btn-ver-detalhe" title="Ver Detalhes" data-item='${JSON.stringify(item).replace(/'/g, "&apos;")}'>
+                  <i class="fa-solid fa-eye text-primary"></i>
+                </button>
+                ${item.can_edit ? `
+                  <button class="btn btn-sm btn-light border rounded-pill px-2 me-1 btn-editar-item" title="Editar" data-item='${JSON.stringify(item).replace(/'/g, "&apos;")}'>
+                    <i class="fa-solid fa-pencil text-secondary"></i>
+                  </button>
+                  <button class="btn btn-sm btn-light border rounded-pill px-2 btn-excluir-item" title="Excluir" data-id="${item.id}" data-title="${item.cliente || item.tipo_label}">
+                    <i class="fa-solid fa-trash text-danger"></i>
+                  </button>
+                ` : ''}
+              </td>
+            </tr>
+          `;
+        });
+
+        tabelaBody.innerHTML = html;
+        document.getElementById('tableInfo').textContent = `Exibindo ${data.items.length} de ${data.total} compromissos`;
+        renderizarPaginacao(data.page, data.pages);
+
+        // Bind dos botões na tabela
+        document.querySelectorAll('.btn-ver-detalhe').forEach(btn => {
+          btn.addEventListener('click', () => abrirDetalhes(JSON.parse(btn.getAttribute('data-item'))));
+        });
+        document.querySelectorAll('.btn-editar-item').forEach(btn => {
+          btn.addEventListener('click', () => abrirEdicao(JSON.parse(btn.getAttribute('data-item'))));
+        });
+        document.querySelectorAll('.btn-excluir-item').forEach(btn => {
+          btn.addEventListener('click', () => confirmarExclusao(btn.getAttribute('data-id'), btn.getAttribute('data-title')));
+        });
+      })
+      .catch(err => {
+        console.error(err);
+        tabelaBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Erro ao carregar lista de compromissos.</td></tr>';
+      });
+  }
+
+  // ── Paginação da Tabela ──
+  function renderizarPaginacao(currentPage, totalPages) {
+    const pagEl = document.getElementById('tablePagination');
+    if (totalPages <= 1) {
+      pagEl.innerHTML = '';
+      return;
+    }
+    let html = '';
+    html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link rounded-pill me-1" href="#" data-page="${currentPage - 1}">&laquo;</a></li>`;
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+        html += `<li class="page-item ${p === currentPage ? 'active' : ''}"><a class="page-link rounded-pill me-1" href="#" data-page="${p}">${p}</a></li>`;
+      } else if (p === currentPage - 3 || p === currentPage + 3) {
+        html += `<li class="page-item disabled"><span class="page-link rounded-pill me-1">...</span></li>`;
+      }
+    }
+    html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link rounded-pill" href="#" data-page="${currentPage + 1}">&raquo;</a></li>`;
+    pagEl.innerHTML = html;
+
+    pagEl.querySelectorAll('a.page-link').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(a.getAttribute('data-page'));
+        if (p >= 1 && p <= totalPages) carregarTabela(p);
+      });
+    });
+  }
+
+  // ── Modal de Detalhes ──
+  function abrirDetalhes(item) {
+    currentItem = item;
+    document.getElementById('detalheTitulo').textContent = item.cliente || item.tipo_label;
+    
+    const tipoBadge = document.getElementById('detalheTipoBadge');
+    tipoBadge.className = `badge ${item.tipo_badge_class || 'bg-secondary'} rounded-pill px-3 py-2`;
+    tipoBadge.innerHTML = `<i class="${getTipoIcon(item.tipo_compromisso)} me-1"></i>${item.tipo_label}`;
+
+    let statusBg = 'bg-primary bg-opacity-10 text-primary';
+    if (item.status === 'realizado') statusBg = 'bg-success bg-opacity-10 text-success';
+    if (item.status === 'cancelado') statusBg = 'bg-danger bg-opacity-10 text-danger';
+
+    const statusBadge = document.getElementById('detalheStatusBadge');
+    statusBadge.className = `badge ${statusBg} rounded-pill px-3 py-2`;
+    statusBadge.textContent = item.status_label;
+
+    const consultorNome = item.consultor_nome || 'Consultor';
+    document.getElementById('detalheConsultor').textContent = consultorNome;
+    
+    const initials = (consultorNome.split(' ')[0][0] + (consultorNome.split(' ').length > 1 ? consultorNome.split(' ')[consultorNome.split(' ').length - 1][0] : '')).toUpperCase();
+    document.getElementById('detalheAvatarCircle').textContent = initials;
+
+    document.getElementById('detalheLocal').textContent = item.local || 'Interno / Online';
+    
+    const dataFmt = item.data_fim && item.data_fim !== item.data_inicio
+      ? `${formatarData(item.data_inicio)} até ${formatarData(item.data_fim)} (${item.periodo || 'Dia todo'})`
+      : `${formatarData(item.data_inicio)} (${item.periodo || 'Dia todo'})`;
+    document.getElementById('detalheData').textContent = dataFmt;
+    document.getElementById('detalheObs').textContent = item.observacoes || 'Nenhuma observação registrada.';
+
+    const acoesDiv = document.getElementById('detalheAcoesAutorizadas');
+    if (item.can_edit) {
+      acoesDiv.classList.remove('d-none');
+      document.getElementById('btnDetalheEditar').onclick = () => {
+        bootstrap.Modal.getInstance(document.getElementById('modalDetalhesCompromisso')).hide();
+        abrirEdicao(item);
+      };
+      document.getElementById('btnDetalheExcluir').onclick = () => {
+        bootstrap.Modal.getInstance(document.getElementById('modalDetalhesCompromisso')).hide();
+        confirmarExclusao(item.id, item.cliente || item.tipo_label);
+      };
+    } else {
+      acoesDiv.classList.add('d-none');
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('modalDetalhesCompromisso'));
+    modal.show();
+  }
+
+  // ── Modal de Edição ──
+  function abrirEdicao(item) {
+    const form = document.getElementById('formEditarCompromisso');
+    form.action = `/comercial/agenda/${item.id}/editar`;
+
+    const editUserSelect = document.getElementById('editUsuarioId');
+    if (editUserSelect) editUserSelect.value = item.usuario_id;
+
+    document.getElementById('editTipoCompromisso').value = item.tipo_compromisso;
+    document.getElementById('editCliente').value = item.cliente || '';
+    document.getElementById('editLocal').value = item.local || '';
+    document.getElementById('editDataInicio').value = item.data_inicio;
+    document.getElementById('editDataFim').value = item.data_fim || '';
+    document.getElementById('editPeriodo').value = item.periodo || 'Dia todo';
+    document.getElementById('editStatus').value = item.status || 'agendado';
+    document.getElementById('editObservacoes').value = item.observacoes || '';
+
+    const modal = new bootstrap.Modal(document.getElementById('modalEditarCompromisso'));
+    modal.show();
+  }
+
+  // ── Exclusão com Modal Universal ──
+  function confirmarExclusao(id, titulo) {
+    const form = document.getElementById('formExcluirCompromisso');
+    form.action = `/comercial/agenda/${id}/excluir`;
+    form.setAttribute('data-entity-name', titulo);
+    
+    if (window.showConfirmDeleteModal) {
+      window.showConfirmDeleteModal({
+        entityType: 'Compromisso Comercial',
+        entityName: titulo,
+        entityDetail: 'Esta ação removerá o agendamento da rotina comercial.',
+        form: form
+      });
+    } else if (confirm(`Deseja realmente excluir o compromisso "${titulo}"?`)) {
+      form.submit();
+    }
+  }
+
+  function formatarData(isoStr) {
+    if (!isoStr) return '-';
+    const parts = isoStr.split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return isoStr;
+  }
+});
+</script>
+{% endblock %}

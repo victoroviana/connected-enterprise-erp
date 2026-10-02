@@ -32,19 +32,22 @@
   ] %}
 
   <div class="row g-4 mb-5">
-    <div class="col-12 col-xl-5">
+    <div class="col-12 col-md-5 col-lg-5 col-xl-5">
       <div class="page-hero h-100 mb-0 d-flex flex-column justify-content-center">
         <p class="page-hero__eyebrow mb-1">Central de Atendimento</p>
         <h1 class="page-hero__title h2 mb-2">Sollus Tickets</h1>
         <p class="page-hero__subtitle small mb-0 opacity-75">Gerencie fluxos e históricos com inteligência.</p>
-        <div class="mt-4 d-flex gap-2">
+        <div class="mt-4 d-flex flex-wrap gap-2">
           <a class="btn btn-light btn-sm px-3 rounded-pill fw-semibold" href="{{ url_for('sollus_tickets.new_ticket') }}">
             <i class="bi bi-plus-lg me-1"></i> Novo Ticket
+          </a>
+          <a class="btn btn-outline-light btn-sm px-3 rounded-pill fw-semibold" href="{{ url_for('sollus_tickets.transfer_history') }}">
+            <i class="bi bi-arrow-left-right me-1"></i> Transferências
           </a>
         </div>
       </div>
     </div>
-    <div class="col-12 col-xl-7">
+    <div class="col-12 col-md-7 col-lg-7 col-xl-7">
       <div class="row g-3 h-100">
         {% for stat in hero_stats %}
         <div class="col-6 col-md-3 h-100">

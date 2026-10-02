@@ -75,7 +75,11 @@
                 <a class="btn btn-outline-primary btn-sm" href="{{ url_for('cracha_bp.produtos_marca', edit=row.id_pk) }}">
                   <i class="fa-solid fa-pen me-1"></i> Editar
                 </a>
-                <form method="post" action="{{ url_for('cracha_bp.produtos_marca_excluir', marca_id=row.id_pk) }}" onsubmit="return confirm('Deseja excluir esta marca?');">
+                <form method="post" action="{{ url_for('cracha_bp.produtos_marca_excluir', marca_id=row.id_pk) }}"
+                      data-confirm-delete="true"
+                      data-entity-type="Marca de Produtos"
+                      data-entity-name="{{ row.nome }}"
+                      data-confirm-warning="A marca de produtos será excluída permanentemente.">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="btn btn-outline-danger btn-sm">
                     <i class="fa-solid fa-trash me-1"></i> Excluir

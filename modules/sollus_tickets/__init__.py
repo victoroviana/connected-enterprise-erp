@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 
 import click
 from flask import Flask
@@ -9,9 +10,12 @@ from flask import Flask
 
 def _start_scheduler(app: Flask) -> None:
     """Inicia o APScheduler para processamento automático de e-mail e alertas SLA."""
+    if getattr(app, "testing", False) or os.environ.get("TESTING") == "1":
+        return
     try:
         from apscheduler.schedulers.background import BackgroundScheduler
         from apscheduler.triggers.interval import IntervalTrigger
+        from apscheduler.triggers.cron import CronTrigger
     except ImportError:
         app.logger.warning(
             "[tickets] APScheduler não instalado. Ingestão de e-mail será apenas manual. "
@@ -57,12 +61,44 @@ def _start_scheduler(app: Flask) -> None:
             except Exception as exc:
                 app.logger.exception("[tickets_scheduler] erro ao processar fila de e-mails")
 
+    def _sollusflow_lembretes_job():
+        with app.app_context():
+            try:
+                from modules.chamados.services.lembretes_flow import processar_lembretes_sollusflow
+                res = processar_lembretes_sollusflow(app)
+                if res.get("alertas_enviados", 0) > 0:
+                    app.logger.info("[sollusflow_scheduler] %s alertas de lembretes enviados", res["alertas_enviados"])
+            except Exception as exc:
+                app.logger.exception("[sollusflow_scheduler] erro ao processar lembretes do SollusFlow")
+
+    def _sollusflow_pedidos_atrasados_job():
+        with app.app_context():
+            try:
+                from modules.chamados.services.lembretes_flow import enviar_alerta_diario_pedidos_atrasados
+                res = enviar_alerta_diario_pedidos_atrasados(app)
+                if res.get("alertas_enviados", 0) > 0:
+                    app.logger.info(
+                        "[sollusflow_scheduler] Alerta diário de pedidos atrasados enviado para %s destinatários (%s pedidos atrasados)",
+                        res["alertas_enviados"], res.get("pedidos_atrasados", 0)
+                    )
+            except Exception as exc:
+                app.logger.exception("[sollusflow_scheduler] erro ao processar alerta diário de pedidos atrasados")
+
     scheduler.add_job(_sync_mail_job, IntervalTrigger(minutes=5), id="tickets_sync_mail", replace_existing=True)
     scheduler.add_job(_sla_alerts_job, IntervalTrigger(minutes=15), id="tickets_sla_alerts", replace_existing=True)
     scheduler.add_job(_process_email_queue_job, IntervalTrigger(minutes=1), id="tickets_process_email_queue", replace_existing=True)
+    scheduler.add_job(_sollusflow_lembretes_job, IntervalTrigger(minutes=30), id="sollusflow_lembretes", replace_existing=True)
+    scheduler.add_job(
+        _sollusflow_pedidos_atrasados_job,
+        CronTrigger(hour=8, minute=30, timezone="America/Sao_Paulo"),
+        id="sollusflow_pedidos_atrasados_diario",
+        replace_existing=True,
+    )
 
     scheduler.start()
-    app.logger.info("[tickets] APScheduler iniciado: sync_mail(5min), sla_alerts(1h)")
+    app.logger.info(
+        "[tickets] APScheduler iniciado: sync_mail(5min), sla_alerts(15min), sollusflow_lembretes(30min), sollusflow_pedidos_atrasados(08:30)"
+    )
 
     import atexit
     atexit.register(lambda: scheduler.shutdown(wait=False))
@@ -136,4 +172,13 @@ def init_app(app: Flask) -> None:
         """Import legacy osTicket attachments into Sollus Tickets."""
         stats = import_osticket_attachments(parse_ost_config(config_path), limit=limit)
         click.echo(json.dumps(stats, ensure_ascii=False, indent=2))
+
+    @app.cli.command("sollusflow-enviar-alerta-atrasados")
+    @click.option("--email", "force_email", default=None, help="Enviar apenas para este e-mail para teste.")
+    def alert_atrasados_command(force_email: str | None) -> None:
+        """Dispara manualmente o alerta diário de pedidos atrasados do SollusFlow."""
+        from modules.chamados.services.lembretes_flow import enviar_alerta_diario_pedidos_atrasados
+        stats = enviar_alerta_diario_pedidos_atrasados(app, force_email=force_email)
+        click.echo(json.dumps(stats, ensure_ascii=False, indent=2))
+
 

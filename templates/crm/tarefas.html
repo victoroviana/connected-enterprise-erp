@@ -1,0 +1,1149 @@
+{% extends "layout.html" %}
+
+{% block title %}Tarefas - Sollus Connected{% endblock %}
+
+{% block head %}
+  <link href="{{ url_for('static', filename='css/crm_premium.css') }}" rel="stylesheet">
+  <style>
+    .cockpit-kpi-card {
+      border-radius: 12px;
+      transition: all 0.2s ease-in-out;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .cockpit-kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+      color: inherit;
+    }
+    .cockpit-kpi-card.active-filter {
+      ring: 2px solid;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+      border-color: #2563eb !important;
+    }
+    .task-row {
+      transition: background-color 0.15s ease;
+    }
+    .task-row:hover {
+      background-color: #f8fafc;
+    }
+    .task-row.task-concluida {
+      opacity: 0.65;
+      text-decoration: line-through;
+    }
+    .traffic-pill {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.28rem 0.65rem;
+      border-radius: 9999px;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.35rem !important;
+      white-space: nowrap !important;
+      word-break: keep-all !important;
+      overflow-wrap: normal !important;
+      flex-shrink: 0 !important;
+      line-height: 1.25 !important;
+    }
+    .badge {
+      white-space: nowrap !important;
+      word-break: keep-all !important;
+      overflow-wrap: normal !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.35rem !important;
+      flex-shrink: 0 !important;
+      line-height: 1.25 !important;
+    }
+    .col-tipo,
+    .col-vencimento,
+    .col-acoes {
+      white-space: nowrap !important;
+      width: 1%;
+    }
+    .empty-state-icon {
+      font-size: 3.5rem;
+      color: #10b981;
+    }
+
+    /* Hero Card Executivo do Consultor & Métricas de Vendas */
+    .crm-consultor-hero-card {
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.98));
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      position: relative;
+      overflow: hidden;
+    }
+    .crm-consultor-hero-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #10b981, #06b6d4, #3b82f6);
+    }
+    .consultor-avatar-wrapper {
+      position: relative;
+      flex-shrink: 0;
+    }
+    .consultor-avatar-img {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #10b981;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.28);
+    }
+    .consultor-avatar-fallback {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.35rem;
+      color: #fff;
+      background: linear-gradient(135deg, #10b981, #0ea5e9);
+      border: 3px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.28);
+    }
+    .sales-filter-pills {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      padding: 4px;
+      border-radius: 9999px;
+      display: inline-flex;
+      gap: 4px;
+    }
+    .sales-tab-btn {
+      border: none;
+      background: transparent;
+      color: #64748b;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.38rem 0.95rem;
+      border-radius: 9999px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .sales-tab-btn:hover {
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.7);
+    }
+    .sales-tab-btn.active {
+      background: #ffffff;
+      color: #059669;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      font-weight: 700;
+    }
+    .sales-metric-box {
+      border-radius: 14px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      transition: all 0.25s ease;
+    }
+
+    /* Dark Mode Suporte */
+    [data-theme="dark"] .task-row:hover,
+    [data-bs-theme="dark"] .task-row:hover {
+      background-color: rgba(59, 130, 246, 0.08) !important;
+    }
+    [data-theme="dark"] .cockpit-kpi-card,
+    [data-bs-theme="dark"] .cockpit-kpi-card {
+      background-color: #182235 !important;
+      border-color: #24344d !important;
+      color: #f8fafc !important;
+    }
+    [data-theme="dark"] .cockpit-kpi-card:hover,
+    [data-bs-theme="dark"] .cockpit-kpi-card:hover {
+      background-color: #1e293b !important;
+      border-color: #3b82f6 !important;
+    }
+    [data-theme="dark"] .crm-consultor-hero-card,
+    [data-bs-theme="dark"] .crm-consultor-hero-card {
+      background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(15, 23, 42, 0.98)) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4) !important;
+    }
+    [data-theme="dark"] .sales-filter-pills,
+    [data-bs-theme="dark"] .sales-filter-pills {
+      background: #1e293b !important;
+      border-color: #334155 !important;
+    }
+    [data-theme="dark"] .sales-tab-btn,
+    [data-bs-theme="dark"] .sales-tab-btn {
+      color: #94a3b8 !important;
+    }
+    [data-theme="dark"] .sales-tab-btn:hover,
+    [data-bs-theme="dark"] .sales-tab-btn:hover {
+      color: #f8fafc !important;
+      background: rgba(255, 255, 255, 0.08) !important;
+    }
+    [data-theme="dark"] .sales-tab-btn.active,
+    [data-bs-theme="dark"] .sales-tab-btn.active {
+      background: #0f172a !important;
+      color: #34d399 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+    [data-theme="dark"] .sales-metric-box,
+    [data-bs-theme="dark"] .sales-metric-box {
+      background: #1e293b !important;
+      border-color: #334155 !important;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="crm-page-container px-3 py-2">
+  <!-- Cabeçalho Principal -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="fw-bold mb-0 d-flex align-items-center gap-2">
+          <i class="fa-solid fa-list-check text-primary"></i>
+          <span>Tarefas</span>
+        </h4>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1">
+          {{ counts.total }} tarefas
+        </span>
+      </div>
+      <p class="text-muted small mb-0 mt-1">
+        Acompanhe e gerencie as atividades comerciais da equipe com semáforo de prazos e WhatsApp em 1 clique.
+      </p>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      <button type="button" class="btn btn-success btn-sm fw-bold d-flex align-items-center gap-1 shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#modalNovoLead">
+        <i class="bi bi-plus-lg"></i> + Nova Oportunidade
+      </button>
+      <a href="{{ url_for('crm.kanban', funil_id=funil_id if (funil_id and funil_id != 'all') else (funis[0].id if funis else '')) }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
+        <i class="fa-solid fa-table-columns"></i> Quadro do Funil
+      </a>
+    </div>
+  </div>
+
+  <!-- Cockpit Executivo do Consultor & Métricas de Vendas (Topo) -->
+  <div class="card border shadow-sm p-3 mb-3 crm-consultor-hero-card">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+      
+      <!-- Informações do Consultor com Foto / Avatar -->
+      <!-- Informações do Consultor com Foto / Avatar -->
+      <div class="d-flex align-items-center gap-3">
+        <div class="consultor-avatar-wrapper position-relative">
+          <img id="heroAvatarImg"
+               src="{{ url_for('static', filename=consultor_destaque.avatar_path) if (consultor_destaque and consultor_destaque.avatar_path) else '' }}" 
+               alt="{{ consultor_destaque.nome_completo or consultor_destaque.usuario if consultor_destaque else 'Consultor' }}" 
+               class="consultor-avatar-img shadow-sm"
+               style="{{ 'display:block;' if (consultor_destaque and consultor_destaque.avatar_path) else 'display:none;' }}"
+               onerror="this.style.display='none'; document.getElementById('heroAvatarFallback').style.display='flex';">
+          <div id="heroAvatarFallback" class="consultor-avatar-fallback shadow-sm"
+               style="{{ 'display:none;' if (consultor_destaque and consultor_destaque.avatar_path) else 'display:flex;' }}">
+            {{ (consultor_destaque.nome_completo or consultor_destaque.usuario or 'C')[:2]|upper if consultor_destaque else 'CO' }}
+          </div>
+          <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-2 border-white rounded-circle shadow-sm" 
+                style="width: 15px; height: 15px;" title="Online / Em Atendimento"></span>
+        </div>
+
+        <div>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if can_view_all_deals %}
+              <!-- Seletor Rápido de Consultor Comercial para Gestores e Admin -->
+              <div class="d-flex align-items-center gap-2">
+                <select id="heroConsultorSelect" class="form-select form-select-sm fw-bold border-success-subtle shadow-sm" style="min-width: 220px; font-size: 0.95rem; cursor: pointer;" onchange="onHeroConsultorChange(this.value)">
+                  {% for c in consultores_comerciais %}
+                    <option value="{{ c.id }}" {% if consultor_destaque and consultor_destaque.id == c.id %}selected{% endif %}>
+                      👤 {{ c.nome_completo or c.usuario }}
+                    </option>
+                  {% endfor %}
+                  <option value="0">📊 Toda a Equipe Comercial</option>
+                </select>
+                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">
+                  <i class="fa-solid fa-chart-line me-1"></i> Desempenho Comercial
+                </span>
+              </div>
+            {% else %}
+              <h5 class="fw-bold mb-0 text-truncate" id="heroConsultorNome" style="max-width: 320px;" title="{{ consultor_destaque.nome_completo or consultor_destaque.usuario if consultor_destaque else '' }}">
+                {{ consultor_destaque.nome_completo or consultor_destaque.usuario if consultor_destaque else '' }}
+              </h5>
+              <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">
+                <i class="fa-solid fa-user-check me-1"></i> Consultor Comercial
+              </span>
+            {% endif %}
+          </div>
+          <div class="text-muted small mt-1 d-flex align-items-center gap-2 flex-wrap">
+            <span id="heroConsultorEmail"><i class="fa-regular fa-envelope me-1"></i>{{ consultor_destaque.email if consultor_destaque else '' }}</span>
+            <span id="heroConsultorRamal" style="{{ 'display:inline;' if (consultor_destaque and consultor_destaque.ramal) else 'display:none;' }}">
+              • <i class="fa-solid fa-phone me-1"></i>Ramal <span id="heroConsultorRamalNum">{{ consultor_destaque.ramal if consultor_destaque else '' }}</span>
+            </span>
+            {% if can_view_all_deals %}
+              <a href="javascript:void(0)" id="heroFiltrarTarefasLink" onclick="filtrarTarefasPorConsultor()" class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none px-2 py-1 ms-1" title="Filtrar tabela de tarefas para este consultor">
+                <i class="fa-solid fa-filter me-1"></i>Filtrar tarefas abaixo
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Placar de Vendas com Filtro de Período (Mensal / Anual / Todas as Vendas) -->
+      <div class="d-flex flex-wrap align-items-center gap-3 ms-auto ms-md-0">
+        <!-- Pílulas de Seleção de Período -->
+        <div class="sales-filter-pills shadow-sm">
+          <button type="button" class="sales-tab-btn active" data-period="mensal" onclick="switchSalesPeriod('mensal')" title="Exibir vendas fechadas no mês atual">
+            <i class="fa-regular fa-calendar-days"></i> Mensal
+          </button>
+          <button type="button" class="sales-tab-btn" data-period="anual" onclick="switchSalesPeriod('anual')" title="Exibir vendas fechadas no ano {{ now_year }}">
+            <i class="fa-solid fa-calendar"></i> Anual
+          </button>
+          <button type="button" class="sales-tab-btn" data-period="todas" onclick="switchSalesPeriod('todas')" title="Exibir todas as vendas do histórico">
+            <i class="fa-solid fa-infinity"></i> Todas as Vendas
+          </button>
+        </div>
+
+        <!-- Bloco Numérico em Destaque -->
+        <div class="sales-metric-box px-3 py-2 shadow-sm d-flex align-items-center gap-3">
+          <div class="text-center">
+            <div class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.05em;" id="salesPeriodLabel">
+              Vendas no Mês ({{ sales_stats.mes_nome }})
+            </div>
+            <div class="d-flex align-items-baseline justify-content-center gap-1 mt-0.5">
+              <span class="fs-4 fw-bold text-success" id="salesCountDisplay" style="transition: opacity 0.15s ease;">
+                {{ sales_stats.mensal.count }}
+              </span>
+              <span class="text-muted small fw-semibold">vendas fechadas</span>
+            </div>
+          </div>
+
+          <div class="vr my-1 text-secondary opacity-25"></div>
+
+          <div class="text-center d-none d-sm-block">
+            <div class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.05em;">
+              Faturamento Gerado
+            </div>
+            <div class="fs-5 fw-bold text-primary mt-0.5" id="salesValueDisplay" style="transition: opacity 0.15s ease;">
+              {{ sales_stats.mensal.valor_formatado }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Barra de Filtros Estilo RD Station CRM -->
+  <div class="card border shadow-sm p-3 mb-3 bg-light">
+    <form method="GET" action="{{ url_for('crm.tarefas') }}" id="filterTarefasForm" class="row g-2 align-items-center">
+      <input type="hidden" name="filtro" value="{{ filtro }}">
+
+      <!-- Filtro 1: Funil de Vendas -->
+      <div class="col-12 col-sm-6 col-md-3">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-white text-muted">
+            <i class="fa-solid fa-filter"></i>
+          </span>
+          <select name="funil_id" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="all" {% if funil_id == 'all' or not funil_id %}selected{% endif %}>Todos os Funis</option>
+            {% for f in funis %}
+              <option value="{{ f.id }}" {% if funil_id == f.id %}selected{% endif %}>{{ f.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Filtro 2: Responsável / Consultor -->
+      <div class="col-12 col-sm-6 col-md-3">
+        {% if can_view_all_deals %}
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white text-muted">
+              <i class="fa-solid fa-user-tie"></i>
+            </span>
+            <select name="user_id" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="all" {% if user_id is none or user_id == 'all' %}selected{% endif %}>Todos os Consultores</option>
+              {% for c in consultores %}
+                <option value="{{ c.id }}" {% if user_id == c.id %}selected{% endif %}>
+                  {{ c.nome_completo or c.usuario }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        {% else %}
+          <input type="hidden" name="user_id" value="{{ current_user.id }}">
+          <div class="input-group input-group-sm" title="Visão restrita às suas tarefas comerciais">
+            <span class="input-group-text bg-white text-primary">
+              <i class="fa-solid fa-user-check"></i>
+            </span>
+            <span class="form-control form-control-sm bg-light text-truncate fw-semibold text-primary" style="font-size: 0.8rem; cursor: default;">
+              {{ current_user.nome_completo or current_user.usuario }}
+            </span>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Filtro 3: Status da Oportunidade -->
+      <div class="col-12 col-sm-6 col-md-3">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-white text-muted">
+            <i class="fa-solid fa-signal"></i>
+          </span>
+          <select name="deal_status" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="aberto" {% if deal_status == 'aberto' %}selected{% endif %}>Oportunidades em andamento</option>
+            <option value="all" {% if deal_status == 'all' %}selected{% endif %}>Todas as oportunidades</option>
+            <option value="ganho" {% if deal_status == 'ganho' %}selected{% endif %}>Ganhas</option>
+            <option value="perdido" {% if deal_status == 'perdido' %}selected{% endif %}>Perdidas</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Filtro 4: Tipo de Atividade -->
+      <div class="col-12 col-sm-6 col-md-2">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-white text-muted">
+            <i class="fa-solid fa-tag"></i>
+          </span>
+          <select name="tipo" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="all" {% if tipo == 'all' or not tipo %}selected{% endif %}>Todas as Atividades</option>
+            <option value="whatsapp" {% if tipo == 'whatsapp' %}selected{% endif %}>WhatsApp</option>
+            <option value="ligacao" {% if tipo == 'ligacao' %}selected{% endif %}>Ligação</option>
+            <option value="reuniao" {% if tipo == 'reuniao' %}selected{% endif %}>Reunião</option>
+            <option value="email" {% if tipo == 'email' %}selected{% endif %}>Email</option>
+            <option value="visita" {% if tipo == 'visita' %}selected{% endif %}>Visita</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Filtro 5: Botão Limpar -->
+      <div class="col-12 col-sm-12 col-md-1">
+        {% if funil_id != 'all' or user_id or deal_status != 'aberto' or tipo != 'all' or search %}
+          <a href="{{ url_for('crm.tarefas') }}" class="btn btn-outline-secondary btn-sm w-100" title="Limpar Filtros">
+            <i class="fa-solid fa-rotate-left"></i> Limpar
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Semáforo Visual / Cards de Contadores (4 Semáforos) -->
+  <div class="row g-3 mb-4">
+    <!-- 1. Atrasadas (Vermelho) -->
+    <div class="col-6 col-md-3">
+      <a href="{{ url_for('crm.tarefas', filtro='atrasadas', user_id=user_id or 'all', funil_id=funil_id, deal_status=deal_status, tipo=tipo) }}" 
+         class="card border border-danger-subtle bg-danger-subtle cockpit-kpi-card p-3 {% if filtro in ['atrasadas', 'late'] %}active-filter border-danger{% endif %}">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="text-danger fw-bold text-uppercase small tracking-wide">Atrasadas</div>
+            <h2 class="fw-bold text-danger mb-0 mt-1">{{ counts.late if counts.late is defined else counts.atrasadas }}</h2>
+          </div>
+          <div class="bg-danger text-white rounded-circle p-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 46px; height: 46px;">
+            <i class="fa-solid fa-triangle-exclamation fs-5"></i>
+          </div>
+        </div>
+        <div class="small text-danger mt-2">
+          <i class="fa-solid fa-clock-rotate-left me-1"></i> Vencidas antes de hoje
+        </div>
+      </a>
+    </div>
+
+    <!-- 2. Hoje (Amarelo / Alerta) -->
+    <div class="col-6 col-md-3">
+      <a href="{{ url_for('crm.tarefas', filtro='hoje', user_id=user_id or 'all', funil_id=funil_id, deal_status=deal_status, tipo=tipo) }}" 
+         class="card border border-warning-subtle bg-warning-subtle cockpit-kpi-card p-3 {% if filtro in ['hoje', 'today'] %}active-filter border-warning{% endif %}">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="text-warning-emphasis fw-bold text-uppercase small tracking-wide">Para Hoje</div>
+            <h2 class="fw-bold text-warning-emphasis mb-0 mt-1">{{ counts.today if counts.today is defined else counts.hoje }}</h2>
+          </div>
+          <div class="bg-warning text-dark rounded-circle p-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 46px; height: 46px;">
+            <i class="fa-solid fa-calendar-day fs-5"></i>
+          </div>
+        </div>
+        <div class="small text-warning-emphasis mt-2">
+          <i class="fa-solid fa-bolt me-1"></i> Foco e prioridade do dia
+        </div>
+      </a>
+    </div>
+
+    <!-- 3. Próximas (Azul / No Prazo) -->
+    <div class="col-6 col-md-3">
+      <a href="{{ url_for('crm.tarefas', filtro='proximas', user_id=user_id or 'all', funil_id=funil_id, deal_status=deal_status, tipo=tipo) }}" 
+         class="card border border-primary-subtle bg-primary-subtle cockpit-kpi-card p-3 {% if filtro in ['proximas', 'upcoming'] %}active-filter border-primary{% endif %}">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="text-primary fw-bold text-uppercase small tracking-wide">Próximas</div>
+            <h2 class="fw-bold text-primary mb-0 mt-1">{{ counts.upcoming if counts.upcoming is defined else counts.proximas }}</h2>
+          </div>
+          <div class="bg-primary text-white rounded-circle p-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 46px; height: 46px;">
+            <i class="fa-solid fa-calendar-week fs-5"></i>
+          </div>
+        </div>
+        <div class="small text-primary mt-2">
+          <i class="fa-solid fa-calendar-plus me-1"></i> Vencimento futuro
+        </div>
+      </a>
+    </div>
+
+    <!-- 4. Concluídas (Verde) -->
+    <div class="col-6 col-md-3">
+      <a href="{{ url_for('crm.tarefas', filtro='concluidas', user_id=user_id or 'all', funil_id=funil_id, deal_status=deal_status, tipo=tipo) }}" 
+         class="card border border-success-subtle bg-success-subtle cockpit-kpi-card p-3 {% if filtro in ['concluidas', 'done'] %}active-filter border-success{% endif %}">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="text-success fw-bold text-uppercase small tracking-wide">Concluídas</div>
+            <h2 class="fw-bold text-success mb-0 mt-1">{{ counts.done if counts.done is defined else counts.concluidas }}</h2>
+          </div>
+          <div class="bg-success text-white rounded-circle p-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 46px; height: 46px;">
+            <i class="fa-solid fa-circle-check fs-5"></i>
+          </div>
+        </div>
+        <div class="small text-success mt-2">
+          <i class="fa-solid fa-clipboard-check me-1"></i> Finalizadas com sucesso
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Barra de Filtro e Abas Rápidas -->
+  <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3 flex-wrap gap-2">
+    <div class="btn-group btn-group-sm" role="group">
+      <a href="{{ url_for('crm.tarefas', filtro='hoje', user_id=user_id or 'all', funil_id=funil_id, deal_status=deal_status, tipo=tipo) }}" 
+         class="btn {% if filtro in ['hoje', 'today'] %}btn-warning text-dark fw-bold{% else %}btn-outline-secondary{% endif %}">
+        <i class="fa-solid fa-calendar-day me-1"></i> Hoje ({{ counts.today if counts.today is defined else counts.hoje }})
+      </a>
+      <a href="{{ url_for('crm.tarefas', filtro='atrasadas', user_id=user_id or 'all', funil_id=funil_id, deal_status=deal_status, tipo=tipo) }}" 
+         class="btn {% if filtro in ['atrasadas', 'late'] %}btn-danger text-white fw-bold{% else %}btn-outline-secondary{% endif %}">
+        <i class="fa-solid fa-triangle-exclamation me-1"></i> Atrasadas ({{ counts.late if counts.late is defined else counts.atrasadas }})
+      </a>
+      <a href="{{ url_for('crm.tarefas', filtro='proximas', user_id=user_id or 'all', funil_id=funil_id, deal_status=deal_status, tipo=tipo) }}" 
+         class="btn {% if filtro in ['proximas', 'upcoming'] %}btn-primary text-white fw-bold{% else %}btn-outline-secondary{% endif %}">
+        <i class="fa-solid fa-calendar-week me-1"></i> Próximas ({{ counts.upcoming if counts.upcoming is defined else counts.proximas }})
+      </a>
+      <a href="{{ url_for('crm.tarefas', filtro='concluidas', user_id=user_id or 'all', funil_id=funil_id, deal_status=deal_status, tipo=tipo) }}" 
+         class="btn {% if filtro in ['concluidas', 'done'] %}btn-success text-white fw-bold{% else %}btn-outline-secondary{% endif %}">
+        <i class="fa-solid fa-circle-check me-1"></i> Concluídas ({{ counts.done if counts.done is defined else counts.concluidas }})
+      </a>
+      <a href="{{ url_for('crm.tarefas', filtro='todas', user_id=user_id or 'all', funil_id=funil_id, deal_status=deal_status, tipo=tipo) }}" 
+         class="btn {% if filtro == 'todas' %}btn-dark text-white fw-bold{% else %}btn-outline-secondary{% endif %}">
+        <i class="fa-solid fa-list me-1"></i> Todas as Tarefas
+      </a>
+    </div>
+
+    <div class="text-muted small">
+      Visualizando <strong>{{ tarefas|length }}</strong> tarefas filtradas
+    </div>
+  </div>
+
+  <!-- Lista de Tarefas do Cockpit -->
+  <div class="card border shadow-sm">
+    {% if tarefas and tarefas|length > 0 %}
+      <div class="table-responsive">
+        <table class="table crm-table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 40px;" class="ps-3 text-center">Status</th>
+              <th>Título da Tarefa & Negociação</th>
+              <th class="col-tipo text-center">Tipo</th>
+              <th class="col-vencimento text-center">Vencimento</th>
+              <th>Empresa / Contato</th>
+              <th class="text-nowrap" style="min-width: 120px;">Consultor</th>
+              <th class="col-acoes text-end pe-3">Ações Rápidas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in tarefas %}
+              <tr id="task-row-{{ t.id }}" class="task-row {% if t.concluida %}task-concluida table-light{% endif %}">
+                <!-- Checkbox de Conclusão / Toggle -->
+                <td class="ps-3 text-center">
+                  <div class="form-check d-flex justify-content-center">
+                    <input class="form-check-input task-toggle-check" 
+                           type="checkbox" 
+                           data-task-id="{{ t.id }}"
+                           {% if t.concluida %}checked{% endif %}
+                           title="Clique para alternar status da tarefa">
+                  </div>
+                </td>
+
+                <!-- Título e Negociação -->
+                <td>
+                  <div class="fw-semibold text-dark {% if t.concluida %}text-decoration-line-through text-muted{% endif %}">
+                    {{ t.titulo }}
+                  </div>
+                  {% if t.observacao %}
+                    <div class="small text-muted text-truncate" style="max-width: 380px;">
+                      {{ t.observacao }}
+                    </div>
+                  {% endif %}
+                  {% if t.negociacao %}
+                    <div class="small mt-1">
+                      <span class="badge bg-light text-secondary border">
+                        <i class="fa-solid fa-handshake me-1"></i>
+                        {{ t.negociacao.nome }}
+                      </span>
+                    </div>
+                  {% endif %}
+                </td>
+
+                <!-- Tipo da Tarefa -->
+                <td class="col-tipo text-center">
+                  {% if t.tipo == 'whatsapp' %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">
+                      <i class="fa-brands fa-whatsapp me-1"></i> WhatsApp
+                    </span>
+                  {% elif t.tipo == 'ligacao' %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">
+                      <i class="fa-solid fa-phone me-1"></i> Ligação
+                    </span>
+                  {% elif t.tipo == 'reuniao' %}
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">
+                      <i class="fa-solid fa-users me-1"></i> Reunião
+                    </span>
+                  {% elif t.tipo == 'email' %}
+                    <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill">
+                      <i class="fa-solid fa-envelope me-1"></i> E-mail
+                    </span>
+                  {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary border rounded-pill">
+                      <i class="fa-solid fa-list-check me-1"></i> {{ t.tipo|capitalize }}
+                    </span>
+                  {% endif %}
+                </td>
+
+                <!-- Vencimento com Semáforo -->
+                <td class="col-vencimento text-center">
+                  {% if t.concluida %}
+                    <span class="traffic-pill bg-success-subtle text-success border border-success-subtle">
+                      <i class="fa-solid fa-check me-1"></i> Concluída
+                    </span>
+                  {% elif t.data_vencimento and t.data_vencimento.date() < now_date %}
+                    <span class="traffic-pill bg-danger text-white shadow-sm">
+                      <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                      {{ t.data_vencimento.strftime('%d/%m/%Y %H:%M') if t.data_vencimento else 'Atrasada' }}
+                    </span>
+                  {% elif t.data_vencimento and t.data_vencimento.date() == now_date %}
+                    <span class="traffic-pill bg-warning text-dark shadow-sm">
+                      <i class="fa-solid fa-clock me-1"></i>
+                      Hoje às {{ t.data_vencimento.strftime('%H:%M') if t.data_vencimento else 'Hoje' }}
+                    </span>
+                  {% else %}
+                    <span class="traffic-pill bg-primary-subtle text-primary border border-primary-subtle">
+                      <i class="fa-solid fa-calendar me-1"></i>
+                      {{ t.data_vencimento.strftime('%d/%m/%Y %H:%M') if t.data_vencimento else 'Futuro' }}
+                    </span>
+                  {% endif %}
+                </td>
+
+                <!-- Empresa e Contato Completo -->
+                <td>
+                  <div class="fw-semibold small text-dark d-flex align-items-center gap-1 flex-wrap">
+                    <span>{{ t.negociacao.smart_empresa_nome if t.negociacao else '-' }}</span>
+                    {% if t.negociacao and t.negociacao.empresa and t.negociacao.empresa.cnpj %}
+                      <span class="badge bg-light text-secondary border font-monospace px-1 py-0" style="font-size: 0.72rem;" title="CNPJ da Empresa">
+                        <i class="fa-regular fa-id-card me-1 text-muted"></i>{{ t.negociacao.empresa.cnpj }}
+                      </span>
+                    {% endif %}
+                    {% if t.negociacao and (t.negociacao.localidade_lead or t.negociacao.filial) %}
+                      <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-1 py-0" style="font-size: 0.70rem;" title="Localidade / Região">
+                        <i class="fa-solid fa-location-dot me-1"></i>{{ t.negociacao.localidade_lead or t.negociacao.filial }}
+                      </span>
+                    {% endif %}
+                  </div>
+                  {% if t.negociacao and t.negociacao.contato %}
+                    <div class="text-muted small mt-1 d-flex align-items-center gap-2 flex-wrap">
+                      <div>
+                        <i class="fa-regular fa-user me-1"></i>
+                        <span class="fw-medium text-dark">{{ t.negociacao.contato.nome }}</span>
+                      </div>
+                      {% if t.negociacao.contato.email %}
+                        <div class="text-secondary" title="E-mail de Contato">
+                          <i class="fa-regular fa-envelope me-1"></i>{{ t.negociacao.contato.email }}
+                        </div>
+                      {% endif %}
+                      {% if t.negociacao.contato.celular or t.negociacao.contato.telefone %}
+                        <div class="text-secondary">
+                          <i class="fa-solid fa-phone me-1"></i>{{ t.negociacao.contato.celular or t.negociacao.contato.telefone }}
+                        </div>
+                      {% endif %}
+                    </div>
+                  {% elif t.negociacao and t.negociacao.empresa and t.negociacao.empresa.email %}
+                    <div class="text-muted small mt-1">
+                      <i class="fa-regular fa-envelope me-1"></i>{{ t.negociacao.empresa.email }}
+                    </div>
+                  {% endif %}
+                </td>
+
+                <!-- Consultor -->
+                <td class="text-nowrap">
+                  <span class="small text-muted">
+                    {{ t.negociacao.user_name if t.negociacao and t.negociacao.user_name else 'Não atribuído' }}
+                  </span>
+                </td>
+
+                <!-- Botões de Ação Rápida -->
+                <td class="col-acoes text-end pe-3">
+                  <div class="btn-group btn-group-sm">
+                    <!-- Botão 1-Clique WhatsApp -->
+                    {% set phone = t.negociacao.contato.celular or t.negociacao.contato.telefone if t.negociacao and t.negociacao.contato else '' %}
+                    {% if phone %}
+                      <button type="button" 
+                              class="btn btn-outline-success btn-sm btn-quick-whatsapp" 
+                              data-deal-id="{{ t.negociacao_id }}"
+                              data-phone="{{ phone }}"
+                              data-contact-name="{{ t.negociacao.contato.nome if t.negociacao and t.negociacao.contato else '' }}"
+                              data-company-name="{{ t.negociacao.smart_empresa_nome if t.negociacao else '' }}"
+                              title="Disparo de WhatsApp com Template">
+                        <i class="fa-brands fa-whatsapp"></i>
+                      </button>
+                    {% endif %}
+
+                    <!-- Botão Adicionar Nota / Interação rápida -->
+                    <button type="button" 
+                            class="btn btn-outline-primary btn-sm btn-quick-note" 
+                            data-deal-id="{{ t.negociacao_id }}"
+                            data-deal-name="{{ t.negociacao.nome if t.negociacao else '' }}"
+                            title="Registrar Nota / Interação na Timeline">
+                      <i class="fa-solid fa-comment-dots"></i>
+                    </button>
+
+                    <!-- Ir para Funil / Ver Deal -->
+                    {% if t.negociacao %}
+                      <a href="{{ url_for('crm.kanban', funil_id=t.negociacao.funil_id) }}" 
+                         class="btn btn-outline-secondary btn-sm" 
+                         title="Abrir Negociação no Funil">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                      </a>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <!-- Estado Vazio / Sem Tarefas -->
+      <div class="card-body text-center py-5">
+        <div class="empty-state-icon mb-3">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <h4 class="fw-bold text-dark">Tudo em dia!</h4>
+        <p class="text-muted mb-3" style="max-width: 480px; margin: 0 auto;">
+          Nenhuma tarefa pendente encontrada para esta categoria de filtro. Continue mantendo seus follow-ups comerciais organizados!
+        </p>
+        <div class="d-flex justify-content-center gap-2">
+          <a href="{{ url_for('crm.tarefas', filtro='todas', user_id=user_id or 'all', funil_id=funil_id, deal_status=deal_status, tipo=tipo) }}" class="btn btn-sm btn-outline-primary">
+            <i class="fa-solid fa-list me-1"></i> Ver todas as tarefas
+          </a>
+          <a href="{{ url_for('crm.kanban', funil_id=funil_id if (funil_id and funil_id != 'all') else (funis[0].id if funis else '')) }}" class="btn btn-sm btn-primary">
+            <i class="fa-solid fa-table-columns me-1"></i> Abrir Quadro do Funil
+          </a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Modal 1-Clique WhatsApp com Templates -->
+<div class="modal fade" id="modalWhatsappCockpit" tabindex="-1" aria-labelledby="modalWhatsappCockpitLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title d-flex align-items-center gap-2" id="modalWhatsappCockpitLabel">
+          <i class="fa-brands fa-whatsapp fs-4"></i>
+          <span>1-Click WhatsApp — Envio Rápido</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="waDealId">
+        
+        <div class="mb-3">
+          <label class="form-label small fw-semibold text-muted">Destinatário & Telefone:</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text"><i class="fa-solid fa-phone"></i></span>
+            <input type="text" id="waPhone" class="form-control" placeholder="(DD) 99999-9999">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold text-muted">Modelo de Mensagem (Template):</label>
+          <select id="waTemplateSelect" class="form-select form-select-sm">
+            <option value="">-- Selecione um modelo rápido --</option>
+            {% for tpl in templates_whatsapp %}
+              <option value="{{ tpl.id }}" data-template="{{ tpl.conteudo }}">{{ tpl.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold text-muted">Mensagem Pronta (com variáveis dinâmicas substituídas):</label>
+          <textarea id="waMessageText" class="form-control" rows="4" placeholder="A mensagem gerada aparecerá aqui..."></textarea>
+          <div class="form-text small text-muted">
+            Marcadores suportados: {nome_contato}, {empresa}, {consultor}, {link_proposta}, {saudacao}.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm btn-success d-flex align-items-center gap-1" id="btnLaunchWhatsApp">
+          <i class="fa-brands fa-whatsapp"></i> Abrir no WhatsApp Web/App
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Registro Rápido de Interação na Timeline -->
+<div class="modal fade" id="modalQuickNote" tabindex="-1" aria-labelledby="modalQuickNoteLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title d-flex align-items-center gap-2" id="modalQuickNoteLabel">
+          <i class="fa-solid fa-comment-dots fs-5"></i>
+          <span>Registrar Interação na Timeline</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="noteDealId">
+        <p class="small text-muted mb-3" id="noteDealTitle"></p>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold text-muted">Tipo de Contato / Interação:</label>
+          <select id="noteTipo" class="form-select form-select-sm">
+            <option value="whatsapp">Mensagem de WhatsApp</option>
+            <option value="ligacao">Ligação Telefônica</option>
+            <option value="email">E-mail Enviado / Recebido</option>
+            <option value="reuniao">Reunião / Demonstração</option>
+            <option value="anotacao" selected>Anotação Geral</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold text-muted">Conteúdo do Registro:</label>
+          <textarea id="noteConteudo" class="form-control" rows="4" placeholder="Descreva o que foi conversado ou alinhado com o cliente..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm btn-primary" id="btnSaveQuickNote">
+          <i class="fa-solid fa-check me-1"></i> Salvar na Linha do Tempo
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Cadastro Rápido de Oportunidade / Lead (RD Station CRM) -->
+{% include "crm/_modal_novo_lead.html" %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta) return meta.getAttribute("content");
+    const inp = document.querySelector('input[name="csrf_token"]');
+    return inp ? inp.value : "";
+  }
+
+  // 1. Toggle Conclusão de Tarefa
+  document.querySelectorAll(".task-toggle-check").forEach(function (checkbox) {
+    checkbox.addEventListener("change", function () {
+      const taskId = this.getAttribute("data-task-id");
+      const isChecked = this.checked;
+      const row = document.getElementById("task-row-" + taskId);
+
+      fetch("/crm/api/tarefas/" + taskId + "/toggle", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCsrfToken()
+        },
+        body: JSON.stringify({ concluida: isChecked })
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.success) {
+          if (row) {
+            if (isChecked) {
+              row.classList.add("task-concluida", "table-light");
+            } else {
+              row.classList.remove("task-concluida", "table-light");
+            }
+          }
+        } else {
+          alert("Erro ao alterar tarefa: " + (data.error || "Erro desconhecido"));
+          checkbox.checked = !isChecked;
+        }
+      })
+      .catch(function (err) {
+        alert("Erro de conexão ao alterar tarefa.");
+        checkbox.checked = !isChecked;
+      });
+    });
+  });
+
+  // 2. Modal de 1-Click WhatsApp
+  const waModal = new bootstrap.Modal(document.getElementById("modalWhatsappCockpit"));
+  const waDealId = document.getElementById("waDealId");
+  const waPhone = document.getElementById("waPhone");
+  const waSelect = document.getElementById("waTemplateSelect");
+  const waText = document.getElementById("waMessageText");
+  const btnLaunch = document.getElementById("btnLaunchWhatsApp");
+
+  document.querySelectorAll(".btn-quick-whatsapp").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const dealId = this.getAttribute("data-deal-id");
+      const phone = this.getAttribute("data-phone");
+      waDealId.value = dealId;
+      waPhone.value = phone || "";
+      waSelect.selectedIndex = 0;
+      waText.value = "";
+      waModal.show();
+    });
+  });
+
+  waSelect.addEventListener("change", function () {
+    const templateId = this.value;
+    const dealId = waDealId.value;
+    const phone = waPhone.value;
+    if (!templateId) return;
+
+    fetch("/crm/api/templates-whatsapp/render", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCsrfToken()
+      },
+      body: JSON.stringify({
+        template_id: templateId,
+        deal_id: dealId,
+        telefone: phone
+      })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.success) {
+        waText.value = data.rendered_text;
+      }
+    })
+    .catch(function (err) {
+      console.error("Erro ao renderizar template:", err);
+    });
+  });
+
+  btnLaunch.addEventListener("click", function () {
+    const phone = waPhone.value.trim();
+    const text = waText.value.trim();
+    if (!phone) {
+      alert("Por favor, informe o telefone de destino.");
+      return;
+    }
+    const cleanDigits = phone.replace(/\D/g, "").replace(/^0+/, "");
+    const finalPhone = (cleanDigits.startsWith("55") && (cleanDigits.length === 12 || cleanDigits.length === 13))
+      ? cleanDigits
+      : (cleanDigits.length === 10 || cleanDigits.length === 11 ? "55" + cleanDigits : cleanDigits);
+
+    const waUrl = "https://api.whatsapp.com/send?phone=" + finalPhone + "&text=" + encodeURIComponent(text);
+    
+    // Registra na timeline automaticamente se houver deal vinculado
+    const dealId = waDealId.value;
+    if (dealId) {
+      fetch("/crm/api/negociacoes/" + dealId + "/interacoes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCsrfToken()
+        },
+        body: JSON.stringify({
+          tipo: "whatsapp",
+          conteudo: "WhatsApp disparado para " + phone + (text ? ":\n" + text : ".")
+        })
+      }).catch(function (e) { console.warn(e); });
+    }
+
+    window.open(waUrl, "_blank");
+    waModal.hide();
+  });
+
+  // 3. Modal de Registro Rápido de Interação
+  const noteModal = new bootstrap.Modal(document.getElementById("modalQuickNote"));
+  const noteDealId = document.getElementById("noteDealId");
+  const noteDealTitle = document.getElementById("noteDealTitle");
+  const noteTipo = document.getElementById("noteTipo");
+  const noteConteudo = document.getElementById("noteConteudo");
+  const btnSaveNote = document.getElementById("btnSaveQuickNote");
+
+  document.querySelectorAll(".btn-quick-note").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const dealId = this.getAttribute("data-deal-id");
+      const dealName = this.getAttribute("data-deal-name");
+      noteDealId.value = dealId;
+      noteDealTitle.textContent = dealName ? "Negociação: " + dealName : "";
+      noteConteudo.value = "";
+      noteModal.show();
+    });
+  });
+
+  btnSaveNote.addEventListener("click", function () {
+    const dealId = noteDealId.value;
+    const conteudo = noteConteudo.value.trim();
+    const tipo = noteTipo.value;
+
+    if (!conteudo) {
+      alert("Por favor, digite o conteúdo da interação.");
+      return;
+    }
+
+    btnSaveNote.disabled = true;
+    fetch("/crm/api/negociacoes/" + dealId + "/interacoes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCsrfToken()
+      },
+      body: JSON.stringify({ conteudo: conteudo, tipo: tipo })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      btnSaveNote.disabled = false;
+      if (data.success) {
+        noteModal.hide();
+        alert("Interação registrada com sucesso na timeline!");
+      } else {
+        alert("Erro ao registrar: " + (data.error || "Erro desconhecido"));
+      }
+    })
+    .catch(function (err) {
+      btnSaveNote.disabled = false;
+      alert("Erro de conexão ao registrar interação.");
+    });
+  });
+
+  // 4. Alternância Dinâmica de Filtro de Vendas do Consultor (Mensal, Anual, Todas)
+  let salesStatsData = {{ sales_stats|tojson|safe if sales_stats else '{}' }};
+
+  window.switchSalesPeriod = function(period) {
+    if (!salesStatsData || !salesStatsData[period]) return;
+
+    // Atualiza botões
+    document.querySelectorAll(".sales-tab-btn").forEach(function(btn) {
+      if (btn.getAttribute("data-period") === period) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+
+    const data = salesStatsData[period];
+    const countEl = document.getElementById("salesCountDisplay");
+    const labelEl = document.getElementById("salesPeriodLabel");
+    const valueEl = document.getElementById("salesValueDisplay");
+
+    if (labelEl && data.label) {
+      labelEl.textContent = data.label;
+    }
+
+    if (countEl) {
+      countEl.style.opacity = "0.2";
+      setTimeout(function() {
+        countEl.textContent = data.count;
+        countEl.style.opacity = "1";
+      }, 100);
+    }
+
+    if (valueEl && data.valor_formatado) {
+      valueEl.style.opacity = "0.2";
+      setTimeout(function() {
+        valueEl.textContent = data.valor_formatado;
+        valueEl.style.opacity = "1";
+      }, 100);
+    }
+  };
+
+  // 5. Troca Rápida de Consultor no Card do Topo (Gestores & Admin)
+  window.onHeroConsultorChange = function(userId) {
+    if (userId === undefined || userId === null) return;
+
+    const countEl = document.getElementById("salesCountDisplay");
+    const valueEl = document.getElementById("salesValueDisplay");
+    if (countEl) countEl.style.opacity = "0.2";
+    if (valueEl) valueEl.style.opacity = "0.2";
+
+    fetch(`/crm/api/consultor-vendas/${userId}`)
+      .then(function(r) { return r.json(); })
+      .then(function(res) {
+        if (!res || !res.success || !res.data) return;
+        salesStatsData = res.data;
+        const consultor = res.data.consultor || {};
+
+        // Atualizar foto/avatar
+        const imgEl = document.getElementById("heroAvatarImg");
+        const fbEl = document.getElementById("heroAvatarFallback");
+        if (imgEl && fbEl) {
+          if (consultor.avatar_path) {
+            imgEl.src = "/static/" + consultor.avatar_path;
+            imgEl.style.display = "block";
+            fbEl.style.display = "none";
+          } else {
+            imgEl.style.display = "none";
+            fbEl.style.display = "flex";
+            fbEl.textContent = (consultor.nome || "CO").substring(0, 2).toUpperCase();
+          }
+        }
+
+        // Atualizar email
+        const emailEl = document.getElementById("heroConsultorEmail");
+        if (emailEl) {
+          emailEl.innerHTML = '<i class="fa-regular fa-envelope me-1"></i>' + (consultor.email || "comercial@sollusgroup.com");
+        }
+
+        // Atualizar ramal
+        const ramalEl = document.getElementById("heroConsultorRamal");
+        const ramalNum = document.getElementById("heroConsultorRamalNum");
+        if (ramalEl && ramalNum) {
+          if (consultor.ramal) {
+            ramalNum.textContent = consultor.ramal;
+            ramalEl.style.display = "inline";
+          } else {
+            ramalEl.style.display = "none";
+          }
+        }
+
+        // Manter período ativo selecionado
+        const activeBtn = document.querySelector(".sales-tab-btn.active");
+        const activePeriod = activeBtn ? activeBtn.getAttribute("data-period") : "mensal";
+        window.switchSalesPeriod(activePeriod);
+      })
+      .catch(function(err) {
+        console.error("Falha ao atualizar dados de vendas:", err);
+      })
+      .finally(function() {
+        if (countEl) countEl.style.opacity = "1";
+        if (valueEl) valueEl.style.opacity = "1";
+      });
+  };
+
+  window.filtrarTarefasPorConsultor = function() {
+    const select = document.getElementById("heroConsultorSelect");
+    if (!select) return;
+    const val = select.value;
+    const filterSelect = document.querySelector('select[name="user_id"]');
+    if (filterSelect) {
+      filterSelect.value = (val === "0" ? "all" : val);
+      const form = document.getElementById("filterTarefasForm");
+      if (form) form.submit();
+    }
+  };
+});
+</script>
+{% endblock %}

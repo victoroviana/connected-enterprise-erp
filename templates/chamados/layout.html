@@ -31,11 +31,47 @@
   --chart-grid: #e2e8f0;
 }
 /* Tema escuro (controlado via data-theme no <html>) */
+html[data-theme="dark"],
 :root[data-theme="dark"]{
   --bg:#0b1220; --card:#0e1726; --text:#e7eefc; --muted:#93a2c9;
   --chart-text: #94a3b8;
   --chart-grid: rgba(255,255,255,0.1);
+  --bs-body-bg: var(--bg);
+  --bs-body-color: var(--text);
+  --bs-border-color: #263248;
+  color-scheme: dark;
 }
+
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .card .card-header{
+  background: #0e1726 !important;
+  color: var(--text) !important;
+  border-color: #1e293b !important;
+}
+
+html[data-theme="dark"] .table th,
+html[data-theme="dark"] .table td{
+  color: var(--text) !important;
+  border-color: #263248 !important;
+}
+
+html[data-theme="dark"] .form-control,
+html[data-theme="dark"] .form-select,
+html[data-theme="dark"] textarea{
+  background-color: #1b2436 !important;
+  border-color: #2b364e !important;
+  color: #e8eefc !important;
+}
+
+html[data-theme="dark"] .modal-content{
+  background: #0e1726 !important;
+  color: #e8eefc !important;
+  border-color: #1e293b !important;
+}
+
+html[data-theme="dark"] .text-dark{ color: var(--text) !important; }
+html[data-theme="dark"] .bg-light{ background: #0e1726 !important; }
+html[data-theme="dark"] .text-muted{ color: #cbd5e1 !important; }
 
 *{ box-sizing:border-box }
 html,body{ height:100% }
@@ -178,11 +214,87 @@ main.content{
   body.sidebar-collapsed main.content{ margin-left: var(--rail-w) }
 }
 
-/* FOOTER */
-.site-footer{
-  position: static; background: var(--card); color: var(--muted);
-  border-top:1px solid rgba(16,24,40,.08);
-  padding: 1rem 1.25rem; font-size:.93rem;
+/* FOOTER CIBERNÉTICO */
+.site-footer {
+  flex-shrink: 0;
+  margin-top: auto;
+  position: relative;
+  background: var(--nav-bg, rgba(255, 255, 255, 0.94)) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border-top: 1px solid var(--card-border, rgba(16, 24, 40, 0.08)) !important;
+  padding: 1.25rem 0 1rem 0 !important;
+  color: var(--text) !important;
+  box-shadow: 0 -4px 20px -2px rgba(0, 0, 0, 0.04) !important;
+  transition: background 0.25s ease, border-color 0.25s ease, margin-left 0.25s ease !important;
+}
+.site-footer::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1.5px;
+  background: linear-gradient(90deg, transparent 5%, var(--brand-blue, #0084c8) 30%, #00b4d8 70%, transparent 95%);
+  opacity: 0.75;
+}
+.site-footer-inner {
+  display: flex; flex-direction: column; gap: 0.85rem;
+  padding-left: 1.5rem !important; padding-right: 1.5rem !important;
+}
+.footer-primary-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; flex-wrap: wrap;
+}
+.footer-brand-block { display: flex; flex-direction: column; gap: 0.25rem; }
+.footer-brand-title { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; }
+.brand-text-sollus { font-weight: 800; letter-spacing: 0.5px; }
+.brand-text-connected { font-weight: 700; letter-spacing: 0.5px; color: var(--brand-blue, #0084c8); }
+.footer-status-pill {
+  display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.7rem; font-weight: 600;
+  padding: 0.15rem 0.55rem; border-radius: 9999px; background: rgba(16, 185, 129, 0.1);
+  color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); margin-left: 0.4rem;
+}
+.status-pulse-dot {
+  width: 6px; height: 6px; border-radius: 50%; background-color: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.7); animation: statusDotPulse 2s ease-in-out infinite;
+}
+@keyframes statusDotPulse {
+  0%, 100% { opacity: 0.5; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+.footer-copyright { font-size: 0.78rem; color: var(--muted); }
+.footer-channels-block { display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; }
+.footer-channel-badge {
+  display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.9rem;
+  border-radius: 10px; background: var(--card); border: 1px solid rgba(16, 24, 40, 0.08);
+  color: var(--muted) !important; text-decoration: none !important; font-size: 0.8rem; font-weight: 500;
+  transition: all 0.2s ease;
+}
+.footer-channel-badge i { color: var(--brand-blue, #0084c8); font-size: 0.9rem; }
+.footer-channel-badge:hover {
+  color: var(--brand-blue, #0084c8) !important; border-color: var(--brand-blue, #0084c8);
+  transform: translateY(-1.5px); box-shadow: 0 4px 14px rgba(0, 132, 200, 0.25);
+}
+.footer-secondary-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.85rem; flex-wrap: wrap;
+  padding-top: 0.75rem; border-top: 1px solid rgba(16, 24, 40, 0.08);
+}
+.footer-units-label {
+  display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.76rem; font-weight: 600;
+  color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+}
+.footer-units-label i { color: var(--brand-blue, #0084c8); }
+.footer-units-list { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
+.footer-unit-chip {
+  display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.28rem 0.7rem;
+  border-radius: 8px; background: var(--card); border: 1px solid rgba(16, 24, 40, 0.08);
+  color: var(--text) !important; text-decoration: none !important; font-size: 0.78rem; font-weight: 500;
+  transition: all 0.2s ease;
+}
+.footer-unit-chip .unit-tag {
+  font-weight: 700; font-size: 0.7rem; color: var(--brand-blue, #0084c8);
+  background: rgba(0, 132, 200, 0.08); padding: 0.15rem 0.4rem; border-radius: 5px;
+}
+.footer-unit-chip:hover {
+  color: var(--brand-blue, #0084c8) !important; border-color: var(--brand-blue, #0084c8);
+  transform: translateY(-1.5px); box-shadow: 0 4px 12px rgba(0, 132, 200, 0.25);
 }
 @media (min-width: 992px){
   .site-footer{ margin-left: var(--side-w); }
@@ -287,8 +399,44 @@ main.content{
 .menu-flat .nav-link:hover{ background:rgba(15,123,200,.08); color:var(--text); }
 .menu-flat .nav-link.active{ background:rgba(15,123,200,.15); color:var(--blue-800); }
 
-/* MUITO IMPORTANTE: mesmo colapsada, o .menu-flat continua visvel */
+/* MUITO IMPORTANTE: mesmo colapsada, o .menu-flat continua visível */
 body.sidebar-collapsed .sidebar .menu-flat{ display:block !important; }
+
+/* ==========================================================================
+   Efeito Frosted Glass / Desfoque de Fundo para Todos os Modais do Sistema
+   ========================================================================== */
+.modal-backdrop {
+  background-color: rgba(15, 23, 42, 0.48) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), backdrop-filter 0.25s ease, -webkit-backdrop-filter 0.25s ease !important;
+}
+
+.modal-backdrop.show {
+  opacity: 1 !important;
+  background-color: rgba(15, 23, 42, 0.48) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}
+
+.modal-content {
+  border-radius: 16px !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="dark"] .modal-content,
+[data-bs-theme="dark"] .modal-content,
+html[data-theme="dark"] .modal-content {
+  background: #1e2535 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+.swal2-container.swal2-backdrop-show {
+  background-color: rgba(15, 23, 42, 0.48) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}
 
 </style>
 </head>
@@ -359,8 +507,8 @@ body.sidebar-collapsed .sidebar .menu-flat{ display:block !important; }
       {# === KANBAN === #}
       {% set role = (current_user.role or '') %}
       {% if current_user.is_authenticated and (role in ['admin','gestor','agent']) %}
-      <a class="nav-link {{ 'active' if (request.endpoint and request.endpoint.startswith('kanban.')) else '' }}"
-         href="{{ url_for('kanban.board') }}">
+      <a class="nav-link {{ 'active' if (request.endpoint and request.endpoint.startswith('central_conhecimento.')) else '' }}"
+         href="{{ url_for('central_conhecimento.board') }}">
         <i class="fa-solid fa-book-open"></i>
         <span class="label">Central de Conhecimento</span>
       </a>
@@ -411,25 +559,66 @@ body.sidebar-collapsed .sidebar .menu-flat{ display:block !important; }
   <div class="container-fluid">{% block content %}{% endblock %}</div>
 </main>
 
-<footer class="site-footer">
-  <div class="container-fluid d-flex align-items-center justify-content-between gap-2 flex-wrap">
-    <div><strong>Sollus Connected</strong>  <span id="footerYear"></span> &copy; Todos os direitos reservados.</div>
-    <div class="d-flex align-items-center gap-3 flex-wrap">
-      <a href="mailto:suporte.remoto@sollusgroup.com" class="text-decoration-none"><i class="bi bi-envelope"></i> suporte.remoto@sollusgroup.com</a>
-      <span></span>
-      <a href="https://www.sollusgroup.com/" target="_blank" rel="noopener" class="text-decoration-none"><i class="bi bi-globe2"></i> sollusgroup.com</a>
-      <span></span>
-      <span class="d-flex align-items-center gap-2 flex-wrap">
-        <i class="bi bi-telephone"></i>
-        <a href="tel:+552124133203">RJ (21) 2413-3203</a> 
-        <a href="tel:+552227333722">Campos-RJ (22) 2733-3722</a> 
-        <a href="tel:+552730724863">Vila Velha-ES (27) 3072-4863</a> 
-        <a href="tel:+554137975093">Curitiba-PR (41) 3797-5093</a> 
-        <a href="tel:+551140406767">SP (11) 4040-6767</a>
-      </span>
+  <!-- FOOTER CIBERNÉTICO SOLLUS -->
+  <footer class="site-footer">
+    <div class="site-footer-inner container-fluid">
+      <div class="footer-primary-row">
+        <div class="footer-brand-block">
+          <div class="footer-brand-title">
+            <span class="brand-text-sollus">SOLLUS</span>
+            <span class="brand-text-connected">CONNECTED</span>
+            <span class="footer-status-pill">
+              <span class="status-pulse-dot"></span>
+              Sistemas Operacionais
+            </span>
+          </div>
+          <div class="footer-copyright">
+            &copy; <span id="footerYear"></span> Sollus Tecnologia &bull; Plataforma Integrada de Gestão &amp; Operações. Todos os direitos reservados.
+          </div>
+        </div>
+
+        <div class="footer-channels-block">
+          <a href="mailto:ti2@sollusgroup.com" class="footer-channel-badge" title="E-mail de Suporte Remoto">
+            <i class="bi bi-envelope-fill"></i>
+            <span>ti2@sollusgroup.com</span>
+          </a>
+          <a href="https://www.sollusgroup.com/" target="_blank" rel="noopener" class="footer-channel-badge" title="Portal Oficial">
+            <i class="bi bi-globe2"></i>
+            <span>sollusgroup.com</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="footer-secondary-row">
+        <div class="footer-units-label">
+          <i class="bi bi-telephone-fill"></i>
+          <span>Centrais de Atendimento:</span>
+        </div>
+        <div class="footer-units-list">
+          <a href="tel:+552124133203" class="footer-unit-chip" title="Atendimento Rio de Janeiro">
+            <span class="unit-tag">RJ</span>
+            <span class="unit-phone">(21) 2413-3203</span>
+          </a>
+          <a href="tel:+552227333722" class="footer-unit-chip" title="Atendimento Campos dos Goytacazes">
+            <span class="unit-tag">Campos-RJ</span>
+            <span class="unit-phone">(22) 2733-3722</span>
+          </a>
+          <a href="tel:+552730724863" class="footer-unit-chip" title="Atendimento Vila Velha">
+            <span class="unit-tag">Vila Velha-ES</span>
+            <span class="unit-phone">(27) 3072-4863</span>
+          </a>
+          <a href="tel:+554137975093" class="footer-unit-chip" title="Atendimento Curitiba">
+            <span class="unit-tag">Curitiba-PR</span>
+            <span class="unit-phone">(41) 3797-5093</span>
+          </a>
+          <a href="tel:+551140406767" class="footer-unit-chip" title="Atendimento São Paulo">
+            <span class="unit-tag">SP</span>
+            <span class="unit-phone">(11) 4040-6767</span>
+          </a>
+        </div>
+      </div>
     </div>
-  </div>
-</footer>
+  </footer>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

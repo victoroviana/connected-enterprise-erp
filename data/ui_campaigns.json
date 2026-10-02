@@ -1,0 +1,186 @@
+[
+  {
+    "id": "outubro-rosa",
+    "type": "campaign",
+    "priority": 50,
+    "start": "10-01",
+    "end": "10-31",
+    "label": "Outubro Rosa",
+    "badge": "Outubro Rosa • Saúde Feminina",
+    "title": "Outubro Rosa",
+    "message": "Outubro Rosa: reforce o cuidado com a saúde feminina, incentive exames preventivos e dê suporte à sua equipe.",
+    "colors": {
+      "hero_start": "#be185d",
+      "hero_end": "#e11d48",
+      "hero_text": "#ffffff",
+      "badge_bg": "rgba(225, 29, 72, 0.15)",
+      "badge_text": "#fb7185",
+      "accent": "#f43f5e"
+    },
+    "illustration": null,
+    "navbar_gif": "images/themes/outubro_rosa_sparkle.gif"
+  },
+  {
+    "id": "novembro-azul",
+    "type": "campaign",
+    "priority": 50,
+    "start": "11-01",
+    "end": "11-30",
+    "label": "Novembro Azul",
+    "badge": "Novembro Azul • Saúde Masculina",
+    "title": "Novembro Azul",
+    "message": "Novembro Azul: momento de conscientização sobre a saúde masculina e prevenção ao câncer de próstata. Incentive check-ups regulares.",
+    "colors": {
+      "hero_start": "#0f4c81",
+      "hero_end": "#0284c7",
+      "hero_text": "#ffffff",
+      "badge_bg": "rgba(2, 132, 199, 0.15)",
+      "badge_text": "#38bdf8",
+      "accent": "#0284c7"
+    },
+    "illustration": null,
+    "navbar_gif": "images/themes/novembro_azul_sparkle.gif"
+  },
+  {
+    "id": "dezembro-vermelho",
+    "type": "campaign",
+    "priority": 50,
+    "start": "12-01",
+    "end": "12-31",
+    "label": "Dezembro Vermelho",
+    "badge": "Dezembro Vermelho • Conscientização",
+    "title": "Dezembro Vermelho",
+    "message": "Dezembro Vermelho: mês de prevenção e conscientização sobre o HIV/AIDS e outras infecções transmissíveis.",
+    "colors": {
+      "hero_start": "#991b1b",
+      "hero_end": "#dc2626",
+      "hero_text": "#ffffff",
+      "badge_bg": "rgba(220, 38, 38, 0.15)",
+      "badge_text": "#f87171",
+      "accent": "#ef4444"
+    },
+    "illustration": null,
+    "navbar_gif": "images/themes/dezembro_vermelho_sparkle.gif"
+  },
+  {
+    "id": "janeiro-branco",
+    "type": "campaign",
+    "priority": 50,
+    "start": "01-01",
+    "end": "01-31",
+    "label": "Janeiro Branco",
+    "badge": "Janeiro Branco • Saúde Mental",
+    "title": "Janeiro Branco",
+    "message": "Janeiro Branco: início de um novo ciclo com foco no equilíbrio emocional, bem-estar e saúde mental de toda a equipe.",
+    "colors": {
+      "hero_start": "#334155",
+      "hero_end": "#64748b",
+      "hero_text": "#ffffff",
+      "badge_bg": "rgba(148, 163, 184, 0.15)",
+      "badge_text": "#cbd5e1",
+      "accent": "#94a3b8"
+    },
+    "illustration": null,
+    "navbar_gif": "images/themes/janeiro_branco_sparkle.gif"
+  },
+  {
+    "id": "maio-amarelo",
+    "type": "campaign",
+    "priority": 50,
+    "start": "05-01",
+    "end": "05-31",
+    "label": "Maio Amarelo",
+    "badge": "Maio Amarelo • Segurança no Trânsito",
+    "title": "Maio Amarelo",
+    "message": "Maio Amarelo: respeito e responsabilidade no trânsito. Pratique a direção defensiva nas operações técnicas diárias.",
+    "colors": {
+      "hero_start": "#854d0e",
+      "hero_end": "#ca8a04",
+      "hero_text": "#ffffff",
+      "badge_bg": "rgba(202, 138, 4, 0.15)",
+      "badge_text": "#fde047",
+      "accent": "#eab308"
+    },
+    "illustration": null,
+    "navbar_gif": "images/themes/maio_amarelo_sparkle.gif"
+  },
+  {
+    "id": "junho-vermelho",
+    "type": "campaign",
+    "priority": 50,
+    "start": "06-01",
+    "end": "06-30",
+    "label": "Junho Vermelho",
+    "badge": "Junho Vermelho • Doação de Sangue",
+    "title": "Junho Vermelho",
+    "message": "Junho Vermelho: doar sangue é um ato de solidariedade que salva vidas. Apoie e participe dessa causa nobre.",
+    "colors": {
+      "hero_start": "#b91c1c",
+      "hero_end": "#ef4444",
+      "hero_text": "#ffffff",
+      "badge_bg": "rgba(239, 68, 68, 0.15)",
+      "badge_text": "#fca5a5",
+      "accent": "#ef4444"
+    },
+    "illustration": null,
+    "navbar_gif": "images/themes/junho_vermelho_sangue.gif"
+  },
+  {
+    "id": "setembro-amarelo",
+    "type": "campaign",
+    "priority": 50,
+    "start": "09-01",
+    "end": "09-30",
+    "label": "Setembro Amarelo",
+    "badge": "Setembro Amarelo • Valorização da Vida",
+    "title": "Setembro Amarelo",
+    "message": "Setembro Amarelo: valorização da vida e apoio mútuo. Falar é a melhor solução; acolha e esteja presente para sua equipe.",
+    "colors": {
+      "hero_start": "#a16207",
+      "hero_end": "#eab308",
+      "hero_text": "#ffffff",
+      "badge_bg": "rgba(234, 179, 8, 0.15)",
+      "badge_text": "#fef08a",
+      "accent": "#facc15"
+    },
+    "illustration": null,
+    "navbar_gif": "images/themes/setembro_amarelo_sparkle.gif"
+  },
+  {
+    "id": "natal",
+    "type": "holiday",
+    "priority": 400,
+    "date": "12-25",
+    "label": "Feliz Natal",
+    "badge": "Feriado Nacional • Natal",
+    "title": "Feliz Natal",
+    "message": "Feliz Natal! Que a celebração traga conexões fortes, paz e momentos especiais para todos os colaboradores e famílias.",
+    "colors": {
+      "hero_start": "#166534",
+      "hero_end": "#b91c1c",
+      "hero_text": "#ffffff",
+      "badge_bg": "rgba(185, 28, 28, 0.18)",
+      "badge_text": "#f87171",
+      "accent": "#b91c1c"
+    },
+    "illustration": null,
+    "navbar_gif": "images/themes/natal_gorro_piscapisca.gif"
+  },
+  {
+    "id": "default",
+    "type": "default",
+    "priority": 10,
+    "label": "Padrão Sollus",
+    "badge": "Plataforma Integrada",
+    "title": "Bem-vindo ao Sollus Connected",
+    "message": "Centralizamos a geração de propostas, atendimento técnico e CRM em uma única experiência integrada.",
+    "colors": {
+      "hero_start": "#0B3B8C",
+      "hero_end": "#0E5DC6",
+      "hero_text": "#E9F2FF",
+      "badge_bg": "rgba(255,255,255,0.16)",
+      "badge_text": "#0B3B8C"
+    },
+    "illustration": "images/sol.gif"
+  }
+]

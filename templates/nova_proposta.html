@@ -53,24 +53,24 @@
 
   .proposal-wrapper { padding-bottom: 3rem; }
   .proposal-hero {
-    background: linear-gradient(130deg, rgba(15,123,200,.95), rgba(0,59,102,.95));
+    background: linear-gradient(135deg, #07172e 0%, #0a254a 50%, #004d7c 100%);
     color: #f7fbff;
-    border-radius: 1.5rem;
+    border: 1px solid rgba(0, 164, 245, 0.25);
+    border-radius: 16px;
     padding: 2.25rem 2.6rem;
-    box-shadow: 0 22px 46px rgba(9,29,54,.28);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 0 0 25px rgba(0, 132, 200, 0.12);
     position: relative;
     overflow: hidden;
   }
   .proposal-hero::after {
     content: "";
     position: absolute;
-    top: -45%;
-    right: -25%;
-    width: 320px;
-    height: 320px;
-    background: radial-gradient(circle, rgba(255,255,255,.45), transparent 65%);
-    filter: blur(6px);
-    opacity: .65;
+    top: -40%;
+    right: -15%;
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, rgba(0, 180, 216, 0.22) 0%, transparent 70%);
+    pointer-events: none;
   }
   .proposal-hero .hero-icon {
     display: flex;
@@ -79,10 +79,11 @@
     width: 56px;
     height: 56px;
     border-radius: 18px;
-    background: rgba(255,255,255,.18);
+    background: rgba(0, 164, 245, 0.18);
+    border: 1px solid rgba(0, 164, 245, 0.3);
     font-size: 1.9rem;
-    color: #fff;
-    box-shadow: 0 12px 28px rgba(0,0,0,.18);
+    color: #38bdf8;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
   }
   .proposal-hero .hero-title { font-weight: 700; letter-spacing: .3px; }
   .ambiente-preview { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.75rem; }
@@ -108,11 +109,12 @@
   .ambiente-title-input { font-size: .75rem; border-radius: .6rem; padding: .35rem .6rem; }
   .proposal-hero .hero-subtitle { color: rgba(240,247,255,.88); max-width: 620px; }
   .proposal-hero .hero-metric {
-    background: rgba(255,255,255,.16);
-    border-radius: 1.2rem;
+    background: rgba(8, 34, 78, 0.35);
+    border: 1px solid rgba(0, 164, 245, 0.2);
+    border-radius: 14px;
     padding: 1.2rem 1.5rem;
     backdrop-filter: blur(6px);
-    box-shadow: 0 16px 36px rgba(0,0,0,.22);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
     min-width: 220px;
   }
   .proposal-hero .hero-metric .label {
@@ -192,11 +194,11 @@
   .proposal-wrapper .btn-outline-secondary:hover { border-color: rgba(79,70,229,.75); background: rgba(79,70,229,.22); }
   .proposal-actions { padding: 1.5rem 0 0; display: flex; flex-wrap: wrap; gap: 1rem; }
   .proposal-wrapper .proposal-actions .btn { min-width: 220px; }
-  .issuer-preview { margin-top: .75rem; padding: 1rem 1.25rem; border-radius: 1rem; border: 1px dashed rgba(15,123,200,.2); background: linear-gradient(180deg, rgba(15,123,200,.08), rgba(15,123,200,.02)); box-shadow: 0 10px 22px rgba(15,35,58,.05); }
-  .issuer-preview .issuer-title { text-transform: uppercase; font-size: .75rem; letter-spacing: .08em; font-weight: 600; color: #0f172a; opacity: .7; margin-bottom: .35rem; }
-  .issuer-preview .issuer-line { font-weight: 600; color: #0f172a; }
-  .issuer-preview .issuer-line + .issuer-line { margin-top: .25rem; }
-  .issuer-preview .issuer-line.muted { font-weight: 500; color: #475569; font-size: .9rem; }
+  .issuer-preview { margin-top: .75rem; padding: 1rem 1.25rem; border-radius: 1rem; border: 1px dashed rgba(15,123,200,.25); background: linear-gradient(180deg, rgba(15,123,200,.08), rgba(15,123,200,.02)); box-shadow: 0 10px 22px rgba(15,35,58,.05); }
+  .issuer-preview .issuer-title { text-transform: uppercase; font-size: .75rem; letter-spacing: .08em; font-weight: 700; color: var(--blue-700, #0f7bc8); margin-bottom: .4rem; }
+  .issuer-preview .issuer-line { font-weight: 600; color: var(--text-main, #0f172a); font-size: .92rem; }
+  .issuer-preview .issuer-line + .issuer-line { margin-top: .3rem; }
+  .issuer-preview .issuer-line.muted { font-weight: 500; color: var(--text-muted, #64748b); font-size: .88rem; }
   #observacoesPonto { border-radius: 1rem; }
   #observacoesPonto strong { font-size: .95rem; }
   @media (max-width: 991px) {
@@ -239,8 +241,70 @@
   .loading-progress .progress-bar::after { content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 45%; background: linear-gradient(90deg,rgba(255,255,255,.0),rgba(255,255,255,.45),rgba(255,255,255,.0)); opacity: .6; transform: skewX(-12deg); animation: progress-sheen 1.4s ease-in-out infinite; }
   @keyframes progress-sheen { 0% { left: -45%; } 50% { left: 60%; } 100% { left: 145%; } }
   .loading-footnote { margin-top: 1.2rem; font-size: .85rem; color: rgba(236,248,255,.7); }
-  @keyframes loading-spin { to { transform: rotate(1turn); } }
   @media (max-width: 576px) { .loading-modal { padding: 2rem 2.2rem; border-radius: 1.4rem; } }
+
+  html[data-theme="dark"] .proposal-form .form-label {
+    color: #94a3b8 !important;
+  }
+  html[data-theme="dark"] .issuer-preview {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.65)) !important;
+    border: 1px dashed rgba(56, 189, 248, 0.4) !important;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35) !important;
+  }
+  html[data-theme="dark"] .issuer-preview .issuer-title {
+    color: #38bdf8 !important;
+    opacity: 1 !important;
+    font-weight: 700 !important;
+  }
+  html[data-theme="dark"] .issuer-preview .issuer-line {
+    color: #f8fafc !important;
+    font-weight: 500 !important;
+  }
+  html[data-theme="dark"] .issuer-preview .issuer-line.muted {
+    color: #cbd5e1 !important;
+    font-weight: 500 !important;
+  }
+  html[data-theme="dark"] .subcard {
+    background: rgba(15, 23, 42, 0.65) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  html[data-theme="dark"] #sistemaWrapper {
+    border-color: rgba(56, 189, 248, 0.3) !important;
+    background: rgba(15, 23, 42, 0.5) !important;
+  }
+  html[data-theme="dark"] .equip-stock-tag {
+    background: rgba(56, 189, 248, 0.18) !important;
+    color: #38bdf8 !important;
+  }
+  html[data-theme="dark"] .proposal-wrapper .btn-outline-primary {
+    border-color: rgba(56, 189, 248, 0.45) !important;
+    color: #38bdf8 !important;
+    background: rgba(56, 189, 248, 0.1) !important;
+  }
+  html[data-theme="dark"] .proposal-wrapper .btn-outline-primary:hover {
+    border-color: #38bdf8 !important;
+    background: rgba(56, 189, 248, 0.22) !important;
+    color: #ffffff !important;
+  }
+  html[data-theme="dark"] #equipamentos-selecionados > div {
+    background: #0f172a !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #f8fafc !important;
+  }
+  html[data-theme="dark"] .ambiente-preview-thumb {
+    background: #0f172a;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  html[data-theme="dark"] #pdfPreviewModal .modal-content {
+    background: #0b1220;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  html[data-theme="dark"] #pdfPreviewModal .modal-body {
+    background: #0b1220;
+  }
+  html[data-theme="dark"] #pdfPreviewModal .modal-footer {
+    background: #090e18;
+  }
 </style>
 {% endblock %}
 {% block content %}
@@ -252,7 +316,7 @@
 <div class="proposal-wrapper py-4">
   <div class="proposal-hero mb-4">
     <div class="row align-items-center g-4">
-      <div class="col-lg-8">
+      <div class="col-12 col-md-8 col-lg-8">
         <div class="d-flex align-items-start gap-3">
           <span class="hero-icon"><i class="bi bi-file-earmark-text"></i></span>
           <div>
@@ -274,7 +338,7 @@
           </div>
         </div>
       </div>
-      <div class="col-lg-4">
+      <div class="col-12 col-md-4 col-lg-4">
         <div class="hero-metric text-lg-end">
           <span class="label">Consultor responsável</span>
           <strong>{{ session.get('nome') or current_user.name or current_user.username }}</strong>
@@ -340,7 +404,7 @@
           </div>
           <div class="card-body">
             <div class="row g-3 align-items-end">
-              <div class="col-lg-6">
+              <div class="col-12 col-md-6 col-lg-6">
                 <label class="form-label text-uppercase small fw-semibold text-muted mb-2">Tipo de sistema</label>
                 <div class="btn-group w-100 flex-wrap" role="group" aria-label="Tipo de sistema">
                   <input type="radio" class="btn-check" name="servico_tipo_toggle" id="servicoTipoPonto" value="PONTO" autocomplete="off" {% if servico_atual == 'PONTO' %}checked{% endif %}>
@@ -350,7 +414,7 @@
                 </div>
                 {{ form.servico_type(class="form-select d-none", id="servico_type_select") }}
               </div>
-              <div class="col-lg-6">
+              <div class="col-12 col-md-6 col-lg-6">
                 {{ form.modalidade_type.label(class="form-label") }}
                 {{ form.modalidade_type(class="form-select", id="modalidade_type") }}
               </div>
@@ -393,11 +457,11 @@
                   </div>
                 </div>
               </div>
-              <div class="col-lg-6">
+              <div class="col-12 col-md-6 col-lg-6">
                 {{ form.usar_outro_usuario.label(class="form-label") }}
                 {{ form.usar_outro_usuario(class="form-select", id="usar_outro") }}
               </div>
-              <div class="col-lg-6" id="divOutroUsuario" style="display:none;">
+              <div class="col-12 col-md-6 col-lg-6" id="divOutroUsuario" style="display:none;">
                 {{ form.outro_usuario.label(class="form-label") }}
                 {{ form.outro_usuario(class="form-select") }}
               </div>
@@ -478,6 +542,22 @@
                   <div class="col-md-6">
                     {{ form.sistema_opcao.label(class="form-label") }}
                     {{ form.sistema_opcao(class="form-select", id="sistema_opcao") }}
+                    {% if software_plans %}
+                      <div class="mt-2">
+                        <label class="form-label small text-muted mb-1 d-flex align-items-center gap-1">
+                          <i class="fa-solid fa-wand-magic-sparkles text-primary"></i>
+                          <span>Ou preencher por plano da tabela de sistemas:</span>
+                        </label>
+                        <select class="form-select form-select-sm" id="sistema_plano_sugestao" onchange="aoSelecionarPlanoSugerido(this)">
+                          <option value="">-- Selecione para preencher automático --</option>
+                          {% for sp in software_plans %}
+                            <option value="{{ sp.id }}" data-name="{{ sp.name }}" data-fab="{{ sp.fabricante }}" data-cat="{{ sp.categoria }}" data-preco="{{ sp.valor_mensal }}" data-desc="{{ sp.description or '' }}" data-faixa="{{ sp.faixa_funcionarios or '' }}">
+                              [{{ sp.fabricante }}] {{ sp.name }} (R$ {{ '%.2f'|format(sp.valor_mensal)|replace('.', ',') }}/mês)
+                            </option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    {% endif %}
                   </div>
                   <div class="col-md-3">
                     <label class="form-label">Qtd.</label>
@@ -559,6 +639,8 @@
           <div class="card-body">
             <div class="row g-3">
               {{ select_or_other(form.pagto_equip,'pagto_equip_other') }}
+              {{ select_or_other(form.pagto_servico,'pagto_servico_other') }}
+              {{ select_or_other(form.pagto_contrato,'pagto_contrato_other') }}
               {{ select_or_other(form.prazo_entrega,'prazo_entrega_other') }}
               {{ select_or_other(form.frete,'frete_other') }}
               <div class="col-md-6">
@@ -635,6 +717,11 @@
             <div id="gerandoProgress" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%;"></div>
           </div>
           <div class="loading-footnote">Isso costuma levar apenas alguns segundos.</div>
+          <div class="mt-3 text-center">
+            <button type="button" class="btn btn-sm btn-outline-light opacity-75" onclick="if(typeof hideGerarModal==='function') hideGerarModal();" style="border-radius: 0.75rem; font-size: 0.8rem; padding: 0.35rem 0.9rem;">
+              <i class="bi bi-x-circle me-1"></i>Fechar
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -902,6 +989,36 @@ document.addEventListener('DOMContentLoaded',()=>{
   function updateSistemaPreview(){ if(!usarSistema || !usarSistema.checked){ resetSistemaPreview(); return; } const option = sistemaSelect ? systemMap[sistemaSelect.value] : undefined; if(!option){ resetSistemaPreview(); return; } let quantity = parseInt(sistemaQtd && sistemaQtd.value ? sistemaQtd.value : option.default_quantity || 1, 10); if(!quantity || quantity < 1){ quantity = option.default_quantity || 1; if(sistemaQtd) sistemaQtd.value = quantity; } let unitPrice = sistemaPreco ? br2f(sistemaPreco.value) : 0; if(unitPrice < 0) unitPrice = 0; if(unitPrice === 0 && option.unit_price){ unitPrice = option.unit_price; if(sistemaPreco) sistemaPreco.value = fmt(unitPrice); } if(descSistema && (!descSistema.value || descSistema.dataset.systemKey !== option.key)) { descSistema.value = option.description || ''; descSistema.dataset.systemKey = option.key; } if(imgSistema){ if(option.image){ const src = option.image.startsWith('/') ? option.image : `/${option.image}`; imgSistema.src = src; imgSistema.classList.remove('d-none'); }else{ imgSistema.classList.add('d-none'); imgSistema.removeAttribute('src'); } } if(qtdPreview) qtdPreview.textContent = quantity; const isFixo = document.getElementById('sistema_preco_manual')?.checked; const lblPreco = document.getElementById('label_sistema_preco'); if(lblPreco) lblPreco.textContent = isFixo ? 'Valor Fixo / Plano' : 'Valor mensal'; const thUnit = document.getElementById('thSistemaUnit'); if(thUnit) thUnit.textContent = isFixo ? 'Valor Total Plano' : 'Valor mensal'; const unitLabel = isFixo ? (unitPrice > 0 ? 'R$ ' + fmt(unitPrice) : '-') : 'R$ ' + fmt(unitPrice) + ' mensais'; if(unitPreview) unitPreview.textContent = unitLabel; const total = isFixo ? unitPrice : (unitPrice * quantity); if(hiddenSistemaTotal) hiddenSistemaTotal.value = (Math.round(total * 100) / 100).toString(); if(tabelaSistema) tabelaSistema.classList.remove('d-none'); }
   const sistemaFixoCheck = document.getElementById('sistema_preco_manual'); if(sistemaFixoCheck) { sistemaFixoCheck.addEventListener('change', updateSistemaPreview); }
   function toggleSistema(){ if(!usarSistema || !sistemaWrapper) return; const ativo = usarSistema.checked; sistemaWrapper.classList.toggle('d-none', !ativo); if(!ativo){ resetSistemaPreview(); return; } const option = sistemaSelect ? systemMap[sistemaSelect.value] : undefined; if(option){ if(sistemaQtd && (!sistemaQtd.value || parseInt(sistemaQtd.value,10) < 1)){ sistemaQtd.value = option.default_quantity || 1; } if(sistemaPreco && !sistemaPreco.value){ sistemaPreco.value = fmt(option.unit_price || 0); } } updateSistemaPreview(); }
+  function aoSelecionarPlanoSugerido(sel){
+    if(!sel || !sel.value) return;
+    const opt = sel.options[sel.selectedIndex];
+    if(!opt) return;
+    const preco = parseFloat(opt.getAttribute('data-preco') || 0);
+    const desc = opt.getAttribute('data-desc') || '';
+    const name = opt.getAttribute('data-name') || '';
+    const fab = (opt.getAttribute('data-fab') || '').toLowerCase();
+
+    const precoInput = document.getElementById('sistema_preco_unitario');
+    if(precoInput && preco > 0){
+      precoInput.value = fmt(preco);
+    }
+    const descInput = document.getElementById('sistemaDescricao');
+    if(descInput && desc){
+      descInput.value = desc;
+    }
+    const sisSelect = document.getElementById('sistema_opcao');
+    if(sisSelect){
+      if(fab.includes('control') || name.toLowerCase().includes('rhid') || name.toLowerCase().includes('idsecure')){
+        sisSelect.value = 'rhid';
+      } else if(fab.includes('sollus') || name.toLowerCase().includes('sollus access')){
+        sisSelect.value = 'sollus_access';
+      } else if(fab.includes('secullum') || name.toLowerCase().includes('secullum')){
+        sisSelect.value = 'secullum';
+      }
+    }
+    updateSistemaPreview();
+  }
+
   if(usarSistema && sistemaWrapper){ usarSistema.addEventListener('change',toggleSistema); if(sistemaSelect){ sistemaSelect.addEventListener('change',()=>{ const option = systemMap[sistemaSelect.value]; if(option){ if(sistemaQtd) sistemaQtd.value = option.default_quantity || 1; if(sistemaPreco) sistemaPreco.value = fmt(option.unit_price || 0); } updateSistemaPreview(); }); } if(sistemaQtd){ sistemaQtd.addEventListener('input',updateSistemaPreview); sistemaQtd.addEventListener('change',updateSistemaPreview); } if(sistemaPreco){ sistemaPreco.addEventListener('input',updateSistemaPreview); sistemaPreco.addEventListener('blur',updateSistemaPreview); } toggleSistema(); }
   const chkEnviarEmail = document.getElementById('enviar_email');
   const emailOptions = document.getElementById('emailOptions');
@@ -981,9 +1098,34 @@ document.addEventListener('DOMContentLoaded',()=>{
   window.recalcular = function(id){ const row=document.getElementById(`equip_${id}`); if(!row) return; const qtd=parseFloat(row.querySelector(`[name='quantity_${id}']`).value)||1; let preco=parseFloat(row.dataset.preco||0); if(document.getElementById(`chk_preco_${id}`).checked) preco=br2f(document.getElementById(`manual_${id}`).value); const pct=document.getElementById(`chk_desc_${id}`).checked?(parseFloat(document.getElementById(`pct_${id}`).value)||0):0; const pd=preco*(1-pct/100); document.getElementById(`p_cheio_${id}`).textContent=fmt(preco*qtd); document.getElementById(`p_desc_${id}`).textContent=fmt(pd*qtd); };
   const gerarModalEl = document.getElementById('gerandoModal');
   const gerarModal = gerarModalEl ? new bootstrap.Modal(gerarModalEl, {backdrop:'static', keyboard:false}) : null;
+  window.gerarModal = gerarModal;
   const progressBar = document.getElementById('gerandoProgress');
   const hidden = document.getElementById('acaoHidden');
   let progressInterval = null; let progressValue = 0;
+
+  function hideGerarModal() {
+    if (!gerarModal || !gerarModalEl) return;
+    function forceCleanup() {
+      try { gerarModal.hide(); } catch (_) {}
+      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('padding-right');
+      document.body.style.removeProperty('overflow');
+    }
+    if (!gerarModalEl.classList.contains('show')) {
+      const onShown = () => {
+        gerarModalEl.removeEventListener('shown.bs.modal', onShown);
+        forceCleanup();
+      };
+      gerarModalEl.addEventListener('shown.bs.modal', onShown, { once: true });
+      setTimeout(forceCleanup, 350);
+    } else {
+      forceCleanup();
+      setTimeout(forceCleanup, 350);
+    }
+  }
+  window.hideGerarModal = hideGerarModal;
+
   const pdfModalEl = document.getElementById('pdfPreviewModal');
   const pdfModal = pdfModalEl ? new bootstrap.Modal(pdfModalEl) : null;
   const pdfFrame = document.getElementById('pdfPreviewFrame');
@@ -1003,13 +1145,120 @@ document.addEventListener('DOMContentLoaded',()=>{
   function updateProgress(value){ if(typeof value === 'number'){ progressValue = Math.max(progressValue, Math.min(100, value)); } if(progressBar){ progressBar.style.width = `${progressValue}%`; progressBar.setAttribute('aria-valuenow', String(Math.round(progressValue))); } }
   function resolveCsrfToken(){ if(csrfMeta){ const value = csrfMeta.getAttribute('content'); if(value){ return value; } } if(window.csrfToken){ return window.csrfToken; } const input = formEl ? formEl.querySelector('input[name="csrf_token"]') : null; return input ? (input.value || '') : ''; }
   async function postForm(action){ if(formEl && typeof window.ensureFormCsrf === 'function'){ window.ensureFormCsrf(formEl); } const data = new FormData(formEl); data.set('acao', action); const token = resolveCsrfToken(); if(token && !data.get('csrf_token')){ data.set('csrf_token', token); } const headers = new Headers({'X-Requested-With': 'XMLHttpRequest'}); if(token){ headers.set('X-CSRFToken', token); } const resp = await fetch(formAction, { method: 'POST', body: data, headers, credentials: 'same-origin' }); const contentType = resp.headers.get('content-type') || ''; if(!contentType.includes('application/json')){ const html = await resp.text(); throw { type: 'html', content: html }; } const payload = await resp.json(); payload.statusCode = resp.status; return payload; }
-  function handleValidation(payload){ if(!payload) return; if(payload.message){ showFlash(payload.message, 'danger'); } else if(payload.html){ document.open(); document.write(payload.html); document.close(); } if(payload.errors){ console.warn('Erros de validação:', payload.errors); } }
+  function handleValidation(payload){
+    if(!payload) return;
+    let message = payload.message || '';
+    if(!message && payload.errors){
+      const entries = Object.entries(payload.errors);
+      if(entries.length > 0){
+        const errs = entries.map(([field, msgs]) => `${Array.isArray(msgs) ? msgs.join(', ') : msgs}`);
+        message = 'Por favor, revise o formulário: ' + errs.join(' | ');
+      }
+    }
+    if(!message){
+      message = 'Não foi possível processar a proposta. Por favor, revise as informações preenchidas.';
+    }
+    showFlash(message, 'danger', 10000);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if(payload.errors){
+      console.warn('Erros de validação:', payload.errors);
+      Object.keys(payload.errors).forEach(name => {
+        const el = formEl ? formEl.querySelector(`[name="${name}"]`) : null;
+        if(el){
+          el.classList.add('is-invalid');
+          el.addEventListener('input', () => el.classList.remove('is-invalid'), { once: true });
+          el.addEventListener('change', () => el.classList.remove('is-invalid'), { once: true });
+        }
+      });
+    }
+  }
   function showPdfModal(viewUrl, downloadUrl, downloadName){ if(!viewUrl){ showFlash('Não foi possível abrir a proposta gerada.', 'danger'); return; } const prefersMobilePreview = window.matchMedia('(max-width: 768px)').matches; if(prefersMobilePreview){ if(pdfDownloadBtn){ pdfDownloadBtn.href = downloadUrl || viewUrl; pdfDownloadBtn.setAttribute('download', downloadName || 'proposta.pdf'); } window.open(viewUrl, '_blank'); showFlash('Abrimos a proposta em uma nova aba para melhor visualização no celular.', 'info'); if(pdfModal){ pdfModal.hide(); } return; } pdfFrameReady = false; if(pdfFrame){ pdfFrame.src = viewUrl; } if(pdfDownloadBtn){ pdfDownloadBtn.href = downloadUrl || viewUrl; pdfDownloadBtn.setAttribute('download', downloadName || 'proposta.pdf'); } if(pdfModal){ pdfModal.show(); } else { window.open(viewUrl, '_blank'); } showFlash('Proposta pronta para visualização.', 'success'); }
   async function downloadWithSaveDialog(url, filename) { try { if ('showSaveFilePicker' in window) { try { const handle = await window.showSaveFilePicker({ suggestedName: filename || 'proposta.pdf', types: [{ description: 'PDF Files', accept: { 'application/pdf': ['.pdf'] } }] }); const response = await fetch(url); const blob = await response.blob(); const writable = await handle.createWritable(); await writable.write(blob); await writable.close(); showFlash('Arquivo salvo com sucesso!', 'success'); } catch (err) { if (err.name !== 'AbortError') { console.error('Erro ao salvar arquivo:', err); triggerDownload(url, filename); } } } else { triggerDownload(url, filename); } } catch (error) { console.error('Erro no download:', error); triggerDownload(url, filename); } }
   function triggerDownload(url, filename) { const link = document.createElement('a'); link.href = url; link.download = filename || 'proposta.pdf'; document.body.appendChild(link); link.click(); document.body.removeChild(link); }
   if (pdfDownloadBtn) { pdfDownloadBtn.addEventListener('click', async (e) => { e.preventDefault(); const url = pdfDownloadBtn.getAttribute('href'); const filename = pdfDownloadBtn.getAttribute('download'); if (url && url !== '#') { await downloadWithSaveDialog(url, filename); } }); }
-  function pollJob(state){ const jobId = state.job_id; if(!jobId){ finishProgress(); if(gerarModal) setTimeout(()=>gerarModal.hide(), 300); showFlash('Tarefa inválida.', 'danger'); return; } let attempts = 0; const maxAttempts = 120; const timer = setInterval(async () => { attempts += 1; try { const resp = await fetch('/api/jobs/' + jobId); if (!resp.ok) throw new Error('status'); const data = await resp.json(); if (!data.ok) throw new Error(data.message || 'Erro'); if (data.status === 'done') { clearInterval(timer); finishProgress(); if(gerarModal) setTimeout(()=>gerarModal.hide(), 250); if (state.action === 'visualizar') { const viewUrl = data.inline_url || data.download_url; const downloadUrl = data.download_url || viewUrl; showPdfModal(viewUrl, downloadUrl, data.download_name || 'proposta.pdf'); } else if (state.action === 'enviar_email') { showFlash(data.message || 'Proposta enviada por e-mail com sucesso.', 'success'); if(formEl) formEl.reset(); if(chkEnviarEmail) chkEnviarEmail.checked = false; if(typeof toggleEmailOptions === 'function') toggleEmailOptions(); } return; } if (data.status === 'error') { throw new Error(data.message || 'Falha ao gerar a proposta.'); } updateProgress(Math.min(95, 60 + attempts)); } catch (err) { clearInterval(timer); finishProgress(); if(gerarModal) setTimeout(()=>gerarModal.hide(), 250); showFlash(err.message || 'Falha ao gerar a proposta.', 'danger'); return; } if (attempts >= maxAttempts){ clearInterval(timer); finishProgress(); if(gerarModal) setTimeout(()=>gerarModal.hide(), 250); showFlash('Tempo excedido ao gerar a proposta.', 'danger'); } }, 1000); }
-  async function submitAction(action){ if(hidden) hidden.value = action; if(gerarModal) gerarModal.show(); startProgress(); try { const payload = await postForm(action); if (!payload.ok) { finishProgress(); if(gerarModal) setTimeout(()=>gerarModal.hide(), 250); handleValidation(payload); return; } if (payload.action === 'visualizar' || payload.action === 'enviar_email') { pollJob(payload); return; } finishProgress(); if(gerarModal) setTimeout(()=>gerarModal.hide(), 250); if (payload.message) { showFlash(payload.message, 'success'); } } catch (error) { if (error && error.type === 'html'){ document.open(); document.write(error.content); document.close(); return; } console.error(error); finishProgress(); if(gerarModal) setTimeout(()=>gerarModal.hide(), 250); showFlash('Falha ao enviar a solicitação.', 'danger'); } }
+  function pollJob(state){
+    const jobId = state.job_id;
+    if(!jobId){
+      finishProgress();
+      hideGerarModal();
+      showFlash('Tarefa inválida.', 'danger');
+      return;
+    }
+    let attempts = 0;
+    const maxAttempts = 120;
+    const timer = setInterval(async () => {
+      attempts += 1;
+      try {
+        const resp = await fetch('/api/jobs/' + jobId);
+        if (!resp.ok) throw new Error('status');
+        const data = await resp.json();
+        if (!data.ok) throw new Error(data.message || 'Erro');
+        if (data.status === 'done') {
+          clearInterval(timer);
+          finishProgress();
+          hideGerarModal();
+          if (state.action === 'visualizar') {
+            const viewUrl = data.inline_url || data.download_url;
+            const downloadUrl = data.download_url || viewUrl;
+            showPdfModal(viewUrl, downloadUrl, data.download_name || 'proposta.pdf');
+          } else if (state.action === 'enviar_email') {
+            showFlash(data.message || 'Proposta enviada por e-mail com sucesso.', 'success');
+            if(formEl) formEl.reset();
+            if(chkEnviarEmail) chkEnviarEmail.checked = false;
+            if(typeof toggleEmailOptions === 'function') toggleEmailOptions();
+          }
+          return;
+        }
+        if (data.status === 'error') {
+          throw new Error(data.message || 'Falha ao gerar a proposta.');
+        }
+        updateProgress(Math.min(95, 60 + attempts));
+      } catch (err) {
+        clearInterval(timer);
+        finishProgress();
+        hideGerarModal();
+        showFlash(err.message || 'Falha ao gerar a proposta.', 'danger');
+        return;
+      }
+      if (attempts >= maxAttempts){
+        clearInterval(timer);
+        finishProgress();
+        hideGerarModal();
+        showFlash('Tempo limite excedido ao gerar a proposta. Verifique se ela foi criada no Histórico de Propostas.', 'warning');
+      }
+    }, 1000);
+  }
+  async function submitAction(action){
+    if(hidden) hidden.value = action;
+    if(gerarModal) gerarModal.show();
+    startProgress();
+    try {
+      const payload = await postForm(action);
+      if (!payload.ok) {
+        finishProgress();
+        hideGerarModal();
+        handleValidation(payload);
+        return;
+      }
+      if (payload.action === 'visualizar' || payload.action === 'enviar_email') {
+        pollJob(payload);
+        return;
+      }
+      finishProgress();
+      hideGerarModal();
+      if (payload.message) {
+        showFlash(payload.message, 'success');
+      }
+    } catch (error) {
+      console.error(error);
+      finishProgress();
+      hideGerarModal();
+      let msg = 'Falha ao enviar a solicitação. Por favor, revise os dados preenchidos.';
+      if (error && error.message) msg = error.message;
+      showFlash(msg, 'danger');
+    }
+  }
   if(btnGerar){ btnGerar.addEventListener('click', (e) => { e.preventDefault(); submitAction('visualizar'); }); }
   if(btnEnviarEmail){ btnEnviarEmail.addEventListener('click', (e) => { e.preventDefault(); submitAction('enviar_email'); }); }
   formEl.addEventListener('submit', (e) => { e.preventDefault(); const action = chkEnviarEmail && chkEnviarEmail.checked ? 'enviar_email' : 'visualizar'; submitAction(action); });

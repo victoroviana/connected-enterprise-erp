@@ -217,6 +217,9 @@ def import_osticket_settings(config: OsticketConfig) -> dict[str, int]:
             _import_tasks(cursor, config.prefix, stats)
         db.session.commit()
         return stats
+    except Exception:
+        db.session.rollback()
+        raise
     finally:
         connection.close()
 
@@ -238,6 +241,9 @@ def import_osticket_attachments(config: OsticketConfig, *, limit: int | None = N
             _import_attachments(cursor, config.prefix, stats, limit=limit)
         db.session.commit()
         return stats
+    except Exception:
+        db.session.rollback()
+        raise
     finally:
         connection.close()
 
@@ -307,6 +313,9 @@ def import_osticket_mailboxes(config: OsticketConfig) -> dict[str, int]:
                 stats["created" if created else "updated"] += 1
         db.session.commit()
         return stats
+    except Exception:
+        db.session.rollback()
+        raise
     finally:
         connection.close()
 

@@ -1,4 +1,4 @@
-﻿"""Helpers to select themed UI campaigns based on the current date."""
+"""Helpers to select themed UI campaigns based on the current date."""
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
 import os
+import unicodedata
 import requests
 from dotenv import load_dotenv
 
@@ -34,8 +35,12 @@ LEVEL_PRIORITIES = {
 }
 
 
+def _strip_accents(text: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c)).lower()
+
+
 def _holiday_style(name: str) -> dict[str, Any]:
-    lower = name.lower()
+    lower = _strip_accents(name)
     styles = [
         (
             lambda n: "natal" in n,
@@ -44,27 +49,48 @@ def _holiday_style(name: str) -> dict[str, Any]:
                     "hero_start": "#166534",
                     "hero_end": "#b91c1c",
                     "hero_text": "#fef2f2",
-                    "badge_bg": "rgba(255,255,255,0.9)",
-                    "badge_text": "#b91c1c",
+                    "badge_bg": "rgba(185, 28, 28, 0.18)",
+                    "badge_text": "#f87171",
+                    "accent": "#b91c1c",
                 },
-                "message": "Feliz Natal! Que a celebra\u00e7\u00e3o traga aconchego e opera\u00e7\u00f5es confi\u00e1veis para todo o time.",
+                "message": "Feliz Natal! Que a celebração traga fortes conexões, paz e momentos especiais para toda a equipe. Nossas unidades estarão fechadas nesta data.",
                 "badge": "Feliz Natal",
                 "title": "Feliz Natal",
+                "navbar_gif": "images/themes/natal_gorro_piscapisca.gif",
             },
         ),
         (
             lambda n: "ano novo" in n or "confraterniza" in n,
             {
                 "colors": {
-                    "hero_start": "#ffffff",
-                    "hero_end": "#facc15",
-                    "hero_text": "#1f2937",
-                    "badge_bg": "rgba(255,255,255,0.96)",
-                    "badge_text": "#854d0e",
+                    "hero_start": "#0f172a",
+                    "hero_end": "#ca8a04",
+                    "hero_text": "#ffffff",
+                    "badge_bg": "rgba(250, 204, 21, 0.18)",
+                    "badge_text": "#fde047",
+                    "accent": "#eab308",
                 },
-                "message": "Pr\u00f3spero Ano Novo! Seguimos juntos conectando pessoas e resultados.",
+                "message": "Próspero Ano Novo! Um ciclo de novas conquistas e conexões de sucesso. Nossas unidades estarão fechadas nesta data.",
                 "badge": "Ano Novo",
-                "title": "Boas-vindas ao novo ciclo",
+                "title": "Boas-vindas ao Novo Ano",
+                "navbar_gif": "images/themes/anonovo_tacas_fogos.gif",
+            },
+        ),
+        (
+            lambda n: "aparecida" in n or "padroeira" in n,
+            {
+                "colors": {
+                    "hero_start": "#0f172a",
+                    "hero_end": "#1e3a8a",
+                    "hero_text": "#ffffff",
+                    "badge_bg": "rgba(250, 204, 21, 0.18)",
+                    "badge_text": "#facc15",
+                    "accent": "#facc15",
+                },
+                "message": "Nossa Senhora Aparecida: padroeira do Brasil. Nossas unidades estarão fechadas nesta data em respeito ao feriado nacional.",
+                "badge": "Feriado Nacional • N. Sra. Aparecida",
+                "title": "Nossa Senhora Aparecida",
+                "navbar_gif": "images/themes/nossa_senhora_aparecida.gif",
             },
         ),
         (
@@ -72,29 +98,67 @@ def _holiday_style(name: str) -> dict[str, Any]:
             {
                 "colors": {
                     "hero_start": "#047857",
-                    "hero_end": "#facc15",
-                    "hero_text": "#0f172a",
+                    "hero_end": "#15803d",
+                    "hero_text": "#ffffff",
                     "badge_bg": "rgba(248,250,252,0.95)",
                     "badge_text": "#0f172a",
+                    "accent": "#facc15",
                 },
-                "message": "Dia da Independ\u00eancia: celebramos nossa hist\u00f3ria e refor\u00e7amos o compromisso com solu\u00e7\u00f5es nacionais.",
-                "badge": "Independ\u00eancia do Brasil",
+                "message": "Dia da Independência do Brasil: celebramos a história do nosso país. Nossas unidades estarão fechadas nesta data, retornando ao expediente normal no próximo dia útil.",
+                "badge": "Independência do Brasil",
                 "title": "7 de Setembro",
+                "navbar_gif": "images/themes/independencia_brasil.gif",
+            },
+        ),
+        (
+            lambda n: "republica" in n or "república" in n,
+            {
+                "colors": {
+                    "hero_start": "#047857",
+                    "hero_end": "#15803d",
+                    "hero_text": "#ffffff",
+                    "badge_bg": "rgba(248,250,252,0.95)",
+                    "badge_text": "#0f172a",
+                    "accent": "#facc15",
+                },
+                "message": "Proclamação da República: marco histórico da nossa nação. Nossas unidades estarão fechadas nesta data.",
+                "badge": "Proclamação da República",
+                "title": "15 de Novembro",
+                "navbar_gif": "images/themes/independencia_brasil.gif",
             },
         ),
         (
             lambda n: "tiradentes" in n,
             {
                 "colors": {
-                    "hero_start": "#fbbf24",
-                    "hero_end": "#b45309",
-                    "hero_text": "#1f2937",
+                    "hero_start": "#b45309",
+                    "hero_end": "#d97706",
+                    "hero_text": "#ffffff",
                     "badge_bg": "rgba(255,248,220,0.92)",
                     "badge_text": "#92400e",
+                    "accent": "#d97706",
                 },
-                "message": "Tiradentes: lembramos coragem e integridade para seguir construindo confian\u00e7a.",
+                "message": "Tiradentes: memória e liberdade. Nossas unidades estarão fechadas nesta data em respeito ao feriado nacional.",
                 "badge": "Dia de Tiradentes",
-                "title": "Mem\u00f3ria e Liberdade",
+                "title": "Memória e Liberdade",
+                "navbar_gif": "images/themes/independencia_brasil.gif",
+            },
+        ),
+        (
+            lambda n: "trabalhador" in n or "trabalho" in n,
+            {
+                "colors": {
+                    "hero_start": "#1e3a8a",
+                    "hero_end": "#0284c7",
+                    "hero_text": "#ffffff",
+                    "badge_bg": "rgba(2,132,199,0.15)",
+                    "badge_text": "#38bdf8",
+                    "accent": "#0284c7",
+                },
+                "message": "Dia Mundial do Trabalho: reconhecimento a toda a nossa equipe que constrói o sucesso da Sollus diariamente. Nossas unidades estarão fechadas nesta data.",
+                "badge": "Dia do Trabalhador",
+                "title": "Dia Mundial do Trabalho",
+                "navbar_gif": "images/themes/independencia_brasil.gif",
             },
         ),
         (
@@ -106,59 +170,67 @@ def _holiday_style(name: str) -> dict[str, Any]:
                     "hero_text": "#e2e8f0",
                     "badge_bg": "rgba(226,232,240,0.28)",
                     "badge_text": "#f8fafc",
+                    "accent": "#94a3b8",
                 },
-                "message": "Dia de Finados: momento de respeito, lembran\u00e7as e gratid\u00e3o.",
+                "message": "Dia de Finados: momento de respeito, memória e gratidão. Nossas unidades estarão fechadas nesta data.",
                 "badge": "Finados",
-                "title": "Mem\u00f3ria e respeito",
+                "title": "Memória e Respeito",
+                "navbar_gif": "images/themes/finados_vela.gif",
             },
         ),
         (
             lambda n: "carnaval" in n,
             {
                 "colors": {
-                    "hero_start": "#db2777",
-                    "hero_end": "#7c3aed",
+                    "hero_start": "#7c3aed",
+                    "hero_end": "#db2777",
                     "hero_text": "#fdf4ff",
                     "badge_bg": "rgba(253,244,255,0.85)",
                     "badge_text": "#6d28d9",
+                    "accent": "#ec4899",
                 },
-                "message": "Carnaval: celebre com alegria e mantenha suas opera\u00e7\u00f5es organizadas mesmo no ritmo da festa.",
+                "message": "Carnaval: celebração da cultura brasileira. Nossas unidades estarão fechadas durante os dias de folia.",
                 "badge": "Carnaval",
-                "title": "Carnaval conectado",
+                "title": "Carnaval",
+                "navbar_gif": "images/themes/carnaval_mascara.gif",
             },
         ),
         (
-            lambda n: "pscoa" in n or "pascoa" in n,
+            lambda n: "pscoa" in n or "pascoa" in n or "paixao" in n or "sexta-feira santa" in n or "sexta feira santa" in n,
             {
                 "colors": {
-                    "hero_start": "#7c3aed",
+                    "hero_start": "#6d28d9",
                     "hero_end": "#ec4899",
                     "hero_text": "#fdf4ff",
                     "badge_bg": "rgba(250,240,255,0.9)",
                     "badge_text": "#6d28d9",
+                    "accent": "#a855f7",
                 },
-                "message": "P\u00e1scoa: tempo de renova\u00e7\u00e3o. Conte com a Sollus para manter suas solu\u00e7\u00f5es integradas.",
-                "badge": "P\u00e1scoa",
-                "title": "Renova\u00e7\u00e3o e conex\u00e3o",
+                "message": "Páscoa: tempo de renovação e harmonia. Nossas unidades estarão fechadas nesta data.",
+                "badge": "Páscoa",
+                "title": "Renovação e Harmonia",
+                "navbar_gif": "images/themes/pascoa_coelhinho.gif",
             },
         ),
         (
             lambda n: "corpus christi" in n,
             {
                 "colors": {
-                    "hero_start": "#fbbf24",
+                    "hero_start": "#4338ca",
                     "hero_end": "#7c3aed",
                     "hero_text": "#f8fafc",
                     "badge_bg": "rgba(248,250,252,0.9)",
                     "badge_text": "#6d28d9",
+                    "accent": "#8b5cf6",
                 },
-                "message": "Corpus Christi: que o feriado traga serenidade e planejamento para a equipe.",
+                "message": "Corpus Christi: momento de reflexão e serenidade. As unidades fechadas na localidade retomam o atendimento no próximo dia útil.",
                 "badge": "Corpus Christi",
                 "title": "Corpus Christi",
+                "navbar_gif": "images/themes/feriado_cwb.gif",
             },
         ),
         (
-            lambda n: "conscincia negra" in n or "consciencia negra" in n,
+            lambda n: "conscincia negra" in n or "consciencia negra" in n or "zumbi" in n,
             {
                 "colors": {
                     "hero_start": "#7f1d1d",
@@ -166,10 +238,12 @@ def _holiday_style(name: str) -> dict[str, Any]:
                     "hero_text": "#fef2f2",
                     "badge_bg": "rgba(127,29,29,0.18)",
                     "badge_text": "#f1f5f9",
+                    "accent": "#ef4444",
                 },
-                "message": "Dia da Consci\u00eancia Negra: fortalecemos a diversidade e o respeito no ambiente corporativo.",
-                "badge": "Consci\u00eancia Negra",
-                "title": "Diversidade e respeito",
+                "message": "Dia da Consciência Negra: fortalecemos a diversidade, o respeito e a igualdade. Nossas unidades estarão fechadas nesta data.",
+                "badge": "Consciência Negra",
+                "title": "Diversidade e Respeito",
+                "navbar_gif": "images/themes/consciencia_negra.gif",
             },
         ),
     ]
@@ -280,8 +354,172 @@ def _fetch_invertexto_holidays(year: int, state: str | None) -> list[dict[str, A
     return []
 
 
+def _calculate_easter(year: int) -> date:
+    """Calcula o Domingo de Páscoa pelo algoritmo canônico de Meeus/Jones/Butcher."""
+    a = year % 19
+    b = year // 100
+    c = year % 100
+    d = b // 4
+    e = b % 4
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i = c // 4
+    k = c % 4
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    month = (h + l - 7 * m + 114) // 31
+    day = ((h + l - 7 * m + 114) % 31) + 1
+    return date(year, month, day)
+
+
+def _get_sollus_unit_holidays(year: int) -> list[dict[str, Any]]:
+    """Gera automaticamente todos os feriados regionais das unidades Sollus (RJ, SP, ES, CWB) para qualquer ano."""
+    easter = _calculate_easter(year)
+    penha_date = easter + timedelta(days=8)
+    corpus_date = easter + timedelta(days=60)
+
+    return [
+        {
+            "date": f"{year}-01-20",
+            "name": "Dia de São Sebastião",
+            "badge": "Feriado Municipal • Rio de Janeiro",
+            "title": "São Sebastião — Feriado no Rio de Janeiro (RJ)",
+            "message": "Hoje é feriado municipal no Rio de Janeiro (RJ). A unidade RJ estará fechada nesta data; as demais unidades da Sollus seguem operando normalmente.",
+            "level": "municipal",
+            "city": "Rio de Janeiro",
+            "state": "RJ",
+            "priority": 350,
+            "colors": {"hero_start": "#0369a1", "hero_end": "#0284c7", "hero_text": "#ffffff", "badge_bg": "rgba(2,132,199,0.15)", "badge_text": "#38bdf8", "accent": "#0284c7"},
+            "navbar_gif": "images/themes/feriado_rj.gif",
+        },
+        {
+            "date": f"{year}-04-23",
+            "name": "Dia de São Jorge",
+            "badge": "Feriado Estadual • Rio de Janeiro",
+            "title": "Dia de São Jorge — Feriado Estadual no RJ",
+            "message": "Hoje é feriado estadual no Rio de Janeiro (RJ). As unidades do estado do RJ (Capital e Campos) estarão fechadas nesta data; demais unidades da Sollus seguem operando normalmente.",
+            "level": "estadual",
+            "city": "Rio de Janeiro",
+            "state": "RJ",
+            "priority": 350,
+            "colors": {"hero_start": "#b91c1c", "hero_end": "#dc2626", "hero_text": "#ffffff", "badge_bg": "rgba(220,38,38,0.15)", "badge_text": "#f87171", "accent": "#dc2626"},
+            "navbar_gif": "images/themes/feriado_rj.gif",
+        },
+        {
+            "date": f"{year}-01-15",
+            "name": "Dia de Santo Amaro",
+            "badge": "Feriado Municipal • Campos dos Goytacazes",
+            "title": "Dia de Santo Amaro — Feriado em Campos (RJ)",
+            "message": "Hoje é feriado municipal em Campos dos Goytacazes (RJ). A unidade Campos estará fechada nesta data; demais unidades da Sollus seguem operando normalmente.",
+            "level": "municipal",
+            "city": "Campos dos Goytacazes",
+            "state": "RJ",
+            "priority": 350,
+            "colors": {"hero_start": "#15803d", "hero_end": "#16a34a", "hero_text": "#ffffff", "badge_bg": "rgba(22,163,74,0.15)", "badge_text": "#4ade80", "accent": "#16a34a"},
+            "navbar_gif": "images/themes/feriado_rj.gif",
+        },
+        {
+            "date": f"{year}-08-06",
+            "name": "Santíssimo Salvador",
+            "badge": "Feriado Municipal • Campos dos Goytacazes",
+            "title": "Santíssimo Salvador — Feriado em Campos (RJ)",
+            "message": "Hoje é feriado municipal em Campos dos Goytacazes (RJ). A unidade Campos estará fechada nesta data; demais unidades da Sollus seguem operando normalmente.",
+            "level": "municipal",
+            "city": "Campos dos Goytacazes",
+            "state": "RJ",
+            "priority": 350,
+            "colors": {"hero_start": "#b45309", "hero_end": "#d97706", "hero_text": "#ffffff", "badge_bg": "rgba(217,119,6,0.15)", "badge_text": "#fbbf24", "accent": "#d97706"},
+            "navbar_gif": "images/themes/feriado_rj.gif",
+        },
+        {
+            "date": f"{year}-01-25",
+            "name": "Aniversário de São Paulo",
+            "badge": "Feriado Municipal • São Paulo",
+            "title": "Aniversário de São Paulo — Feriado em SP",
+            "message": "Hoje é feriado municipal em São Paulo (SP) em comemoração ao aniversário da capital paulista. Unidade SP estará fechada nesta data; demais unidades operando normalmente.",
+            "level": "municipal",
+            "city": "São Paulo",
+            "state": "SP",
+            "priority": 350,
+            "colors": {"hero_start": "#be123c", "hero_end": "#e11d48", "hero_text": "#ffffff", "badge_bg": "rgba(225,29,72,0.15)", "badge_text": "#fb7185", "accent": "#e11d48"},
+            "navbar_gif": "images/themes/feriado_sp.gif",
+        },
+        {
+            "date": f"{year}-07-09",
+            "name": "Revolução Constitucionalista de 1932",
+            "badge": "Feriado Estadual • São Paulo",
+            "title": "Revolução Constitucionalista — Feriado Estadual em SP",
+            "message": "Hoje é feriado estadual em São Paulo (SP). A unidade SP estará fechada nesta data; as demais unidades seguem operando normalmente.",
+            "level": "estadual",
+            "city": "São Paulo",
+            "state": "SP",
+            "priority": 350,
+            "colors": {"hero_start": "#1e293b", "hero_end": "#b91c1c", "hero_text": "#ffffff", "badge_bg": "rgba(255,255,255,0.15)", "badge_text": "#f1f5f9", "accent": "#e11d48"},
+            "navbar_gif": "images/themes/feriado_sp.gif",
+        },
+        {
+            "date": penha_date.isoformat(),
+            "name": "Nossa Senhora da Penha",
+            "badge": "Feriado Estadual • Espírito Santo",
+            "title": "Nossa Senhora da Penha — Feriado Estadual no ES",
+            "message": "Hoje é feriado estadual no Espírito Santo em homenagem à padroeira do estado. A unidade ES estará fechada nesta data; demais unidades da Sollus seguem operando normalmente.",
+            "level": "estadual",
+            "city": "Vitória",
+            "state": "ES",
+            "priority": 380,
+            "colors": {"hero_start": "#0284c7", "hero_end": "#0ea5e9", "hero_text": "#ffffff", "badge_bg": "rgba(14,165,233,0.15)", "badge_text": "#38bdf8", "accent": "#0ea5e9"},
+            "navbar_gif": "images/themes/feriado_es.gif",
+        },
+        {
+            "date": f"{year}-05-23",
+            "name": "Colonização do Solo Espírito-Santense",
+            "badge": "Feriado Municipal • Vila Velha (ES)",
+            "title": "Colonização do Solo Espírito-Santense — Feriado em Vila Velha (ES)",
+            "message": "Hoje é feriado municipal em Vila Velha (ES). A unidade ES estará fechada nesta data; demais unidades da Sollus seguem operando normalmente.",
+            "level": "municipal",
+            "city": "Vila Velha",
+            "state": "ES",
+            "priority": 350,
+            "colors": {"hero_start": "#0d9488", "hero_end": "#14b8a6", "hero_text": "#ffffff", "badge_bg": "rgba(20,184,166,0.15)", "badge_text": "#2dd4bf", "accent": "#14b8a6"},
+            "navbar_gif": "images/themes/feriado_es.gif",
+        },
+        {
+            "date": f"{year}-09-08",
+            "name": "Aniversário de Vitória e Padroeira de Curitiba",
+            "badge": "Feriado Municipal • Vitória e Curitiba",
+            "title": "Feriado Municipal em Vitória (ES) e Curitiba (PR)",
+            "message": "Hoje é feriado municipal em Vitória (ES) e em Curitiba (PR). As unidades ES e CWB estarão fechadas nesta data; demais unidades da Sollus seguem operando normalmente.",
+            "level": "municipal",
+            "city": "Vitória e Curitiba",
+            "state": "ES/PR",
+            "priority": 350,
+            "colors": {"hero_start": "#4338ca", "hero_end": "#6366f1", "hero_text": "#ffffff", "badge_bg": "rgba(99,102,241,0.15)", "badge_text": "#818cf8", "accent": "#6366f1"},
+            "navbar_gif": "images/themes/feriado_cwb.gif",
+        },
+        {
+            "date": corpus_date.isoformat(),
+            "name": "Corpus Christi",
+            "badge": "Feriado Municipal • Curitiba (PR)",
+            "title": "Corpus Christi — Feriado Municipal em Curitiba (PR)",
+            "message": "Hoje é feriado municipal em Curitiba (PR). A unidade CWB estará fechada nesta data; demais unidades da Sollus seguem operando normalmente.",
+            "level": "municipal",
+            "city": "Curitiba",
+            "state": "PR",
+            "priority": 350,
+            "colors": {"hero_start": "#6d28d9", "hero_end": "#8b5cf6", "hero_text": "#ffffff", "badge_bg": "rgba(139,92,246,0.15)", "badge_text": "#a78bfa", "accent": "#8b5cf6"},
+            "navbar_gif": "images/themes/feriado_cwb.gif",
+        },
+    ]
+
+
 def _collect_holiday_entries(year: int) -> list[dict[str, Any]]:
     entries: list[dict[str, Any]] = []
+
+    # 1. Feriados das unidades Sollus (RJ, SP, ES, CWB)
+    sollus_unit_entries = _get_sollus_unit_holidays(year)
+    entries.extend({**item, "_source": "sollus_units"} for item in sollus_unit_entries)
+
     brasil_entries = _fetch_brasil_api_holidays(year)
     entries.extend({**item, "_source": "brasilapi"} for item in brasil_entries if isinstance(item, dict))
 
@@ -323,13 +561,13 @@ def _build_dynamic_holidays(year: int, existing_dates: set[str]) -> List[dict[st
         state = item.get("state") or item.get("_state")
         city = item.get("city")
 
-        location_msg = "em todo o pa\u00eds"
+        location_msg = "em todo o país"
         if level.startswith("estadua") and state:
             location_msg = f"no estado de {state.upper()}"
         elif city:
             location_msg = f"em {city.title()}"
 
-        custom_message = style_info.get("message")
+        custom_message = item.get("message") or style_info.get("message")
         if custom_message:
             if "{location}" in custom_message:
                 message = custom_message.format(location=location_msg)
@@ -337,13 +575,15 @@ def _build_dynamic_holidays(year: int, existing_dates: set[str]) -> List[dict[st
                 message = custom_message
         else:
             message = (
-                f"Hoje celebramos {name} {location_msg}. Conte com a Sollus para manter suas opera\u00e7\u00f5es conectadas e seguras."  # noqa: E501
+                f"Hoje celebramos {name} {location_msg}. As unidades locais estarão fechadas nesta data, retornando ao expediente normal no próximo dia útil."
             )
 
-        badge_text = style_info.get("badge") or name
-        title_text = style_info.get("title") or name
+        badge_text = item.get("badge") or style_info.get("badge") or name
+        title_text = item.get("title") or style_info.get("title") or name
+        colors = item.get("colors") or colors
+        navbar_gif = item.get("navbar_gif") or style_info.get("navbar_gif")
 
-        priority = LEVEL_PRIORITIES.get(level, 220)
+        priority = item.get("priority") or LEVEL_PRIORITIES.get(level, 220)
         source_priority = 2 if item.get("_source") == "invertexto" else 1
 
         theme = {
@@ -351,9 +591,9 @@ def _build_dynamic_holidays(year: int, existing_dates: set[str]) -> List[dict[st
             "type": "holiday",
             "priority": priority,
             "date": date_str,
-                "label": name,
-                "badge": badge_text,
-                "title": title_text,
+            "label": name,
+            "badge": badge_text,
+            "title": title_text,
             "message": message,
             "colors": colors,
             "raw": item,
@@ -362,6 +602,8 @@ def _build_dynamic_holidays(year: int, existing_dates: set[str]) -> List[dict[st
             "state": state,
             "city": city,
         }
+        if navbar_gif:
+            theme["navbar_gif"] = navbar_gif
 
         current = best_by_date.get(date_str)
         if current is None or priority > current.get("priority", 0) or (
@@ -387,6 +629,8 @@ def _extend_holiday_week_windows(themes: list[dict[str, Any]]) -> None:
 
     for theme in themes:
         if theme.get("type") != "holiday":
+            continue
+        if theme.get("holiday_type") in ("municipal", "city", "municipio", "estadual", "state"):
             continue
         date_str = theme.get("date")
         if not date_str or len(date_str) != 10:

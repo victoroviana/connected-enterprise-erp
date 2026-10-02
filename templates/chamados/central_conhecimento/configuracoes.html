@@ -1,0 +1,589 @@
+<!-- templates/chamados/central_conhecimento/configuracoes.html -->
+<!-- SollusFlow — Configurações e Alertas de Gestão -->
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Configurações do SollusFlow • Sollus Connected{% endblock %}
+
+{% block head %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+  :root {
+    --sf-primary: #1d4ed8;
+    --sf-primary-light: #eff6ff;
+    --sf-accent: #7c3aed;
+    --sf-border: #e2e8f0;
+    --sf-card-bg: #ffffff;
+    --sf-card-inner-bg: #f8fafc;
+    --sf-text-title: #0f172a;
+    --sf-text-body: #334155;
+    --sf-text-muted: #64748b;
+    --sf-row-hover: #f8fafc;
+    --sf-row-selected: #eff6ff;
+    --sf-input-bg: #ffffff;
+    --sf-input-border: #cbd5e1;
+    --sf-option-bg: #ffffff;
+    --sf-option-border: #e2e8f0;
+    --sf-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  }
+
+  html[data-theme="dark"], [data-theme="dark"], [data-bs-theme="dark"] {
+    --sf-primary: #3b82f6;
+    --sf-primary-light: rgba(59, 130, 246, 0.16);
+    --sf-border: rgba(255, 255, 255, 0.08);
+    --sf-card-bg: #0b1220;
+    --sf-card-inner-bg: rgba(15, 23, 42, 0.75);
+    --sf-text-title: #f8fafc;
+    --sf-text-body: #cbd5e1;
+    --sf-text-muted: #94a3b8;
+    --sf-row-hover: rgba(30, 41, 59, 0.65);
+    --sf-row-selected: rgba(37, 99, 235, 0.22);
+    --sf-input-bg: #0f172a;
+    --sf-input-border: rgba(255, 255, 255, 0.15);
+    --sf-option-bg: #0b1220;
+    --sf-option-border: rgba(255, 255, 255, 0.1);
+    --sf-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  }
+
+  .sf-config-card {
+    background: var(--sf-card-bg);
+    border: 1px solid var(--sf-border);
+    border-radius: 14px;
+    box-shadow: var(--sf-shadow);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: all .2s ease;
+  }
+  .sf-config-card:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  .sf-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--sf-border);
+  }
+  .sf-card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--sf-text-title);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+  }
+
+  .sf-box-inner {
+    background: var(--sf-card-inner-bg);
+    border: 1px solid var(--sf-border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+  }
+
+  .sf-option-card {
+    background: var(--sf-option-bg);
+    border: 1px solid var(--sf-option-border);
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    cursor: pointer;
+    transition: all .2s ease;
+  }
+  .sf-option-card:hover {
+    border-color: #3b82f6;
+  }
+  .sf-option-card.selected,
+  .sf-option-card:has(input[type="radio"]:checked) {
+    border-color: var(--sf-primary);
+    background: var(--sf-primary-light);
+  }
+  .sf-option-title {
+    color: var(--sf-text-title);
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+  .sf-option-desc {
+    color: var(--sf-text-muted);
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+
+  .user-select-table {
+    max-height: 420px;
+    overflow-y: auto;
+    border: 1px solid var(--sf-border);
+    border-radius: 10px;
+    background: var(--sf-card-bg);
+  }
+  .user-select-table table {
+    margin-bottom: 0;
+    font-size: 0.88rem;
+    color: var(--sf-text-title);
+    border-color: var(--sf-border);
+  }
+  .user-select-table th {
+    position: sticky;
+    top: 0;
+    background: var(--sf-card-inner-bg);
+    z-index: 10;
+    font-weight: 700;
+    color: var(--sf-text-muted);
+    border-bottom: 1px solid var(--sf-border);
+  }
+  .user-row {
+    border-bottom: 1px solid var(--sf-border);
+    transition: background-color .15s ease;
+  }
+  .user-row td {
+    background: transparent !important;
+    color: var(--sf-text-body);
+  }
+  .user-row:hover td {
+    background: var(--sf-row-hover) !important;
+  }
+  .user-row.selected td {
+    background: var(--sf-row-selected) !important;
+  }
+
+  .sf-actions-bar {
+    background: var(--sf-card-bg);
+    border: 1px solid var(--sf-border);
+    border-radius: 12px;
+    box-shadow: var(--sf-shadow);
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 3.5rem;
+  }
+
+  /* Form control overrides for dark mode */
+  html[data-theme="dark"] .form-control,
+  html[data-theme="dark"] .form-select,
+  html[data-theme="dark"] .input-group-text,
+  [data-bs-theme="dark"] .form-control,
+  [data-bs-theme="dark"] .form-select,
+  [data-bs-theme="dark"] .input-group-text {
+    background-color: var(--sf-input-bg) !important;
+    border-color: var(--sf-input-border) !important;
+    color: var(--sf-text-title) !important;
+  }
+  html[data-theme="dark"] .form-control:focus,
+  [data-bs-theme="dark"] .form-control:focus {
+    border-color: var(--sf-primary) !important;
+    box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25) !important;
+  }
+  html[data-theme="dark"] .form-control::placeholder,
+  [data-bs-theme="dark"] .form-control::placeholder {
+    color: #64748b !important;
+  }
+
+  .sf-text-title {
+    color: var(--sf-text-title) !important;
+  }
+  .sf-text-muted {
+    color: var(--sf-text-muted) !important;
+  }
+
+  .sf-pill-badge {
+    background: var(--sf-card-bg);
+    color: var(--sf-text-title);
+    border: 1px solid var(--sf-border);
+    border-radius: 8px;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+  }
+
+  html[data-theme="dark"] .sf-badge-usuario,
+  [data-bs-theme="dark"] .sf-badge-usuario {
+    background-color: #1e293b !important;
+    color: #cbd5e1 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+  html:not([data-theme="dark"]) .sf-badge-usuario {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set hero_tips = [
+  'Defina exatamente quais colaboradores devem receber o alerta diário das 08:30.',
+  'A restrição de domínio corporativo impede o envio de dados a e-mails pessoais como @gmail.com.',
+  'Você pode testar o disparo imediatamente para seu e-mail para validar o layout.'
+] %}
+
+{{ page_hero(
+  title='Configurações do SollusFlow',
+  subtitle='Gerencie os parâmetros do fluxo, destinatários dos alertas gerenciais matinais e regras de envio.',
+  eyebrow='SollusFlow • Gestão & Automação',
+  help_tips=hero_tips,
+  help_intro='Dicas de Configuração'
+) }}
+
+<div class="container-fluid px-4 py-3" style="max-width: 1200px;">
+
+  <!-- Botão Voltar ao Painel -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <a href="{{ url_for('central_conhecimento.board') }}" class="btn btn-outline-secondary btn-sm fw-bold">
+      <i class="fa-solid fa-arrow-left me-1"></i>Voltar ao Painel do SollusFlow
+    </a>
+    <div class="d-flex align-items-center gap-2">
+      <span class="sf-pill-badge">
+        <i class="fa-solid fa-clock me-1 text-primary"></i>Disparo diário: <strong>{{ config.horario or '08:30' }}</strong>
+      </span>
+      {% if pedidos_atrasados_count > 0 %}
+        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2">
+          <i class="fa-solid fa-triangle-exclamation me-1"></i>{{ pedidos_atrasados_count }} pedido{{ 's' if pedidos_atrasados_count > 1 else '' }} em atraso hoje
+        </span>
+      {% else %}
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+          <i class="fa-solid fa-circle-check me-1"></i>Nenhum pedido em atraso hoje
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <form method="POST" action="{{ url_for('central_conhecimento.configuracoes') }}" id="formConfigSollusFlow">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <!-- CARD 1: Status & Agendamento -->
+    <div class="sf-config-card">
+      <div class="sf-card-header">
+        <h5 class="sf-card-title">
+          <i class="fa-solid fa-bell text-primary"></i>1. Status & Horário do Relatório Diário de Atrasos
+        </h5>
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" role="switch" id="ativoSwitch" name="ativo" value="1" {% if config.ativo %}checked{% endif %} style="width: 2.75em; height: 1.4em; cursor: pointer;">
+          <label class="form-check-label fw-bold ms-2 sf-text-title" for="ativoSwitch" id="ativoLabel" style="cursor: pointer;">
+            {% if config.ativo %}Disparo Diário Ativado{% else %}Disparo Diário Pausado{% endif %}
+          </label>
+        </div>
+      </div>
+      <div class="row g-3 align-items-center">
+        <div class="col-12 col-md-4">
+          <label class="form-label fw-bold sf-text-muted small mb-1">Horário do Disparo Automático (Diário)</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text"><i class="fa-regular fa-clock text-muted"></i></span>
+            <input type="time" class="form-control" name="horario" value="{{ config.horario or '08:30' }}" required>
+          </div>
+          <div class="form-text small sf-text-muted">Horário de Brasília em que o sistema consolida e dispara o e-mail diário.</div>
+        </div>
+        <div class="col-12 col-md-8">
+          <div class="sf-box-inner">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <i class="fa-solid fa-circle-info text-info"></i>
+              <strong class="small sf-text-title">Sobre o Relatório Diário:</strong>
+            </div>
+            <p class="small sf-text-muted mb-0">
+              O relatório consolida todos os pedidos ativos cuja data prevista de entrega já expirou, listando dias de atraso, cliente, etapa atual e os responsáveis diretos.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 2: Regras e Destinatários dos E-mails -->
+    <div class="sf-config-card">
+      <div class="sf-card-header">
+        <h5 class="sf-card-title">
+          <i class="fa-solid fa-envelope-open-text text-primary"></i>2. Destinatários do Alerta de Atrasos
+        </h5>
+      </div>
+
+      <!-- Modo de Seleção -->
+      <div class="mb-4">
+        <label class="form-label fw-bold sf-text-title mb-2">Quem deve receber o e-mail diário de gestão?</label>
+        <div class="d-flex flex-column flex-sm-row gap-3">
+          <div class="sf-option-card flex-fill {% if config.destinatarios_modo != 'todos_gestores' %}selected{% endif %}" onclick="document.getElementById('modoSelecionados').checked = true; toggleModoDestinatarios();">
+            <div class="form-check mb-1">
+              <input class="form-check-input" type="radio" name="destinatarios_modo" id="modoSelecionados" value="selecionados" {% if config.destinatarios_modo != 'todos_gestores' %}checked{% endif %} onchange="toggleModoDestinatarios()">
+              <label class="form-check-label sf-option-title d-inline" for="modoSelecionados" style="cursor: pointer;">
+                <i class="fa-solid fa-user-check text-primary me-1"></i>Apenas Colaboradores Selecionados <span class="badge bg-success-subtle text-success ms-1">Recomendado</span>
+              </label>
+            </div>
+            <div class="sf-option-desc ms-4">
+              Permite escolher manualmente na lista abaixo quais usuários devem receber este relatório.
+            </div>
+          </div>
+
+          <div class="sf-option-card flex-fill {% if config.destinatarios_modo == 'todos_gestores' %}selected{% endif %}" onclick="document.getElementById('modoTodos').checked = true; toggleModoDestinatarios();">
+            <div class="form-check mb-1">
+              <input class="form-check-input" type="radio" name="destinatarios_modo" id="modoTodos" value="todos_gestores" {% if config.destinatarios_modo == 'todos_gestores' %}checked{% endif %} onchange="toggleModoDestinatarios()">
+              <label class="form-check-label sf-option-title d-inline" for="modoTodos" style="cursor: pointer;">
+                <i class="fa-solid fa-users-gear text-secondary me-1"></i>Todos os Administradores e Gestores
+              </label>
+            </div>
+            <div class="sf-option-desc ms-4">
+              Envia automaticamente para todos os usuários ativos com perfil de administrador ou gestor.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela de Seleção de Usuários -->
+      <div id="secaoSelecionarUsuarios" class="mb-4" {% if config.destinatarios_modo == 'todos_gestores' %}style="display:none;"{% endif %}>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+          <label class="form-label fw-bold small sf-text-muted mb-0">Selecione os colaboradores que receberão o relatório:</label>
+          <div class="d-flex align-items-center gap-2">
+            <div class="input-group input-group-sm" style="width: 220px;">
+              <span class="input-group-text"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+              <input type="text" class="form-control" id="buscaUsuario" placeholder="Buscar colaborador..." onkeyup="filtrarColaboradores()">
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="marcarApenasCorporativos()">
+              <i class="fa-solid fa-building me-1"></i>Selecionar Gestores Corporativos
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="desmarcarTodos()">
+              <i class="fa-solid fa-square-xmark me-1"></i>Desmarcar Todos
+            </button>
+          </div>
+        </div>
+
+        <div class="user-select-table">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th style="width: 48px;" class="text-center">
+                  <input type="checkbox" class="form-check-input" id="checkTodosHeader" onchange="toggleTodosCheckboxes(this.checked)">
+                </th>
+                <th>Colaborador</th>
+                <th>E-mail</th>
+                <th>Perfil no Sistema</th>
+                <th>Domínio</th>
+              </tr>
+            </thead>
+            <tbody id="corpoTabelaUsuarios">
+              {% for u in users %}
+                {% set u_email = (u.email or '')|lower|trim %}
+                {% set is_corp = '@sollusgroup.com' in u_email or '@sollustecnologia.com' in u_email %}
+                {% set is_selected = u.id in (config.usuarios_ids or []) %}
+                <tr class="user-row {% if is_selected %}selected{% endif %}" data-user-text="{{ (u.nome_completo or u.usuario or '')|lower }} {{ u_email }}" data-is-corp="{{ '1' if is_corp else '0' }}">
+                  <td class="text-center">
+                    <input type="checkbox" class="form-check-input user-check" name="usuarios_ids" value="{{ u.id }}" {% if is_selected %}checked{% endif %} onchange="toggleRowHighlight(this)">
+                  </td>
+                  <td>
+                    <div class="fw-bold sf-text-title">{{ u.nome_completo or u.usuario }}</div>
+                    <div class="sf-text-muted" style="font-size: 0.75rem;">@{{ u.usuario }}</div>
+                  </td>
+                  <td>
+                    <span class="fw-semibold sf-text-title">{{ u.email or 'Sem e-mail cadastrado' }}</span>
+                  </td>
+                  <td>
+                    <span class="badge {% if u.tipo == 'admin' or u.role == 'admin' %}bg-primary-subtle text-primary border border-primary-subtle{% elif u.tipo == 'gestor' or u.role == 'gestor' %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}sf-badge-usuario{% endif %}">
+                      {{ (u.tipo or u.role or 'usuario')|title }}
+                    </span>
+                  </td>
+                  <td>
+                    {% if is_corp %}
+                      <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.72rem;">
+                        <i class="fa-solid fa-shield-check me-1"></i>Corporativo
+                      </span>
+                    {% else %}
+                      <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 0.72rem;" title="E-mail pessoal ou externo">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i>Externo / Pessoal
+                      </span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Outros Gatilhos de Inclusão -->
+      <div class="row g-3 pt-3 border-top" style="border-color: var(--sf-border) !important;">
+        <div class="col-12 col-md-6">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="incluirResponsaveisCheck" name="incluir_responsaveis" value="1" {% if config.incluir_responsaveis %}checked{% endif %}>
+            <label class="form-check-label fw-bold sf-text-title small" for="incluirResponsaveisCheck">
+              Incluir automaticamente o Consultor e o Responsável direto de cada pedido em atraso
+            </label>
+            <div class="form-text small sf-text-muted">
+              Garante que quem está atendendo ou vendendo seja alertado sobre o atraso específico da sua tarefa.
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="incluirTiCheck" name="incluir_ti" value="1" {% if config.incluir_ti %}checked{% endif %}>
+            <label class="form-check-label fw-bold sf-text-title small" for="incluirTiCheck">
+              Incluir Suporte de TI (<span class="text-primary">ti2@sollusgroup.com</span>) para monitoramento
+            </label>
+            <div class="form-text small sf-text-muted">
+              Mantém o canal de monitoramento da TI informado sobre execuções e integridade.
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label fw-bold small sf-text-muted mb-1">Outros e-mails institucionais adicionais (opcional)</label>
+          <input type="text" class="form-control form-control-sm" name="emails_adicionais" value="{{ config.emails_adicionais or '' }}" placeholder="Ex: diretoria@sollusgroup.com, operacoes@sollustecnologia.com">
+          <div class="form-text small sf-text-muted">Insira e-mails separados por vírgula que também devem receber cópia do alerta.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 3: Segurança e Privacidade de Dados -->
+    <div class="sf-config-card" style="border-left: 4px solid #16a34a;">
+      <div class="sf-card-header">
+        <h5 class="sf-card-title text-success">
+          <i class="fa-solid fa-shield-halved text-success"></i>3. Proteção e Segurança de Domínio Corporativo
+        </h5>
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" role="switch" id="apenasDominioCorpSwitch" name="apenas_dominio_corporativo" value="1" {% if config.apenas_dominio_corporativo %}checked{% endif %} style="width: 2.75em; height: 1.4em; cursor: pointer;">
+          <label class="form-check-label fw-bold ms-2 text-success" for="apenasDominioCorpSwitch" style="cursor: pointer;">
+            Restrição Ativa (Recomendado)
+          </label>
+        </div>
+      </div>
+
+      <div class="sf-box-inner">
+        <p class="small sf-text-title mb-1">
+          <strong>Proteção contra vazamento de informações:</strong> Quando esta opção está ativa, o sistema <strong>bloqueia automaticamente qualquer e-mail que não seja dos domínios oficiais da Sollus</strong> (como <code>@sollusgroup.com</code> ou <code>@sollustecnologia.com</code>).
+        </p>
+        <p class="small sf-text-muted mb-0">
+          Mesmo que alguém cadastre um usuário com e-mail pessoal (ex: <code>@gmail.com</code>, <code>@hotmail.com</code>) e marque como gestor ou responsável, nenhum dado de clientes, pedidos ou CNPJs será enviado para fora da infraestrutura da empresa.
+        </p>
+      </div>
+    </div>
+
+    <!-- BARRA DE AÇÕES -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 sf-actions-bar">
+      <div class="d-flex align-items-center gap-2">
+        <button type="submit" class="btn btn-primary px-4 fw-bold" id="btnSalvarConfig">
+          <i class="fa-solid fa-floppy-disk me-1"></i>Salvar Configurações
+        </button>
+        <a href="{{ url_for('central_conhecimento.board') }}" class="btn btn-outline-secondary px-3">
+          Cancelar
+        </a>
+      </div>
+
+      <!-- Testar Disparo -->
+      <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-outline-primary fw-bold" onclick="testarDisparoAgora()" id="btnTestarDisparo">
+          <i class="fa-solid fa-paper-plane me-1"></i>Testar Envio Agora para Meu E-mail
+        </button>
+      </div>
+    </div>
+
+  </form>
+</div>
+
+<script>
+  function toggleModoDestinatarios() {
+    const isSelecionados = document.getElementById('modoSelecionados').checked;
+    const secao = document.getElementById('secaoSelecionarUsuarios');
+    secao.style.display = isSelecionados ? 'block' : 'none';
+    
+    // Atualizar estilos dos cards de opção
+    const cards = document.querySelectorAll('.sf-option-card');
+    cards.forEach(c => {
+      const radio = c.querySelector('input[type="radio"]');
+      if (radio && radio.checked) {
+        c.classList.add('selected');
+      } else {
+        c.classList.remove('selected');
+      }
+    });
+  }
+
+  function toggleRowHighlight(checkbox) {
+    const tr = checkbox.closest('tr');
+    if (checkbox.checked) {
+      tr.classList.add('selected');
+    } else {
+      tr.classList.remove('selected');
+    }
+  }
+
+  function toggleTodosCheckboxes(marcar) {
+    const checkboxes = document.querySelectorAll('.user-check');
+    checkboxes.forEach(cb => {
+      if (cb.closest('tr').style.display !== 'none') {
+        cb.checked = marcar;
+        toggleRowHighlight(cb);
+      }
+    });
+  }
+
+  function marcarApenasCorporativos() {
+    const rows = document.querySelectorAll('.user-row');
+    rows.forEach(r => {
+      const isCorp = r.getAttribute('data-is-corp') === '1';
+      const cb = r.querySelector('.user-check');
+      if (cb) {
+        cb.checked = isCorp;
+        toggleRowHighlight(cb);
+      }
+    });
+  }
+
+  function desmarcarTodos() {
+    const checkboxes = document.querySelectorAll('.user-check');
+    checkboxes.forEach(cb => {
+      cb.checked = false;
+      toggleRowHighlight(cb);
+    });
+    const headerCheck = document.getElementById('checkTodosHeader');
+    if (headerCheck) headerCheck.checked = false;
+  }
+
+  function filtrarColaboradores() {
+    const termo = (document.getElementById('buscaUsuario').value || '').toLowerCase().trim();
+    const rows = document.querySelectorAll('.user-row');
+    rows.forEach(r => {
+      const texto = r.getAttribute('data-user-text') || '';
+      if (!termo || texto.includes(termo)) {
+        r.style.display = '';
+      } else {
+        r.style.display = 'none';
+      }
+    });
+  }
+
+  async function testarDisparoAgora() {
+    const btn = document.getElementById('btnTestarDisparo');
+    const originalText = btn.innerHTML;
+
+    if (!confirm('Deseja disparar um e-mail de teste com o relatório de pedidos em atraso agora mesmo para o seu e-mail ({{ current_user.email }})?')) {
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Enviando teste...';
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    try {
+      const resp = await fetch('{{ url_for("central_conhecimento.api_testar_disparo_alerta") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+          target_email: '{{ current_user.email }}'
+        })
+      });
+
+      const res = await resp.json();
+      if (res.ok) {
+        alert('E-mail de teste enviado com sucesso para {{ current_user.email }}!\nPedidos em atraso incluídos: ' + (res.pedidos_atrasados || 0));
+      } else {
+        alert('Não foi possível enviar o teste: ' + (res.mensagem || res.error || 'Erro desconhecido.'));
+      }
+    } catch (e) {
+      alert('Erro de conexão ao solicitar disparo: ' + e);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
+
+  document.getElementById('ativoSwitch').addEventListener('change', function() {
+    document.getElementById('ativoLabel').textContent = this.checked ? 'Disparo Diário Ativado' : 'Disparo Diário Pausado';
+  });
+</script>
+{% endblock %}

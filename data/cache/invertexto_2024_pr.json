@@ -1,0 +1,104 @@
+[
+  {
+    "date": "2024-01-01",
+    "name": "Confraternizao Universal",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2024-02-12",
+    "name": "Carnaval",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2024-02-13",
+    "name": "Carnaval",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2024-02-14",
+    "name": "Quarta-feira de Cinzas",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2024-03-29",
+    "name": "Sexta-feira Santa",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2024-04-21",
+    "name": "Tiradentes",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2024-05-01",
+    "name": "Dia do Trabalhador",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2024-05-30",
+    "name": "Corpus Christi",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2024-09-07",
+    "name": "Independncia do Brasil",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2024-10-12",
+    "name": "Nossa Senhora Aparecida",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2024-10-28",
+    "name": "Dia do Servidor Pblico",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2024-11-02",
+    "name": "Finados",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2024-11-15",
+    "name": "Proclamao da Repblica",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2024-11-20",
+    "name": "Dia Nacional de Zumbi e da Conscincia Negra",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2024-12-24",
+    "name": "Vspera de Natal",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2024-12-25",
+    "name": "Natal",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2024-12-31",
+    "name": "Vspera de Ano-Novo",
+    "type": "facultativo",
+    "level": "nacional"
+  }
+]

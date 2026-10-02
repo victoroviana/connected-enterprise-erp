@@ -16,6 +16,7 @@ from werkzeug.utils import secure_filename
 
 from extensions import db
 from modules.propostas.models import User
+from utils.cache import cached
 
 from .models import (
     SollusTicket,
@@ -441,16 +442,21 @@ def ticket_visible_query(user: User):
 
 def next_ticket_number() -> str:
     from extensions import db
-    nums = db.session.query(SollusTicket.number).all()
-    max_val = 0
-    for (num,) in nums:
-        if num and num.strip().isdigit():
-            try:
-                val = int(num.strip())
-                if val > max_val:
-                    max_val = val
-            except ValueError:
-                pass
+    from sqlalchemy import func, cast, Integer
+    try:
+        max_val = db.session.query(func.max(cast(SollusTicket.number, Integer))).scalar() or 0
+    except Exception:
+        latest_nums = (
+            db.session.query(SollusTicket.number)
+            .filter(SollusTicket.number.isnot(None))
+            .order_by(SollusTicket.id.desc())
+            .limit(100)
+            .all()
+        )
+        max_val = 0
+        for (num,) in latest_nums:
+            if num and num.strip().isdigit():
+                max_val = max(max_val, int(num.strip()))
     seq = max_val + 1
     # Fallback to start at 1000 if no numeric tickets exist
     if seq < 1000 and max_val == 0:
@@ -851,10 +857,12 @@ def auto_assign_ticket(ticket: SollusTicket, actor_id: int | None = None) -> Non
     add_event(ticket, "auto_assign", f"Atribuído automaticamente para {assignee.name or assignee.email}.", actor_id)
 
 
+@cached(ttl_seconds=300, key_prefix="sollus_ticket_status_map")
 def status_map() -> dict[str, SollusTicketStatus]:
     return {row.key: row for row in SollusTicketStatus.query.order_by(SollusTicketStatus.sort_order).all()}
 
 
+@cached(ttl_seconds=300, key_prefix="sollus_ticket_priority_map")
 def priority_map() -> dict[str, SollusTicketPriority]:
     return {row.key: row for row in SollusTicketPriority.query.order_by(SollusTicketPriority.level).all()}
 
@@ -1006,7 +1014,9 @@ def update_sla_overdue() -> int:
             SollusTicket.query
             .filter(SollusTicket.due_at.isnot(None))
             .filter(SollusTicket.overdue_at.is_(None))
-            .filter(~SollusTicket.status_key.in_(("closed", "resolved", "deleted")))
+            .filter(~SollusTicket.status_key.in_(("closed", "resolved", "archived", "deleted")))
+            .filter(SollusTicket.closed_at.is_(None))
+            .filter(SollusTicket.resolved_at.is_(None))
             .filter(SollusTicket.due_at < now)
             # Não enviar alerta se o ticket já foi respondido por um agente
             .filter(~SollusTicket.id.in_(replied_query))

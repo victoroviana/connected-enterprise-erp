@@ -14,6 +14,23 @@
 
 
   <meta name="csrf-token" content="{{ csrf_token() }}" />
+  <script>
+    (function(){
+      try {
+        var t = localStorage.getItem('sollus:theme');
+        if (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          t = 'dark';
+        }
+        if (t === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.setAttribute('data-bs-theme', 'dark');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'light');
+          document.documentElement.setAttribute('data-bs-theme', 'light');
+        }
+      } catch(e) {}
+    })();
+  </script>
 
 
   <title>{% block title %}Sollus Connected{% endblock %}</title>
@@ -49,7 +66,8 @@
 
 
 
-  <link href="{{ url_for('static', filename='css/sollus_tickets_premium.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/sollus_tickets_premium.css') }}?v=20260916_sidebar" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/sollus_modal_drawer.css') }}?v=20260930_drawer" rel="stylesheet">
   {% block head %}{% endblock %}
 
 
@@ -57,81 +75,56 @@
 
 
   {% set theme = ui_theme or {} %}
-
-
   {% set tcolors = theme.colors or {} %}
+  {% set _theme_id = theme.id or 'default' %}
+  {% set _has_theme = _theme_id != 'default' and _theme_id != '' %}
 
-
-  {% set nav_start = tcolors.hero_start or '#0B3B8C' %}
-
-
-  {% set nav_end = tcolors.hero_end or '#0E5DC6' %}
-
-
-  {% set nav_text = tcolors.hero_text or '#ffffff' %}
-
+  {% set nav_start = (tcolors.hero_start if _has_theme else '') or '#0e4a7a' %}
+  {% set nav_end = (tcolors.hero_end if _has_theme else '') or '#0084c8' %}
+  {% set theme_accent = (tcolors.accent or tcolors.badge_text if _has_theme else '') or '#00a4f5' %}
+  {% set nav_text = '#ffffff' %}
 
   {% set nav_btn_bg = 'linear-gradient(135deg,' ~ nav_start ~ ',' ~ nav_end ~ ')' %}
-
-
-  {% set nav_btn_border = 'rgba(255,255,255,0.65)' %}
-
-
-  {% set nav_btn_hover_bg = 'linear-gradient(135deg,' ~ nav_start ~ ',' ~ nav_end ~ ')' %}
-
-
-  {% set nav_btn_hover_border = 'rgba(255,255,255,0.9)' %}
-
-
-
-
+  {% set nav_btn_border = 'rgba(255,255,255,0.25)' %}
+  {% set nav_btn_hover_bg = 'linear-gradient(135deg,' ~ nav_end ~ ',' ~ nav_start ~ ')' %}
+  {% set nav_btn_hover_border = 'rgba(255,255,255,0.5)' %}
 
   <style>
-
-
     :root{
-
-
       --nav-h:56px; --side-w:280px;
 
+      --brand-blue: #0084c8;
+      --brand-blue-hover: #006fa8;
 
-      --blue-900:#0B3B8C; --blue-700:#0E5DC6;
+      --blue-900:#0e4a7a; --blue-700:#0084c8;
 
-
-      --bg:#f6f8fb; --card:#fff; --text:#0f172a; --muted:#55607a;
-
+      --bg:#f6f8fb; --card:#ffffff; --text:#0f172a; --muted:#64748b;
+      --card-border: #e2e8f0;
+      --card-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.08), 0 4px 16px rgba(0, 0, 0, 0.03);
 
       --nav-bg-start: {{ nav_start }};
-
-
       --nav-bg-end: {{ nav_end }};
-
-
       --nav-text-color: {{ nav_text }};
-
-
       --nav-btn-bg: {{ nav_btn_bg }};
-
-
       --nav-btn-border: {{ nav_btn_border }};
-
-
       --nav-btn-hover-bg: {{ nav_btn_hover_bg }};
-
-
       --nav-btn-hover-border: {{ nav_btn_hover_border }};
-
-
+      --theme-accent: {{ theme_accent }};
+      --theme-start: {{ nav_start }};
+      --theme-end: {{ nav_end }};
     }
 
 
     html[data-theme="dark"]{
 
+      --brand-blue: #00a4f5;
+      --brand-blue-hover: #14b4f0;
 
-      --bg:#0b1220; --card:#0f172a; --text:#e5e7eb; --muted:#9aa4b2;
+      --bg:#040b15; --card:#0b1220; --text:#f8fafc; --muted:#94a3b8;
+      --card-border: rgba(255, 255, 255, 0.06);
+      --card-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8);
 
-
-      --blue-900:#0B3B8C; --blue-700:#0E5DC6;
+      --blue-900:#0b1220; --blue-700:#00a4f5;
 
 
     }
@@ -445,20 +438,65 @@
 
     .table th, .table td {
       vertical-align: middle;
-      overflow-wrap: break-word;
     }
 
-    .table .badge {
-      display: inline-block;
-      max-width: 100%;
-      white-space: normal;
-      word-break: break-word;
+    .table .badge,
+    .badge,
+    .traffic-pill,
+    .crm-task-badge,
+    .crm-score-badge,
+    .status-pill {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.35rem !important;
+      white-space: nowrap !important;
+      word-break: keep-all !important;
+      overflow-wrap: normal !important;
       text-align: center;
-      vertical-align: middle;
+      vertical-align: middle !important;
+      flex-shrink: 0 !important;
+      line-height: 1.25 !important;
     }
 
     .table th, .table td {
       min-width: 80px;
+    }
+
+    /* ==========================================================================
+       Efeito Frosted Glass / Desfoque de Fundo para Todos os Modais do Sistema
+       ========================================================================== */
+    .modal-backdrop {
+      background-color: rgba(15, 23, 42, 0.48) !important;
+      backdrop-filter: blur(6px) !important;
+      -webkit-backdrop-filter: blur(6px) !important;
+      transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), backdrop-filter 0.25s ease, -webkit-backdrop-filter 0.25s ease !important;
+    }
+
+    .modal-backdrop.show {
+      opacity: 1 !important;
+      background-color: rgba(15, 23, 42, 0.48) !important;
+      backdrop-filter: blur(6px) !important;
+      -webkit-backdrop-filter: blur(6px) !important;
+    }
+
+    .modal-content {
+      border-radius: 16px !important;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
+    }
+
+    [data-theme="dark"] .modal-content,
+    [data-bs-theme="dark"] .modal-content,
+    html[data-theme="dark"] .modal-content {
+      background: #1e2535 !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .swal2-container.swal2-backdrop-show {
+      background-color: rgba(15, 23, 42, 0.48) !important;
+      backdrop-filter: blur(6px) !important;
+      -webkit-backdrop-filter: blur(6px) !important;
     }
 
 
@@ -481,32 +519,15 @@
 
 
     .page-hero {
-
-
       position: relative;
-
-
-      background: linear-gradient(115deg, #1f7bdd, #0b3f86 60%, #072e64);
-
-
+      background: linear-gradient(135deg, #07172e 0%, #0a254a 50%, #004d7c 100%);
       color: #f8fbff;
-
-
-      border-radius: 1.5rem;
-
-
+      border: 1px solid rgba(0, 164, 245, 0.25);
+      border-radius: 16px;
       padding: 2.25rem clamp(1.5rem, 4vw, 2.85rem);
-
-
       margin-bottom: 2rem;
-
-
-      box-shadow: 0 25px 60px rgba(7, 35, 76, 0.28);
-
-
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 0 0 25px rgba(0, 132, 200, 0.12);
       overflow: hidden;
-
-
     }
 
 
@@ -1288,14 +1309,24 @@
 
 
     .module-dropdown .dropdown-toggle{
-
-
-      border-radius:999px;padding:.35rem 1rem;font-weight:600;letter-spacing:.04rem;
-
-
-      background:var(--nav-btn-bg);color:var(--nav-text-color);border:1px solid var(--nav-btn-border);
-
-
+      border-radius: 999px;
+      padding: .35rem 1.15rem;
+      font-weight: 600;
+      letter-spacing: .04rem;
+      background: var(--nav-btn-bg) !important;
+      color: #ffffff !important;
+      border: 1px solid var(--nav-btn-border) !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18) !important;
+      transition: all 0.25s ease !important;
+    }
+    .module-dropdown .dropdown-toggle:hover,
+    .module-dropdown .dropdown-toggle:focus,
+    .module-dropdown .dropdown-toggle.show{
+      background: var(--nav-btn-hover-bg) !important;
+      border-color: var(--nav-btn-hover-border) !important;
+      color: #ffffff !important;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28) !important;
+      transform: translateY(-1px);
     }
 
 
@@ -2725,6 +2756,28 @@
 
     }
 
+    html[data-theme="dark"] .issuer-preview {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.65)) !important;
+      border: 1px dashed rgba(56, 189, 248, 0.4) !important;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35) !important;
+    }
+    html[data-theme="dark"] .issuer-preview .issuer-title,
+    html[data-theme="dark"] .issuer-title {
+      color: #38bdf8 !important;
+      opacity: 1 !important;
+      font-weight: 700 !important;
+    }
+    html[data-theme="dark"] .issuer-preview .issuer-line,
+    html[data-theme="dark"] .issuer-line {
+      color: #f8fafc !important;
+      font-weight: 500 !important;
+    }
+    html[data-theme="dark"] .issuer-preview .issuer-line.muted,
+    html[data-theme="dark"] .issuer-line.muted {
+      color: #cbd5e1 !important;
+      font-weight: 500 !important;
+    }
+
 
     html[data-theme="dark"] .role-card,
 
@@ -3013,6 +3066,13 @@
     }
     html[data-theme="dark"] .page-help-modal .list-group-item i{
       color: #60a5fa !important;
+    }
+    html[data-theme="dark"] .page-help-image-box {
+      background-color: #0b1120 !important;
+      border-color: #2b364e !important;
+    }
+    html[data-theme="dark"] .page-help-image-box h6 {
+      color: #f1f5f9 !important;
     }
 
     /* NAV TABS & PILLS */
@@ -3421,11 +3481,1167 @@
   }
 
 
-}
+  /* ==========================================================================
+     SOLLUS CONNECTED - CYBERNETIC DESIGN SYSTEM (UNIFIED SYSTEM-WIDE THEME)
+     Harmonized with the Cyber Login Interface
+     ========================================================================== */
 
+  :root {
+    --brand-blue: #0084c8;
+    --brand-blue-hover: #006fa8;
+    --brand-cyan: #00b4d8;
+    --brand-cyan-glow: rgba(0, 180, 216, 0.35);
+    --btn-glow: rgba(0, 132, 200, 0.28);
 
+    --body-bg: #f6f8fb;
+    --body-honeycomb: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2241.57%22%20height%3D%2272.0%22%20viewBox%3D%220%200%2041.57%2072.0%22%3E%3Cpath%20d%3D%22M%200%200.0%20L%200%2012.0%20L%2020.79%2024.0%20L%2020.79%2048.0%20L%200%2060.0%20L%200%2072.0%20M%2020.79%2024.0%20L%2041.57%2012.0%20M%2020.79%2048.0%20L%2041.57%2060.0%22%20fill%3D%22none%22%20stroke%3D%22rgba%280%2C132%2C200%2C0.11%29%22%20stroke-width%3D%221%22/%3E%3C/svg%3E");
+    --body-honeycomb-reactive: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2241.57%22%20height%3D%2272.0%22%20viewBox%3D%220%200%2041.57%2072.0%22%3E%3Cpath%20d%3D%22M%200%200.0%20L%200%2012.0%20L%2020.79%2024.0%20L%2020.79%2048.0%20L%200%2060.0%20L%200%2072.0%20M%2020.79%2024.0%20L%2041.57%2012.0%20M%2020.79%2048.0%20L%2041.57%2060.0%22%20fill%3D%22none%22%20stroke%3D%22rgba%280%2C132%2C200%2C0.38%29%22%20stroke-width%3D%221.25%22/%3E%3C/svg%3E");
+    --glow-color: rgba(0, 132, 200, 0.05);
+    --cursor-glow-color: rgba(0, 132, 200, 0.02);
+    --liquid-wave-color: rgba(0, 132, 200, 0.35);
+    --liquid-color: 0, 132, 200;
+    --liquid-wave-shadow: rgba(0, 132, 200, 0.12);
 
+    --card: #ffffff;
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --card-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(0, 0, 0, 0.02);
+    --card-hover-border: rgba(0, 132, 200, 0.45);
+    --card-hover-shadow: 0 16px 36px -8px rgba(0, 132, 200, 0.12);
 
+    --text: #0f172a;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --muted: #64748b;
+    --text-label: #475569;
+
+    --nav-bg: rgba(255, 255, 255, 0.94);
+    --nav-border: rgba(226, 232, 240, 0.85);
+    --nav-text-color: #0f172a;
+
+    --sidebar-bg: rgba(255, 255, 255, 0.92);
+    --sidebar-border: rgba(226, 232, 240, 0.85);
+
+    --input-bg: #f8fafc;
+    --input-border: #cbd5e1;
+    --input-focus-bg: #ffffff;
+    --input-focus-border: #0084c8;
+
+    --table-th-bg: #f8fafc;
+    --table-hover-bg: rgba(0, 132, 200, 0.04);
+  }
+
+  html[data-theme="dark"] {
+    --brand-blue: #00a4f5;
+    --brand-blue-hover: #14b4f0;
+    --brand-cyan: #38bdf8;
+    --brand-cyan-glow: rgba(56, 189, 248, 0.45);
+    --btn-glow: rgba(0, 164, 245, 0.45);
+
+    --body-bg: #040b15;
+    --body-honeycomb: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2241.57%22%20height%3D%2272.0%22%20viewBox%3D%220%200%2041.57%2072.0%22%3E%3Cpath%20d%3D%22M%200%200.0%20L%200%2012.0%20L%2020.79%2024.0%20L%2020.79%2048.0%20L%200%2060.0%20L%200%2072.0%20M%2020.79%2024.0%20L%2041.57%2012.0%20M%2020.79%2048.0%20L%2041.57%2060.0%22%20fill%3D%22none%22%20stroke%3D%22rgba%280%2C164%2C245%2C0.13%29%22%20stroke-width%3D%221%22/%3E%3C/svg%3E");
+    --body-honeycomb-reactive: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2241.57%22%20height%3D%2272.0%22%20viewBox%3D%220%200%2041.57%2072.0%22%3E%3Cpath%20d%3D%22M%200%200.0%20L%200%2012.0%20L%2020.79%2024.0%20L%2020.79%2048.0%20L%200%2060.0%20L%200%2072.0%20M%2020.79%2024.0%20L%2041.57%2012.0%20M%2020.79%2048.0%20L%2041.57%2060.0%22%20fill%3D%22none%22%20stroke%3D%22rgba%280%2C210%2C255%2C0.42%29%22%20stroke-width%3D%221.25%22/%3E%3C/svg%3E");
+    --glow-color: rgba(0, 164, 245, 0.06);
+    --cursor-glow-color: rgba(0, 200, 255, 0.035);
+    --liquid-wave-color: rgba(0, 210, 255, 0.38);
+    --liquid-color: 0, 210, 255;
+    --liquid-wave-shadow: rgba(0, 180, 245, 0.15);
+
+    --card: #0b1220;
+    --card-bg: #0b1220;
+    --card-border: rgba(255, 255, 255, 0.08);
+    --card-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.7);
+    --card-hover-border: rgba(0, 164, 245, 0.45);
+    --card-hover-shadow: 0 20px 45px -10px rgba(0, 164, 245, 0.2);
+
+    --text: #f8fafc;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --muted: #94a3b8;
+    --text-label: #718299;
+
+    --nav-bg: rgba(11, 18, 32, 0.94);
+    --nav-border: rgba(255, 255, 255, 0.08);
+    --nav-text-color: #f8fafc;
+
+    --sidebar-bg: rgba(11, 18, 32, 0.92);
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+
+    --input-bg: #121a2c;
+    --input-border: rgba(255, 255, 255, 0.1);
+    --input-focus-bg: #152238;
+    --input-focus-border: #00a4f5;
+
+    --table-th-bg: #121a2c;
+    --table-hover-bg: rgba(0, 164, 245, 0.06);
+  }
+
+  /* Body background com Rede Colmeia Perfeitamente Sincronizada */
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+    background-color: var(--body-bg) !important;
+    background-image: 
+      radial-gradient(circle at 50% 25%, var(--glow-color) 0%, transparent 65%) !important;
+    background-size: 100% 100% !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
+    color: var(--text-main) !important;
+    transition: background-color 0.25s ease, color 0.25s ease !important;
+  }
+
+  /* Canvas de Fluido Líquido Cibernético - 60/120 FPS Nativo GPU (Fundo Estrito) */
+  #cyberLiquidCanvas {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: -1 !important;
+    pointer-events: none !important;
+  }
+
+  /* Top Navbar Glassmorphism com Laser Scanner */
+  .navbar-sollus {
+    background: var(--nav-bg) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border-bottom: 1px solid var(--nav-border) !important;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08) !important;
+    color: var(--nav-text-color) !important;
+    transition: background 0.25s ease, border-color 0.25s ease !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1030 !important;
+  }
+
+  .navbar-sollus::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--theme-start, #0084c8), var(--theme-accent, #00b4d8), var(--theme-end, #00a4f5), var(--theme-accent, #38bdf8), var(--theme-start, #0084c8));
+    background-size: 250% 100%;
+    animation: cyberNavLaser 5s linear infinite;
+    z-index: 1032;
+  }
+
+  @keyframes cyberNavLaser {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .brand-stack {
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    letter-spacing: 0.5px !important;
+  }
+  .brand-title {
+    font-weight: 800 !important;
+    color: var(--nav-text-color) !important;
+    font-size: 1.15rem !important;
+    letter-spacing: 1.5px !important;
+  }
+  .brand-accent {
+    color: var(--theme-accent, var(--brand-blue)) !important;
+    font-weight: 600 !important;
+    letter-spacing: 2px !important;
+    font-size: 1.05rem !important;
+    margin-left: 0.4rem !important;
+    transition: color 0.3s ease !important;
+  }
+
+  /* GIF / Asset Temático na Navbar (Opção 3: Pingente Sparkle com Feixe de Luz) */
+  .nav-theme-sparkle-wrap {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    margin-left: 10px !important;
+    vertical-align: middle !important;
+  }
+  .nav-theme-sparkle-wrap .nav-theme-gif {
+    height: 30px !important;
+    width: auto !important;
+    animation: navThemeFloat 3.5s ease-in-out infinite !important;
+    transition: transform 0.25s ease, filter 0.25s ease !important;
+    cursor: pointer !important;
+    image-rendering: -webkit-optimize-contrast !important;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25)) drop-shadow(0 0 5px var(--theme-accent, rgba(251, 113, 133, 0.35))) !important;
+  }
+  html[data-theme="light"] .nav-theme-sparkle-wrap .nav-theme-gif {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.12)) drop-shadow(0 1px 3px var(--theme-accent, rgba(190, 24, 93, 0.18))) !important;
+  }
+  .nav-theme-sparkle-wrap .nav-theme-gif:hover {
+    transform: scale(1.18) rotate(-4deg) !important;
+  }
+  @keyframes navThemeFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+
+  /* User pill */
+  .user-profile-trigger.user-pill {
+    background: rgba(0, 132, 200, 0.08) !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 9999px !important;
+    padding: 4px 14px 4px 6px !important;
+    color: var(--text-main) !important;
+    transition: all 0.2s ease !important;
+  }
+  .user-profile-trigger.user-pill:hover {
+    background: rgba(0, 132, 200, 0.16) !important;
+    border-color: var(--brand-blue) !important;
+    box-shadow: 0 0 12px var(--btn-glow) !important;
+  }
+  .user-profile-trigger.user-pill span {
+    color: var(--text-main) !important;
+  }
+  .user-profile-trigger.user-pill small {
+    color: var(--text-muted) !important;
+    font-size: 0.72rem !important;
+    font-weight: 500 !important;
+    display: block !important;
+  }
+  html[data-theme="light"] .user-profile-trigger.user-pill span.d-block {
+    color: #0f172a !important;
+    font-weight: 600 !important;
+  }
+  html[data-theme="light"] .user-profile-trigger.user-pill small {
+    color: #64748b !important;
+  }
+  html[data-theme="dark"] .user-profile-trigger.user-pill span.d-block {
+    color: #f8fafc !important;
+    font-weight: 600 !important;
+  }
+  html[data-theme="dark"] .user-profile-trigger.user-pill small {
+    color: #94a3b8 !important;
+  }
+  .user-avatar {
+    border: 1.5px solid var(--brand-blue) !important;
+    box-shadow: 0 0 8px var(--btn-glow) !important;
+  }
+
+  /* Theme toggle button in navbar */
+  #btnThemeToggle {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    color: var(--brand-blue) !important;
+    border-radius: 10px !important;
+    width: 36px !important;
+    height: 36px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
+  }
+  #btnThemeToggle:hover {
+    border-color: var(--brand-blue) !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 0 10px var(--btn-glow) !important;
+  }
+
+  /* Sidebar toggle button */
+  #btnSidebarToggle {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    color: var(--brand-blue) !important;
+    border-radius: 10px !important;
+    transition: all 0.2s ease !important;
+  }
+  #btnSidebarToggle:hover {
+    border-color: var(--brand-blue) !important;
+    box-shadow: 0 0 10px var(--btn-glow) !important;
+  }
+
+  /* Logout button */
+  .navbar-sollus a[href*="logout"] {
+    background: transparent !important;
+    border: 1px solid var(--card-border) !important;
+    color: var(--text-muted) !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease !important;
+  }
+  .navbar-sollus a[href*="logout"]:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border-color: rgba(239, 68, 68, 0.4) !important;
+    color: #ef4444 !important;
+  }
+
+  /* Sidebar Glassmorphism */
+  .sidebar {
+    background: var(--sidebar-bg) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border-right: 1px solid var(--sidebar-border) !important;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.04) !important;
+  }
+  .sidebar .sidebar-section-toggle {
+    color: var(--text-main) !important;
+    font-weight: 600 !important;
+  }
+  .sidebar .nav-link {
+    color: var(--text-muted) !important;
+    border-radius: 10px !important;
+    margin: 3px 10px !important;
+    padding: 8px 14px !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+  }
+  .sidebar .nav-link:hover {
+    color: var(--brand-blue) !important;
+    background: rgba(0, 132, 200, 0.08) !important;
+    transform: translateX(3px) !important;
+  }
+  .sidebar .nav-link.active {
+    color: #ffffff !important;
+    background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-blue-hover) 100%) !important;
+    box-shadow: 0 4px 14px var(--btn-glow) !important;
+    font-weight: 600 !important;
+  }
+
+  /* Cards & Panels */
+  .card, .sollus-card {
+    background-color: var(--card-bg) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 14px !important;
+    box-shadow: var(--card-shadow) !important;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease !important;
+  }
+  .card:hover, .sollus-card:hover {
+    border-color: var(--card-hover-border) !important;
+    box-shadow: var(--card-hover-shadow) !important;
+  }
+  .card-header {
+    background-color: transparent !important;
+    border-bottom: 1px solid var(--card-border) !important;
+    color: var(--text-main) !important;
+    font-weight: 600 !important;
+  }
+  .card-footer {
+    background-color: transparent !important;
+    border-top: 1px solid var(--card-border) !important;
+  }
+
+  /* Primary Buttons */
+  .btn-primary {
+    background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-blue-hover) 100%) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px var(--btn-glow) !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+  .btn-primary:hover {
+    transform: translateY(-1.5px) !important;
+    box-shadow: 0 6px 20px var(--btn-glow) !important;
+    filter: brightness(1.08) !important;
+    color: #ffffff !important;
+  }
+  .btn-outline-primary {
+    color: var(--brand-blue) !important;
+    border: 1px solid var(--brand-blue) !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+  }
+  .btn-outline-primary:hover {
+    background: var(--brand-blue) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px var(--btn-glow) !important;
+  }
+
+  /* Form Controls */
+  .form-control, .form-select {
+    background-color: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
+    color: var(--text-main) !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease !important;
+  }
+  .form-control:focus, .form-select:focus {
+    background-color: var(--input-focus-bg) !important;
+    border-color: var(--input-focus-border) !important;
+    box-shadow: 0 0 0 3px var(--glow-color) !important;
+    color: var(--text-main) !important;
+  }
+  .form-label {
+    color: var(--text-label) !important;
+    font-weight: 500 !important;
+  }
+
+  /* Tables */
+  .table {
+    --bs-table-bg: transparent !important;
+    --bs-table-color: var(--text-main) !important;
+    --bs-table-border-color: var(--card-border) !important;
+    color: var(--text-main) !important;
+  }
+  .table th {
+    background-color: var(--table-th-bg) !important;
+    color: var(--text-muted) !important;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--card-border) !important;
+  }
+  .table td {
+    border-bottom: 1px solid var(--card-border) !important;
+    color: var(--text-main) !important;
+  }
+  .table tbody tr:hover td {
+    background-color: var(--table-hover-bg) !important;
+  }
+
+  /* Modals */
+  .modal-content {
+    background-color: var(--card-bg) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4) !important;
+  }
+  .modal-header {
+    border-bottom: 1px solid var(--card-border) !important;
+  }
+  .modal-footer {
+    border-top: 1px solid var(--card-border) !important;
+  }
+
+  /* Page Hero Banner - NOVO TEMA PADRONIZADO (IGUAL PARÂMETROS DA PROPOSTA) */
+  .page-hero,
+  .proposal-hero,
+  .equip-hero {
+    position: relative !important;
+    background: linear-gradient(135deg, #07172e 0%, #0a254a 50%, #004d7c 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(0, 164, 245, 0.25) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 0 0 25px rgba(0, 132, 200, 0.12) !important;
+    overflow: hidden !important;
+  }
+  .page-hero::after,
+  .proposal-hero::after,
+  .equip-hero::after {
+    content: '' !important;
+    position: absolute !important;
+    top: -40% !important;
+    right: -15% !important;
+    width: 350px !important;
+    height: 350px !important;
+    background: radial-gradient(circle, rgba(0, 180, 216, 0.22) 0%, transparent 70%) !important;
+    pointer-events: none !important;
+  }
+  .page-hero__stat,
+  .proposal-hero .hero-metric,
+  .equip-hero .metric,
+  .hero-metric {
+    background: rgba(8, 34, 78, 0.35) !important;
+    border: 1px solid rgba(0, 164, 245, 0.2) !important;
+    border-radius: 14px !important;
+    backdrop-filter: blur(6px) !important;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25) !important;
+  }
+  .proposal-hero .hero-icon,
+  .hero-icon {
+    background: rgba(0, 164, 245, 0.18) !important;
+    border: 1px solid rgba(0, 164, 245, 0.3) !important;
+    color: #38bdf8 !important;
+  }
+
+  /* Status Pulse Dot */
+  .cyber-pulse-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #10b981;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: cyberPulse 2s infinite;
+  }
+
+  /* ==========================================================================
+     GLOBAL DARK MODE UMBRELLA (HEALING UNSTYLED LIGHT SURFACES)
+     ========================================================================== */
+  html[data-theme="dark"] .bg-white {
+    background-color: var(--card-bg, #0b1220) !important;
+    color: var(--text-main, #f8fafc) !important;
+  }
+  html[data-theme="dark"] .bg-light {
+    background-color: #0f172a !important;
+    color: var(--text-main, #f8fafc) !important;
+  }
+  html[data-theme="dark"] .table-light,
+  html[data-theme="dark"] .table-light th,
+  html[data-theme="dark"] .table-light td {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    color: var(--text-muted, #94a3b8) !important;
+    border-color: var(--card-border, rgba(255, 255, 255, 0.08)) !important;
+  }
+  html[data-theme="dark"] .list-group-item {
+    background-color: var(--card-bg, #0b1220) !important;
+    color: var(--text-main, #f8fafc) !important;
+    border-color: var(--card-border, rgba(255, 255, 255, 0.08)) !important;
+  }
+  html[data-theme="dark"] .list-group-item-action:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: var(--text-main, #f8fafc) !important;
+  }
+  html[data-theme="dark"] .search-select-menu {
+    background-color: #0f172a !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+  }
+  html[data-theme="dark"] .search-select-item {
+    color: var(--text-main, #f8fafc) !important;
+  }
+  html[data-theme="dark"] .search-select-item:hover,
+  html[data-theme="dark"] .search-select-item:focus {
+    background-color: rgba(0, 164, 245, 0.15) !important;
+    color: #38bdf8 !important;
+  }
+  html[data-theme="dark"] .assist-card,
+  html[data-theme="dark"] .agenda-card,
+  html[data-theme="dark"] .chamados-card {
+    background-color: var(--card-bg, #0b1220) !important;
+    border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08)) !important;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35) !important;
+  }
+  html[data-theme="dark"] .assist-table thead,
+  html[data-theme="dark"] .agenda-table thead,
+  html[data-theme="dark"] .chamados-table thead {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    color: var(--text-muted, #94a3b8) !important;
+  }
+  html[data-theme="dark"] .assist-table tbody tr:hover,
+  html[data-theme="dark"] .agenda-table tbody tr:hover,
+  html[data-theme="dark"] .chamados-table tbody tr:hover {
+    background-color: rgba(0, 164, 245, 0.05) !important;
+  }
+  html[data-theme="dark"] .assist-tab-toggle-btn,
+  html[data-theme="dark"] .recibos-tab-btn,
+  html[data-theme="dark"] .atestados-tab-btn {
+    background-color: #0f172a !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #94a3b8 !important;
+  }
+  html[data-theme="dark"] .assist-tab-toggle-btn.active,
+  html[data-theme="dark"] .recibos-tab-btn.active,
+  html[data-theme="dark"] .atestados-tab-btn.active {
+    background-color: var(--brand-blue, #00a4f5) !important;
+    border-color: var(--brand-blue, #00a4f5) !important;
+    color: #ffffff !important;
+  }
+  html[data-theme="dark"] .assist-tab-menu {
+    background-color: #0f172a !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+  }
+  html[data-theme="dark"] .assist-tab-item {
+    color: #cbd5e1 !important;
+  }
+  html[data-theme="dark"] .assist-tab-item:hover {
+    background-color: rgba(0, 164, 245, 0.15) !important;
+    color: #38bdf8 !important;
+  }
+  html[data-theme="dark"] .lane-card {
+    background-color: rgba(15, 23, 42, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  html[data-theme="dark"] .lane-owner {
+    background-color: rgba(99, 102, 241, 0.2) !important;
+    color: #a5b4fc !important;
+  }
+  html[data-theme="dark"] .task-card {
+    background-color: #0f172a !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: #f8fafc !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35) !important;
+  }
+  html[data-theme="dark"] .task-chip {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    color: #94a3b8 !important;
+  }
+  html[data-theme="dark"] .detail-block,
+  html[data-theme="dark"] .support-form-section {
+    background-color: #0f172a !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #f8fafc !important;
+  }
+  html[data-theme="dark"] .gallery-item__footer {
+    background-color: #0f172a !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  html[data-theme="dark"] .gallery-item__footer .file-name {
+    color: #94a3b8 !important;
+  }
+  html[data-theme="dark"] .version-item {
+    background-color: #0f172a !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #f8fafc !important;
+  }
+  html[data-theme="dark"] .history-table .version-row td {
+    background-color: rgba(15, 23, 42, 0.7) !important;
+  }
+  html[data-theme="dark"] #historyPdfModal .modal-body,
+  html[data-theme="dark"] #pdfPreviewModal .modal-body,
+  html[data-theme="dark"] #orcamentoPdfPreviewModal .modal-body,
+  html[data-theme="dark"] #reciboPdfModal .modal-body {
+    background-color: #0b1220 !important;
+  }
+  html[data-theme="dark"] #historyPdfModal .modal-footer,
+  html[data-theme="dark"] #pdfPreviewModal .modal-footer,
+  html[data-theme="dark"] #orcamentoPdfPreviewModal .modal-footer,
+  html[data-theme="dark"] #reciboPdfModal .modal-footer {
+    background-color: #090e18 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+  html[data-theme="dark"] #equipamentos-selecionados > div {
+    background-color: #0f172a !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+    color: #f8fafc !important;
+  }
+  html[data-theme="dark"] .ambiente-preview-thumb {
+    background-color: #0f172a !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  html[data-theme="dark"] .photo-dropzone {
+    background-color: #0f172a !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+  }
+  html[data-theme="dark"] .photo-result {
+    background-color: #0f172a !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+  html[data-theme="dark"] .diagram-container {
+    background-color: #0b1220 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+  /* ==========================================================================
+     CYBERNETIC FOOTER STYLING
+     ========================================================================== */
+  .site-footer {
+    flex-shrink: 0;
+    margin-top: auto;
+    position: relative;
+    background: var(--nav-bg) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border-top: 1px solid var(--nav-border) !important;
+    padding: 1.25rem 0 1rem 0 !important;
+    color: var(--text-main) !important;
+    box-shadow: 0 -4px 20px -2px rgba(0, 0, 0, 0.04) !important;
+    transition: background 0.25s ease, border-color 0.25s ease, margin-left 0.25s ease !important;
+    z-index: 10 !important;
+  }
+
+  .site-footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent 5%, var(--brand-blue) 30%, var(--brand-cyan) 70%, transparent 95%);
+    opacity: 0.75;
+  }
+
+  .site-footer-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding-left: 1.75rem !important;
+    padding-right: 1.75rem !important;
+  }
+
+  .footer-primary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .footer-brand-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .footer-brand-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  .brand-text-sollus {
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: var(--text-main);
+  }
+
+  .brand-text-connected {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--brand-blue);
+  }
+
+  .footer-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.55rem;
+    border-radius: 9999px;
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    margin-left: 0.4rem;
+  }
+
+  .status-pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
+    animation: statusDotPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes statusDotPulse {
+    0%, 100% { opacity: 0.5; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  .footer-copyright {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+
+  .footer-channels-block {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
+
+  .footer-channel-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text-muted) !important;
+    text-decoration: none !important;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+  }
+
+  .footer-channel-badge i {
+    color: var(--brand-blue);
+    font-size: 0.9rem;
+  }
+
+  .footer-channel-badge:hover {
+    color: var(--brand-blue) !important;
+    border-color: var(--brand-blue);
+    transform: translateY(-1.5px);
+    box-shadow: 0 4px 14px var(--btn-glow);
+  }
+
+  .footer-secondary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--card-border);
+  }
+
+  .footer-units-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .footer-units-label i {
+    color: var(--brand-blue);
+  }
+
+  .footer-units-list {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+  }
+
+  .footer-unit-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.28rem 0.7rem;
+    border-radius: 8px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text-main) !important;
+    text-decoration: none !important;
+    font-size: 0.78rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  }
+
+  .footer-unit-chip .unit-tag {
+    font-weight: 700;
+    font-size: 0.7rem;
+    color: var(--brand-blue);
+    background: rgba(0, 132, 200, 0.08);
+    padding: 0.15rem 0.4rem;
+    border-radius: 5px;
+    letter-spacing: 0.3px;
+  }
+
+  html[data-theme="dark"] .footer-unit-chip .unit-tag {
+    background: rgba(0, 164, 245, 0.15);
+  }
+
+  .footer-unit-chip .unit-phone {
+    font-family: inherit;
+    letter-spacing: 0.2px;
+  }
+
+  .footer-unit-chip:hover {
+    color: var(--brand-blue) !important;
+    border-color: var(--brand-blue);
+    transform: translateY(-1.5px);
+    box-shadow: 0 4px 12px var(--btn-glow);
+  }
+
+  /* ==========================================================================
+     SOL HELPDESK & BUG REPORTING FLOATING WIDGET (Sollus Connected)
+     ========================================================================== */
+  .sol-support-widget {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1040;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    pointer-events: none;
+  }
+
+  .sol-float-btn {
+    pointer-events: auto;
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #07172e 0%, #0a254a 50%, #004d7c 100%);
+    border: 2.5px solid #00a4f5;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 164, 245, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+    padding: 0;
+    outline: none;
+  }
+
+  .sol-float-btn:hover {
+    transform: translateY(-4px) scale(1.08);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5), 0 0 28px rgba(0, 164, 245, 0.55);
+    border-color: #38bdf8;
+  }
+
+  .sol-avatar-wrapper {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sol-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 18%;
+    border-radius: 50%;
+    display: block;
+    transform: scale(1.32);
+  }
+
+  .sol-ping-ring {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: #10b981;
+    border: 2.5px solid #07172e;
+    box-shadow: 0 0 8px #10b981;
+    z-index: 2;
+  }
+
+  .sol-speech-balloon {
+    pointer-events: auto;
+    width: 320px;
+    margin-bottom: 14px;
+    background: linear-gradient(145deg, rgba(7, 23, 46, 0.95), rgba(10, 37, 74, 0.95));
+    border: 1px solid rgba(0, 164, 245, 0.35);
+    border-radius: 16px;
+    padding: 1.1rem 1.25rem;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), 0 0 22px rgba(0, 164, 245, 0.18);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    position: relative;
+    color: #f8fafc;
+    animation: solBalloonFadeIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .sol-speech-balloon::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    right: 24px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid rgba(10, 37, 74, 0.95);
+  }
+
+  @keyframes solBalloonFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(16px) scale(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .sol-balloon-close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 6px;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+
+  .sol-balloon-close:hover {
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .sol-badge-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #38bdf8;
+    background: rgba(0, 164, 245, 0.15);
+    border: 1px solid rgba(0, 164, 245, 0.3);
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-bottom: 6px;
+  }
+
+  .sol-pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #10b981;
+    box-shadow: 0 0 6px #10b981;
+  }
+
+  .sol-balloon-title {
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .sol-balloon-text {
+    font-size: 0.82rem;
+    color: #cbd5e1;
+    line-height: 1.45;
+  }
+
+  .sol-btn-report {
+    background: linear-gradient(135deg, #0084c8 0%, #005696 100%);
+    border: 1px solid rgba(0, 164, 245, 0.4);
+    color: #ffffff !important;
+    font-weight: 600;
+    font-size: 0.82rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0, 132, 200, 0.3);
+    transition: all 0.2s ease;
+  }
+
+  .sol-btn-report:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 18px rgba(0, 132, 200, 0.45);
+    filter: brightness(1.1);
+  }
+
+  .sol-modal-content {
+    background: linear-gradient(135deg, #07172e 0%, #0a254a 60%, #00375b 100%) !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(0, 164, 245, 0.3) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 164, 245, 0.15) !important;
+  }
+
+  .sol-modal-header {
+    background: linear-gradient(135deg, #051224 0%, #082042 100%) !important;
+    border-bottom: 1px solid rgba(0, 164, 245, 0.2) !important;
+    padding: 1.25rem 1.5rem !important;
+  }
+
+  .sol-header-icon-box {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: rgba(0, 164, 245, 0.12);
+    border: 1px solid rgba(0, 164, 245, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sol-alert-tip {
+    background: rgba(8, 34, 78, 0.55);
+    border: 1px solid rgba(0, 164, 245, 0.25);
+    color: #cbd5e1;
+    font-size: 0.84rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .sol-dropzone {
+    background: rgba(5, 18, 36, 0.5);
+    border: 2px dashed rgba(0, 164, 245, 0.35);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .sol-dropzone:hover, .sol-dropzone.dragover {
+    border-color: #38bdf8;
+    background: rgba(0, 164, 245, 0.08);
+  }
+
+  .sol-preview-wrapper {
+    max-width: 380px;
+    max-height: 220px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+  }
+
+  .sol-preview-wrapper img {
+    max-height: 200px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  .sol-preview-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  }
+
+  .sol-modal-footer {
+    background: #051020 !important;
+    border-top: 1px solid rgba(0, 164, 245, 0.15) !important;
+    padding: 1rem 1.5rem !important;
+  }
+
+  .sol-btn-whatsapp {
+    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%) !important;
+    border: 1px solid rgba(37, 211, 102, 0.4) !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+  }
+
+  .sol-btn-whatsapp:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(37, 211, 102, 0.35);
+    filter: brightness(1.08);
+  }
+
+  .sol-btn-email {
+    background: linear-gradient(135deg, #0084c8 0%, #005696 100%) !important;
+    border: 1px solid rgba(0, 164, 245, 0.45) !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+  }
+
+  .sol-btn-email:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 132, 200, 0.45);
+    filter: brightness(1.08);
+  }
+
+  .sol-modal-content .form-control {
+    background-color: rgba(5, 18, 36, 0.7) !important;
+    border: 1px solid rgba(0, 164, 245, 0.25) !important;
+    color: #f8fafc !important;
+  }
+
+  .sol-modal-content .form-control:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 0.25rem rgba(0, 164, 245, 0.25) !important;
+    background-color: rgba(5, 18, 36, 0.9) !important;
+    color: #ffffff !important;
+  }
+
+  .sol-modal-content .form-label {
+    color: #94a3b8;
+  }
 
   </style>
 
@@ -3460,10 +4676,10 @@
   {% set module_context = 'chamados' %}
 
 
-{% elif current_endpoint.startswith('propostas_') or current_endpoint.startswith('financeiro_bp.') or current_endpoint.startswith('contratos_bp.') or current_endpoint.startswith('cracha_bp.') or
+{% elif current_endpoint.startswith(('propostas_', 'crm.', 'financeiro_bp.', 'contratos_bp.', 'cracha_bp.')) or
 
 
-        current_blueprint in ['propostas_bp', 'equipamentos_bp', 'parametros_bp', 'auth_bp', 'admin_tools_bp', 'financeiro_bp', 'contratos_bp', 'cracha_bp'] %}
+        current_blueprint in ['propostas_bp', 'crm', 'equipamentos_bp', 'parametros_bp', 'auth_bp', 'admin_tools_bp', 'financeiro_bp', 'contratos_bp', 'cracha_bp'] %}
 
 
   {% set module_context = 'propostas' %}
@@ -3476,10 +4692,8 @@
 
 
 <body class="{% if module_context == 'home' %}module-home{% elif module_context == 'chamados' %}module-chamados{% else %}module-propostas{% endif %}">
-
-
-
-
+  <!-- Canvas Interativo de Fluido Líquido e Marolas Cibernéticas (60/120 FPS Nativo GPU) -->
+  <canvas id="cyberLiquidCanvas" aria-hidden="true"></canvas>
 
   {% set display_name = (session.get('nome') or session.get('usuario') or 'Usuário').strip() %}
 
@@ -3496,10 +4710,8 @@
   {% set user_permissions = (current_permissions if current_permissions is defined else (session.get('permissions') or {})) %}
 
 
-  {% set user_tipo = (session.get('tipo') or '').lower() %}
-
-
-  {% if user_tipo == 'administrador' %}{% set user_tipo = 'admin' %}{% endif %}
+  {% set user_tipo = (session.get('tipo') or (current_user.tipo if current_user.is_authenticated else '') or (current_user.role if current_user.is_authenticated else '') or '').lower() %}
+  {% if user_tipo in ['administrador', 'admin'] %}{% set user_tipo = 'admin' %}{% endif %}
 
 
   {% set user_raw_permissions = (current_user.permissions if current_user.is_authenticated and current_user.permissions else {}) %}
@@ -3633,6 +4845,7 @@
 
 
   {% set can_view_comercial = user_tipo in ['admin','gestor','consultor'] or user_permissions.get('propostas') or dept_flags.comercial %}
+  {% set can_view_crm = user_tipo in ['admin','gestor','consultor'] or user_permissions.get('crm') or dept_flags.comercial %}
 
 
   {% set can_view_chamados = user_tipo in ['admin','gestor'] or user_permissions.get('chamados') %}
@@ -3856,11 +5069,12 @@
 
 
 
-  {% set proposals_core_endpoints = ['propostas_bp.nova_proposta','propostas_bp.historico_propostas'] %}
+  {% set proposals_core_endpoints = ['propostas_bp.nova_proposta','propostas_bp.historico_propostas','propostas_bp.agenda_comercial','propostas_bp.parceiros_index','propostas_bp.parceiros_novo','propostas_bp.parceiros_detalhe','propostas_bp.parceiros_editar'] %}
 
 
 
   {% set section_comercial_active = (current_endpoint in proposals_core_endpoints) or (current_blueprint in ['parametros_bp']) %}
+  {% set section_crm_active = (current_blueprint == 'crm') %}
 
 
 
@@ -3923,7 +5137,7 @@
 
   {% set section_fornecedor_active = current_endpoint.startswith('cracha_bp.fornecedor') %}
 
-  {% set section_empresas_active = current_endpoint.startswith('cracha_bp.empresas') %}
+  {% set section_empresas_active = current_endpoint.startswith('cracha_bp.empresas') or current_endpoint.startswith('propostas_bp.parceiros') %}
 
   {% set section_cracha_active = current_endpoint.startswith('cracha_bp.') and not (section_produtos_active or section_fornecedor_active or section_empresas_active) %}
 
@@ -3944,6 +5158,12 @@
   {% endif %}
   {% if user_tipo in ['admin','gestor','consultor'] or user_permissions.get('propostas_historico') or user_permissions.get('propostas') or dept_flags.comercial %}
     {% set _ = comercial_links.append({'label': 'Histórico', 'icon': 'fa-solid fa-clock-rotate-left', 'url': url_for('propostas_bp.historico_propostas'), 'active': current_endpoint == 'propostas_bp.historico_propostas'}) %}
+  {% endif %}
+  {% if user_tipo in ['admin','gestor','consultor'] or user_permissions.get('comercial_agenda') or user_permissions.get('propostas') or dept_flags.comercial %}
+    {% set _ = comercial_links.append({'label': 'Agenda Comercial', 'icon': 'fa-solid fa-calendar-days', 'url': url_for('propostas_bp.agenda_comercial'), 'active': current_endpoint == 'propostas_bp.agenda_comercial'}) %}
+  {% endif %}
+  {% if user_tipo in ['admin','gestor','consultor'] or user_permissions.get('comercial_parceiros') or user_permissions.get('propostas') or dept_flags.comercial %}
+    {% set _ = comercial_links.append({'label': 'Empresas Parceiras', 'icon': 'fa-solid fa-handshake', 'url': url_for('propostas_bp.parceiros_index'), 'active': current_endpoint.startswith('propostas_bp.parceiros')}) %}
   {% endif %}
   {% if user_tipo == 'admin' or user_permissions.get('propostas_parametros') %}
     {% set _ = comercial_links.append({'label': 'Parâmetros', 'icon': 'fa-solid fa-sliders', 'url': url_for('parametros_bp.listar_parametros'), 'active': current_blueprint == 'parametros_bp'}) %}
@@ -3968,6 +5188,30 @@
     'show_in_menu': (comercial_links|length > 0) and can_view_comercial
 
   }) %}
+
+  {% set crm_links = [] %}
+  {% if can_view_crm %}
+    {% set _ = crm_links.append({'label': 'Tarefas', 'icon': 'fa-solid fa-list-check', 'url': url_for('crm.tarefas'), 'active': current_endpoint == 'crm.tarefas'}) %}
+    {% set _ = crm_links.append({'label': 'Funil de Vendas', 'icon': 'fa-solid fa-filter', 'url': url_for('crm.index'), 'active': (current_blueprint == 'crm' and current_endpoint in ['crm.index', 'crm.kanban'])}) %}
+    {% set _ = crm_links.append({'label': 'Tabela de Preços', 'icon': 'fa-solid fa-tags', 'url': url_for('crm.tabela_precos'), 'active': current_endpoint == 'crm.tabela_precos'}) %}
+    {% set _ = crm_links.append({'label': 'Destino de Leads', 'icon': 'fa-solid fa-route', 'url': url_for('crm.destino_leads'), 'active': current_endpoint == 'crm.destino_leads'}) %}
+    {% set _ = crm_links.append({'label': 'Empresas', 'icon': 'fa-solid fa-building', 'url': url_for('crm.empresas'), 'active': current_endpoint == 'crm.empresas'}) %}
+    {% set _ = crm_links.append({'label': 'Contatos', 'icon': 'fa-solid fa-address-book', 'url': url_for('crm.contatos'), 'active': current_endpoint == 'crm.contatos'}) %}
+    {% set _ = crm_links.append({'label': 'Leads Marketing', 'icon': 'fa-solid fa-bullseye', 'url': url_for('crm.leads'), 'active': current_endpoint == 'crm.leads'}) %}
+    {% set _ = crm_links.append({'label': 'Métricas', 'icon': 'fa-solid fa-chart-line', 'url': url_for('crm.metricas'), 'active': current_endpoint == 'crm.metricas'}) %}
+  {% endif %}
+
+  {% set _ = sidebar_sections.append({
+    'id': 'crm',
+    'label': 'Sollus CRM',
+    'icon': 'fa-solid fa-filter-circle-dollar',
+    'links': crm_links,
+    'visible': (crm_links|length > 0) and can_view_crm,
+    'open': section_crm_active,
+    'menu_url': (crm_links[0].url if crm_links|length > 0 else url_for('crm.index')),
+    'show_in_menu': (crm_links|length > 0) and can_view_crm
+  }) %}
+
 
 
 
@@ -4084,7 +5328,7 @@
 
   {% set can_view_produtos = (user_tipo == 'admin') or dept_flags.cracha or user_permissions.get('cracha') or user_permissions.get('cracha_produtos') %}
   {% set can_view_fornecedor = (user_tipo == 'admin') or dept_flags.cracha or user_permissions.get('cracha') or user_permissions.get('cracha_fornecedores') %}
-  {% set can_view_empresas = (user_tipo == 'admin') or dept_flags.cracha or user_permissions.get('cracha') or user_permissions.get('cracha_empresas') %}
+  {% set can_view_empresas = (user_tipo == 'admin') or dept_flags.cracha or user_permissions.get('cracha') or user_permissions.get('cracha_empresas') or (user_tipo in ['consultor', 'gestor']) or user_permissions.get('comercial_parceiros') or user_permissions.get('propostas') or dept_flags.comercial %}
 
   {% set _ = sidebar_sections.append({
 
@@ -4136,11 +5380,13 @@
 
 
 
-  {% set empresas_links = [
-
-    {'label': 'Empresas', 'icon': 'fa-solid fa-building', 'url': url_for('cracha_bp.empresas'), 'active': current_endpoint.startswith('cracha_bp.empresas')}
-
-  ] %}
+  {% set empresas_links = [] %}
+  {% if (user_tipo in ['admin', 'gestor', 'consultor']) or user_permissions.get('comercial_parceiros') or user_permissions.get('propostas') or dept_flags.comercial %}
+    {% set _ = empresas_links.append({'label': 'Empresas Parceiras', 'icon': 'fa-solid fa-handshake', 'url': url_for('propostas_bp.parceiros_index'), 'active': current_endpoint.startswith('propostas_bp.parceiros')}) %}
+  {% endif %}
+  {% if (user_tipo == 'admin') or dept_flags.cracha or user_permissions.get('cracha') or user_permissions.get('cracha_empresas') %}
+    {% set _ = empresas_links.append({'label': 'Empresas do Grupo', 'icon': 'fa-solid fa-building', 'url': url_for('cracha_bp.empresas'), 'active': current_endpoint.startswith('cracha_bp.empresas')}) %}
+  {% endif %}
 
   {% set _ = sidebar_sections.append({
 
@@ -4152,15 +5398,16 @@
 
     'links': empresas_links,
 
-    'visible': can_view_empresas,
+    'visible': can_view_empresas and (empresas_links|length > 0),
 
     'open': section_empresas_active,
 
-    'menu_url': url_for('cracha_bp.empresas'),
+    'menu_url': (empresas_links[0].url if empresas_links|length > 0 else url_for('propostas_bp.parceiros_index')),
 
-    'show_in_menu': can_view_empresas
+    'show_in_menu': can_view_empresas and (empresas_links|length > 0)
 
   }) %}
+
 
 
 
@@ -4216,6 +5463,9 @@
   {% endif %}
   {% if user_tipo in ['admin','gestor'] or user_permissions.get('chamados_fechados') or user_permissions.get('chamados') %}
     {% set _ = chamados_links.append({'label': 'Tickets fechados', 'icon': 'fa-solid fa-inbox', 'url': url_for('sollus_tickets.closed_tickets'), 'active': current_endpoint == 'sollus_tickets.closed_tickets'}) %}
+  {% endif %}
+  {% if user_tipo in ['admin','gestor'] or user_permissions.get('chamados') %}
+    {% set _ = chamados_links.append({'label': 'Transferências', 'icon': 'fa-solid fa-right-left', 'url': url_for('sollus_tickets.transfer_history'), 'active': current_endpoint == 'sollus_tickets.transfer_history'}) %}
   {% endif %}
   {% if user_tipo in ['admin','gestor'] or user_permissions.get('chamados_relatorios') or user_permissions.get('chamados') %}
     {% set _ = chamados_links.append({'label': 'Relatórios', 'icon': 'fa-solid fa-chart-pie', 'url': url_for('sollus_tickets.reports'), 'active': current_endpoint == 'sollus_tickets.reports'}) %}
@@ -4376,19 +5626,22 @@
   {% if central_conhecimento_allowed %}
     {% set central_conhecimento_links = [] %}
     {% if user_tipo == 'admin' or user_permissions.get('central_conhecimento_quadro') or user_permissions.get('central_conhecimento') %}
-      {% set _ = central_conhecimento_links.append({'label': 'Quadro', 'icon': 'fa-solid fa-table-columns', 'url': url_for('central_conhecimento.board'), 'active': current_endpoint == 'central_conhecimento.board'}) %}
+      {% set _ = central_conhecimento_links.append({'label': 'Painel', 'icon': 'fa-solid fa-table-columns', 'url': url_for('central_conhecimento.board'), 'active': current_endpoint == 'central_conhecimento.board'}) %}
     {% endif %}
     {% if user_tipo == 'admin' or user_permissions.get('central_conhecimento_historico') or user_permissions.get('central_conhecimento') %}
       {% set _ = central_conhecimento_links.append({'label': 'Histórico', 'icon': 'fa-solid fa-clock-rotate-left', 'url': url_for('central_conhecimento.history'), 'active': current_endpoint == 'central_conhecimento.history'}) %}
+    {% endif %}
+    {% if user_tipo in ['admin', 'gestor'] or is_admin or user_permissions.get('admin') %}
+      {% set _ = central_conhecimento_links.append({'label': 'Configurações', 'icon': 'fa-solid fa-gear', 'url': url_for('central_conhecimento.configuracoes'), 'active': current_endpoint == 'central_conhecimento.configuracoes'}) %}
     {% endif %}
 
     {% set _ = sidebar_sections.append({
 
       'id': 'central_conhecimento',
 
-      'label': 'Central de Conhecimento',
+      'label': 'SollusFlow',
 
-      'icon': 'fa-solid fa-book-open',
+      'icon': 'fa-solid fa-arrow-right-arrow-left',
 
       'links': central_conhecimento_links,
 
@@ -4674,20 +5927,18 @@
 
 
       <div class="nav-center">
-
-
         <a class="brand-stack" href="{{ url_for('index') }}">
-
-
-          <img src="{{ url_for('static', filename='images/sollus_logo_white.png') }}" alt="Sollus logo">
-
-
-          <span>Sollus Connected</span>
-
-
+          <span class="brand-text"><strong class="brand-title">SOLLUS</strong> <span class="brand-accent">CONNECTED</span></span>
         </a>
-
-
+        {% set _theme_gif = theme.navbar_gif or ('images/themes/outubro_rosa_sparkle.gif' if (_has_theme and theme.id == 'outubro-rosa') else '') %}
+        {% if _theme_gif %}
+          <div class="nav-theme-sparkle-wrap" title="{{ theme.label or 'Outubro Rosa • Prevenção e Cuidado' }}">
+            <picture>
+              <source srcset="{{ url_for('static', filename=_theme_gif.replace('.gif', '.webp')) }}" type="image/webp">
+              <img src="{{ url_for('static', filename=_theme_gif) }}" alt="{{ theme.label or 'Outubro Rosa' }}" class="nav-theme-gif">
+            </picture>
+          </div>
+        {% endif %}
       </div>
 
 
@@ -5088,29 +6339,48 @@
 
 
           <div class="mb-3">
-
-
             <label class="form-label">Atualizar avatar</label>
-
-
             <input class="form-control" type="file" name="avatar" accept="image/png,image/jpeg,image/jpg">
-
-
             <div class="form-text">Formatos aceitos: JPG, JPEG e PNG.</div>
-
-
           </div>
 
+          <hr class="my-3 opacity-25">
 
-          <div class="d-flex justify-content-between gap-2">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="bi bi-pen-fill text-primary fs-5"></i>
+            <h6 class="fw-bold mb-0">Minha Assinatura</h6>
+          </div>
 
+          <!-- Assinatura em Imagem -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Assinatura em Imagem (Rubrica / Digital)</label>
+            {% set user_sig_path = (current_user.signature_path if current_user.is_authenticated else None) or session.get('signature_path') %}
+            {% if user_sig_path %}
+              <div class="p-2 border rounded-3 bg-light text-center mb-2 position-relative" style="max-width: 100%;">
+                <img src="{{ url_for('static', filename=user_sig_path) }}" alt="Assinatura atual" style="max-height: 180px; max-width: 100%; object-fit: contain;">
+                <div class="form-check mt-2 text-start">
+                  <input class="form-check-input" type="checkbox" id="remove_signature_image" name="remove_signature_image" value="1">
+                  <label class="form-check-label text-danger small" for="remove_signature_image">
+                    <i class="bi bi-trash me-1"></i>Remover imagem de assinatura atual
+                  </label>
+                </div>
+              </div>
+            {% endif %}
+            <input class="form-control" type="file" name="signature_image" accept="image/png,image/jpeg,image/jpg,image/webp">
+            <div class="form-text">Envie a imagem da sua assinatura ou rubrica (PNG ou JPG). Usada em propostas comerciais e no Sollus Tickets.</div>
+          </div>
 
+          <!-- Texto da Assinatura (Sollus Tickets) -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Texto da Assinatura (Sollus Tickets)</label>
+            {% set user_sig_text = (current_user.signature_text if current_user.is_authenticated else None) or session.get('signature_text') or '' %}
+            <textarea class="form-control" name="signature_text" rows="4" placeholder="Ex:&#10;Atenciosamente,&#10;{{ session.get('nome') or session.get('usuario') }}&#10;Suporte Técnico | Sollus Tecnologia&#10;Tel: (22) 2737-0000">{{ user_sig_text }}</textarea>
+            <div class="form-text">Este texto será incluído automaticamente no rodapé das suas respostas no Sollus Tickets.</div>
+          </div>
+
+          <div class="d-flex justify-content-between gap-2 mt-4">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
-
-
-            <button type="submit" class="btn btn-primary">Salvar avatar</button>
-
-
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i>Salvar alterações</button>
           </div>
 
 
@@ -5129,10 +6399,10 @@
 
 
 
-  <div class="modal sollus-modal fade page-help-modal" id="pageHelpModal" tabindex="-1" aria-labelledby="pageHelpModalLabel" aria-hidden="true">
+  <div class="modal modal-drawer-end fade page-help-modal" id="pageHelpModal" tabindex="-1" aria-labelledby="pageHelpModalLabel" aria-hidden="true">
 
 
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog">
 
 
       <div class="modal-content">
@@ -5192,13 +6462,13 @@
             </div>
 
 
-            <div class="col-md-7 d-flex flex-column justify-content-center align-items-center bg-light rounded p-3 position-relative" style="min-height: 380px; border: 1px dashed rgba(0,0,0,0.1); background-color: #f8fafc !important;">
+            <div class="col-md-7 d-flex flex-column justify-content-center align-items-center rounded p-3 position-relative page-help-image-box" style="min-height: 380px; border: 1px dashed rgba(0,0,0,0.15); background-color: #f8fafc;">
 
 
               <div id="pageHelpImageWrapper" class="w-100 h-100 d-flex flex-column align-items-center justify-content-center">
 
 
-                <img id="pageHelpImage" src="" class="img-fluid rounded shadow-sm d-none" style="max-height: 340px; object-fit: contain; cursor: zoom-in; transition: opacity 0.2s ease-in-out;" alt="Demonstração visual do passo" onclick="zoomHelpImage(this)">
+                <img id="pageHelpImage" src="" class="img-fluid rounded shadow-sm d-none" style="max-height: 360px; width: auto; object-fit: contain; cursor: zoom-in; transition: all 0.2s ease-in-out;" alt="Demonstração visual do passo" onclick="zoomHelpImage(this)">
 
 
                 <div id="pageHelpImagePlaceholder" class="text-muted text-center py-4">
@@ -5255,60 +6525,65 @@
   <!-- FOOTER -->
 
 
-  <footer class="site-footer py-3">
+  <!-- FOOTER CIBERNÉTICO SOLLUS -->
+  <footer class="site-footer">
+    <div class="site-footer-inner container-fluid">
+      <div class="footer-primary-row">
+        <div class="footer-brand-block">
+          <div class="footer-brand-title">
+            <span class="brand-text-sollus">SOLLUS</span>
+            <span class="brand-text-connected">CONNECTED</span>
+            <span class="footer-status-pill">
+              <span class="status-pulse-dot"></span>
+              Sistemas Operacionais
+            </span>
+          </div>
+          <div class="footer-copyright">
+            &copy; <span id="footerYear"></span> Sollus Tecnologia &bull; Plataforma Integrada de Gestão &amp; Operações. Todos os direitos reservados.
+          </div>
+        </div>
 
-
-    <div class="container-fluid d-flex align-items-center justify-content-between gap-2 flex-wrap">
-
-
-      <div><strong>Sollus Tecnologia</strong>  <span id="footerYear"></span> &copy; Todos os direitos reservados.</div>
-
-
-      <div class="d-flex align-items-center gap-3 flex-wrap">
-
-
-        <a href="mailto:suporte.remoto@sollusgroup.com" class="text-decoration-none"><i class="bi bi-envelope"></i> suporte.remoto@sollusgroup.com</a>
-
-
-        <span></span>
-
-
-        <a href="https://www.sollusgroup.com/" target="_blank" rel="noopener" class="text-decoration-none"><i class="bi bi-globe2"></i> sollusgroup.com</a>
-
-
-        <span></span>
-
-
-        <span class="d-flex align-items-center gap-2 flex-wrap">
-
-
-          <i class="bi bi-telephone"></i>
-
-
-          <a href="tel:+552124133203">RJ (21) 2413-3203</a> 
-
-
-          <a href="tel:+552227333722">Campos-RJ (22) 2733-3722</a> 
-
-
-          <a href="tel:+552730724863">Vila Velha-ES (27) 3072-4863</a> 
-
-
-          <a href="tel:+554137975093">Curitiba-PR (41) 3797-5093</a> 
-
-
-          <a href="tel:+551140406767">SP (11) 4040-6767</a>
-
-
-        </span>
-
-
+        <div class="footer-channels-block">
+          <a href="mailto:ti2@sollusgroup.com" class="footer-channel-badge" title="E-mail de Suporte Remoto">
+            <i class="bi bi-envelope-fill"></i>
+            <span>ti2@sollusgroup.com</span>
+          </a>
+          <a href="https://www.sollusgroup.com/" target="_blank" rel="noopener" class="footer-channel-badge" title="Portal Oficial">
+            <i class="bi bi-globe2"></i>
+            <span>sollusgroup.com</span>
+          </a>
+        </div>
       </div>
 
-
+      <div class="footer-secondary-row">
+        <div class="footer-units-label">
+          <i class="bi bi-telephone-fill"></i>
+          <span>Centrais de Atendimento:</span>
+        </div>
+        <div class="footer-units-list">
+          <a href="tel:+552124133203" class="footer-unit-chip" title="Atendimento Rio de Janeiro">
+            <span class="unit-tag">RJ</span>
+            <span class="unit-phone">(21) 2413-3203</span>
+          </a>
+          <a href="tel:+552227333722" class="footer-unit-chip" title="Atendimento Campos dos Goytacazes">
+            <span class="unit-tag">Campos-RJ</span>
+            <span class="unit-phone">(22) 2733-3722</span>
+          </a>
+          <a href="tel:+552730724863" class="footer-unit-chip" title="Atendimento Vila Velha">
+            <span class="unit-tag">Vila Velha-ES</span>
+            <span class="unit-phone">(27) 3072-4863</span>
+          </a>
+          <a href="tel:+554137975093" class="footer-unit-chip" title="Atendimento Curitiba">
+            <span class="unit-tag">Curitiba-PR</span>
+            <span class="unit-phone">(41) 3797-5093</span>
+          </a>
+          <a href="tel:+551140406767" class="footer-unit-chip" title="Atendimento São Paulo">
+            <span class="unit-tag">SP</span>
+            <span class="unit-phone">(11) 4040-6767</span>
+          </a>
+        </div>
+      </div>
     </div>
-
-
   </footer>
 
 
@@ -6044,15 +7319,24 @@
     function showPageHelp(button){
       if(!button || !helpModalEl || !helpListEl || !helpTitleEl || !helpIntroEl){ return; }
 
-      let pageName = button.getAttribute('data-help-page') || 'esta página';
-      let catalogHelp = window.SOLLUS_HELP_CATALOG && window.SOLLUS_HELP_CATALOG[pageName];
+      let pageName = (button.getAttribute('data-help-page') || 'esta página').trim();
+      let rawTitle = (button.getAttribute('data-help-title') || 'Como usar esta página').trim();
+      let rawIntro = (button.getAttribute('data-help-intro') || 'Veja o passo a passo para aproveitar esta área.').trim();
 
-      let title = catalogHelp ? catalogHelp.title : (button.getAttribute('data-help-title') || 'Como usar esta página');
-      let intro = catalogHelp ? catalogHelp.intro : (button.getAttribute('data-help-intro') || 'Veja o passo a passo para aproveitar esta área.');
-
-      if(title.includes('&')){ title = decodeHtmlEntities(title); }
-      if(intro.includes('&')){ intro = decodeHtmlEntities(intro); }
+      if(rawTitle.includes('&')){ rawTitle = decodeHtmlEntities(rawTitle); }
+      if(rawIntro.includes('&')){ rawIntro = decodeHtmlEntities(rawIntro); }
       if(pageName.includes('&')){ pageName = decodeHtmlEntities(pageName); }
+
+      let catalogHelp = null;
+      if (window.SOLLUS_HELP_CATALOG) {
+        catalogHelp = window.SOLLUS_HELP_CATALOG[pageName] 
+          || window.SOLLUS_HELP_CATALOG[pageName.replace(/–/g, '-')]
+          || window.SOLLUS_HELP_CATALOG[rawTitle]
+          || window.SOLLUS_HELP_CATALOG[rawTitle.replace(/^Como usar (o |a |os |as )?/i, '')];
+      }
+
+      let title = catalogHelp ? catalogHelp.title : rawTitle;
+      let intro = catalogHelp ? catalogHelp.intro : rawIntro;
 
       const fallbackTips = [
         `Confira o cabeçalho para entender rapidamente o panorama de ${pageName.toLowerCase()}.`,
@@ -6086,16 +7370,32 @@
       const imgEl = document.getElementById('pageHelpImage');
       const placeholderEl = document.getElementById('pageHelpImagePlaceholder');
 
-      function updateActiveImage(imageName) {
+      function updateActiveImage(imageName, stepTitle, stepText) {
         if (!imgEl || !placeholderEl) return;
         if (imageName) {
+          imgEl.onload = function() {
+            imgEl.classList.remove('d-none');
+            placeholderEl.classList.add('d-none');
+          };
+          imgEl.onerror = function() {
+            imgEl.classList.add('d-none');
+            placeholderEl.classList.remove('d-none');
+            placeholderEl.innerHTML = `
+              <div class="text-primary mb-2"><i class="bi bi-info-circle-fill" style="font-size: 2.8rem; color: #3b82f6;"></i></div>
+              <h6 class="fw-bold mb-2">${stepTitle || 'Guia Prático'}</h6>
+              <div class="small text-muted px-3 text-center" style="max-width: 380px;">${stepText || ''}</div>
+            `;
+          };
           imgEl.src = '/static/images/ajuda/' + imageName;
-          imgEl.classList.remove('d-none');
-          placeholderEl.classList.add('d-none');
         } else {
           imgEl.src = '';
           imgEl.classList.add('d-none');
           placeholderEl.classList.remove('d-none');
+          placeholderEl.innerHTML = `
+            <div class="text-primary mb-2"><i class="bi bi-lightbulb-fill" style="font-size: 2.8rem; color: #3b82f6;"></i></div>
+            <h6 class="fw-bold mb-2">${stepTitle || 'Dica do Passo'}</h6>
+            <div class="small text-muted px-3 text-center" style="max-width: 380px;">${stepText || 'Selecione um passo ao lado para ver o detalhamento.'}</div>
+          `;
         }
       }
 
@@ -6106,7 +7406,7 @@
         item.className = 'list-group-item';
         if (idx === 0) {
           item.classList.add('active');
-          updateActiveImage(step.image);
+          updateActiveImage(step.image, step.title, step.text);
         }
 
         const badge = document.createElement('div');
@@ -6122,7 +7422,7 @@
         item.addEventListener('click', () => {
           Array.from(helpListEl.children).forEach(el => el.classList.remove('active'));
           item.classList.add('active');
-          updateActiveImage(step.image);
+          updateActiveImage(step.image, step.title, step.text);
         });
 
         helpListEl.append(item);
@@ -6183,17 +7483,10 @@
 
 
     function applyTheme(t){
-
-
       root.setAttribute('data-theme', t);
-
-
+      root.setAttribute('data-bs-theme', t);
       if(themeIcon){ themeIcon.className = t==='dark' ? 'bi bi-sun' : 'bi bi-moon-stars'; }
-
-
       localStorage.setItem(themeKey, t);
-
-
     }
 
 
@@ -6436,6 +7729,1048 @@
   })();
   </script>
   {% endif %}
+  <!-- Modal Global de Confirmação de Exclusão (Sollus Connected) -->
+  <div class="modal fade" id="globalConfirmDeleteModal" tabindex="-1" aria-labelledby="globalConfirmDeleteLabel" aria-hidden="true" style="z-index: 1065;">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+        <div class="modal-header bg-danger bg-opacity-10 border-bottom-0 pb-2">
+          <h5 class="modal-title fw-bold text-danger d-flex align-items-center gap-2" id="globalConfirmDeleteLabel">
+            <i class="bi bi-exclamation-triangle-fill"></i> Confirmar Exclusão
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body py-3">
+          <p class="mb-2 text-secondary" id="globalConfirmDeletePrompt">Deseja realmente excluir este registro?</p>
+          <div class="p-3 bg-light rounded-3 border text-center my-3" id="globalConfirmDeleteEntityBox">
+            <div class="text-uppercase text-muted fw-semibold small mb-1" id="globalConfirmDeleteEntityType" style="letter-spacing: .06em; font-size: 0.75rem;">Registro</div>
+            <div class="fs-5 fw-bold text-dark text-break" id="globalConfirmDeleteEntityName">-</div>
+            <div class="text-muted small mt-1 font-monospace" id="globalConfirmDeleteEntityDetail" style="display:none;"></div>
+          </div>
+          <div class="alert alert-warning d-flex align-items-center gap-2 mb-0 py-2 small" id="globalConfirmDeleteWarning">
+            <i class="bi bi-info-circle flex-shrink-0 fs-5"></i>
+            <span id="globalConfirmDeleteWarningText">Esta ação não pode ser desfeita. Todos os dados associados a este item serão permanentemente removidos.</span>
+          </div>
+        </div>
+        <div class="modal-footer border-top-0 pt-0">
+          <button type="button" class="btn btn-light px-3" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger px-4 shadow-sm" id="globalConfirmDeleteBtn">
+            <i class="bi bi-trash me-1"></i>Sim, Excluir
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       SOL HELPDESK & BUG REPORTING FLOATING WIDGET (Sollus Connected)
+       ========================================================================= -->
+  <div id="solSupportWidget" class="sol-support-widget" aria-label="Central de Ajuda da Sol">
+    
+    <!-- Balão de Diálogo Ocasional (Aparece às vezes) -->
+    <div id="solSpeechBalloon" class="sol-speech-balloon" style="display: none;" role="dialog" aria-labelledby="solBalloonTitle">
+      <button type="button" class="sol-balloon-close" id="solBalloonCloseBtn" aria-label="Fechar aviso">&times;</button>
+      <div class="sol-balloon-header">
+        <span class="sol-badge-status">
+          <span class="sol-pulse-dot"></span> Suporte de TI
+        </span>
+        <h6 class="sol-balloon-title mb-1" id="solBalloonTitle">Oi! Sou a Sol! ☀️</h6>
+      </div>
+      <p class="sol-balloon-text mb-3">
+        Encontrou alguma lentidão, erro ou problema aqui no sistema? Nos avise para a equipe de TI resolver rapidinho!
+      </p>
+      <div class="sol-balloon-actions">
+        <button type="button" class="btn btn-sm sol-btn-report w-100" id="solOpenModalBtn">
+          <i class="bi bi-tools me-1"></i> Relatar Problema ao TI
+        </button>
+        <div class="sol-channels-hint mt-2 text-center">
+          <small class="text-white-50" style="font-size: 0.73rem;">Envio via <strong>E-mail</strong> ou <strong>WhatsApp</strong></small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botão Flutuante Circular com o GIF da Sol -->
+    <button type="button" class="sol-float-btn" id="solTriggerBtn" title="Relatar problema ou erro no sistema (TI)" aria-haspopup="dialog">
+      <div class="sol-avatar-wrapper">
+        <img src="{{ url_for('static', filename='images/sol.gif') }}" alt="Mascote Sol" class="sol-avatar-img">
+      </div>
+      <span class="sol-ping-ring"></span>
+    </button>
+  </div>
+
+  <!-- Modal Global de Reporte de Problemas / Ajuda da Sol -->
+  <div class="modal fade" id="solReportModal" tabindex="-1" aria-labelledby="solReportModalLabel" aria-hidden="true" style="z-index: 1065;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content sol-modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+        
+        <!-- Modal Header -->
+        <div class="modal-header sol-modal-header border-bottom-0 pb-2">
+          <div class="d-flex align-items-center gap-3">
+            <div class="sol-header-icon-box">
+              <img src="{{ url_for('static', filename='images/sol.gif') }}" alt="Sol" style="width: 44px; height: 44px; object-fit: contain;">
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold text-white mb-0 d-flex align-items-center gap-2" id="solReportModalLabel">
+                Central de Ajuda & Reporte de Erros
+              </h5>
+              <p class="small text-white-50 mb-0">Envio direto para <strong>ti2@sollusgroup.com</strong> ou <strong>WhatsApp (21) 99229-7900</strong></p>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="modal-body p-4">
+          <form id="solReportForm" enctype="multipart/form-data" onsubmit="return false;">
+            <input type="hidden" id="solPrintBase64" name="print_base64" value="">
+
+            <div class="sol-alert-tip mb-3 p-3 rounded-3">
+              <i class="bi bi-info-circle-fill text-info me-2 fs-5"></i>
+              <span>Descreva o que aconteceu para que a equipe de TI possa reproduzir e solucionar o erro rapidamente.</span>
+            </div>
+
+            <div class="row g-3">
+              <!-- 1. Em qual página -->
+              <div class="col-12">
+                <label for="solPageInput" class="form-label fw-bold small text-uppercase" style="letter-spacing: .06em; font-size: 0.76rem;">
+                  <i class="bi bi-compass me-1 text-primary"></i> Em qual página ocorreu? <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-control rounded-3" id="solPageInput" name="pagina" required placeholder="Ex: /propostas/nova (ou nome da tela)">
+              </div>
+
+              <!-- 2. O que estava fazendo -->
+              <div class="col-12">
+                <label for="solActionInput" class="form-label fw-bold small text-uppercase" style="letter-spacing: .06em; font-size: 0.76rem;">
+                  <i class="bi bi-play-circle me-1 text-primary"></i> O que você estava fazendo no momento? <span class="text-danger">*</span>
+                </label>
+                <textarea class="form-control rounded-3" id="solActionInput" name="acao" rows="2" required placeholder="Ex: Estava preenchendo a proposta comercial do cliente X e cliquei em 'Gerar Proposta'..." style="resize: vertical;"></textarea>
+              </div>
+
+              <!-- 3. Descritivo do problema / erro -->
+              <div class="col-12">
+                <label for="solDescInput" class="form-label fw-bold small text-uppercase" style="letter-spacing: .06em; font-size: 0.76rem;">
+                  <i class="bi bi-exclamation-octagon me-1 text-danger"></i> Descritivo do problema ou erro <span class="text-danger">*</span>
+                </label>
+                <textarea class="form-control rounded-3" id="solDescInput" name="descricao" rows="3" required placeholder="Ex: A página travou, apareceu a mensagem 'Erro interno 500' ou os botões não responderam..." style="resize: vertical;"></textarea>
+              </div>
+
+              <!-- 4. Print (foto) da tela -->
+              <div class="col-12">
+                <label class="form-label fw-bold small text-uppercase d-flex justify-content-between align-items-center" style="letter-spacing: .06em; font-size: 0.76rem;">
+                  <span><i class="bi bi-camera me-1 text-primary"></i> Print (foto) da tela</span>
+                  <span class="badge bg-secondary bg-opacity-25 text-info fw-normal">Dica: Você pode apertar Ctrl+V para colar</span>
+                </label>
+                
+                <!-- Dropzone & Paste Box -->
+                <div id="solDropzone" class="sol-dropzone text-center p-3 rounded-3 border-dashed">
+                  <input type="file" id="solFileInput" name="print" accept="image/*" class="d-none">
+                  
+                  <div id="solDropzoneEmpty" class="py-2">
+                    <i class="bi bi-cloud-arrow-up fs-2 text-primary d-block mb-1"></i>
+                    <p class="mb-1 fw-semibold small">Clique para anexar, arraste uma imagem ou aperte <kbd class="px-2 py-1 bg-dark text-info border">Ctrl + V</kbd></p>
+                    <small class="text-muted">Formatos: PNG, JPG, JPEG, WEBP (máx. 10MB)</small>
+                  </div>
+
+                  <!-- Preview container -->
+                  <div id="solDropzonePreview" class="d-none position-relative mt-1">
+                    <div class="sol-preview-wrapper mx-auto">
+                      <img id="solPreviewImg" src="" alt="Print do erro" class="img-fluid rounded-3 border">
+                      <button type="button" class="btn btn-sm btn-danger sol-preview-remove" id="solRemoveImgBtn" title="Remover imagem">
+                        <i class="bi bi-trash"></i> Remover
+                      </button>
+                    </div>
+                    <div class="mt-2 small text-muted font-monospace" id="solFileInfo"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Status / Loading Alert -->
+            <div id="solStatusAlert" class="alert d-none mt-3 mb-0 py-2 small" role="alert"></div>
+          </form>
+        </div>
+
+        <!-- Modal Footer with Choices -->
+        <div class="modal-footer sol-modal-footer border-top-0 pt-0 d-flex flex-wrap justify-content-between gap-2">
+          <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal">Cancelar</button>
+          <div class="d-flex flex-wrap gap-2">
+            <!-- Botão WhatsApp -->
+            <button type="button" class="btn sol-btn-whatsapp px-3 shadow-sm d-flex align-items-center gap-2" id="solSendWhatsappBtn">
+              <i class="bi bi-whatsapp fs-5"></i>
+              <span>Enviar por WhatsApp</span>
+            </button>
+            <!-- Botão E-mail -->
+            <button type="button" class="btn sol-btn-email px-4 shadow-sm d-flex align-items-center gap-2" id="solSendEmailBtn">
+              <i class="bi bi-envelope-fill fs-5"></i>
+              <span>Enviar por E-mail</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script da Central de Ajuda da Sol -->
+  <script>
+  (function() {
+    const triggerBtn = document.getElementById('solTriggerBtn');
+    const balloon = document.getElementById('solSpeechBalloon');
+    const balloonCloseBtn = document.getElementById('solBalloonCloseBtn');
+    const openModalBtn = document.getElementById('solOpenModalBtn');
+    const modalEl = document.getElementById('solReportModal');
+    const pageInput = document.getElementById('solPageInput');
+    const actionInput = document.getElementById('solActionInput');
+    const descInput = document.getElementById('solDescInput');
+    const fileInput = document.getElementById('solFileInput');
+    const dropzone = document.getElementById('solDropzone');
+    const dropzoneEmpty = document.getElementById('solDropzoneEmpty');
+    const dropzonePreview = document.getElementById('solDropzonePreview');
+    const previewImg = document.getElementById('solPreviewImg');
+    const removeImgBtn = document.getElementById('solRemoveImgBtn');
+    const fileInfo = document.getElementById('solFileInfo');
+    const printBase64Input = document.getElementById('solPrintBase64');
+    const statusAlert = document.getElementById('solStatusAlert');
+    const sendEmailBtn = document.getElementById('solSendEmailBtn');
+    const sendWhatsappBtn = document.getElementById('solSendWhatsappBtn');
+
+    if (!triggerBtn || !modalEl) return;
+
+    let selectedFile = null;
+    let base64Data = null;
+    let modalInstance = null;
+
+    function getModal() {
+      if (!modalInstance && typeof bootstrap !== 'undefined') {
+        modalInstance = new bootstrap.Modal(modalEl);
+      }
+      return modalInstance;
+    }
+
+    // --- 1. "Aparece às vezes" (Controle de frequência do balão) ---
+    function checkOccasionalBalloon() {
+      try {
+        const closedSession = sessionStorage.getItem('sol_balloon_closed_session');
+        if (closedSession) return;
+
+        const lastShown = localStorage.getItem('sol_last_shown_time');
+        const now = Date.now();
+        // Aparece se não foi exibido nos últimos 40 minutos
+        if (lastShown && (now - parseInt(lastShown, 10)) < 40 * 60 * 1000) {
+          return;
+        }
+
+        // Delay suave de 12 segundos após carregamento da página
+        setTimeout(function() {
+          if (balloon && balloon.style.display === 'none') {
+            balloon.style.display = 'block';
+            localStorage.setItem('sol_last_shown_time', Date.now().toString());
+
+            // Auto-hide após 30 segundos se o usuário não interagir
+            setTimeout(function() {
+              if (balloon && balloon.style.display !== 'none') {
+                balloon.style.display = 'none';
+              }
+            }, 30000);
+          }
+        }, 12000);
+      } catch (e) {
+        console.warn('Sol balloon error:', e);
+      }
+    }
+
+    if (balloonCloseBtn) {
+      balloonCloseBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (balloon) balloon.style.display = 'none';
+        try {
+          sessionStorage.setItem('sol_balloon_closed_session', 'true');
+          localStorage.setItem('sol_last_shown_time', Date.now().toString());
+        } catch(err) {}
+      });
+    }
+
+    // --- 2. Abertura do Modal de Relato ---
+    function openReportModal() {
+      if (balloon) balloon.style.display = 'none';
+
+      // Auto-preencher página atual
+      if (pageInput) {
+        const path = window.location.pathname + window.location.search;
+        const pageTitle = (document.title || '').replace('- Sollus Connected', '').trim();
+        pageInput.value = path + (pageTitle ? ' (' + pageTitle + ')' : '');
+      }
+
+      // Limpar status anterior
+      if (statusAlert) {
+        statusAlert.className = 'alert d-none mt-3 mb-0 py-2 small';
+        statusAlert.innerHTML = '';
+      }
+
+      const m = getModal();
+      if (m) m.show();
+    }
+
+    triggerBtn.addEventListener('click', openReportModal);
+    if (openModalBtn) openModalBtn.addEventListener('click', openReportModal);
+
+    // --- 3. Tratamento de Imagem (Drop, Click e Ctrl+V Paste) ---
+    function handleImageFile(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        alert('Por favor, selecione um arquivo de imagem válido (PNG, JPG, WEBP).');
+        return;
+      }
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        base64Data = e.target.result;
+        if (printBase64Input) printBase64Input.value = base64Data;
+        if (previewImg) previewImg.src = base64Data;
+        if (dropzoneEmpty) dropzoneEmpty.classList.add('d-none');
+        if (dropzonePreview) dropzonePreview.classList.remove('d-none');
+        if (fileInfo) {
+          const kb = Math.round(file.size / 1024);
+          fileInfo.textContent = (file.name || 'print_colado.png') + ' (' + kb + ' KB)';
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearImage() {
+      selectedFile = null;
+      base64Data = null;
+      if (fileInput) fileInput.value = '';
+      if (printBase64Input) printBase64Input.value = '';
+      if (previewImg) previewImg.src = '';
+      if (dropzoneEmpty) dropzoneEmpty.classList.remove('d-none');
+      if (dropzonePreview) dropzonePreview.classList.add('d-none');
+      if (fileInfo) fileInfo.textContent = '';
+    }
+
+    if (dropzone) {
+      dropzone.addEventListener('click', function(e) {
+        if (e.target !== removeImgBtn && !removeImgBtn?.contains(e.target)) {
+          if (fileInput) fileInput.click();
+        }
+      });
+
+      dropzone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+      });
+
+      dropzone.addEventListener('dragleave', function() {
+        dropzone.classList.remove('dragover');
+      });
+
+      dropzone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          handleImageFile(e.dataTransfer.files[0]);
+        }
+      });
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener('change', function() {
+        if (fileInput.files && fileInput.files.length > 0) {
+          handleImageFile(fileInput.files[0]);
+        }
+      });
+    }
+
+    if (removeImgBtn) {
+      removeImgBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        clearImage();
+      });
+    }
+
+    // Suporte ao Ctrl+V (Paste) em qualquer lugar quando o modal estiver aberto
+    window.addEventListener('paste', function(e) {
+      if (!modalEl.classList.contains('show')) return;
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type && items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          handleImageFile(blob);
+          if (statusAlert) {
+            statusAlert.className = 'alert alert-info mt-3 mb-0 py-2 small';
+            statusAlert.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Print colado da área de transferência com sucesso!';
+          }
+          break;
+        }
+      }
+    });
+
+    // --- 4. Envio por E-mail (ti2@sollusgroup.com) ---
+    if (sendEmailBtn) {
+      sendEmailBtn.addEventListener('click', function() {
+        const pagina = (pageInput?.value || '').trim();
+        const acao = (actionInput?.value || '').trim();
+        const descricao = (descInput?.value || '').trim();
+
+        if (!acao || !descricao) {
+          if (statusAlert) {
+            statusAlert.className = 'alert alert-warning mt-3 mb-0 py-2 small';
+            statusAlert.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Por favor, informe o que você estava fazendo e o descritivo do erro.';
+          }
+          return;
+        }
+
+        sendEmailBtn.disabled = true;
+        sendEmailBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
+
+        const formData = new FormData();
+        formData.append('pagina', pagina);
+        formData.append('acao', acao);
+        formData.append('descricao', descricao);
+        formData.append('canal', 'email');
+        if (selectedFile) {
+          formData.append('print', selectedFile);
+        } else if (base64Data) {
+          formData.append('print_base64', base64Data);
+        }
+
+        fetch('/api/reportar_problema', {
+          method: 'POST',
+          body: formData
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          sendEmailBtn.disabled = false;
+          sendEmailBtn.innerHTML = '<i class="bi bi-envelope-fill fs-5"></i><span>Enviar por E-mail</span>';
+          if (data.ok) {
+            if (statusAlert) {
+              statusAlert.className = 'alert alert-success mt-3 mb-0 py-2 small';
+              statusAlert.innerHTML = '<strong>☀️ Obrigado!</strong> Seu relato foi enviado com sucesso para <strong>ti2@sollusgroup.com</strong>. A equipe de TI já foi notificada e vai analisar!';
+            }
+            if (actionInput) actionInput.value = '';
+            if (descInput) descInput.value = '';
+            clearImage();
+
+            setTimeout(function() {
+              const m = getModal();
+              if (m) m.hide();
+            }, 3000);
+          } else {
+            if (statusAlert) {
+              statusAlert.className = 'alert alert-danger mt-3 mb-0 py-2 small';
+              statusAlert.innerHTML = '<i class="bi bi-x-circle-fill me-1"></i> ' + (data.message || 'Erro ao enviar relato por e-mail.');
+            }
+          }
+        })
+        .catch(function(err) {
+          sendEmailBtn.disabled = false;
+          sendEmailBtn.innerHTML = '<i class="bi bi-envelope-fill fs-5"></i><span>Enviar por E-mail</span>';
+          if (statusAlert) {
+            statusAlert.className = 'alert alert-danger mt-3 mb-0 py-2 small';
+            statusAlert.innerHTML = '<i class="bi bi-x-circle-fill me-1"></i> Falha de conexão ao enviar e-mail. Tente enviar pelo WhatsApp.';
+          }
+        });
+      });
+    }
+
+    // --- 5. Envio por WhatsApp (21992297900) ---
+    if (sendWhatsappBtn) {
+      sendWhatsappBtn.addEventListener('click', function() {
+        const pagina = (pageInput?.value || '').trim();
+        const acao = (actionInput?.value || '').trim();
+        const descricao = (descInput?.value || '').trim();
+
+        if (!acao || !descricao) {
+          if (statusAlert) {
+            statusAlert.className = 'alert alert-warning mt-3 mb-0 py-2 small';
+            statusAlert.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Por favor, informe o que você estava fazendo e o descritivo do erro.';
+          }
+          return;
+        }
+
+        sendWhatsappBtn.disabled = true;
+        sendWhatsappBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Preparando...';
+
+        function dispatchWhatsapp(imageUrl) {
+          sendWhatsappBtn.disabled = false;
+          sendWhatsappBtn.innerHTML = '<i class="bi bi-whatsapp fs-5"></i><span>Enviar por WhatsApp</span>';
+
+          let msg = '☀️ *RELATO DE PROBLEMA - SOLLUS CONNECTED*\n\n';
+          msg += '📍 *Página:* ' + (pagina || 'Não informada') + '\n';
+          msg += '🎯 *O que estava fazendo:* ' + acao + '\n';
+          msg += '⚠️ *Problema / Erro:* ' + descricao + '\n';
+          if (imageUrl) {
+            msg += '\n📸 *Print da Tela:* ' + imageUrl + '\n';
+          } else {
+            msg += '\n📸 *Print:* (Sem foto anexada no formulário)\n';
+          }
+          msg += '\n_(Mensagem enviada via Central de Ajuda da Sol)_';
+
+          const whatsappNumber = '5521992297900';
+          const waUrl = 'https://wa.me/' + whatsappNumber + '?text=' + encodeURIComponent(msg);
+          window.open(waUrl, '_blank');
+
+          if (statusAlert) {
+            statusAlert.className = 'alert alert-success mt-3 mb-0 py-2 small';
+            statusAlert.innerHTML = '<strong>WhatsApp Aberto!</strong> Caso tenha copiado uma print, aperte <kbd>Ctrl+V</kbd> direto na conversa com o TI (21 99229-7900)!';
+          }
+        }
+
+        if (selectedFile || base64Data) {
+          const formData = new FormData();
+          formData.append('pagina', pagina);
+          formData.append('acao', acao);
+          formData.append('descricao', descricao);
+          formData.append('canal', 'whatsapp');
+          if (selectedFile) {
+            formData.append('print', selectedFile);
+          } else if (base64Data) {
+            formData.append('print_base64', base64Data);
+          }
+
+          fetch('/api/reportar_problema', {
+            method: 'POST',
+            body: formData
+          })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            dispatchWhatsapp(data.image_url);
+          })
+          .catch(function() {
+            dispatchWhatsapp(null);
+          });
+        } else {
+          dispatchWhatsapp(null);
+        }
+      });
+    }
+
+    checkOccasionalBalloon();
+  })();
+  </script>
+  <!-- Script Controlador do Fluido Líquido Cibernético (Canvas GPU 60 FPS) -->
+  <!-- Script Controlador da Rede Colmeia Líquida Viscosa (GPU 60 FPS) -->
+  <script>
+  (function initViscousMesh() {
+    var canvas = document.getElementById('cyberLiquidCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+
+    // Geometria da Colmeia: R = 24, HW = 20.7846
+    var HW = 20.7846;
+
+    var nodes = [];
+    var edges = [];
+    var ripples = [];
+
+    function buildMesh() {
+      nodes = [];
+      edges = [];
+      var nodeMap = new Map();
+
+      function getNode(c, rIdx, x0, y0) {
+        var key = c + '_' + rIdx;
+        if (nodeMap.has(key)) return nodeMap.get(key);
+        var node = {
+          x0: x0, y0: y0,
+          x: x0, y: y0,
+          vx: 0, vy: 0,
+          glow: 0,
+          active: false
+        };
+        nodeMap.set(key, node);
+        nodes.push(node);
+        return node;
+      }
+
+      var margin = 40;
+      var cols = Math.ceil((width + margin * 2) / HW) + 1;
+      var rows = Math.ceil((height + margin * 2) / 72) + 1;
+
+      for (var c = -1; c <= cols; c++) {
+        var xBase = Math.round(c * HW * 100) / 100;
+        var isOdd = Math.abs(c % 2) === 1;
+
+        for (var r = -1; r <= rows; r++) {
+          var yBase = r * 72;
+
+          if (!isOdd) {
+            var nTop = getNode(c, r + '_top', xBase, yBase + 12);
+            var nBot = getNode(c, r + '_bot', xBase, yBase + 60);
+
+            var nPrevBot = getNode(c, (r - 1) + '_bot', xBase, yBase - 12);
+            edges.push([nPrevBot, nTop]);
+
+            var nAdjTop = getNode(c + 1, r + '_midtop', xBase + HW, yBase + 24);
+            var nAdjBot = getNode(c + 1, r + '_midbot', xBase + HW, yBase + 48);
+            edges.push([nTop, nAdjTop]);
+            edges.push([nBot, nAdjBot]);
+          } else {
+            var nTopOdd = getNode(c, r + '_midtop', xBase, yBase + 24);
+            var nBotOdd = getNode(c, r + '_midbot', xBase, yBase + 48);
+
+            edges.push([nTopOdd, nBotOdd]);
+
+            var nNextTop = getNode(c + 1, r + '_top', xBase + HW, yBase + 12);
+            var nNextBot = getNode(c + 1, r + '_bot', xBase + HW, yBase + 60);
+            edges.push([nTopOdd, nNextTop]);
+            edges.push([nBotOdd, nNextBot]);
+          }
+        }
+      }
+    }
+
+    function resize() {
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+      buildMesh();
+    }
+    window.addEventListener('resize', resize, { passive: true });
+    resize();
+
+    var mouse = { x: -999, y: -999, px: -999, py: -999, vx: 0, vy: 0, active: false };
+    var animRunning = false;
+
+    function wake() {
+      if (!animRunning) {
+        animRunning = true;
+        requestAnimationFrame(animate);
+      }
+    }
+
+    window.addEventListener('mousemove', function(e) {
+      if (!mouse.active) {
+        mouse.px = e.clientX;
+        mouse.py = e.clientY;
+        mouse.active = true;
+      }
+      mouse.vx = e.clientX - mouse.px;
+      mouse.vy = e.clientY - mouse.py;
+      mouse.px = mouse.x;
+      mouse.py = mouse.y;
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+
+      var spd = Math.hypot(mouse.vx, mouse.vy);
+      if (spd > 48) {
+        ripples.push({
+          x: mouse.x,
+          y: mouse.y,
+          r: 8,
+          maxR: 120,
+          speed: 2.6,
+          strength: 0.18
+        });
+        if (ripples.length > 3) ripples.shift();
+      }
+      wake();
+    }, { passive: true });
+
+    window.addEventListener('mouseleave', function() {
+      mouse.active = false;
+      mouse.x = -999;
+      mouse.y = -999;
+    }, { passive: true });
+
+    window.addEventListener('click', function(e) {
+      if (e.target.closest('input, textarea, select, button, a, .modal, .dropdown-menu, .btn, .card, table, tr, td, th, .badge, .nav, .sidebar, #login-card, .lgpd-modal-content, .cookie-banner')) return;
+      ripples.push({
+        x: e.clientX,
+        y: e.clientY,
+        r: 8,
+        maxR: 140,
+        speed: 3.0,
+        strength: 0.28
+      });
+      if (ripples.length > 3) ripples.shift();
+      wake();
+    }, { passive: true });
+
+    var SPRING = 0.055;
+    var DAMPING = 0.78;
+    var RADIUS = 115;
+    var RADIUS_SQ = RADIUS * RADIUS;
+
+    function animate() {
+      // 1. Processa marolas líquidas
+      for (var i = ripples.length - 1; i >= 0; i--) {
+        var rp = ripples[i];
+        rp.r += rp.speed;
+        rp.strength *= 0.94;
+        if (rp.r > rp.maxR || rp.strength < 0.01) {
+          ripples.splice(i, 1);
+        }
+      }
+
+      // 2. Física viscosa de deformação elástica dos nós
+      var mActive = mouse.active && mouse.x !== -999;
+      var hasMotion = mActive || ripples.length > 0;
+
+      for (var j = 0; j < nodes.length; j++) {
+        var n = nodes[j];
+
+        // Interação com o cursor do mouse
+        if (mActive) {
+          var dx = n.x - mouse.x;
+          var dy = n.y - mouse.y;
+
+          // Rejeição espacial rápida por Bounding Box
+          if (dx > -RADIUS && dx < RADIUS && dy > -RADIUS && dy < RADIUS) {
+            var dSq = dx * dx + dy * dy;
+            if (dSq < RADIUS_SQ) {
+              var dist = Math.sqrt(dSq);
+              var norm = dist / RADIUS;
+              var s = 1 - norm * norm;
+
+              // Deformação radial suave e sutil
+              var push = s * s * 0.65;
+              if (dist > 1) {
+                n.vx += (dx / dist) * push;
+                n.vy += (dy / dist) * push;
+              }
+
+              // Arrasto inercial macio
+              n.vx += mouse.vx * s * 0.03;
+              n.vy += mouse.vy * s * 0.03;
+
+              n.glow = Math.max(n.glow, s * 0.5);
+              n.active = true;
+            }
+          }
+        }
+
+        // Interação com marolas em expansão
+        for (var k = 0; k < ripples.length; k++) {
+          var rip = ripples[k];
+          var rdx = n.x - rip.x;
+          var rdy = n.y - rip.y;
+          if (Math.abs(rdx) < rip.r + 25 && Math.abs(rdy) < rip.r + 25) {
+            var rDist = Math.hypot(rdx, rdy);
+            var diff = Math.abs(rDist - rip.r);
+            if (diff < 24 && rDist > 1) {
+              var wave = Math.sin((rDist - rip.r) * 0.22) * rip.strength * 0.5;
+              n.vx += (rdx / rDist) * wave;
+              n.vy += (rdy / rDist) * wave;
+              n.glow = Math.max(n.glow, rip.strength * (1 - diff / 24) * 0.25);
+              n.active = true;
+            }
+          }
+        }
+
+        // Amortecimento viscoso e força restauradora de mola
+        if (n.active || n.glow > 0.01) {
+          var fx = (n.x0 - n.x) * SPRING;
+          var fy = (n.y0 - n.y) * SPRING;
+
+          n.vx = (n.vx + fx) * DAMPING;
+          n.vy = (n.vy + fy) * DAMPING;
+
+          n.x += n.vx;
+          n.y += n.vy;
+
+          n.glow *= 0.88;
+
+          // Repouso completo
+          if (Math.abs(n.vx) < 0.02 && Math.abs(n.vy) < 0.02 &&
+              Math.abs(n.x - n.x0) < 0.04 && Math.abs(n.y - n.y0) < 0.04 && n.glow < 0.01) {
+            n.x = n.x0;
+            n.y = n.y0;
+            n.vx = 0;
+            n.vy = 0;
+            n.glow = 0;
+            n.active = false;
+          } else {
+            hasMotion = true;
+          }
+        }
+      }
+
+      mouse.vx *= 0.55;
+      mouse.vy *= 0.55;
+
+      // 3. Renderização acelerada em lote por GPU
+      ctx.clearRect(0, 0, width, height);
+
+      var isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+      var ambientStroke = isDark ? 'rgba(0, 164, 245, 0.075)' : 'rgba(0, 132, 200, 0.065)';
+      var activeStroke = isDark ? 'rgba(0, 205, 255, 0.18)' : 'rgba(0, 132, 200, 0.16)';
+
+      // Caminho 1: Linhas da colmeia em repouso
+      ctx.beginPath();
+      for (var e1 = 0; e1 < edges.length; e1++) {
+        var ed1 = edges[e1];
+        var na1 = ed1[0];
+        var nb1 = ed1[1];
+        if (na1.glow < 0.03 && nb1.glow < 0.03) {
+          ctx.moveTo(na1.x, na1.y);
+          ctx.lineTo(nb1.x, nb1.y);
+        }
+      }
+      ctx.strokeStyle = ambientStroke;
+      ctx.lineWidth = 1.0;
+      ctx.stroke();
+
+      // Caminho 2: Linhas ativas em deformação líquida viscosa
+      ctx.beginPath();
+      for (var e2 = 0; e2 < edges.length; e2++) {
+        var ed2 = edges[e2];
+        var na2 = ed2[0];
+        var nb2 = ed2[1];
+        if (na2.glow >= 0.03 || nb2.glow >= 0.03) {
+          ctx.moveTo(na2.x, na2.y);
+          ctx.lineTo(nb2.x, nb2.y);
+        }
+      }
+      ctx.strokeStyle = activeStroke;
+      ctx.lineWidth = 1.0;
+      ctx.stroke();
+
+      // Pausa inteligente do loop quando 100% estabilizado
+      if (!hasMotion && !mActive && ripples.length === 0) {
+        animRunning = false;
+        return;
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    wake();
+  })();
+  </script>
+
+<!-- =========================================================
+     MODAL PERIÓDICO DE ALERTAS — SUPORTE & TÉCNICA
+     Aparece a cada 2h com chamados pendentes + agenda do dia.
+     Controle de frequência via localStorage.
+     ========================================================= -->
+<div class="modal fade" id="suporteAlertModal" tabindex="-1" aria-labelledby="suporteAlertModalLabel" aria-hidden="true" style="z-index:1080;">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:540px;">
+    <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+      <!-- Header -->
+      <div class="modal-header border-0 pb-1 pt-4 px-4" style="background:linear-gradient(135deg,#0B3B8C,#0E5DC6);">
+        <div class="d-flex align-items-center gap-2">
+          <span class="d-flex align-items-center justify-content-center rounded-3 bg-white bg-opacity-10" style="width:38px;height:38px;font-size:1.2rem;">🔔</span>
+          <div>
+            <h5 class="modal-title text-white fw-bold mb-0 fs-6" id="suporteAlertModalLabel">Central de Alertas</h5>
+            <div class="text-white opacity-75" style="font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;" id="suporteAlertData"></div>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <!-- Body -->
+      <div class="modal-body px-4 py-3" id="suporteAlertBody" style="background:var(--card-bg,#fff);min-height:80px;">
+        <div class="text-center py-3 text-muted small">
+          <div class="spinner-border spinner-border-sm me-2" role="status"></div>Verificando alertas…
+        </div>
+      </div>
+      <!-- Footer -->
+      <div class="modal-footer border-0 px-4 pb-4 pt-0" style="background:var(--card-bg,#fff);gap:.5rem;flex-wrap:wrap;">
+        <a href="/assistencia/chamados" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-semibold" id="suporteAlertBtnChamados" style="display:none;font-size:.82rem;">
+          <i class="bi bi-tools me-1"></i>Chamados Técnicos
+        </a>
+        <a href="/admin/suporte/atendimentos" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" id="suporteAlertBtnAtendimentos" style="display:none;font-size:.82rem;">
+          <i class="bi bi-headset me-1"></i>Atendimentos Suporte
+        </a>
+        <a href="/admin/tecnica/agenda" class="btn btn-sm btn-outline-info rounded-pill px-3 fw-semibold" id="suporteAlertBtnAgenda" style="display:none;font-size:.82rem;">
+          <i class="bi bi-calendar-event me-1"></i>Ver Agenda
+        </a>
+        <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3 ms-auto fw-semibold" data-bs-dismiss="modal" style="font-size:.82rem;">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  #suporteAlertModal .alert-item {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    padding: .7rem .9rem;
+    border-radius: .9rem;
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--card-border, #e2e8f0);
+    margin-bottom: .6rem;
+  }
+  #suporteAlertModal .alert-item:last-child { margin-bottom: 0; }
+  #suporteAlertModal .alert-icon {
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+  }
+  html[data-theme="dark"] #suporteAlertModal .modal-body,
+  html[data-theme="dark"] #suporteAlertModal .modal-footer {
+    background: #0e1524 !important;
+  }
+  html[data-theme="dark"] #suporteAlertModal .alert-item {
+    background: #141f32;
+    border-color: rgba(255,255,255,.08);
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+  var STORAGE_KEY = 'sc_suporte_alert_ts';
+  var INTERVAL_MS = 2 * 60 * 60 * 1000; // 2 horas
+  {% set user_is_tech_or_support = (
+      can_view_assistencia or
+      can_view_support or
+      dept_flags.assist or
+      dept_flags.support or
+      'ASSISTENCIA TECNICA' in user_depts or
+      'OFICINA' in user_depts or
+      'SUPORTE' in user_depts or
+      'ESTOQUE' in user_depts or
+      user_tipo in ['admin','gestor','supervisorofcina','supervisorsuporte','suporte','tecnico','técnico','assistencia','gerente','coordenador'] or
+      (current_user.nome_completo and 'rodolfo' in current_user.nome_completo.lower()) or
+      (current_user.email and ('rodolfo' in current_user.email.lower() or 'tecnica' in current_user.email.lower())) or
+      user_permissions.get('assistencia_chamados') or
+      user_permissions.get('admin_assistencia') or
+      user_permissions.get('admin_suporte') or
+      user_permissions.get('admin_agenda_tecnica')
+  ) %}
+  var isTargetUser = {{ 'true' if user_is_tech_or_support else 'false' }};
+  if (!isTargetUser) return;
+
+  function shouldShow() {
+    try {
+      var last = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+      return (Date.now() - last) >= INTERVAL_MS;
+    } catch (e) { return true; }
+  }
+
+  function markShown() {
+    try { localStorage.setItem(STORAGE_KEY, Date.now()); } catch(e) {}
+  }
+
+  function buildBody(data) {
+    var body = document.getElementById('suporteAlertBody');
+    var html = '';
+    var hasSomething = false;
+
+    // 1. Chamados Técnicos (O.S. sem técnico atribuído nas filiais)
+    if (data.chamados_sem_agendamento > 0) {
+      hasSomething = true;
+      var btnChamados = document.getElementById('suporteAlertBtnChamados');
+      if (btnChamados) btnChamados.style.display = '';
+
+      var unidadesBadges = '';
+      if (data.chamados_por_unidade && data.chamados_por_unidade.length > 0) {
+        unidadesBadges = '<div class="d-flex flex-wrap gap-1 mt-1 pt-1">';
+        data.chamados_por_unidade.forEach(function(u) {
+          unidadesBadges += '<span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning-subtle rounded-pill fw-semibold" style="font-size:.68rem;">' +
+            u.unidade + ': ' + u.count + '</span>';
+        });
+        unidadesBadges += '</div>';
+      }
+
+      html += '<div class="alert-item">' +
+        '<div class="alert-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-tools"></i></div>' +
+        '<div class="flex-grow-1">' +
+          '<div class="d-flex align-items-center justify-content-between">' +
+            '<div class="fw-semibold" style="font-size:.88rem;color:var(--text-main,#0f172a)">Chamados Técnicos (O.S.)</div>' +
+            '<span class="badge bg-warning text-dark rounded-pill fw-bold" style="font-size:.75rem;">' + data.chamados_sem_agendamento + ' sem técnico</span>' +
+          '</div>' +
+          '<div class="text-muted" style="font-size:.8rem;">Chamados de bancada/campo aguardando atribuição técnica.</div>' +
+          unidadesBadges +
+        '</div></div>';
+    }
+
+    // 2. Fila de Atendimentos Suporte Remoto
+    if (data.atendimentos_fila_count > 0) {
+      hasSomething = true;
+      var btnAtend = document.getElementById('suporteAlertBtnAtendimentos');
+      if (btnAtend) btnAtend.style.display = '';
+
+      html += '<div class="alert-item">' +
+        '<div class="alert-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-headset"></i></div>' +
+        '<div class="flex-grow-1">' +
+          '<div class="d-flex align-items-center justify-content-between">' +
+            '<div class="fw-semibold" style="font-size:.88rem;color:var(--text-main,#0f172a)">Atendimentos do Suporte</div>' +
+            '<span class="badge bg-primary text-white rounded-pill fw-bold" style="font-size:.75rem;">' + data.atendimentos_fila_count + ' em fila</span>' +
+          '</div>' +
+          '<div class="text-muted" style="font-size:.8rem;">Atendimento(s) em aberto na fila do suporte remoto.</div>' +
+        '</div></div>';
+    }
+
+    // 3. Agenda Técnica de Hoje
+    if (data.agenda_count > 0) {
+      hasSomething = true;
+      var btnA = document.getElementById('suporteAlertBtnAgenda');
+      if (btnA) btnA.style.display = '';
+      html += '<div class="fw-semibold mb-2 mt-2" style="font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted,#64748b);">' +
+        '<i class="bi bi-calendar-check me-1"></i>Agenda de hoje — ' + (data.data_hoje || '') + '</div>';
+      (data.agenda_hoje || []).forEach(function(item) {
+        html += '<div class="alert-item">' +
+          '<div class="alert-icon bg-info bg-opacity-10 text-info"><i class="bi bi-person-badge"></i></div>' +
+          '<div>' +
+            '<div class="fw-semibold" style="font-size:.85rem;color:var(--text-main,#0f172a)">' + (item.tecnico || 'Técnico') +
+            ' <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill fw-normal" style="font-size:.72rem;">' + (item.periodo || 'Integral') + '</span></div>' +
+            '<div class="text-muted" style="font-size:.78rem;">' + (item.unidade || '') + (item.obs ? ' · ' + item.obs : '') + '</div>' +
+          '</div></div>';
+      });
+    }
+
+    if (!hasSomething) {
+      html = '<div class="text-center py-3" style="color:var(--text-muted,#64748b);font-size:.9rem;">' +
+        '<i class="bi bi-check-circle-fill text-success d-block mb-2" style="font-size:1.8rem;"></i>' +
+        '<span class="fw-semibold d-block mb-1">Tudo em ordem!</span>' +
+        '<span style="font-size:.8rem;">Nenhum chamado pendente e agenda sem eventos para hoje.</span></div>';
+    }
+
+    if (body) body.innerHTML = html;
+  }
+
+  function fetchAndShow() {
+    if (!shouldShow()) return;
+    var modal = document.getElementById('suporteAlertModal');
+    if (!modal) return;
+
+    // Reset state
+    var body = document.getElementById('suporteAlertBody');
+    if (body) body.innerHTML = '<div class="text-center py-3 text-muted small"><div class="spinner-border spinner-border-sm me-2" role="status"></div>Verificando alertas…</div>';
+    var btnC = document.getElementById('suporteAlertBtnChamados');
+    var btnAt = document.getElementById('suporteAlertBtnAtendimentos');
+    var btnA = document.getElementById('suporteAlertBtnAgenda');
+    if (btnC) btnC.style.display = 'none';
+    if (btnAt) btnAt.style.display = 'none';
+    if (btnA) btnA.style.display = 'none';
+
+    var dateEl = document.getElementById('suporteAlertData');
+    if (dateEl) {
+      try {
+        dateEl.textContent = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long'});
+      } catch(e) {}
+    }
+
+    var bsModal;
+    try { bsModal = bootstrap.Modal.getOrCreateInstance(modal, {backdrop: true, keyboard: true}); } catch(e) { return; }
+
+    fetch('/api/alertas-suporte', {credentials: 'same-origin'})
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data || !data.permitido) return;
+        buildBody(data);
+        markShown();
+        bsModal.show();
+      })
+      .catch(function() { /* silently ignore */ });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(fetchAndShow, 4000);
+    setInterval(fetchAndShow, 5 * 60 * 1000); // verifica a cada 5min, mas só mostra se passaram 2h
+  });
+})();
+</script>
 
 </body>
 

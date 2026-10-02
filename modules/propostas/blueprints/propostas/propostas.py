@@ -800,6 +800,8 @@ def _fill_selects(form: ProposalForm):
         return res
 
     form.pagto_equip.choices   = opts(ParamCategory.PAGTO_EQUIP)
+    form.pagto_servico.choices = opts(ParamCategory.PAGTO_SERVICO)
+    form.pagto_contrato.choices = opts(ParamCategory.PAGTO_CONTRATO)
     form.prazo_entrega.choices = opts(ParamCategory.PRAZO_ENTREGA)
     form.frete.choices         = opts(ParamCategory.FRETE)
     form.garantia_eq.choices   = opts(ParamCategory.GARANTIA_EQ)
@@ -876,6 +878,8 @@ def _parse_emails_list(raw: str) -> list[str]:
 # ===========================================================
 
 @propostas_bp.route("/nova_proposta", methods=["GET", "POST"])
+@propostas_bp.route("/nova", methods=["GET", "POST"])
+@propostas_bp.route("/propostas/nova", methods=["GET", "POST"])
 @login_required
 def nova_proposta():                    #  NENHUM espaço antes desta linha
     form = ProposalForm()
@@ -901,6 +905,12 @@ def nova_proposta():                    #  NENHUM espaço antes desta linha
     if not form.issuer_company_code.data:
         form.issuer_company_code.data = DEFAULT_ISSUER_CODE
 
+    try:
+        from modules.propostas.models import SoftwarePlan
+        software_plans_data = [sp.to_dict() for sp in SoftwarePlan.query.filter_by(is_active=True).order_by(SoftwarePlan.fabricante.asc(), SoftwarePlan.name.asc()).all()]
+    except Exception:
+        software_plans_data = []
+
     # ------------------------------------------------------------------
     #  POST
     # ------------------------------------------------------------------
@@ -911,6 +921,7 @@ def nova_proposta():                    #  NENHUM espaço antes desta linha
         context = dict(
             form=form,
             equipments=equipamentos_disp,
+            software_plans=software_plans_data,
             form_data=request.form,
             system_options=_system_options_payload(),
             issuer_options=_issuer_options_payload(),
@@ -924,16 +935,33 @@ def nova_proposta():                    #  NENHUM espaço antes desta linha
                 flashed_messages = get_flashed_messages(with_categories=False)
                 if flashed_messages:
                     message = flashed_messages[-1]
-            payload = {"ok": False}
-            if message:
-                payload['message'] = message
+                elif errors:
+                    first_key = next(iter(errors))
+                    err_val = errors[first_key]
+                    first_err = err_val[0] if isinstance(err_val, list) else str(err_val)
+                    message = f"Por favor, revise o campo '{first_key}': {first_err}"
+                else:
+                    message = "Não foi possível processar a proposta. Revise as informações preenchidas."
+            payload = {"ok": False, "message": message}
             if errors:
                 payload['errors'] = errors
             return jsonify(payload), status
 
         if message:
             flash(message, category)
-        return render_template("nova_proposta.html", **context)
+        return render_template("nova_proposta.html", **context), status
+
+    if request.method == "POST" and not form.validate_on_submit():
+        err_msg = "Por favor, verifique os campos preenchidos no formulário."
+        if form.errors:
+            first_key = next(iter(form.errors))
+            err_val = form.errors[first_key]
+            first_err = err_val[0] if isinstance(err_val, list) else str(err_val)
+            err_msg = f"Campo '{first_key}': {first_err}"
+        current_app.logger.warning(
+            f"[nova_proposta validation failure] user={usuario_logado.usuario if usuario_logado else 'none'} errors={form.errors}"
+        )
+        return render_form(message=err_msg, status=400, field_errors=form.errors)
 
     if form.validate_on_submit():
         doc_type = (form.document_type.data or "cnpj").lower()
@@ -943,12 +971,10 @@ def nova_proposta():                    #  NENHUM espaço antes desta linha
         if document_digits:
             if doc_type == "cnpj":
                 if len(document_digits) != 14 or not cnpj_valido(document_digits):
-                    flash("CNPJ inválido.", "danger")
-                    return render_form()
+                    return render_form(message="CNPJ informado é inválido. Verifique o número digitado.")
             else:
                 if len(document_digits) != 11 or not cpf_valido(document_digits):
-                    flash("CPF inválido.", "danger")
-                    return render_form()
+                    return render_form(message="CPF informado é inválido. Verifique o número digitado.")
 
         company_value = (form.company.data or "").strip()
         # if doc_type == "cnpj" and not company_value:
@@ -970,8 +996,7 @@ def nova_proposta():                    #  NENHUM espaço antes desta linha
             try:
                 new_signature_path = _save_signature_image(signature_file, usuario_logado)
             except ValueError as exc:
-                flash(str(exc), "danger")
-                return render_form()
+                return render_form(message=str(exc))
             else:
                 try:
                     if usuario_logado.signature_path and usuario_logado.signature_path != new_signature_path:
@@ -981,57 +1006,29 @@ def nova_proposta():                    #  NENHUM espaço antes desta linha
                     signature_url = url_for('static', filename=new_signature_path)
                 except Exception as exc:
                     db.session.rollback()
-                    flash("Erro ao salvar assinatura do usuário.", "danger")
-                    return render_form()
+                    return render_form(message="Erro ao salvar assinatura do usuário.")
 
         email = (form.email.data or "").strip()
-        if email and not email_domain_has_mx(email):
-            flash("Domínio de e-mail sem registro MX.", "danger")
-            return render_form()
+        acao = request.form.get("acao") or ""
+        enviar_email = bool(form.enviar_email.data) and (acao == "enviar_email")
+        if email and enviar_email and not email_domain_has_mx(email):
+            return render_form(message="Não foi possível enviar o e-mail: o domínio do e-mail do cliente não possui registros MX válidos.")
 
-        enviar_email = form.enviar_email.data
         corpo_email = (form.email_corpo.data or "").strip()
         enviar_copia = form.enviar_copia.data
         cc_raw = (form.email_cc.data or "").strip() if enviar_copia else ""
 
         if enviar_email and not corpo_email:
-            flash("Informe o conteúdo do e-mail para enviá-lo ao cliente.", "danger")
-            return render_template(
-                "nova_proposta.html",
-                form=form,
-                equipments=equipamentos_disp,
-                form_data=request.form,
-                system_options=_system_options_payload(),
-                issuer_options=_issuer_options_payload(),
-                signature_url=signature_url,
-            )
+            return render_form(message="Informe o conteúdo do e-mail para enviá-lo ao cliente.")
 
         try:
             cc_list = _parse_emails_list(cc_raw) if enviar_email else []
         except ValueError as exc:
-            flash(str(exc), "danger")
-            return render_template(
-                "nova_proposta.html",
-                form=form,
-                equipments=equipamentos_disp,
-                form_data=request.form,
-                system_options=_system_options_payload(),
-                issuer_options=_issuer_options_payload(),
-                signature_url=signature_url,
-            )
+            return render_form(message=str(exc))
 
         sistema_payload, sistema_option = _extract_system_selection(form)
         if form.usar_sistema.data and not sistema_option:
-            flash("Selecione um Sistema de Ponto válido.", "danger")
-            return render_template(
-                "nova_proposta.html",
-                form=form,
-                equipments=equipamentos_disp,
-                form_data=request.form,
-                system_options=_system_options_payload(),
-                issuer_options=_issuer_options_payload(),
-                signature_url=signature_url,
-            )
+            return render_form(message="Selecione um Sistema de Ponto válido.")
 
         user = usuario_logado
         if form.usar_outro_usuario.data == "sim":
@@ -1095,6 +1092,8 @@ def nova_proposta():                    #  NENHUM espaço antes desta linha
             client_document_type=doc_type,
             issuer_company_code=issuer_code,
             pagamento=sel(form.pagto_equip, form.pagto_equip_other),
+            pagamento_servico=sel(form.pagto_servico, form.pagto_servico_other),
+            pagamento_contrato=sel(form.pagto_contrato, form.pagto_contrato_other),
             prazo_entrega=sel(form.prazo_entrega, form.prazo_entrega_other),
             frete=sel(form.frete, form.frete_other),
             validade=validade_final,
@@ -1161,8 +1160,12 @@ def nova_proposta():                    #  NENHUM espaço antes desta linha
         aquisicoes = []
         descricoes_dict = {}
 
-        for uid in request.form.getlist("item_uids"):
-            eid_str = request.form.get(f"equip_id_{uid}")
+        item_uids = request.form.getlist("item_uids")
+        if not item_uids and request.form.getlist("equipments"):
+            item_uids = [str(eid) for eid in request.form.getlist("equipments")]
+
+        for uid in item_uids:
+            eid_str = request.form.get(f"equip_id_{uid}") or uid
             if not eid_str:
                 continue
             eq = Equipment.query.get(int(eid_str))
@@ -1232,6 +1235,15 @@ def nova_proposta():                    #  NENHUM espaço antes desta linha
         proposta.equipamentos_payload = payload_items
 
         db.session.commit()
+
+        # Sincronização com Sollus CRM se deal_id foi informado
+        deal_id = request.values.get("deal_id") or request.form.get("deal_id") or request.args.get("deal_id")
+        if deal_id:
+            try:
+                from modules.crm.services import crm_service
+                crm_service.link_proposal_to_deal(deal_id, proposta.id)
+            except Exception as exc:
+                current_app.logger.warning(f"Erro ao sincronizar proposta com CRM deal {deal_id}: {exc}")
 
         session_buffers = {
             "ultima_proposta_id": proposta.id,
@@ -1315,6 +1327,7 @@ def nova_proposta():                    #  NENHUM espaço antes desta linha
         "nova_proposta.html",
         form=form,
         equipments=equipamentos_disp,
+        software_plans=software_plans_data,
         form_data=request.form,
         system_options=_system_options_payload(),
         issuer_options=_issuer_options_payload(),
@@ -1567,6 +1580,8 @@ def editar_proposta(id):
         observacao_comercial = (request.form.get("observacao_comercial") or "").strip() or None
         ambiente_incluir = request.form.get("ambiente_incluir") in {"1", "true", "on", "yes"}
         pagamento = request.form.get("pagamento")
+        pagamento_servico = request.form.get("pagamento_servico")
+        pagamento_contrato = request.form.get("pagamento_contrato")
         prazo_entrega = request.form.get("prazo_entrega")
         frete = request.form.get("frete")
         validade = request.form.get("validade")
@@ -1689,6 +1704,8 @@ def editar_proposta(id):
             client_document_type=doc_type,
             issuer_company_code=issuer_code_post,
             pagamento=pagamento,
+            pagamento_servico=pagamento_servico,
+            pagamento_contrato=pagamento_contrato,
             prazo_entrega=prazo_entrega,
             frete=frete,
             validade=validade_final,
@@ -1881,6 +1898,8 @@ def editar_proposta(id):
         telefone=prop.telefone,
         observacao_comercial=prop.observacao_comercial,
         pagamento=prop.pagamento,
+        pagamento_servico=getattr(prop, "pagamento_servico", None),
+        pagamento_contrato=getattr(prop, "pagamento_contrato", None),
         prazo_entrega=prop.prazo_entrega,
         frete=prop.frete,
         validade=prop.validade,
@@ -1920,6 +1939,8 @@ def editar_proposta(id):
 
 
 @propostas_bp.route("/aprovar_proposta/<int:id>", methods=["POST"])
+@propostas_bp.route("/aprovar_versao/<int:id>", methods=["POST"])
+@propostas_bp.route("/propostas/aprovar_versao/<int:id>", methods=["POST"])
 @login_required
 def aprovar_proposta(id: int):
     prop = Proposal.query.get_or_404(id)
@@ -1947,6 +1968,13 @@ def aprovar_proposta(id: int):
         action="approve",
         message=f"Versao aprovada ({prop.filename or prop.client_name})",
     )
+
+    # Sincronização automática com Sollus CRM
+    try:
+        from modules.crm.services import crm_service
+        crm_service.on_proposal_approved(prop.id, user=user)
+    except Exception as exc:
+        current_app.logger.warning(f"Erro ao sincronizar aprovação de proposta com CRM deal: {exc}")
 
     return jsonify({"ok": True, "message": "Versao marcada como aprovada."})
 

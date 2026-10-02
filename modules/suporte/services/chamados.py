@@ -119,7 +119,7 @@ INSERT_DEFAULTS: Mapping[str, object] = {
 }
 
 _NUMERIC_COLUMNS = {"id", "numero_manutencao", "numero_proposta"}
-_GENERATED_OR_READONLY_COLUMNS = {"tempo_atendimento"}
+_GENERATED_OR_READONLY_COLUMNS = {"tempo_atendimento", "data_modificacao"}
 _ENUM_RE = re.compile(r"'((?:[^'\\]|\\.)*)'")
 
 

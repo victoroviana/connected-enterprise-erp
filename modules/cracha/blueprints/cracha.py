@@ -37,6 +37,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.utils import secure_filename
 
 from extensions import db
+from modules.audit.utils import write_audit
 from modules.propostas.blueprints.auth import login_required
 from modules.propostas.blueprints.auth.permissions_utils import normalize_role_key, raw_permissions, current_permissions
 
@@ -976,7 +977,7 @@ def _next_recibo_id() -> int:
 
 
 def _numero_recibo(next_id: int) -> str:
-    padded = str(next_id).rjust(4, "1")
+    padded = str(next_id).zfill(4)
     return f"{padded}/{datetime.now().year}"
 
 
@@ -1579,10 +1580,10 @@ def criar_recibo():
             text(
                 "INSERT INTO recibos (id, numero_recibo, cliente, endereco, cnpj, data_pedido, "
                 "pedido, quantidade_entregue, descricao, quantidade_anterior, quantidade_restante, "
-                "unidade, tipo_cracha, data_criacao) "
+                "unidade, tipo_cracha, data_criacao, url_recibo) "
                 "VALUES (:id, :numero, :cliente, :endereco, :cnpj, :data_pedido, :pedido, "
                 ":quantidade_entregue, :descricao, :quantidade_anterior, :quantidade_restante, "
-                ":unidade, :tipo_cracha, :data_criacao)"
+                ":unidade, :tipo_cracha, :data_criacao, :url_recibo)"
             ),
             {
                 "id": next_id,
@@ -1598,7 +1599,8 @@ def criar_recibo():
                 "quantidade_restante": quantidade_restante,
                 "unidade": unidade,
                 "tipo_cracha": tipo_cracha,
-                "data_criacao": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "data_criacao": datetime.now().strftime("%Y-%m-%d"),
+                "url_recibo": None,
             },
         )
         db.session.execute(
@@ -1609,6 +1611,26 @@ def criar_recibo():
             {"restante": quantidade_restante, "cnpj": cnpj},
         )
         db.session.commit()
+
+        write_audit(
+            entity_type="Recibo",
+            entity_id=next_id,
+            action="create",
+            message=f"Recibo #{numero_recibo} criado para {cliente} (CNPJ: {cnpj}).",
+            after={
+                "id": next_id,
+                "numero_recibo": numero_recibo,
+                "cliente": cliente,
+                "cnpj": cnpj,
+                "quantidade_entregue": quantidade_entregue,
+                "quantidade_anterior": estoque_atual,
+                "quantidade_restante": quantidade_restante,
+                "pedido": pedido,
+                "tipo_cracha": tipo_cracha,
+                "unidade": unidade,
+            },
+            commit=True,
+        )
     except SQLAlchemyError:
         db.session.rollback()
         current_app.logger.exception("Falha ao criar recibo")
@@ -1724,6 +1746,26 @@ def editar_recibo():
             },
         )
         db.session.commit()
+
+        write_audit(
+            entity_type="Recibo",
+            entity_id=recibo_id,
+            action="update",
+            message=f"Recibo #{numero_recibo} atualizado para {cliente} (CNPJ: {cnpj}).",
+            after={
+                "id": recibo_id,
+                "numero_recibo": numero_recibo,
+                "cliente": cliente,
+                "cnpj": cnpj,
+                "quantidade_entregue": quantidade_entregue,
+                "quantidade_anterior": quantidade_anterior,
+                "quantidade_restante": quantidade_restante,
+                "pedido": pedido,
+                "tipo_cracha": tipo_cracha,
+                "unidade": unidade,
+            },
+            commit=True,
+        )
     except SQLAlchemyError:
         db.session.rollback()
         current_app.logger.exception("Falha ao editar recibo")
@@ -2309,6 +2351,7 @@ def _build_lancamentos(
         saldo += credito_debito
         lancamentos.append(
             {
+                "id": row.get("id_pk"),
                 "tipo": "movimento",
                 "data": data_label,
                 "descricao": row.get("descricao") or "",
@@ -2341,7 +2384,7 @@ def extratos_lancamentos(cliente_id: int, produto_id: int):
 
     rows = db.session.execute(
         text(
-            "SELECT data, descricao, quantidade, entrada_saida "
+            "SELECT id_pk, data, descricao, quantidade, entrada_saida "
             "FROM ja_cra_crachas_extratos "
             "WHERE idclientes_fk = :cliente AND idprodutos_fk = :produto "
             "ORDER BY data, id_pk"
@@ -2423,7 +2466,81 @@ def extratos_gravar_lancamento():
         },
     )
     db.session.commit()
-    flash("Lan\u00e7amento registrado.", "success")
+    flash("Lançamento registrado.", "success")
+    return redirect(url_for("cracha_bp.extratos_lancamentos", cliente_id=cliente_id, produto_id=produto_id))
+
+
+@cracha_bp.route("/extratos/lancamentos/<int:lancamento_id>/excluir", methods=["POST"])
+@login_required
+def extratos_excluir_lancamento(lancamento_id: int):
+    row = db.session.execute(
+        text(
+            "SELECT id_pk, idclientes_fk, idprodutos_fk, quantidade, entrada_saida, descricao, data "
+            "FROM ja_cra_crachas_extratos WHERE id_pk = :id"
+        ),
+        {"id": lancamento_id},
+    ).fetchone()
+
+    if not row:
+        flash("Lançamento não encontrado.", "warning")
+        return redirect(request.referrer or url_for("cracha_bp.extratos"))
+
+    cliente_id = row[1]
+    produto_id = row[2]
+    qtd = row[3]
+    tipo_mov = row[4]
+    desc = row[5]
+
+    try:
+        db.session.execute(
+            text("DELETE FROM ja_cra_crachas_extratos WHERE id_pk = :id"),
+            {"id": lancamento_id},
+        )
+        db.session.commit()
+
+        # Atualizar cache em controle_de_crachas se aplicável
+        try:
+            cliente_info = db.session.execute(
+                text("SELECT cnpj FROM ja_cli_clientes WHERE id_pk = :id"),
+                {"id": cliente_id},
+            ).fetchone()
+            if cliente_info and cliente_info[0]:
+                cnpj_clean = re.sub(r"\D+", "", cliente_info[0])
+                cnpj_pattern = (cnpj_clean[:8] + "%") if len(cnpj_clean) >= 8 else (cnpj_clean + "%")
+                extrato_row = db.session.execute(
+                    text(
+                        "SELECT SUM(e.quantidade * e.entrada_saida) AS saldo "
+                        "FROM ja_cra_crachas_extratos e "
+                        "INNER JOIN ja_cli_clientes c ON (e.idclientes_fk = c.id_pk) "
+                        "WHERE REPLACE(REPLACE(REPLACE(c.cnpj, '.', ''), '/', ''), '-', '') LIKE :cnpj_pattern"
+                    ),
+                    {"cnpj_pattern": cnpj_pattern},
+                ).fetchone()
+                if extrato_row and extrato_row[0] is not None:
+                    novo_saldo = int(extrato_row[0])
+                    db.session.execute(
+                        text("UPDATE controle_de_crachas SET quantidade_em_estoque = :saldo WHERE cnpj = :cnpj"),
+                        {"saldo": novo_saldo, "cnpj": cnpj_clean},
+                    )
+                    db.session.commit()
+        except Exception:
+            db.session.rollback()
+            current_app.logger.warning("Falha ao recalcular saldo de estoque apos exclusao de lancamento")
+
+        write_audit(
+            entity_type="ExtratoCracha",
+            entity_id=lancamento_id,
+            action="delete",
+            message=f"Lançamento #{lancamento_id} excluído (Qtd: {qtd}, Desc: {desc}).",
+            before=dict(row._mapping) if hasattr(row, "_mapping") else {},
+            commit=True,
+        )
+        flash("Lançamento removido com sucesso.", "success")
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Falha ao excluir lançamento de extrato")
+        flash("Erro ao remover lançamento.", "danger")
+
     return redirect(url_for("cracha_bp.extratos_lancamentos", cliente_id=cliente_id, produto_id=produto_id))
 
 

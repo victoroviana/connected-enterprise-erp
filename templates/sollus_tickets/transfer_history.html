@@ -1,0 +1,333 @@
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}Histórico de Transferências | Sollus Tickets{% endblock %}
+
+{% block content %}
+<div class="py-4 ticket-premium-container">
+
+  <!-- Header Hero -->
+  <div class="page-hero mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div>
+        <p class="page-hero__eyebrow mb-1"><i class="bi bi-clock-history me-1"></i> Auditoria Operacional</p>
+        <h1 class="page-hero__title h2 mb-2">Histórico de Transferências</h1>
+        <p class="page-hero__subtitle small mb-0 opacity-75">
+          Consulte todas as movimentações e transferências de tickets entre setores e colaboradores.
+        </p>
+      </div>
+      <div class="d-flex gap-2">
+        <a class="btn btn-light btn-sm px-3 rounded-pill fw-semibold shadow-sm" href="{{ url_for('sollus_tickets.dashboard') }}">
+          <i class="bi bi-arrow-left me-1"></i> Voltar ao Painel
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards de Métricas / Resumo -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="card card-premium border-0 p-3 h-100 shadow-sm d-flex flex-row align-items-center gap-3">
+        <div class="icon-box" style="background: rgba(14, 165, 233, 0.1); color: #0ea5e9; width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <i class="bi bi-arrow-left-right fs-5"></i>
+        </div>
+        <div>
+          <div class="h4 fw-bold mb-0">{{ stats.total_period }}</div>
+          <div class="small text-muted fw-medium">No Período</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card card-premium border-0 p-3 h-100 shadow-sm d-flex flex-row align-items-center gap-3">
+        <div class="icon-box" style="background: rgba(99, 102, 241, 0.1); color: #6366f1; width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <i class="bi bi-diagram-3-fill fs-5"></i>
+        </div>
+        <div>
+          <div class="h4 fw-bold mb-0">{{ stats.total_inter_dept }}</div>
+          <div class="small text-muted fw-medium">Entre Setores Distintos</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card card-premium border-0 p-3 h-100 shadow-sm d-flex flex-row align-items-center gap-3">
+        <div class="icon-box" style="background: rgba(34, 197, 94, 0.1); color: #22c55e; width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <i class="bi bi-calendar2-check-fill fs-5"></i>
+        </div>
+        <div>
+          <div class="h4 fw-bold mb-0">{{ stats.total_today }}</div>
+          <div class="small text-muted fw-medium">Transferências Hoje</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card card-premium border-0 p-3 h-100 shadow-sm d-flex flex-row align-items-center gap-3">
+        <div class="icon-box" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <i class="bi bi-filter fs-5"></i>
+        </div>
+        <div>
+          <div class="h4 fw-bold mb-0">{{ stats.total_filtered }}</div>
+          <div class="small text-muted fw-medium">Resultado do Filtro</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card de Filtros -->
+  <div class="card card-premium border-0 shadow-sm mb-4">
+    <div class="card-body p-3 p-lg-4">
+      <form method="GET" action="{{ url_for('sollus_tickets.transfer_history') }}" class="row g-3 align-items-end">
+        
+        <!-- Busca textual / Número do Ticket -->
+        <div class="col-12 col-md-4">
+          <label class="form-label small fw-semibold text-muted mb-1" for="filter_q">Buscar Ticket / Assunto</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control bg-light border-start-0" id="filter_q" name="q" 
+                   value="{{ filters.q or '' }}" placeholder="Nº do ticket, assunto ou solicitante...">
+          </div>
+        </div>
+
+        <!-- Data Inicial -->
+        <div class="col-6 col-md-2">
+          <label class="form-label small fw-semibold text-muted mb-1" for="filter_data_inicio">Data Inicial</label>
+          <input type="date" class="form-control form-control-sm bg-light" id="filter_data_inicio" name="data_inicio" 
+                 value="{{ filters.data_inicio or '' }}">
+        </div>
+
+        <!-- Data Final -->
+        <div class="col-6 col-md-2">
+          <label class="form-label small fw-semibold text-muted mb-1" for="filter_data_fim">Data Final</label>
+          <input type="date" class="form-control form-control-sm bg-light" id="filter_data_fim" name="data_fim" 
+                 value="{{ filters.data_fim or '' }}">
+        </div>
+
+        <!-- Tipo de Transferência -->
+        <div class="col-12 col-md-4">
+          <label class="form-label small fw-semibold text-muted mb-1" for="filter_tipo">Tipo de Movimentação</label>
+          <select class="form-select form-select-sm bg-light" id="filter_tipo" name="tipo">
+            <option value="all" {% if filters.tipo == 'all' or not filters.tipo %}selected{% endif %}>Todas as transferências (padrão)</option>
+            <option value="inter_dept" {% if filters.tipo == 'inter_dept' %}selected{% endif %}>Entre setores diferentes</option>
+            <option value="same_dept" {% if filters.tipo == 'same_dept' %}selected{% endif %}>Internas (mesmo setor / atendente)</option>
+          </select>
+        </div>
+
+        <!-- Setor de Origem -->
+        <div class="col-12 col-md-3">
+          <label class="form-label small fw-semibold text-muted mb-1" for="filter_origem">Setor de Origem</label>
+          <select class="form-select form-select-sm bg-light" id="filter_origem" name="origem_depto_id">
+            <option value="">Todos os setores de origem</option>
+            {% for dept in departments %}
+              <option value="{{ dept.id }}" {% if filters.origem_depto_id == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Setor de Destino -->
+        <div class="col-12 col-md-3">
+          <label class="form-label small fw-semibold text-muted mb-1" for="filter_destino">Setor de Destino</label>
+          <select class="form-select form-select-sm bg-light" id="filter_destino" name="destino_depto_id">
+            <option value="">Todos os setores de destino</option>
+            {% for dept in departments %}
+              <option value="{{ dept.id }}" {% if filters.destino_depto_id == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Colaborador que transferiu -->
+        <div class="col-12 col-md-3">
+          <label class="form-label small fw-semibold text-muted mb-1" for="filter_autor">Transferido Por</label>
+          <select class="form-select form-select-sm bg-light" id="filter_autor" name="autor_id">
+            <option value="">Todos os colaboradores</option>
+            {% for user in actors %}
+              <option value="{{ user.id }}" {% if filters.autor_id == user.id %}selected{% endif %}>
+                {{ user.nome_completo or user.name or user.usuario or user.email }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="col-12 col-md-3 d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm rounded-pill flex-grow-1 fw-semibold">
+            <i class="bi bi-funnel-fill me-1"></i> Filtrar
+          </button>
+          <a href="{{ url_for('sollus_tickets.transfer_history') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3" title="Limpar Filtros">
+            Limpar
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabela de Histórico -->
+  <div class="card card-premium border-0 shadow-sm overflow-hidden mb-4">
+    <div class="table-responsive">
+      <table class="table table-premium align-middle mb-0 px-3">
+        <thead>
+          <tr>
+            <th class="ps-4" style="width: 140px;">Data / Hora</th>
+            <th style="min-width: 200px;">Ticket</th>
+            <th style="min-width: 150px;">Transferido Por</th>
+            <th style="min-width: 260px;">Movimentação de Setor</th>
+            <th style="min-width: 220px;">Atendente</th>
+            <th class="pe-4" style="min-width: 220px;">Motivo / Justificativa</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr class="hover-lift">
+              
+              <!-- Data / Hora -->
+              <td class="ps-4">
+                <div class="fw-semibold text-dark small">
+                  {{ item.created_at | local('%d/%m/%Y') }}
+                </div>
+                <div class="text-muted" style="font-size: 0.75rem;">
+                  <i class="bi bi-clock me-1"></i>{{ item.created_at | local('%H:%M') }}
+                </div>
+              </td>
+
+              <!-- Ticket com Link -->
+              <td>
+                <div class="d-flex flex-column">
+                  <a class="fw-bold text-decoration-none text-primary mb-1 d-inline-flex align-items-center gap-1" 
+                     href="{{ url_for('sollus_tickets.detail', ticket_id=item.ticket_id) }}">
+                    <i class="bi bi-ticket-perforated"></i>
+                    {% if item.ticket %}
+                      {{ item.ticket.number or ('#' ~ item.ticket.id) }}
+                    {% else %}
+                      #{{ item.ticket_id }}
+                    {% endif %}
+                  </a>
+                  {% if item.ticket %}
+                    <span class="small text-truncate fw-medium text-dark" style="max-width: 280px;" title="{{ item.ticket.subject }}">
+                      {{ item.ticket.subject }}
+                    </span>
+                    <span class="text-muted text-truncate" style="font-size: 0.72rem; max-width: 280px;">
+                      Solicitante: {{ item.ticket.requester_label or '-' }}
+                    </span>
+                  {% else %}
+                    <span class="small text-muted fst-italic">Ticket não localizado</span>
+                  {% endif %}
+                </div>
+              </td>
+
+              <!-- Transferido Por (Autor) -->
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center small fw-bold" 
+                       style="width: 28px; height: 28px; font-size: 0.7rem; flex-shrink: 0;">
+                    {{ (item.actor_name or 'S')[0]|upper }}
+                  </div>
+                  <div class="small fw-semibold text-truncate" style="max-width: 140px;" title="{{ item.actor_name }}">
+                    {{ item.actor_name }}
+                  </div>
+                </div>
+              </td>
+
+              <!-- Movimentação de Setor -->
+              <td>
+                {% if item.is_inter_dept %}
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-2 py-1">
+                      {{ item.origin_dept_name }}
+                    </span>
+                    <i class="bi bi-arrow-right text-primary fw-bold"></i>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-1 fw-bold">
+                      {{ item.dest_dept_name }}
+                    </span>
+                  </div>
+                {% else %}
+                  <div class="d-flex align-items-center gap-1">
+                    <span class="badge bg-light text-muted border rounded-pill px-2 py-1">
+                      {{ item.dest_dept_name }}
+                    </span>
+                    <span class="text-muted" style="font-size: 0.72rem;">(permanece no mesmo setor)</span>
+                  </div>
+                {% endif %}
+              </td>
+
+              <!-- Atendente -->
+              <td>
+                {% if item.origin_assignee_name != item.dest_assignee_name %}
+                  <div class="d-flex align-items-center gap-1 small flex-wrap">
+                    <span class="text-muted text-decoration-line-through">{{ item.origin_assignee_name }}</span>
+                    <i class="bi bi-arrow-right text-muted" style="font-size: 0.7rem;"></i>
+                    <span class="fw-semibold text-dark">{{ item.dest_assignee_name }}</span>
+                  </div>
+                {% else %}
+                  <span class="small text-muted">{{ item.dest_assignee_name }}</span>
+                {% endif %}
+              </td>
+
+              <!-- Motivo / Justificativa -->
+              <td class="pe-4">
+                {% if item.reason %}
+                  <div class="p-2 rounded bg-light border border-light-subtle small text-dark" style="font-size: 0.82rem; line-height: 1.35;">
+                    <i class="bi bi-chat-left-quote text-muted me-1"></i>{{ item.reason }}
+                  </div>
+                {% else %}
+                  <span class="small text-muted fst-italic">Sem justificativa informada</span>
+                {% endif %}
+              </td>
+
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="6" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
+                <div class="fw-semibold">Nenhuma transferência encontrada para os filtros selecionados.</div>
+                <div class="small">Tente alterar os termos de busca, o período ou selecionar "Todas as transferências".</div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Paginação -->
+  {% if pagination and pagination.pages > 1 %}
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 px-2">
+      <div class="small text-muted">
+        Mostrando <strong>{{ items|length }}</strong> de <strong>{{ pagination.total }}</strong> transferências registradas
+      </div>
+      <nav aria-label="Navegação do histórico de transferências">
+        <ul class="pagination pagination-sm mb-0 gap-1">
+          
+          <!-- Anterior -->
+          <li class="page-item {{ 'disabled' if pagination.page <= 1 }}">
+            <a class="page-link rounded-pill border-0 shadow-sm px-3" 
+               href="{{ url_for('sollus_tickets.transfer_history', page=pagination.page-1, **filters) }}">
+              <i class="bi bi-chevron-left me-1"></i> Anterior
+            </a>
+          </li>
+          
+          <!-- Números de Página -->
+          {% set start_page = [1, pagination.page - 2]|max %}
+          {% set end_page = [pagination.pages, start_page + 4]|min %}
+          {% set start_page = [1, end_page - 4]|max %}
+
+          {% for p in range(start_page, end_page + 1) %}
+            <li class="page-item {{ 'active' if p == pagination.page }}">
+              <a class="page-link rounded-circle border-0 shadow-sm d-flex align-items-center justify-content-center" 
+                 style="width: 32px; height: 32px;"
+                 href="{{ url_for('sollus_tickets.transfer_history', page=p, **filters) }}">{{ p }}</a>
+            </li>
+          {% endfor %}
+
+          <!-- Próxima -->
+          <li class="page-item {{ 'disabled' if pagination.page >= pagination.pages }}">
+            <a class="page-link rounded-pill border-0 shadow-sm px-3" 
+               href="{{ url_for('sollus_tickets.transfer_history', page=pagination.page+1, **filters) }}">
+              Próxima <i class="bi bi-chevron-right ms-1"></i>
+            </a>
+          </li>
+
+        </ul>
+      </nav>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

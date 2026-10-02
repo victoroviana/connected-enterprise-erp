@@ -21,6 +21,16 @@
     } catch (err) {
       data = {};
     }
+    const userId = trigger.getAttribute('data-user-id') || '';
+    const userSelect = editForm.querySelector('[name="usuario_id"]');
+    if (userSelect) {
+      userSelect.value = userId;
+      userSelect.onchange = () => {
+        if (userSelect.selectedIndex > 0) {
+          nameField.value = userSelect.options[userSelect.selectedIndex].text;
+        }
+      };
+    }
     const nameField = editForm.querySelector('[name="nome_exibicao"]');
     if (nameField) {
       nameField.value = data.nome || '';

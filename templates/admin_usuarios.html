@@ -204,9 +204,14 @@
                   <button type="button" class="btn btn-outline-primary btn-sm" onclick="abrirModalEdicaoUsuario({{ usuario.id }})">
                     <i class="bi bi-pencil-square fs-5"></i>
                   </button>
-                  <form method="post" action="{{ url_for('auth_bp.excluir_usuario', id=usuario.id) }}" onsubmit="return confirm('Confirma a remoção deste usuário?');">
+                  <form method="post" action="{{ url_for('auth_bp.excluir_usuario', id=usuario.id) }}"
+                        data-confirm-delete="true"
+                        data-entity-type="Colaborador / Usuário"
+                        data-entity-name="{{ usuario.nome_completo or usuario.usuario }}"
+                        data-entity-detail="Usuário: {{ usuario.usuario }} | E-mail: {{ usuario.email or '-' }}"
+                        data-confirm-warning="O usuário perderá imediatamente o acesso a todas as áreas e módulos do sistema.">
                     {{ form.csrf_token }}
-                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Excluir usuário">
                       <i class="bi bi-trash fs-5"></i>
                     </button>
                   </form>
@@ -486,6 +491,11 @@
               <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
               <label class="form-check-label" for="edit_is_active">Usuário ativo?</label>
             </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Texto da Assinatura (Sollus Tickets)</label>
+            <textarea class="form-control form-control-sm" id="edit_signature_text" name="signature_text" rows="3" placeholder="Assinatura textual usada nas respostas de chamados..."></textarea>
+            <small class="text-muted">Assinatura personalizada inserida automaticamente nas respostas do Sollus Tickets.</small>
           </div>
           <div class="col-12">
             <label class="form-label">Nova senha (opcional)</label>

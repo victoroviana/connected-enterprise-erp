@@ -315,6 +315,10 @@
         if(editActive){
           editActive.checked = Boolean(data.is_active);
         }
+        const editSigText = document.getElementById('edit_signature_text');
+        if(editSigText){
+          editSigText.value = data.signature_text || '';
+        }
         document.getElementById('edit_senha').value         = '';
 
         // Telefones adicionais

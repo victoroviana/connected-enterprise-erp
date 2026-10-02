@@ -1,0 +1,361 @@
+{% extends "layout.html" %}
+
+{% block title %}
+  {{ funil.nome if funil else 'CRM Comercial' }} - Sollus Connected
+{% endblock %}
+
+{% block head %}
+  <link href="{{ url_for('static', filename='css/crm_premium.css') }}?v=20260918_1" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="crm-kanban-page">
+  <!-- Top Bar: Seleção de Funil & KPIs Rápidos -->
+  <div class="row align-items-center mb-3 g-2">
+    <!-- Seletor de Funil e Ação de Nova Oportunidade -->
+    <div class="col-lg-6 col-md-7">
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <div class="dropdown">
+          <button class="btn btn-white border dropdown-toggle fw-bold d-flex align-items-center gap-2 shadow-sm py-2 px-3" type="button" data-bs-toggle="dropdown">
+            <i class="bi bi-funnel-fill text-primary"></i>
+            <span>{{ funil.nome if funil else 'Selecione um Funil' }}</span>
+          </button>
+          <ul class="dropdown-menu shadow">
+            {% for f in todos_funis %}
+              <li>
+                <a class="dropdown-item d-flex justify-content-between align-items-center py-2 {% if funil and f.id == funil.id %}active fw-bold{% endif %}" 
+                   href="{{ url_for('crm.kanban', funil_id=f.id) }}">
+                  <span>{{ f.nome }}</span>
+                  <span class="badge bg-secondary ms-2">{{ f.tipo|upper }}</span>
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+        <span class="badge bg-light text-secondary border px-2 py-2">
+          <i class="bi bi-layers me-1"></i> {{ funil.tipo|upper if funil else 'PADRÃO' }}
+        </span>
+
+        <!-- Botão Criar Oportunidade / Lead em Destaque (Estilo RD Station CRM) -->
+        <button type="button" 
+                class="btn btn-success fw-bold d-inline-flex align-items-center gap-2 shadow-sm py-2 px-3 text-nowrap" 
+                data-bs-toggle="modal" 
+                data-bs-target="#modalNovoLead"
+                data-funil-id="{{ funil.id if funil else '' }}"
+                title="Cadastrar Nova Oportunidade / Lead no Funil">
+          <i class="bi bi-plus-lg"></i>
+          <span>+ Oportunidade</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- KPIs Rápidos do Pipeline -->
+    <div class="col-lg-6 col-md-5">
+      <div class="d-flex flex-wrap align-items-center justify-content-md-end gap-2">
+        <div class="bg-white border rounded px-3 py-1 shadow-sm text-center">
+          <div class="text-muted" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 600;">Oportunidades</div>
+          <div class="fw-bold text-dark" style="font-size: 1rem;">{{ stats.total_negociacoes }}</div>
+        </div>
+        <div class="bg-white border rounded px-3 py-1 shadow-sm text-center">
+          <div class="text-muted" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 600;">Pipeline Total</div>
+          <div class="fw-bold text-primary" style="font-size: 1rem;">{{ stats.total_valor_geral }}</div>
+        </div>
+        <div class="bg-white border rounded px-3 py-1 shadow-sm text-center">
+          <div class="text-muted" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 600;">Tarefas Hoje</div>
+          <div class="fw-bold text-warning" style="font-size: 1rem;">{{ stats.tarefas_hoje }}</div>
+        </div>
+        <div class="bg-white border rounded px-3 py-1 shadow-sm text-center">
+          <div class="text-muted" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 600;">Atrasadas</div>
+          <div class="fw-bold text-danger" style="font-size: 1rem;">{{ stats.tarefas_atrasadas }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra de Filtros Estilo RD Station CRM -->
+  <div class="card border shadow-sm mb-3">
+    <div class="card-body p-2">
+      <form method="GET" action="{{ url_for('crm.kanban', funil_id=funil.id if funil else '') }}" class="row g-2 align-items-center">
+        <!-- Busca Livre -->
+        <div class="col-lg-3 col-md-4">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" name="q" value="{{ filtro_search or '' }}" class="form-control border-start-0" placeholder="Buscar por cliente, empresa...">
+          </div>
+        </div>
+
+        <!-- Filtro Consultor / Vendedor -->
+        <div class="col-lg-2 col-md-3">
+          {% if can_view_all_deals %}
+            <select name="user_id" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="">Todos os Consultores</option>
+              {% for c in consultores %}
+                <option value="{{ c.id }}" {% if filtro_user_id == c.id %}selected{% endif %}>{{ c.nome_completo or c.usuario }}</option>
+              {% endfor %}
+            </select>
+          {% else %}
+            <input type="hidden" name="user_id" value="{{ current_user.id }}">
+            <div class="input-group input-group-sm" title="Visão restrita às suas negociações">
+              <span class="input-group-text bg-light text-primary border-end-0">
+                <i class="bi bi-person-fill"></i>
+              </span>
+              <span class="form-control form-control-sm bg-light text-truncate border-start-0 fw-semibold text-primary" style="font-size: 0.8rem; cursor: default;">
+                {{ current_user.nome_completo or current_user.usuario }}
+              </span>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Filtro Origem -->
+        <div class="col-lg-2 col-md-3">
+          <select name="origem" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">Todas as Origens</option>
+            {% for o in origens %}
+              <option value="{{ o.nome }}" {% if filtro_origem == o.nome or filtro_origem == o.id|string %}selected{% endif %}>{{ o.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Filtro Temperatura -->
+        <div class="col-lg-2 col-md-2">
+          <select name="temperatura" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">Todas as Temperaturas</option>
+            <option value="quente" {% if filtro_temperatura == 'quente' %}selected{% endif %}>🔥 Quente</option>
+            <option value="morno" {% if filtro_temperatura == 'morno' %}selected{% endif %}>🟡 Morno</option>
+            <option value="frio" {% if filtro_temperatura == 'frio' %}selected{% endif %}>❄️ Frio</option>
+          </select>
+        </div>
+
+        <!-- Filtro Filial -->
+        <div class="col-lg-1 col-md-2">
+          <select name="filial" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">Filiais</option>
+            {% for f in filiais %}
+              <option value="{{ f.slug }}" {% if filtro_filial == f.slug %}selected{% endif %}>{{ f.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Filtro Status -->
+        <div class="col-lg-1 col-md-2">
+          <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="aberto" {% if filtro_status == 'aberto' %}selected{% endif %}>Abertas</option>
+            <option value="pausado" {% if filtro_status == 'pausado' %}selected{% endif %}>⏸️ Pausadas</option>
+            <option value="ganho" {% if filtro_status == 'ganho' %}selected{% endif %}>Ganha</option>
+            <option value="perdido" {% if filtro_status == 'perdido' %}selected{% endif %}>Perdidas</option>
+            <option value="todos" {% if filtro_status == 'todos' %}selected{% endif %}>Todas</option>
+          </select>
+        </div>
+
+        <!-- Botão Limpar / Filtrar -->
+        <div class="col-lg-1 col-md-1 text-end">
+          {% if filtro_search or filtro_user_id or filtro_filial or filtro_origem or filtro_temperatura or filtro_status != 'aberto' %}
+            <a href="{{ url_for('crm.kanban', funil_id=funil.id if funil else '') }}" class="btn btn-sm btn-outline-secondary w-100" title="Limpar Filtros">
+              <i class="bi bi-x-circle"></i>
+            </a>
+          {% else %}
+            <button type="submit" class="btn btn-sm btn-primary w-100">
+              <i class="bi bi-filter"></i>
+            </button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Quadro Kanban com Colunas de Etapas -->
+  <div class="crm-kanban-wrapper">
+    {% for col in colunas %}
+      <div class="crm-kanban-column" data-etapa-id="{{ col.etapa.id }}">
+        <!-- Header da Coluna -->
+        <div class="crm-column-header d-flex align-items-center justify-content-between">
+          <div class="crm-column-title d-flex align-items-center gap-1">
+            <span>{{ col.etapa.nome }}</span>
+            <span class="crm-column-counter">{{ col.total_count }}</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="crm-column-amount">{{ col.total_valor_formatado }}</span>
+            <button type="button" 
+                    class="btn btn-sm btn-outline-secondary rounded-circle p-0 d-inline-flex align-items-center justify-content-center shadow-none" 
+                    style="width: 22px; height: 22px; line-height: 1;" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#modalNovoLead" 
+                    data-etapa-id="{{ col.etapa.id }}"
+                    data-funil-id="{{ funil.id if funil else '' }}"
+                    title="Adicionar oportunidade em {{ col.etapa.nome }}">
+              <i class="bi bi-plus" style="font-size: 1.15rem;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Container de Cards (Drag & Drop com SortableJS) -->
+        <div class="crm-cards-container" data-etapa-id="{{ col.etapa.id }}">
+          {% for deal in col.deals %}
+            <div class="crm-deal-card shadow-sm {% if deal.status == 'pausado' %}border-warning opacity-75{% endif %}" data-deal-id="{{ deal.id }}">
+              <div class="crm-deal-title" title="{{ deal.nome }}">{{ deal.nome }}</div>
+              <div class="crm-deal-company" title="{{ deal.empresa_nome or deal.contato_nome or deal.nome }}">
+                {% if deal.empresa_nome and deal.empresa_nome.strip().lower() != deal.nome.strip().lower() %}
+                  <i class="bi bi-building text-primary"></i>
+                  <span>{{ deal.empresa_nome }}</span>
+                  {% if deal.contato_nome %}
+                    <span class="text-muted mx-1">•</span>
+                    <i class="bi bi-person text-secondary"></i>
+                    <span>{{ deal.contato_nome }}</span>
+                  {% endif %}
+                {% elif deal.contato_nome %}
+                  <i class="bi bi-person text-secondary"></i>
+                  <span>{{ deal.contato_nome }}</span>
+                {% elif deal.filial or deal.origem %}
+                  <i class="bi bi-geo-alt text-muted"></i>
+                  <span>{{ deal.filial or deal.origem }}</span>
+                {% else %}
+                  <i class="bi bi-building text-muted"></i>
+                  <span>{{ deal.nome }}</span>
+                {% endif %}
+              </div>
+
+              <!-- Badges de Qualificação Comercial e Operacional -->
+              <div class="d-flex align-items-center flex-wrap gap-1 mb-1">
+                {% if deal.status == 'pausado' %}
+                  <span class="badge bg-secondary-subtle text-secondary border border-secondary px-1 py-0 fw-semibold" style="font-size: 0.68rem;" title="Negociação Pausada{% if deal.pausado_motivo %}: {{ deal.pausado_motivo }}{% endif %}">
+                    ⏸️ Pausada
+                  </span>
+                {% endif %}
+
+                {% if deal.nivel_interesse == 'urgente' %}
+                  <span class="badge bg-danger text-white px-1 py-0 fw-semibold" style="font-size: 0.68rem;" title="Nível de Interesse: Urgente">
+                    🚨 Urgente
+                  </span>
+                {% elif deal.nivel_interesse == 'alto' %}
+                  <span class="badge bg-warning text-dark px-1 py-0 fw-semibold" style="font-size: 0.68rem;" title="Nível de Interesse: Alto">
+                    ⭐ Alto
+                  </span>
+                {% elif deal.nivel_interesse == 'medio' %}
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-1 py-0" style="font-size: 0.68rem;" title="Nível de Interesse: Médio">
+                    🔹 Médio
+                  </span>
+                {% elif deal.nivel_interesse == 'baixo' %}
+                  <span class="badge bg-light text-muted border px-1 py-0" style="font-size: 0.68rem;" title="Nível de Interesse: Baixo">
+                    ▫️ Baixo
+                  </span>
+                {% endif %}
+
+                {% if deal.temperatura == 'quente' %}
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-1 py-0" style="font-size: 0.68rem;" title="Temperatura: Quente">
+                    🔥 Quente
+                  </span>
+                {% elif deal.temperatura == 'morno' %}
+                  <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-1 py-0" style="font-size: 0.68rem;" title="Temperatura: Morno">
+                    🟡 Morno
+                  </span>
+                {% elif deal.temperatura == 'frio' %}
+                  <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-1 py-0" style="font-size: 0.68rem;" title="Temperatura: Frio">
+                    ❄️ Frio
+                  </span>
+                {% endif %}
+
+                {% if deal.fonte_lead %}
+                  <span class="badge bg-info-subtle text-dark border border-info-subtle px-1 py-0 text-truncate" style="font-size: 0.68rem; max-width: 120px;" title="Fonte do Lead: {{ deal.fonte_lead }}">
+                    <i class="bi bi-funnel me-1"></i>{{ deal.fonte_lead|replace('_', ' ')|capitalize }}
+                  </span>
+                {% elif deal.canal_origem or deal.origem %}
+                  <span class="badge bg-light text-secondary border px-1 py-0 text-truncate" style="font-size: 0.68rem; max-width: 120px;" title="Origem: {{ deal.origem or deal.canal_origem }}">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>{{ deal.canal_origem or deal.origem }}
+                  </span>
+                {% endif %}
+
+                {% if deal.localidade_lead %}
+                  <span class="badge bg-light text-secondary border px-1 py-0 text-truncate" style="font-size: 0.68rem; max-width: 110px;" title="Localidade / Campanha: {{ deal.localidade_lead }}">
+                    <i class="bi bi-geo-alt me-1"></i>{{ deal.localidade_lead }}
+                  </span>
+                {% endif %}
+
+                {% if deal.satisfacao_cliente %}
+                  <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-1 py-0" style="font-size: 0.68rem;" title="Satisfação Pós-Venda: {{ deal.satisfacao_cliente }} Estrelas">
+                    ★ {{ deal.satisfacao_cliente }}
+                  </span>
+                {% endif %}
+
+                {% if deal.canal_preferencial %}
+                  <span class="badge bg-light text-primary border px-1 py-0" style="font-size: 0.68rem;" title="Canal Preferencial: {{ deal.canal_preferencial }}">
+                    {% if deal.canal_preferencial == 'whatsapp' %}
+                      <i class="bi bi-whatsapp text-success"></i>
+                    {% elif deal.canal_preferencial == 'ligacao' %}
+                      <i class="bi bi-telephone text-primary"></i>
+                    {% elif deal.canal_preferencial == 'email' %}
+                      <i class="bi bi-envelope text-secondary"></i>
+                    {% else %}
+                      {{ deal.canal_preferencial }}
+                    {% endif %}
+                  </span>
+                {% endif %}
+              </div>
+
+              <div class="crm-deal-meta">
+                <div class="crm-deal-value">
+                  R$ {{ "{:,.2f}".format(deal.valor_total).replace(",", "X").replace(".", ",").replace("X", ".") if deal.valor_total else '0,00' }}
+                </div>
+
+                <div class="d-flex align-items-center gap-1">
+                  <!-- Semáforo de Tarefas -->
+                  {% if deal.tarefa_status == 'atrasada' %}
+                    <span class="crm-task-badge crm-task-overdue" title="Tarefa atrasada: {{ deal.proxima_tarefa_titulo }}">
+                      <i class="bi bi-clock-history"></i> {{ deal.proxima_tarefa_data.split(' ')[0] if deal.proxima_tarefa_data else 'Atrasada' }}
+                    </span>
+                  {% elif deal.tarefa_status == 'hoje' %}
+                    <span class="crm-task-badge crm-task-today" title="Tarefa para hoje: {{ deal.proxima_tarefa_titulo }}">
+                      <i class="bi bi-calendar-event"></i> Hoje
+                    </span>
+                  {% elif deal.tarefa_status == 'no_prazo' %}
+                    <span class="crm-task-badge crm-task-future" title="Tarefa programada: {{ deal.proxima_tarefa_titulo }}">
+                      <i class="bi bi-check-circle"></i> {{ deal.proxima_tarefa_data.split(' ')[0] if deal.proxima_tarefa_data else 'No prazo' }}
+                    </span>
+                  {% else %}
+                    <span class="crm-task-badge crm-task-none" title="Nenhuma tarefa agendada">
+                      <i class="bi bi-dash"></i>
+                    </span>
+                  {% endif %}
+
+                  <!-- WhatsApp Rápido -->
+                  {% if deal.contato_whatsapp %}
+                    {% set clean_wa = deal.contato_whatsapp|replace(' ', '')|replace('-', '')|replace('(', '')|replace(')', '') %}
+                    {% set clean_wa_full = clean_wa if clean_wa.startswith('55') else '55' ~ clean_wa %}
+                    <a href="https://wa.me/{{ clean_wa_full }}?text=Olá, tudo bem? Sou da Sollus Tecnologia referente à sua solicitação." 
+                       target="_blank" 
+                       class="crm-btn-quick-wa" 
+                       title="Chamar no WhatsApp">
+                      <i class="bi bi-whatsapp"></i>
+                    </a>
+                  {% endif %}
+
+                  <!-- Avatar com Iniciais do Vendedor -->
+                  <span class="crm-user-avatar" title="Consultor: {{ deal.user_name }}">
+                    {{ deal.user_name[:2]|upper if deal.user_name else 'ST' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+          {% if col.has_more %}
+            <div class="crm-column-more-note text-center py-2 px-2 text-muted">
+              <i class="bi bi-info-circle me-1"></i> Exibindo os {{ col.deals|length }} mais recentes de {{ col.total_count }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Gaveta Lateral 360° -->
+{% include "crm/_deal_drawer.html" %}
+
+<!-- Modal de Cadastro Rápido de Oportunidade / Lead (RD Station CRM) -->
+{% include "crm/_modal_novo_lead.html" %}
+
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script src="{{ url_for('static', filename='js/crm_kanban.js') }}?v=20260918_1"></script>
+{% endblock %}

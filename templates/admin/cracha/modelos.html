@@ -99,7 +99,11 @@
                 <a class="btn btn-outline-primary btn-sm" href="{{ url_for('cracha_bp.modelos_editar', cracha_id=row.id_pk) }}">
                   <i class="fa-solid fa-pen me-1"></i> Editar
                 </a>
-                <form method="post" action="{{ url_for('cracha_bp.modelos_excluir', cracha_id=row.id_pk) }}" onsubmit="return confirm('Deseja excluir este modelo?');">
+                <form method="post" action="{{ url_for('cracha_bp.modelos_excluir', cracha_id=row.id_pk) }}"
+                      data-confirm-delete="true"
+                      data-entity-type="Modelo de Crachá"
+                      data-entity-name="{{ row.empresa ~ ' - ' ~ row.tipo }}"
+                      data-confirm-warning="O modelo de crachá e suas configurações de layout serão removidos permanentemente.">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="btn btn-outline-danger btn-sm">
                     <i class="fa-solid fa-trash me-1"></i> Excluir

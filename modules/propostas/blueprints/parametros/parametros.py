@@ -47,6 +47,12 @@ SYSTEM_IMAGE_ALLOWED_EXTS = {"png", "jpg", "jpeg", "webp"}
 # Internal helpers
 # ------------------------------------------------------------------
 def _system_image_storage_dir() -> str:
+    try:
+        from flask import current_app
+        if current_app and current_app.static_folder:
+            return os.path.join(current_app.static_folder, "system_options")
+    except Exception:
+        pass
     return os.path.join(os.getcwd(), SYSTEM_IMAGE_DIR.replace('/', os.sep))
 
 
@@ -79,7 +85,9 @@ def _delete_system_image(rel_path: str | None) -> None:
         return
     if not rel_path.startswith("static/system_options"):
         return
-    abs_path = os.path.join(os.getcwd(), rel_path.replace('/', os.sep))
+    fname = os.path.basename(rel_path)
+    storage_dir = _system_image_storage_dir()
+    abs_path = os.path.join(storage_dir, fname)
     if os.path.exists(abs_path):
         try:
             os.remove(abs_path)
@@ -323,20 +331,34 @@ def atualizar_sistema_de_ponto(key: str):
         flash('Sistema de Ponto desconhecido.', 'danger')
         return redirect(url_for('.listar_parametros'))
 
-    form = SystemOptionOverrideForm()
+    form = SystemOptionOverrideForm(prefix=key)
     if not form.validate_on_submit():
-        flash('Verifique os dados enviados para o Sistema de Ponto.', 'danger')
-        return redirect(url_for('.listar_parametros'))
+        form_fallback = SystemOptionOverrideForm()
+        if form_fallback.validate_on_submit():
+            form = form_fallback
 
-    new_description = (form.description.data or '').strip()
+    raw_desc = form.description.data
+    if raw_desc is None:
+        raw_desc = request.form.get(f"{key}-description") or request.form.get("description")
+    new_description = (raw_desc or "").strip()
+
+    remove_image_val = bool(form.remove_image.data) or (
+        request.form.get(f"{key}-remove_image") in ("1", "y", "true", "on") or
+        request.form.get("remove_image") in ("1", "y", "true", "on")
+    )
+
+    image_file = form.image.data
+    if not image_file or not getattr(image_file, "filename", ""):
+        image_file = request.files.get(f"{key}-image") or request.files.get("image")
+
     if custom:
         new_image_path = custom.image_path
-        if form.remove_image.data:
+        if remove_image_val:
             _delete_system_image(new_image_path)
             new_image_path = None
-        elif form.image.data:
+        elif image_file and getattr(image_file, "filename", ""):
             try:
-                uploaded_path = _save_system_image(form.image.data, key)
+                uploaded_path = _save_system_image(image_file, key)
             except ValueError as exc:
                 flash(str(exc), 'danger')
                 return redirect(url_for('.listar_parametros'))
@@ -356,12 +378,12 @@ def atualizar_sistema_de_ponto(key: str):
 
     new_image_path = override.image_path
 
-    if form.remove_image.data:
+    if remove_image_val:
         _delete_system_image(new_image_path)
         new_image_path = None
-    elif form.image.data:
+    elif image_file and getattr(image_file, "filename", ""):
         try:
-            uploaded_path = _save_system_image(form.image.data, key)
+            uploaded_path = _save_system_image(image_file, key)
         except ValueError as exc:
             flash(str(exc), 'danger')
             return redirect(url_for('.listar_parametros'))
@@ -380,8 +402,8 @@ def atualizar_sistema_de_ponto(key: str):
         if not is_new:
             db.session.delete(override)
             db.session.commit()
-            flash('Registro personalizado removido; valores padro restabelecidos.', 'info')
+            flash('Registro personalizado removido; valores padrão restabelecidos.', 'info')
         else:
-            flash('Nenhuma alteracao aplicada.', 'info')
+            flash('Nenhuma alteração aplicada.', 'info')
 
     return redirect(url_for('.listar_parametros'))

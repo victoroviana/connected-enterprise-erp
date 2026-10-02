@@ -200,7 +200,11 @@
           <button type="submit" class="btn btn-danger" form="atestados-delete-form">Remover</button>
         </div>
       </form>
-      <form method="post" id="atestados-delete-form">
+      <form method="post" id="atestados-delete-form"
+            data-confirm-delete="true"
+            data-entity-type="Atestado Técnico"
+            data-entity-name="Atestado Técnico"
+            data-confirm-warning="O arquivo e todos os e-mails associados serão removidos permanentemente.">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       </form>
     </div>
@@ -240,20 +244,15 @@
         const trigger = event.relatedTarget;
         if (!trigger) return;
         if (editForm) editForm.action = trigger.getAttribute('data-editar-url') || '';
-        if (deleteForm) deleteForm.action = trigger.getAttribute('data-remover-url') || '';
+        if (deleteForm) {
+          deleteForm.action = trigger.getAttribute('data-remover-url') || '';
+          deleteForm.setAttribute('data-entity-name', trigger.getAttribute('data-arquivo-nome') || 'Atestado Técnico');
+        }
         if (nameInput) nameInput.value = trigger.getAttribute('data-arquivo-nome') || '';
         if (emailsInput) emailsInput.value = trigger.getAttribute('data-arquivo-emails') || '';
         if (fileInput) fileInput.value = '';
         if (converterLink) converterLink.href = trigger.getAttribute('data-converter-url') || '#';
         if (excelLink) excelLink.href = trigger.getAttribute('data-excel-url') || '#';
-      });
-    }
-
-    if (deleteForm) {
-      deleteForm.addEventListener('submit', event => {
-        if (!confirm('Remover este arquivo e os e-mails associados?')) {
-          event.preventDefault();
-        }
       });
     }
 

@@ -95,6 +95,11 @@ def _load_override_map() -> Dict[str, "SystemOptionOverride"]:
     try:
         overrides = SystemOptionOverride.query.all()
     except Exception:
+        try:
+            from extensions import db
+            db.session.rollback()
+        except Exception:
+            pass
         return {}
     return {ov.key: ov for ov in overrides}
 
@@ -109,6 +114,11 @@ def _load_system_states() -> Dict[str, "SystemOptionState"]:
     try:
         states = SystemOptionState.query.all()
     except Exception:
+        try:
+            from extensions import db
+            db.session.rollback()
+        except Exception:
+            pass
         return {}
     return {state.key: state for state in states}
 
@@ -123,6 +133,11 @@ def _load_custom_options() -> list["SystemOptionCatalog"]:
     try:
         return SystemOptionCatalog.query.all()
     except Exception:
+        try:
+            from extensions import db
+            db.session.rollback()
+        except Exception:
+            pass
         return []
 
 

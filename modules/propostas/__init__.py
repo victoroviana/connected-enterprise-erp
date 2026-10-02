@@ -13,6 +13,7 @@ def init_app(app: Flask) -> None:
     from .blueprints.equipamentos import equipamentos_bp
     from .blueprints.parametros import parametros_bp
     from .blueprints.admin_tools import admin_tools_bp
+    from .blueprints.sistemas_ponto import sistemas_ponto_bp
     from .api import api_bp
     from .utils.schema import (
         ensure_proposal_email_columns,
@@ -28,6 +29,8 @@ def init_app(app: Flask) -> None:
         ensure_central_conhecimento_task_columns,
         ensure_central_conhecimento_comment_tables,
         ensure_parts_table,
+        ensure_equipment_and_budget_columns,
+        ensure_commercial_agenda_and_partners_tables,
     )
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
@@ -35,6 +38,7 @@ def init_app(app: Flask) -> None:
     app.register_blueprint(equipamentos_bp)
     app.register_blueprint(parametros_bp)
     app.register_blueprint(admin_tools_bp, url_prefix="/admin")
+    app.register_blueprint(sistemas_ponto_bp)
     app.register_blueprint(api_bp)
 
     with app.app_context():
@@ -50,3 +54,5 @@ def init_app(app: Flask) -> None:
         ensure_central_conhecimento_task_columns()
         ensure_central_conhecimento_comment_tables()
         ensure_parts_table()
+        ensure_equipment_and_budget_columns()
+        ensure_commercial_agenda_and_partners_tables()

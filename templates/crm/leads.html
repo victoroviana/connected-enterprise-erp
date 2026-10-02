@@ -1,0 +1,262 @@
+{% extends "layout.html" %}
+
+{% block title %}Leads de Marketing - Sollus CRM{% endblock %}
+
+{% block head %}
+  <link href="{{ url_for('static', filename='css/crm_premium.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="crm-page-container px-2 py-0">
+  <!-- Cabeçalho com KPIs Rápidos -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+    <div>
+      <h4 class="fw-bold mb-1 d-flex align-items-center gap-2">
+        <i class="bi bi-bullseye text-primary"></i>
+        <span>Base de Leads de Marketing</span>
+      </h4>
+      <p class="text-muted small mb-0">Base importada do RD Station Marketing com qualificação por Lead Scoring (Perfil e Interesse).</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button type="button" class="btn btn-success btn-sm fw-bold d-flex align-items-center gap-1 shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#modalNovoLead">
+        <i class="bi bi-plus-lg"></i> + Criar Lead / Oportunidade
+      </button>
+      <a href="{{ url_for('crm.leads_export', q=search, perfil=filtro_perfil, tag=filtro_tag, estado=filtro_estado) }}" class="btn btn-outline-success btn-sm d-flex align-items-center gap-1 shadow-sm" title="Baixar base de leads segmentada em formato CSV">
+        <i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV
+      </a>
+      <a href="{{ url_for('crm.index') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
+        <i class="bi bi-filter"></i> Ir para Funis de Vendas
+      </a>
+    </div>
+  </div>
+
+  <!-- Barra de Filtros: Busca + Tag + UF + Perfil Scoring -->
+  <div class="card border shadow-sm mb-3">
+    <div class="card-body p-2">
+      <form method="GET" action="{{ url_for('crm.leads') }}" class="row g-2 align-items-center">
+        <!-- Campo de Busca Livre -->
+        <div class="col-lg-3 col-md-6">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" name="q" value="{{ search or '' }}" class="form-control border-start-0" placeholder="Buscar lead, e-mail...">
+          </div>
+        </div>
+
+        <!-- Filtro por Tag -->
+        <div class="col-lg-2 col-md-3">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-tag text-muted"></i></span>
+            <input type="text" name="tag" value="{{ filtro_tag or '' }}" class="form-control border-start-0" placeholder="Tag (ex: ponto, acesso)">
+          </div>
+        </div>
+
+        <!-- Filtro por Estado / UF -->
+        <div class="col-lg-2 col-md-3">
+          <select name="estado" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">Todos Estados (UF)</option>
+            <option value="SP" {% if filtro_estado == 'SP' %}selected{% endif %}>São Paulo (SP)</option>
+            <option value="RJ" {% if filtro_estado == 'RJ' %}selected{% endif %}>Rio de Janeiro (RJ)</option>
+            <option value="PR" {% if filtro_estado == 'PR' %}selected{% endif %}>Paraná (PR)</option>
+            <option value="ES" {% if filtro_estado == 'ES' %}selected{% endif %}>Espírito Santo (ES)</option>
+            <option value="MG" {% if filtro_estado == 'MG' %}selected{% endif %}>Minas Gerais (MG)</option>
+            <option value="SC" {% if filtro_estado == 'SC' %}selected{% endif %}>Santa Catarina (SC)</option>
+            <option value="RS" {% if filtro_estado == 'RS' %}selected{% endif %}>Rio Grande do Sul (RS)</option>
+          </select>
+        </div>
+
+        <!-- Filtro Perfil Lead Scoring (A, B, C, D) -->
+        <div class="col-lg-3 col-md-6">
+          <select name="perfil" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">Todos os Perfis (Lead Scoring)</option>
+            <option value="A" {% if filtro_perfil == 'A' %}selected{% endif %}>Perfil A — Fit Perfeito</option>
+            <option value="B" {% if filtro_perfil == 'B' %}selected{% endif %}>Perfil B — Bom Fit</option>
+            <option value="C" {% if filtro_perfil == 'C' %}selected{% endif %}>Perfil C — Fit Moderado</option>
+            <option value="D" {% if filtro_perfil == 'D' %}selected{% endif %}>Perfil D — Baixa Qualificação</option>
+          </select>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="col-lg-2 col-md-6 d-flex gap-1">
+          <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-funnel me-1"></i> Filtrar</button>
+          {% if search or filtro_perfil or filtro_tag or filtro_estado %}
+            <a href="{{ url_for('crm.leads') }}" class="btn btn-sm btn-outline-secondary" title="Limpar Filtros"><i class="bi bi-x-circle"></i></a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabela de Leads -->
+  <div class="card border shadow-sm">
+    <div class="table-responsive">
+      <table class="table crm-table align-middle mb-0">
+        <thead>
+          <tr>
+            <th class="ps-3">Lead</th>
+            <th>Empresa / Cargo</th>
+            <th class="text-center">Lead Scoring (Perfil & Interesse)</th>
+            <th>Telefone / Celular</th>
+            <th>Última Conversão</th>
+            <th class="text-end pe-3">Ações Rápidas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if leads %}
+            {% for ld in leads %}
+              <tr>
+                <!-- Nome e E-mail -->
+                <td class="ps-3">
+                  <div class="fw-bold" style="font-size: 0.95rem;">{{ ld.nome or 'Lead Sem Nome' }}</div>
+                  <div class="small text-muted text-truncate" style="max-width: 220px;">
+                    <i class="bi bi-envelope me-1"></i>{{ ld.email or 'Sem e-mail' }}
+                  </div>
+                </td>
+
+                <!-- Empresa e Cargo -->
+                <td>
+                  <div class="fw-semibold text-truncate" style="max-width: 220px;" title="{{ ld.empresa or '-' }}">
+                    <i class="bi bi-building text-muted me-1"></i>{{ ld.empresa or '-' }}
+                  </div>
+                  <div class="small text-muted text-truncate" style="max-width: 200px;">{{ ld.cargo or '' }}</div>
+                </td>
+
+                <!-- Lead Scoring: Perfil + Exatamente 5 Estrelas -->
+                <td class="text-center" style="white-space: nowrap;">
+                  <div class="d-inline-flex align-items-center gap-2">
+                    <!-- Badge Perfil A/B/C/D -->
+                    {% if ld.lead_scoring_perfil == 'A' %}
+                      <span class="crm-score-badge crm-score-a">Perfil A</span>
+                    {% elif ld.lead_scoring_perfil == 'B' %}
+                      <span class="crm-score-badge crm-score-b">Perfil B</span>
+                    {% elif ld.lead_scoring_perfil == 'C' %}
+                      <span class="crm-score-badge crm-score-c">Perfil C</span>
+                    {% elif ld.lead_scoring_perfil == 'D' %}
+                      <span class="crm-score-badge crm-score-d">Perfil D</span>
+                    {% else %}
+                      <span class="badge bg-light text-muted border px-2 py-1">-</span>
+                    {% endif %}
+
+                    <!-- Cálculo Seguro de Estrelas de Interesse (0 a 5 máximo) -->
+                    {% set pontos = ld.lead_scoring_interesse or 0 %}
+                    {% if pontos >= 240 %}
+                      {% set num_stars = 5 %}
+                    {% elif pontos >= 120 %}
+                      {% set num_stars = 4 %}
+                    {% elif pontos >= 60 %}
+                      {% set num_stars = 3 %}
+                    {% elif pontos >= 25 %}
+                      {% set num_stars = 2 %}
+                    {% elif pontos > 0 %}
+                      {% set num_stars = 1 %}
+                    {% else %}
+                      {% set num_stars = 0 %}
+                    {% endif %}
+
+                    <div class="d-inline-flex align-items-center" title="{{ pontos }} pontos de interesse (Engajamento)">
+                      <span class="text-warning small me-1">
+                        {% for _ in range(num_stars) %}
+                          <i class="bi bi-star-fill"></i>
+                        {% endfor %}
+                        {% for _ in range(5 - num_stars) %}
+                          <i class="bi bi-star text-muted opacity-25"></i>
+                        {% endfor %}
+                      </span>
+                      <small class="text-muted fw-bold" style="font-size: 0.72rem;">({{ pontos }} pts)</small>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Telefone / WhatsApp -->
+                <td>
+                  {% set wa_num = (ld.celular or ld.telefone or '')|replace(' ', '')|replace('-', '')|replace('(', '')|replace(')', '') %}
+                  {% if wa_num %}
+                    {% set wa_full = wa_num if wa_num.startswith('55') else '55' ~ wa_num %}
+                    <a href="https://wa.me/{{ wa_full }}?text=Olá {{ ld.nome or '' }}, tudo bem? Sou da Sollus Tecnologia." 
+                       target="_blank" 
+                       class="badge bg-success-subtle text-success text-decoration-none px-2 py-1 border border-success-subtle d-inline-flex align-items-center gap-1"
+                       title="Chamar no WhatsApp">
+                      <i class="bi bi-whatsapp"></i> {{ ld.celular or ld.telefone }}
+                    </a>
+                  {% else %}
+                    <span class="text-muted small">-</span>
+                  {% endif %}
+                </td>
+
+                <!-- Última Conversão / Origem -->
+                <td>
+                  {% if ld.evento_conversao and ld.evento_conversao != '-' %}
+                    <div class="small fw-semibold text-truncate" style="max-width: 250px;" title="{{ ld.evento_conversao }}">
+                      <i class="bi bi-lightning-charge text-primary me-1"></i>{{ ld.evento_conversao }}
+                    </div>
+                  {% else %}
+                    <span class="text-muted small">Sem evento recente</span>
+                  {% endif %}
+
+                  {% set dt_conv = ld.data_conversao|string if ld.data_conversao else '' %}
+                  {% if dt_conv and not dt_conv.startswith('0000') %}
+                    <div class="text-muted" style="font-size: 0.72rem;">
+                      <i class="bi bi-calendar3 me-1"></i>{{ dt_conv[:16] }}
+                    </div>
+                  {% elif ld.created_at %}
+                    <div class="text-muted" style="font-size: 0.72rem;">
+                      <i class="bi bi-calendar3 me-1"></i>{{ ld.created_at.strftime('%d/%m/%Y') if not (ld.created_at is string) else ld.created_at[:10] }}
+                    </div>
+                  {% endif %}
+                </td>
+
+                <!-- Ações Rápidas -->
+                <td class="text-end pe-3">
+                  <div class="btn-group btn-group-sm">
+                    {% if wa_num %}
+                      <a href="https://wa.me/{{ wa_full }}?text=Olá {{ ld.nome or '' }}, tudo bem? Sou da Sollus Tecnologia." 
+                         target="_blank" 
+                         class="btn btn-outline-success" 
+                         title="Chamar no WhatsApp">
+                        <i class="bi bi-whatsapp"></i>
+                      </a>
+                    {% endif %}
+                    <a href="/propostas/nova?empresa_nome={{ (ld.empresa or ld.nome or '')|urlencode }}&contato_nome={{ (ld.nome or '')|urlencode }}&contato_email={{ (ld.email or '')|urlencode }}&contato_telefone={{ (ld.celular or ld.telefone or '')|urlencode }}" 
+                       class="btn btn-outline-primary" 
+                       title="Gerar Proposta Comercial para este Lead">
+                      <i class="bi bi-file-earmark-plus"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="6" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                Nenhum lead encontrado com os filtros selecionados.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginação -->
+    {% if pagination.pages > 1 %}
+      <div class="card-footer d-flex justify-content-between align-items-center py-2 px-3">
+        <small class="text-muted">Página <strong>{{ pagination.page }}</strong> de <strong>{{ pagination.pages }}</strong> (Total: {{ pagination.total }} leads)</small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            {% if pagination.has_prev %}
+              <li class="page-item"><a class="page-link" href="{{ url_for('crm.leads', page=pagination.prev_num, q=search, perfil=filtro_perfil) }}">Anterior</a></li>
+            {% endif %}
+            <li class="page-item disabled"><span class="page-link">{{ pagination.page }}</span></li>
+            {% if pagination.has_next %}
+              <li class="page-item"><a class="page-link" href="{{ url_for('crm.leads', page=pagination.next_num, q=search, perfil=filtro_perfil) }}">Próxima</a></li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Modal de Cadastro Rápido de Oportunidade / Lead (RD Station CRM) -->
+{% include "crm/_modal_novo_lead.html" %}
+
+{% endblock %}

@@ -202,7 +202,7 @@ def apply_filter_rules(*, sender: str, subject: str, body: str, headers: str, de
     return result
 
 
-def acquire_ticket_lock(ticket: SollusTicket, user: User, purpose: str = "edit", minutes: int = 15) -> tuple[bool, SollusTicketLock]:
+def acquire_ticket_lock(ticket: SollusTicket, user: User, purpose: str = "edit", minutes: int = 3) -> tuple[bool, SollusTicketLock]:
     now = datetime.utcnow()
     lock = SollusTicketLock.query.filter_by(ticket_id=ticket.id).first()
     if lock and lock.expires_at > now and lock.user_id != user.id:

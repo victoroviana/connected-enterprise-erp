@@ -35,7 +35,11 @@
   </div>
 </div>
 
-<form method="post" action="{{ url_for('atestados_bp.remover', arquivo_id=arquivo.id) }}" onsubmit="return confirm('Remover este arquivo e emails associados?');">
+<form method="post" action="{{ url_for('atestados_bp.remover', arquivo_id=arquivo.id) }}"
+      data-confirm-delete="true"
+      data-entity-type="Atestado Técnico"
+      data-entity-name="{{ arquivo.nome_original or arquivo.nome_salvo or ('Atestado #' ~ arquivo.id) }}"
+      data-confirm-warning="O arquivo e todos os e-mails associados serão removidos permanentemente.">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Remover</button>
 </form>

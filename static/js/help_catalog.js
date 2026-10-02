@@ -360,6 +360,64 @@ window.SOLLUS_HELP_CATALOG = {
       }
     ]
   },
+  "SollusFlow": {
+    "title": "Como usar o SollusFlow",
+    "intro": "Guia prático para acompanhar e gerenciar o fluxo comercial e operacional.",
+    "steps": [
+      {
+        "title": "Novo Pedido",
+        "text": "Clique no botão azul <strong>+ Novo Pedido</strong> no topo. Digite o CNPJ para busca automática de dados, defina o valor, selecione o operador responsável e a prioridade de atendimento.",
+        "image": "sollusflow_novo_pedido.png"
+      },
+      {
+        "title": "13 Etapas do Fluxo",
+        "text": "Cada coluna do Kanban representa uma fase do processo — do Recebimento ao E-mail de Boas-vindas. Os cards exibem cliente, valor, responsável e contador de checklists.",
+        "image": "sollusflow_etapas.png"
+      },
+      {
+        "title": "Detalhes, Checklist e Avanço",
+        "text": "Clique em qualquer card para abrir os detalhes. Conclua os itens obrigatórios do checklist, registre notas no histórico compartilhado e clique em <strong>Avançar para Próxima Fase</strong> ou <strong>Transferir Responsável</strong>.",
+        "image": "sollusflow_detalhes.png"
+      },
+      {
+        "title": "Prazos, SLAs e Filtros",
+        "text": "Cards atrasados ficam destacados em vermelho e os do dia em amarelo. Utilize os filtros superiores para isolar fases específicas, responsáveis ou status de pedidos.",
+        "image": "sollusflow_prazos.png"
+      }
+    ]
+  },
+  "SollusFlow – Histórico": {
+    "title": "Histórico do SollusFlow",
+    "intro": "Consulte o histórico consolidado de pedidos finalizados e em andamento.",
+    "steps": [
+      {
+        "title": "Filtros e Busca por CNPJ",
+        "text": "Filtre por período, status ou busque diretamente pelo CNPJ ou nome da empresa para consultar o histórico completo de pedidos do cliente.",
+        "image": "sollusflow_prazos.png"
+      },
+      {
+        "title": "Linha do Tempo e Ciclo",
+        "text": "Visualize a linha do tempo de cada pedido, tempo total em cada etapa e o operador responsável pelo encerramento.",
+        "image": "sollusflow_detalhes.png"
+      }
+    ]
+  },
+  "SollusFlow - Histórico": {
+    "title": "Histórico do SollusFlow",
+    "intro": "Consulte o histórico consolidado de pedidos finalizados e em andamento.",
+    "steps": [
+      {
+        "title": "Filtros e Busca por CNPJ",
+        "text": "Filtre por período, status ou busque diretamente pelo CNPJ ou nome da empresa para consultar o histórico completo de pedidos do cliente.",
+        "image": "sollusflow_prazos.png"
+      },
+      {
+        "title": "Linha do Tempo e Ciclo",
+        "text": "Visualize a linha do tempo de cada pedido, tempo total em cada etapa e o operador responsável pelo encerramento.",
+        "image": "sollusflow_detalhes.png"
+      }
+    ]
+  },
   "Central de Conhecimento": {
     "title": "Central de Conhecimento",
     "intro": "Base de conhecimento interna e guia de resoluções de problemas.",

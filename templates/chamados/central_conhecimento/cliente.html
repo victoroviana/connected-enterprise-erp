@@ -1,0 +1,105 @@
+<!-- templates/chamados/central_conhecimento/cliente.html -->
+<!-- SollusFlow — Historico do Cliente por CNPJ -->
+{% extends "layout.html" %}
+{% from "components/page_hero.html" import page_hero %}
+{% block title %}SollusFlow — {{ cliente_nome }}{% endblock %}
+
+{% block content %}
+{% set stats = [{'label': 'Pedidos', 'value': pedidos|length, 'hint': 'Total de pedidos vinculados'}] %}
+{% call page_hero(
+  title=cliente_nome,
+  subtitle='Histórico completo de pedidos do cliente (CNPJ/CPF: ' ~ cnpj ~ ')',
+  eyebrow='Histórico do Cliente',
+  stats=stats
+) %}
+  <div class="page-hero__actions">
+    <a class="btn btn-outline-light fw-bold" href="{{ url_for('central_conhecimento.board') }}">
+      <i class="fa-solid fa-arrow-left me-1"></i>Voltar ao Painel
+    </a>
+  </div>
+{% endcall %}
+
+<div class="card border-0 shadow-sm" style="border-radius: 16px; overflow: hidden;">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light" style="font-size: .8rem; text-transform: uppercase; letter-spacing: .04em;">
+          <tr>
+            <th class="ps-4">Nº Pedido</th>
+            <th>Tipo</th>
+            <th>Fase Atual</th>
+            <th>Responsável</th>
+            <th>Valor Total</th>
+            <th>Data Prevista</th>
+            <th>Status</th>
+            <th>Criado em</th>
+            <th class="text-end pe-4">Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if pedidos %}
+            {% for p in pedidos %}
+              {% set badge = badge_fn(p) %}
+              <tr>
+                <td class="ps-4 fw-bold text-dark">
+                  <span class="badge bg-secondary bg-opacity-10 text-dark border">{{ p.numero_pedido or ('#' ~ p.id) }}</span>
+                </td>
+                <td>
+                  <span class="badge {% if p.tipo == 'venda' %}bg-purple text-purple{% else %}bg-primary bg-opacity-10 text-primary{% endif %} fw-bold" style="text-transform: uppercase; font-size: .7rem;">
+                    {{ p.tipo }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge bg-primary bg-opacity-10 text-primary fw-bold" style="font-size: .78rem;">
+                    <i class="fa-solid {{ fases.get(p.fase_atual, {}).get('icon', 'fa-circle-dot') }} me-1"></i>
+                    {{ p.fase_atual }}. {{ fases.get(p.fase_atual, {}).get('label', '') }}
+                  </span>
+                </td>
+                <td class="small">
+                  {% if p.responsavel %}
+                    <i class="fa-solid fa-user-check text-primary me-1"></i>{{ p.responsavel.nome_completo or p.responsavel.email }}
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td class="small fw-bold text-success">
+                  {% if p.valor is not none %}
+                    R$ {{ "%.2f"|format(p.valor|float) }}
+                  {% else %}
+                    <span class="text-muted fw-normal">—</span>
+                  {% endif %}
+                </td>
+                <td class="small">
+                  {% if p.data_prevista %}
+                    <i class="fa-regular fa-calendar me-1 text-muted"></i>{{ p.data_prevista.strftime('%d/%m/%Y') }}
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge {% if badge=='atrasado' %}bg-danger{% elif badge=='hoje' %}bg-warning text-dark{% elif badge=='concluido' %}bg-primary{% elif badge=='cancelado' %}bg-secondary{% else %}bg-success{% endif %} fw-bold" style="font-size: .72rem;">
+                    {{ {'atrasado':'Atrasado','hoje':'Vence Hoje','ok':'No Prazo','concluido':'Concluído','cancelado':'Cancelado'}.get(badge, badge) }}
+                  </span>
+                </td>
+                <td class="small text-muted">{{ p.created_at.strftime('%d/%m/%Y') if p.created_at else '—' }}</td>
+                <td class="text-end pe-4">
+                  <a href="{{ url_for('central_conhecimento.board', cnpj=p.cliente_cnpj) }}" class="btn btn-sm btn-outline-primary" style="border-radius: 8px; font-size: .78rem;">
+                    <i class="fa-solid fa-table-columns me-1"></i>Ver no Painel
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="9" class="text-center text-muted py-5">
+                <i class="fa-solid fa-inbox fa-3x mb-2 d-block opacity-25"></i>
+                Nenhum pedido encontrado para este CNPJ.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

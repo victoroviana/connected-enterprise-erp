@@ -93,62 +93,44 @@ def validar_cnpj(form, field):
 class EquipmentForm(FlaskForm):
 
     name = StringField(
-
         'Nome',
-
         validators=[DataRequired(message='Informe o nome do equipamento.')],
-
         render_kw={'required': True}
+    )
 
+    fabricante = StringField(
+        'Fabricante',
+        validators=[Optional()],
+        render_kw={'placeholder': 'Ex: Control iD, Henry, EVO, etc.'}
     )
 
     description = TextAreaField(
-
         'Descrição',
-
         validators=[DataRequired(message='Descreva o equipamento.')],
-
         render_kw={'required': True, 'rows': 3}
-
     )
 
     unit_price = StringField(
-
         'Preço unitário',
         validators=[DataRequired(message='Informe o preço unitário.')],
-
         render_kw={'required': True}
-
     )
 
     quantity = StringField(
-
         'Quantidade',
-
         validators=[
-
             DataRequired(message='Informe a quantidade disponível.'),
-
             Regexp(r'^\d+$', message='Use apenas números inteiros.'),
-
         ],
-
         render_kw={'required': True, 'inputmode': 'numeric'}
-
     )
 
     illustration = FileField(
-
         'Imagem',
-
         validators=[
-
             FileRequired(message='Envie uma imagem do equipamento.'),
-
             FileAllowed(['jpg', 'png', 'jpeg'], 'Apenas imagens são permitidas'),
-
         ]
-
     )
 
     submit = SubmitField('Salvar equipamento')
@@ -162,6 +144,11 @@ class PartForm(FlaskForm):
         'Nome',
         validators=[DataRequired(message='Informe o nome da peça.')],
         render_kw={'required': True}
+    )
+    fabricante = StringField(
+        'Fabricante',
+        validators=[Optional()],
+        render_kw={'placeholder': 'Ex: Henry, Control iD, EVO, etc.'}
     )
     description = TextAreaField(
         'Descrição',
@@ -262,6 +249,8 @@ class ProposalForm(FlaskForm):
     # Parametros dinamicamente preenchidos
 
     pagto_equip    = SelectField('Condições de Pagamento (Equipamento)', coerce=str)
+    pagto_servico  = SelectField('Condições de Pagamento (Serviço)', coerce=str, validators=[Optional()])
+    pagto_contrato = SelectField('Condições de Pagamento (Contrato)', coerce=str, validators=[Optional()])
 
     prazo_entrega  = SelectField('Prazo de Entrega', coerce=str)
 
@@ -281,6 +270,8 @@ class ProposalForm(FlaskForm):
     # Campos Outros
 
     pagto_equip_other   = StringField()
+    pagto_servico_other = StringField()
+    pagto_contrato_other = StringField()
 
     prazo_entrega_other = StringField()
 
@@ -468,13 +459,25 @@ class RolePermissionUpdateForm(RolePermissionBaseForm):
 
 # =========================
 
+PARAM_CATEGORY_LABELS = {
+    ParamCategory.PAGTO_EQUIP: "Condições de Pagamento (Equipamento)",
+    ParamCategory.PAGTO_SERVICO: "Condições de Pagamento (Serviço)",
+    ParamCategory.PAGTO_CONTRATO: "Condições de Pagamento (Contrato)",
+    ParamCategory.PRAZO_ENTREGA: "Prazo de Entrega",
+    ParamCategory.FRETE: "Frete",
+    ParamCategory.VALIDADE: "Validade da Proposta",
+    ParamCategory.GARANTIA_EQ: "Garantia de Equipamento",
+    ParamCategory.GARANTIA_SYS: "Garantia de Sistema",
+}
+
+
 class ParamOptionForm(FlaskForm):
 
     category = SelectField(
 
         'Categoria',
 
-        choices=[(c.name, c.name.replace('_', ' ').title()) for c in ParamCategory],
+        choices=[(c.name, PARAM_CATEGORY_LABELS.get(c, c.name.replace('_', ' ').title())) for c in ParamCategory],
 
         coerce=lambda v: ParamCategory[v]
 

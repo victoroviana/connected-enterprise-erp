@@ -1,9 +1,8 @@
-import os
-import shutil
-import unittest
+import sys, os, shutil, unittest
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from gerar_proposta import _resolve_img_path, BASE_DIR
-from models import Equipment
+from modules.propostas.gerar_proposta import _resolve_img_path, BASE_DIR
+from modules.propostas.models import Equipment
 
 
 class EquipmentIllustrationPathTest(unittest.TestCase):

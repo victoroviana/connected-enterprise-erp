@@ -54,7 +54,7 @@ def ensure_assistencia_schema() -> None:
         "ALTER TABLE tarefas MODIFY descricao TEXT NULL",
         "ALTER TABLE tarefas MODIFY unidade VARCHAR(64) NOT NULL",
         "ALTER TABLE tarefas MODIFY status VARCHAR(32) NOT NULL DEFAULT 'Entrada'",
-        "ALTER TABLE tarefas MODIFY notificacao VARCHAR(8) NULL DEFAULT 'nao'",
+        "ALTER TABLE tarefas MODIFY notificacao VARCHAR(32) NULL DEFAULT 'nao'",
         "ALTER TABLE tarefas MODIFY data_envio DATE NULL",
         "ALTER TABLE tarefas MODIFY data_retorno DATE NULL",
         "ALTER TABLE tarefas MODIFY cnpj VARCHAR(20) NULL",
@@ -62,6 +62,9 @@ def ensure_assistencia_schema() -> None:
         "ALTER TABLE tarefas MODIFY CONTRATO VARCHAR(50) NULL",
         "ALTER TABLE tarefas MODIFY criado_por VARCHAR(50) NULL",
         "ALTER TABLE tarefas MODIFY atualizacoes TEXT NULL",
+        "ALTER TABLE tarefas_logs MODIFY valor_antigo TEXT NULL",
+        "ALTER TABLE tarefas_logs MODIFY valor_novo TEXT NULL",
+        "ALTER TABLE tarefas_logs MODIFY modificado_por VARCHAR(255) NULL DEFAULT 'sistema'",
     ]
     with db.engine.begin() as connection:
         for statement in statements:
@@ -214,9 +217,9 @@ def mark_os_devolucao_if_needed(tarefa: AssistenciaTarefa, before_status: str | 
     """Registra gatilho de OS de devolução quando conclui/testa."""
     previous = (before_status or "").strip() or None
     current = (tarefa.status or "").strip()
-    if current != "concluído":
+    if current not in ("concluído", "concluido"):
         return False
-    if previous == "concluído":
+    if previous in ("concluído", "concluido"):
         return False
 
     # Já marcado

@@ -133,7 +133,7 @@ class AssistenciaTarefa(db.Model):
     usuario_designado = db.Column(db.String(255))
     descricao = db.Column(db.Text)
     status = db.Column(db.String(32), nullable=False, default="Entrada")
-    notificacao = db.Column(db.String(8), default="nao")
+    notificacao = db.Column(db.String(32), default="nao")
     data_modificacao = db.Column(db.DateTime)
     unidade = db.Column(db.String(64), nullable=False)
     OS = db.Column(db.String(25), nullable=False)
@@ -266,6 +266,9 @@ class OrcamentoStatus(db.Model):
     ordem_servico = db.Column("Ordem_servico", db.String(255))
     nf_data = db.Column("NF_data", db.String(255))
     outras_informacoes = db.Column("Outras_informacoes", db.Text)
+    email = db.Column("email", db.String(255), nullable=True)
+    telefone = db.Column("telefone", db.String(64), nullable=True)
+    contato = db.Column("contato", db.String(120), nullable=True)
     ultima_cobranca = db.Column("ultima_cobranca", db.Date)
     unidade = db.Column("unidade", db.String(64), nullable=False)
     responsavel = db.Column("responsavel", db.String(255), nullable=False)
@@ -415,14 +418,16 @@ def _assistencia_before_update(mapper, connection, target: AssistenciaTarefa):
             continue
         old = hist.deleted[0] if hist.deleted else None
         new = hist.added[0] if hist.added else getattr(target, field)
-        if str(old) == str(new):
+        val_old = "" if old is None else str(old)
+        val_new = "" if new is None else str(new)
+        if val_old == val_new:
             continue
         log = AssistenciaTarefaLog(
             tarefa_id=target.id,
             campo=field,
-            valor_antigo=str(old) if old is not None else None,
-            valor_novo=str(new) if new is not None else None,
-            modificado_por=actor,
+            valor_antigo=val_old,
+            valor_novo=val_new,
+            modificado_por=actor or "sistema",
             data_modificacao=datetime.utcnow(),
         )
         session.add(log)

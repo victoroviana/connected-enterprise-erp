@@ -1,0 +1,118 @@
+[
+  {
+    "date": "2025-01-01",
+    "name": "Confraternizao Universal",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2025-03-03",
+    "name": "Carnaval",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2025-03-04",
+    "name": "Carnaval",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2025-03-04",
+    "name": "Carnaval",
+    "type": "feriado",
+    "level": "estadual",
+    "law": "Lei n 5.243/2008"
+  },
+  {
+    "date": "2025-03-05",
+    "name": "Quarta-feira de Cinzas",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2025-04-18",
+    "name": "Sexta-feira Santa",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2025-04-21",
+    "name": "Tiradentes",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2025-04-23",
+    "name": "Dia de So Jorge",
+    "type": "feriado",
+    "level": "estadual",
+    "law": "Lei n 5.198/2008"
+  },
+  {
+    "date": "2025-05-01",
+    "name": "Dia do Trabalhador",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2025-06-19",
+    "name": "Corpus Christi",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2025-09-07",
+    "name": "Independncia do Brasil",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2025-10-12",
+    "name": "Nossa Senhora Aparecida",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2025-10-28",
+    "name": "Dia do Servidor Pblico",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2025-11-02",
+    "name": "Finados",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2025-11-15",
+    "name": "Proclamao da Repblica",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2025-11-20",
+    "name": "Dia Nacional de Zumbi e da Conscincia Negra",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2025-12-24",
+    "name": "Vspera de Natal",
+    "type": "facultativo",
+    "level": "nacional"
+  },
+  {
+    "date": "2025-12-25",
+    "name": "Natal",
+    "type": "feriado",
+    "level": "nacional"
+  },
+  {
+    "date": "2025-12-31",
+    "name": "Vspera de Ano-Novo",
+    "type": "facultativo",
+    "level": "nacional"
+  }
+]

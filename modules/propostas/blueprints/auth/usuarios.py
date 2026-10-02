@@ -190,6 +190,10 @@ def editar_usuario(id):
         usuario.ramal = ramal or None
         usuario.is_active = request.form.get("is_active") == "on"
 
+        sig_text_input = request.form.get("signature_text")
+        if sig_text_input is not None:
+            usuario.signature_text = sig_text_input.strip() or None
+
         nova_senha = request.form.get("senha")
         if nova_senha:
             usuario.password_hash = generate_password_hash(nova_senha)
@@ -202,6 +206,7 @@ def editar_usuario(id):
             try:
                 current_user.tipo = role_key
                 current_user.permissions = usuario.permissions
+                current_user.signature_text = usuario.signature_text
             except Exception:
                 pass
             session.update(
@@ -209,6 +214,8 @@ def editar_usuario(id):
                     "tipo": role_key,
                     "role_label": role_label,
                     "role_initials": role_initials,
+                    "signature_text": usuario.signature_text,
+                    "signature_path": usuario.signature_path,
                 }
             )
             current_permissions()
@@ -220,6 +227,13 @@ def editar_usuario(id):
             avatar_url = url_for("static", filename=usuario.avatar_path)
         except Exception:
             avatar_url = None
+
+    signature_url = None
+    if usuario.signature_path:
+        try:
+            signature_url = url_for("static", filename=usuario.signature_path)
+        except Exception:
+            signature_url = None
 
     role_obj = RolePermission.query.filter_by(name=normalize_role_key(usuario.tipo)).first()
     role_label = role_obj.label if role_obj else usuario.tipo
@@ -246,6 +260,9 @@ def editar_usuario(id):
             "unit_name": unit_meta["name"] if unit_meta else None,
             "ramal": usuario.ramal,
             "avatar_url": avatar_url,
+            "signature_text": usuario.signature_text or "",
+            "signature_path": usuario.signature_path,
+            "signature_url": signature_url,
         }
     )
 

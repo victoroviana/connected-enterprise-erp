@@ -25,6 +25,7 @@ from modules.propostas.models import (
 
 USER_COLUMNS: dict[str, str] = {
     "signature_path": "ALTER TABLE users ADD COLUMN signature_path VARCHAR(256)",
+    "signature_text": "ALTER TABLE users ADD COLUMN signature_text TEXT",
     "avatar_path": "ALTER TABLE users ADD COLUMN avatar_path VARCHAR(256)",
     "phone_extra": "ALTER TABLE users ADD COLUMN phone_extra TEXT",
 }
@@ -480,3 +481,65 @@ def ensure_parts_table() -> None:
         Part.__table__.create(bind=db.engine, checkfirst=True)
     except Exception:
         pass
+
+
+def ensure_equipment_and_budget_columns() -> None:
+    """Garantir colunas extras de equipamentos, pecas e orcamentos_status."""
+    engine = db.engine
+    inspector = inspect(engine)
+    table_names = set(inspector.get_table_names())
+
+    statements = []
+    if "equipments" in table_names:
+        eq_cols = {c["name"] for c in inspector.get_columns("equipments")}
+        for col, typedef in [
+            ("fabricante", "VARCHAR(100) NULL"),
+            ("preco_locacao", "FLOAT NULL"),
+            ("preco_locacao_anterior", "FLOAT NULL"),
+            ("preco_locacao_alterado_em", "DATETIME NULL"),
+            ("preco_locacao_alterado_por", "VARCHAR(120) NULL"),
+            ("tipo_equipamento", "VARCHAR(64) NULL"),
+        ]:
+            if col not in eq_cols:
+                statements.append(f"ALTER TABLE equipments ADD COLUMN {col} {typedef}")
+
+    if "parts" in table_names:
+        parts_cols = {c["name"] for c in inspector.get_columns("parts")}
+        if "fabricante" not in parts_cols:
+            statements.append("ALTER TABLE parts ADD COLUMN fabricante VARCHAR(100) NULL")
+
+    if "orcamentos_status" in table_names:
+        orc_cols = {c["name"] for c in inspector.get_columns("orcamentos_status")}
+        for col, typedef in [
+            ("email", "VARCHAR(255) NULL"),
+            ("telefone", "VARCHAR(64) NULL"),
+            ("contato", "VARCHAR(120) NULL"),
+        ]:
+            if col not in orc_cols:
+                statements.append(f"ALTER TABLE orcamentos_status ADD COLUMN {col} {typedef}")
+
+    if statements:
+        with engine.begin() as conn:
+            for stmt in statements:
+                with suppress(OperationalError):
+                    conn.execute(text(stmt))
+
+
+def ensure_commercial_agenda_and_partners_tables() -> None:
+    """Garantir a existência das tabelas de agenda comercial e empresas parceiras."""
+    try:
+        from extensions import db
+        db.session.commit()
+        db.session.remove()
+        from modules.propostas.models import (
+            CommercialAgendaEntry,
+            EmpresaParceira,
+            ParceiroServicoHistorico,
+        )
+        CommercialAgendaEntry.__table__.create(bind=db.engine, checkfirst=True)
+        EmpresaParceira.__table__.create(bind=db.engine, checkfirst=True)
+        ParceiroServicoHistorico.__table__.create(bind=db.engine, checkfirst=True)
+    except Exception as exc:
+        if has_app_context():
+            current_app.logger.warning(f"Erro ao garantir tabelas de agenda comercial e parceiros: {exc}")
+

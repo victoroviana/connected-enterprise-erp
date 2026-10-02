@@ -1,488 +1,124 @@
+<!-- templates/chamados/central_conhecimento/history.html -->
+<!-- SollusFlow — Historico de Pedidos -->
 {% extends "layout.html" %}
 {% from "components/page_hero.html" import page_hero %}
-
-
-
-{% block title %}Histórico de Conhecimento{% endblock %}
-
-
-
-
-
-
+{% block title %}SollusFlow — Histórico{% endblock %}
 
 {% block content %}
-
-
-
-{% set history_stats = [
-  {'label': 'Concluídas', 'value': tasks|length, 'hint': 'Tarefas encerradas manualmente'}
-] %}
-{% set history_help_tips = [
-  'As tarefas aparecem aqui quando alguém clica em Concluir no quadro.',
-  'Use o campo Filtrar para buscar por título, responsável ou descrição dentro do histórico.',
-  'Se tiver permissão, use a lixeira para remover entradas antigas e manter o histórico enxuto; o atalho "Ver Central de Conhecimento" leva de volta ao quadro ativo.'
+{% set stats = [{'label': 'Total de pedidos', 'value': pedidos|length, 'hint': 'Pedidos filtrados'}] %}
+{% set tips = [
+  'Use os filtros para buscar pedidos por status, CNPJ ou nome do cliente.',
+  'Clique no CNPJ de um cliente para ver todo o histórico de pedidos daquele CNPJ.',
+  'Administradores podem cancelar ou reativar pedidos por aqui.'
 ] %}
 {% call page_hero(
-    title='Histórico de Conhecimento',
-    subtitle='Itens concluídos e arquivados para consulta e auditoria.',
-    eyebrow='Conhecimento',
-    stats=history_stats,
-    help_tips=history_help_tips,
-    help_intro='Dicas rápidas para revisar o histórico.'
+  title='SollusFlow — Histórico',
+  subtitle='Todos os pedidos registrados — ativos, concluídos e cancelados.',
+  eyebrow='SollusFlow',
+  stats=stats,
+  help_tips=tips,
+  help_intro='Dicas do histórico'
 ) %}
   <div class="page-hero__actions">
-    <span class="page-hero__pill js-history-count">{{ tasks|length }} itens</span>
-    <a class="btn btn-outline-light" href="{{ url_for('central_conhecimento.board') }}"><i class="bi bi-book"></i> Ver Quadro</a>
+    <a class="btn btn-outline-light" href="{{ url_for('central_conhecimento.board') }}">
+      <i class="fa-solid fa-table-columns me-1"></i>Ver Painel
+    </a>
   </div>
 {% endcall %}
 
-
-
-
-
-
-
-<div class="card">
-
-
-
+<!-- Filtros -->
+<div class="card mb-3">
   <div class="card-body">
-
-
-
-    <div class="row g-3 align-items-end mb-3">
-
-
-
-      <div class="col-md-5 col-lg-4">
-
-
-
-        <label class="form-label mb-1" for="historyFilter">Filtrar</label>
-
-
-
-        <input type="search" class="form-control" id="historyFilter" placeholder="Buscar por Título, Responsável ou Descrição">
-
-
-
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label">Status</label>
+        <select class="form-select" name="status">
+          <option value="">Todos</option>
+          <option value="ativo" {{ 'selected' if filtro_status=='ativo' }}>Ativos</option>
+          <option value="concluido" {{ 'selected' if filtro_status=='concluido' }}>Concluídos</option>
+          <option value="cancelado" {{ 'selected' if filtro_status=='cancelado' }}>Cancelados</option>
+        </select>
       </div>
-
-
-
-      <div class="col-auto ms-auto">
-
-
-
-        <button class="btn btn-outline-secondary" type="button" id="historyRefresh"><i class="bi bi-arrow-repeat"></i> Atualizar</button>
-
-
-
+      <div class="col-md-3">
+        <label class="form-label">CNPJ</label>
+        <input class="form-control" name="cnpj" value="{{ filtro_cnpj }}" placeholder="Buscar por CNPJ">
       </div>
-
-
-
-    </div>
-
-
-
-
-
-
-
-    <div class="table-responsive">
-
-
-
-      <table class="table table-hover align-middle" id="historyTable">
-
-
-
-        <thead class="table-light">
-
-
-
-          <tr>
-
-
-
-            <th style="min-width:220px">Título</th>
-            <th style="min-width:160px">Setor</th>
-            <th style="min-width:140px">Visibilidade</th>
-
-
-
-            <th style="min-width:160px">Responsável</th>
-
-
-
-            <th style="min-width:120px">Vencimento</th>
-
-
-
-            <th style="min-width:150px">Concluída em</th>
-
-
-
-            <th style="min-width:150px">Arquivada em</th>
-
-
-
-            <th>Descrição</th>
-
-
-
-            <th class="text-end" style="min-width:110px">Ações</th>
-
-
-
-          </tr>
-
-
-
-        </thead>
-
-
-
-        <tbody>
-
-
-
-          {% set current_role = (current_user.role or '').lower() %}
-
-
-
-          {% set can_delete_all = current_role in ('gestor', 'admin') %}
-
-
-
-          {% if tasks %}
-
-
-
-            {% for task in tasks %}
-
-
-
-            <tr>
-
-
-
-              {% set can_delete_task = can_delete_all or (task.assignee_id == current_user.id) %}
-
-
-
-              <td class="fw-semibold">{{ task.title }}</td>
-              <td>{{ scope_labels.get(task.scope_key, task.scope_key or 'Geral') }}</td>
-              <td>{{ 'Privada' if task.visibility == 'private' else 'Pública' }}</td>
-
-
-
-              <td>
-
-
-
-                {% if task.assignee %}
-
-
-
-                  {{ task.assignee.name or task.assignee.email }}
-
-
-
-                {% else %}
-
-
-
-                  <span class="text-muted"></span>
-
-
-
-                {% endif %}
-
-
-
-              </td>
-
-
-
-              <td>
-
-
-
-                {% if task.due_date %}
-
-
-
-                  {{ task.due_date | local('%d/%m/%Y') }}
-
-
-
-                {% else %}
-
-
-
-                  <span class="text-muted"></span>
-
-
-
-                {% endif %}
-
-
-
-              </td>
-
-
-
-              <td>
-
-
-
-                {% if task.completed_at %}
-
-
-
-                  {{ task.completed_at | local('%d/%m/%Y %H:%M') }}
-
-
-
-                {% else %}
-
-
-
-                  <span class="text-muted"></span>
-
-
-
-                {% endif %}
-
-
-
-              </td>
-
-
-
-              <td>
-
-
-
-                {% if task.archived_at %}
-
-
-
-                  {{ task.archived_at | local('%d/%m/%Y %H:%M') }}
-
-
-
-                {% else %}
-
-
-
-                  <span class="text-muted"></span>
-
-
-
-                {% endif %}
-
-
-
-              </td>
-
-
-
-              <td class="text-end">
-
-
-
-                {% if can_delete_task %}
-
-
-
-                  <button type="button" class="btn btn-outline-danger btn-sm js-history-delete" data-task-id="{{ task.id }}" data-task-title="{{ task.title|e }}">
-
-
-
-                    <i class="bi bi-trash"></i>
-
-
-
-                    <span class="visually-hidden">Excluir</span>
-
-
-
-                  </button>
-
-
-
-                {% else %}
-
-
-
-                  <span class="text-muted small">-</span>
-
-
-
-                {% endif %}
-
-
-
-              </td>
-
-
-
-            </tr>
-
-
-
-            {% endfor %}
-
-
-
-            <tr class="history-empty d-none">
-
-
-
-              <td colspan="9" class="text-center text-muted py-4">Nenhum resultado corresponde ao filtro aplicado.</td>
-
-
-
-            </tr>
-
-
-
-          {% else %}
-
-
-
-            <tr>
-
-
-
-              <td colspan="9" class="text-center text-muted py-4">Nenhum item arquivado ainda.</td>
-
-
-
-            </tr>
-
-
-
-          {% endif %}
-
-
-
-        </tbody>
-
-
-
-      </table>
-
-
-
-    </div>
-
-
-
+      <div class="col-md-4">
+        <label class="form-label">Nome do Cliente</label>
+        <input class="form-control" name="cliente" value="{{ filtro_cliente }}" placeholder="Buscar por nome">
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-primary w-100" type="submit">
+          <i class="fa-solid fa-magnifying-glass me-1"></i>Filtrar
+        </button>
+      </div>
+    </form>
   </div>
-
-
-
 </div>
 
-
-
+<!-- Tabela -->
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" id="historyTable">
+        <thead class="table-light">
+          <tr>
+            <th>Nº</th>
+            <th>Cliente</th>
+            <th>CNPJ</th>
+            <th>Tipo</th>
+            <th>Fase Atual</th>
+            <th>Responsável</th>
+            <th>Data Prevista</th>
+            <th>Status</th>
+            <th>Criado em</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if pedidos %}
+            {% for p in pedidos %}
+              {% set badge = badge_fn(p) %}
+              <tr>
+                <td class="text-muted small">{{ p.numero_pedido or ('#' + p.id|string) }}</td>
+                <td class="fw-semibold">{{ p.cliente_nome }}</td>
+                <td>
+                  {% if p.cliente_cnpj %}
+                    <a href="{{ url_for('central_conhecimento.historico_cliente', cnpj=p.cliente_cnpj) }}" class="small">{{ p.cliente_cnpj }}</a>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td><span class="badge bg-light text-dark border">{{ p.tipo|title }}</span></td>
+                <td>
+                  <span class="badge" style="background:rgba(29,78,216,.1);color:#1d4ed8">
+                    {{ p.fase_atual }}. {{ fases.get(p.fase_atual, {}).get('label', '') }}
+                  </span>
+                </td>
+                <td class="small">{{ p.responsavel.nome_completo or p.responsavel.email if p.responsavel else '—' }}</td>
+                <td class="small">
+                  {% if p.data_prevista %}
+                    {{ p.data_prevista.strftime('%d/%m/%Y') }}
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  <span class="badge {% if badge == 'atrasado' %}bg-danger{% elif badge == 'hoje' %}bg-warning text-dark{% elif badge == 'concluido' %}bg-success{% elif badge == 'cancelado' %}bg-secondary{% else %}bg-success{% endif %}">
+                    {{ {'atrasado':'Atrasado','hoje':'Hoje','ok':'No prazo','concluido':'Concluído','cancelado':'Cancelado'}.get(badge, badge) }}
+                  </span>
+                </td>
+                <td class="small text-muted">{{ p.created_at.strftime('%d/%m/%Y') if p.created_at else '—' }}</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="9" class="text-center text-muted py-5">
+                <i class="fa-solid fa-inbox fa-2x mb-2 d-block opacity-25"></i>
+                Nenhum pedido encontrado com os filtros selecionados.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 {% endblock %}
-
-
-
-
-
-
-
-{% block scripts %}
-
-
-
-<script>
-(function(){
-  const filterInput = document.getElementById('historyFilter');
-  const refreshBtn = document.getElementById('historyRefresh');
-  const table = document.getElementById('historyTable');
-  if (!table) return;
-
-  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-  let rows = Array.from(table.querySelectorAll('tbody tr')).filter(row => !row.classList.contains('history-empty'));
-  const emptyRow = table.querySelector('.history-empty');
-  const countBadge = document.querySelector('.js-history-count');
-
-  function updateCount(){
-    if(!countBadge) return;
-    const count = rows.length;
-    countBadge.textContent = count === 1 ? '1 item' : `${count} itens`;
-  }
-
-  function applyFilter(){
-    const term = (filterInput?.value || '').trim().toLowerCase();
-    let visible = 0;
-    rows.forEach(row => {
-      const matches = !term || row.textContent.toLowerCase().includes(term);
-      row.classList.toggle('d-none', !matches);
-      if (matches) visible += 1;
-    });
-    if (emptyRow){ emptyRow.classList.toggle('d-none', visible !== 0); }
-  }
-
-  filterInput?.addEventListener('input', () => requestAnimationFrame(applyFilter));
-  refreshBtn?.addEventListener('click', () => window.location.reload());
-
-  table.addEventListener('click', async (event) => {
-    const button = event.target.closest('.js-history-delete');
-    if(!button) return;
-    event.preventDefault();
-    if(button.disabled) return;
-
-    const row = button.closest('tr');
-    const taskId = button.dataset.taskId;
-    const taskTitle = button.dataset.taskTitle || 'esta tarefa';
-    if(!taskId) return;
-
-    if(!confirm(`Excluir "${taskTitle}" do histórico?`)) return;
-
-    button.disabled = true;
-    try {
-      const resp = await fetch(`/central_conhecimento/api/tasks/${taskId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {})
-        },
-        credentials: 'same-origin',
-      });
-      let payload = null;
-      try { payload = await resp.json(); } catch (err) { payload = null; }
-      if (!resp.ok || !payload?.ok) {
-        throw new Error(payload?.error || `Falha ao excluir (status ${resp.status}).`);
-      }
-      if(row){
-        row.remove();
-        rows = rows.filter(r => r !== row);
-      }
-      updateCount();
-      applyFilter();
-      alert('Tarefa removida do histórico.');
-    } catch (err) {
-      console.error(err);
-      alert('Não foi possível excluir a tarefa: ' + (err?.message || err));
-      button.disabled = false;
-    }
-  });
-
-  updateCount();
-  applyFilter();
-})();
-</script>
-
-{% endblock %}
-
-
-

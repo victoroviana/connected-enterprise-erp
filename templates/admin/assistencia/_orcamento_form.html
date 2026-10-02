@@ -58,7 +58,7 @@
                       <option value="{{ value }}" {% if selected_tipo == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                   </select>
-                  <button type="button" class="btn btn-outline-danger" id="btnExcluirTipoOrcamento" title="Excluir este tipo de orçamento">
+                  <button type="button" class="btn btn-outline-danger" id="btnExcluirTipoOrcamento" onclick="abrirModalExcluirTipo(event)" title="Excluir este tipo de orçamento">
                     <i class="bi bi-trash"></i>
                   </button>
                   <button type="button" class="btn btn-outline-primary" id="btnNovoTipoOrcamento"
@@ -418,6 +418,37 @@
       </div>
     </div>
 
+    <!-- Modal de Confirmação de Exclusão de Tipo de Orçamento -->
+    <div class="modal sollus-modal fade" id="modalConfirmarExcluirTipoOrcamento" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-danger bg-opacity-10 border-bottom-0 pb-2">
+            <h5 class="modal-title fw-bold text-danger d-flex align-items-center gap-2">
+              <i class="bi bi-exclamation-triangle-fill"></i> Confirmar Exclusão
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body py-3">
+            <p class="mb-2">Deseja realmente excluir o tipo de orçamento selecionado?</p>
+            <div class="p-3 bg-light rounded-3 border text-center my-3">
+              <span class="fs-5 fw-bold text-dark" id="modalExcluirTipoLabel">-</span>
+              <div class="text-muted small mt-1 font-monospace" id="modalExcluirTipoChave">chave: -</div>
+            </div>
+            <div class="alert alert-warning d-flex align-items-center gap-2 mb-0 py-2 small">
+              <i class="bi bi-info-circle flex-shrink-0 fs-5"></i>
+              <span>Os orçamentos já gerados com este tipo continuarão existindo no histórico, mas você não poderá mais gerar novos orçamentos com este modelo.</span>
+            </div>
+          </div>
+          <div class="modal-footer border-top-0 pt-0">
+            <button type="button" class="btn btn-light px-3" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-danger px-4 shadow-sm" id="btnConfirmarExcluirTipo" onclick="confirmarExclusaoClick(event)">
+              <i class="bi bi-trash me-1"></i>Sim, Excluir
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
     // Helper para adicionar linhas de condições no modal
     function addConditionRowToModal(label = '', value = '') {
@@ -553,8 +584,22 @@
         }
     });
 
-    // Exclusão do Tipo de Orçamento selecionado
-    document.getElementById('btnExcluirTipoOrcamento').addEventListener('click', async function() {
+    // Exclusão do Tipo de Orçamento selecionado com Modal de Confirmação
+    let chaveParaExcluir = null;
+
+    function getConfirmarModal() {
+        const modalEl = document.getElementById('modalConfirmarExcluirTipoOrcamento');
+        if (!modalEl) return null;
+        try {
+            if (window.bootstrap && window.bootstrap.Modal) {
+                return window.bootstrap.Modal.getOrCreateInstance(modalEl);
+            }
+        } catch (e) {}
+        return null;
+    }
+
+    function abrirModalExcluirTipo(e) {
+        if (e && e.preventDefault) e.preventDefault();
         const select = document.getElementById('orcamento-tipo');
         if (!select) return;
         const selectedChave = select.value;
@@ -564,15 +609,60 @@
             alert('Selecione um tipo de orçamento válido para excluir.');
             return;
         }
-        
-        if (!confirm(`Deseja realmente excluir o tipo de orçamento "${selectedLabel}"? Todos os orçamentos que utilizam este tipo continuarão existindo no histórico, mas você não poderá mais gerar novos orçamentos com este tipo.`)) {
+
+        chaveParaExcluir = selectedChave;
+
+        if (window.showConfirmDeleteModal) {
+            window.showConfirmDeleteModal({
+                entityType: 'Tipo de Orçamento',
+                entityName: selectedLabel,
+                entityDetail: `Chave interna: ${selectedChave}`,
+                prompt: `Deseja realmente excluir o tipo de orçamento "${selectedLabel}"?`,
+                warning: 'Esta opção não poderá mais ser selecionada em novos orçamentos ou edições.',
+                confirmButtonText: 'Sim, Excluir Tipo',
+                onConfirm: () => executarExclusaoTipo(selectedChave)
+            });
             return;
         }
-        
-        const btnExcluir = this;
-        btnExcluir.disabled = true;
+
+        const labelEl = document.getElementById('modalExcluirTipoLabel');
+        const chaveEl = document.getElementById('modalExcluirTipoChave');
+        if (labelEl) labelEl.textContent = selectedLabel;
+        if (chaveEl) chaveEl.textContent = 'chave: ' + selectedChave;
+
+        const modal = getConfirmarModal();
+        if (modal) {
+            modal.show();
+        } else {
+            // Fallback caso Bootstrap não esteja disponível
+            if (confirm(`Deseja realmente excluir o tipo de orçamento "${selectedLabel}"?`)) {
+                executarExclusaoTipo(selectedChave);
+            }
+        }
+    }
+
+    function confirmarExclusaoClick(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        if (chaveParaExcluir) {
+            executarExclusaoTipo(chaveParaExcluir);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnConfirmar = document.getElementById('btnConfirmarExcluirTipo');
+        if (btnConfirmar) {
+            btnConfirmar.addEventListener('click', confirmarExclusaoClick);
+        }
+    });
+
+    async function executarExclusaoTipo(chave) {
+        const btnConfirmar = document.getElementById('btnConfirmarExcluirTipo');
+        if (btnConfirmar) {
+            btnConfirmar.disabled = true;
+            btnConfirmar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Excluindo...';
+        }
         try {
-            const resp = await fetch("/assistencia/orcamento-templates/excluir-por-chave/" + selectedChave, {
+            const resp = await fetch("/assistencia/orcamento-templates/excluir-por-chave/" + encodeURIComponent(chave), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -581,17 +671,23 @@
             });
             const data = await resp.json();
             if (data.ok) {
-                alert('Tipo de orçamento excluído com sucesso.');
-                // Redireciona para recarregar sem o tipo
+                const modal = getConfirmarModal();
+                if (modal) modal.hide();
                 window.location.href = "{{ url_for('assist_bp.assistencia_orcamentos_gerar') }}";
             } else {
                 alert(data.message || 'Erro ao excluir o tipo de orçamento.');
+                if (btnConfirmar) {
+                    btnConfirmar.disabled = false;
+                    btnConfirmar.innerHTML = '<i class="bi bi-trash me-1"></i>Sim, Excluir';
+                }
             }
         } catch (e) {
             alert('Erro de conexão ao tentar excluir.');
-        } finally {
-            btnExcluir.disabled = false;
+            if (btnConfirmar) {
+                btnConfirmar.disabled = false;
+                btnConfirmar.innerHTML = '<i class="bi bi-trash me-1"></i>Sim, Excluir';
+            }
         }
-    });
+    }
     </script>
   </form>

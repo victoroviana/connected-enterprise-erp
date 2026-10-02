@@ -24,11 +24,25 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = _env_bool(
         "SQLALCHEMY_TRACK_MODIFICATIONS", False
     )
+    _db_uri = os.getenv("SQLALCHEMY_DATABASE_URI", "sqlite:///app.db")
+    if "sqlite" in _db_uri.lower():
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_pre_ping": True,
+        }
+    else:
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_size": int(os.getenv("DB_POOL_SIZE", "10")),
+            "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "20")),
+            "pool_recycle": int(os.getenv("DB_POOL_RECYCLE", "1800")),
+            "pool_pre_ping": True,
+            "pool_timeout": 30,
+        }
 
     SESSION_COOKIE_SECURE = _env_bool("SESSION_COOKIE_SECURE", True)
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
+    WTF_CSRF_TIME_LIMIT = None  # Tokens CSRF válidos durante toda a sessão (8h) sem expirar após 1 hora (3600s)
 
     MAIL_SERVER = os.getenv("MAIL_SERVER")
     MAIL_PORT = int(os.getenv("MAIL_PORT", "0") or 0)
@@ -56,7 +70,7 @@ class Config:
     )
     SATISFACAO_URL_BASE = os.getenv(
         "SATISFACAO_URL_BASE",
-        "https://example.com/pesquisa.php?id={id}",
+        "https://pesquisasollus.000webhostapp.com/pesquisa.php?id={id}",
     )
 
     # Limite de upload de arquivos — igual ao limite do Outlook (20 MB por anexo)

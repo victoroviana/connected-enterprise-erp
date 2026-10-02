@@ -1,11 +1,15 @@
 import pytest
-from app import create_app
+from platform_app import create_app
 from modules.contratos.blueprints.contratos import _next_id
 
 
 def _make_client():
-    app = create_app()
-    app.config.update(TESTING=True, WTF_CSRF_ENABLED=False)
+    app = create_app({
+        "TESTING": True,
+        "WTF_CSRF_ENABLED": False,
+        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
+        "SECRET_KEY": "test-key-12345",
+    })
     return app.test_client()
 
 

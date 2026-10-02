@@ -939,15 +939,19 @@ def assistencia_editar(tarefa_id: int):
         mark_os_devolucao_if_needed(tarefa, before_status=before_status, actor=actor)
         mark_factory_followup_if_needed(tarefa, actor=actor)
         db.session.commit()
-        send_assistencia_update_email(tarefa, actor)
+        try:
+            send_assistencia_update_email(tarefa, actor)
+        except Exception:
+            current_app.logger.exception("assistencia_editar: Falha ao enviar email da OS %s", tarefa_id)
         flash("OS atualizada.", "success")
     except ValueError as exc:
         db.session.rollback()
         flash(str(exc), "warning")
     except Exception:
         db.session.rollback()
+        current_app.logger.exception("assistencia_editar: Erro inesperado ao atualizar a OS %s", tarefa_id)
         flash("Erro ao atualizar a OS.", "danger")
-    return redirect(url_for("assist_bp.assistencia_dashboard"))
+    return redirect(request.referrer or url_for("assist_bp.assistencia_dashboard"))
 
 
 @assist_bp.route("/<int:tarefa_id>/fabrica", methods=["POST"])
@@ -971,15 +975,19 @@ def assistencia_fabrica(tarefa_id: int):
         mark_os_devolucao_if_needed(tarefa, before_status=before_status, actor=actor)
         mark_factory_followup_if_needed(tarefa, actor=actor)
         db.session.commit()
-        send_assistencia_fabrica_email(tarefa, actor)
+        try:
+            send_assistencia_fabrica_email(tarefa, actor)
+        except Exception:
+            current_app.logger.exception("assistencia_fabrica: Falha ao enviar email da OS %s", tarefa_id)
         flash("Envio/retorno ajustado.", "success")
     except ValueError as exc:
         db.session.rollback()
         flash(str(exc), "warning")
     except Exception:
         db.session.rollback()
+        current_app.logger.exception("assistencia_fabrica: Erro inesperado ao ajustar fábrica da OS %s", tarefa_id)
         flash("Erro ao salvar dados de fábrica.", "danger")
-    return redirect(url_for("assist_bp.assistencia_dashboard"))
+    return redirect(request.referrer or url_for("assist_bp.assistencia_dashboard"))
 
 
 @assist_bp.route("/<int:tarefa_id>/resposta", methods=["POST"])
@@ -1404,6 +1412,9 @@ def assistencia_orcamentos_gerar():
         cliente_val = (getattr(tarefa, "nome", None) or (request.form.get("manual_empresa") or "").strip() or "Avulso (Sem OS)")[:255]
         os_val = str(getattr(tarefa, "OS", None) or (request.form.get("manual_os") or "").strip() or orcamento.id or "AVULSO")[:255]
         unidade_val = (getattr(tarefa, "unidade", None) or (request.form.get("manual_unidade") or "").strip() or ORCAMENTO_UNIDADES[0])[:64]
+        email_val = ((snapshot.get("email") if isinstance(snapshot, dict) else None) or request.form.get("manual_email") or getattr(tarefa, "email", "") or "").strip()[:255]
+        tel_val = ((snapshot.get("telefone") if isinstance(snapshot, dict) else None) or request.form.get("manual_telefone") or getattr(tarefa, "telefone", "") or "").strip()[:64]
+        contato_val = ((snapshot.get("client_name") if isinstance(snapshot, dict) else None) or (snapshot.get("contato") if isinstance(snapshot, dict) else None) or request.form.get("manual_client_name") or getattr(tarefa, "client_name", "") or "").strip()[:120]
 
         status = OrcamentoStatus(
             data_envio=date.today(),
@@ -1414,6 +1425,9 @@ def assistencia_orcamentos_gerar():
             ordem_servico=(request.form.get("manual_os") or "").strip() if not tarefa else getattr(tarefa, "OS", None),
             valor=total,
             status="AGUARDANDO",
+            email=email_val or None,
+            telefone=tel_val or None,
+            contato=contato_val or None,
             ultima_cobranca=date.today(),
             unidade=unidade_val,
             responsavel=_actor_label(),
@@ -1640,6 +1654,7 @@ def assistencia_orcamentos():
                 "responsavel": _sanitize_text(item.responsavel),
                 "ultima_cobranca": _format_date(item.ultima_cobranca),
                 "ultima_cobranca_iso": item.ultima_cobranca.strftime("%Y-%m-%d") if item.ultima_cobranca else "",
+                "data_aprovacao_iso": item.data_aprovacao.strftime("%Y-%m-%d") if item.data_aprovacao else "",
                 "cliente": _sanitize_text(item.cliente or ""),
                 "numero_proposta": _sanitize_text(item.numero_proposta or ""),
                 "tipo_visita": _sanitize_text(item.tipo_visita or ""),
@@ -1652,16 +1667,19 @@ def assistencia_orcamentos():
                 "ordem_servico": _sanitize_text(item.ordem_servico or ""),
                 "nf_data": _sanitize_text(item.nf_data or ""),
                 "outras_informacoes": _sanitize_text(item.outras_informacoes or ""),
+                "email": _sanitize_text(item.email or ""),
+                "telefone": _sanitize_text(item.telefone or ""),
+                "contato": _sanitize_text(item.contato or ""),
                 "fabrica": _sanitize_text(item.fabrica or ""),
                 "has_data_atendimento": bool(item.data_atendimento),
-                "can_edit_status": (item.status or "") == "AGUARDANDO",
+                "can_edit_status": (item.status or "") in {"AGUARDANDO", "APROVADO"},
             }
         )
 
     history_query = OrcamentoStatus.query.filter(OrcamentoStatus.status.in_(ORCAMENTO_STATUS_HISTORICO))
     if filters["unidade"]:
         history_query = history_query.filter_by(unidade=filters["unidade"])
-    history_items = history_query.order_by(OrcamentoStatus.id.desc()).all()
+    history_items = history_query.order_by(OrcamentoStatus.id.desc()).limit(500).all()
     history_rows = []
     for item in history_items:
         history_rows.append(
@@ -1682,6 +1700,9 @@ def assistencia_orcamentos():
                 "ordem_servico": _sanitize_text(item.ordem_servico or ""),
                 "nf_data": _sanitize_text(item.nf_data or ""),
                 "outras_informacoes": _sanitize_text(item.outras_informacoes or ""),
+                "email": _sanitize_text(item.email or ""),
+                "telefone": _sanitize_text(item.telefone or ""),
+                "contato": _sanitize_text(item.contato or ""),
             }
         )
 
@@ -1822,9 +1843,6 @@ def assistencia_orcamentos_status(orcamento_id: int):
 
     if novo_status not in ORCAMENTO_STATUS_EDIT:
         flash("Status inválido.", "warning")
-        return redirect(request.referrer or url_for("assist_bp.assistencia_orcamentos"))
-    if novo_status == "APROVADO" and not data_aprovacao:
-        flash("Informe a data de aprovação.", "warning")
         return redirect(request.referrer or url_for("assist_bp.assistencia_orcamentos"))
 
     orcamento.status = novo_status

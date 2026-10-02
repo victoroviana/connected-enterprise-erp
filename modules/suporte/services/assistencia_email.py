@@ -12,13 +12,13 @@ from flask import current_app
 
 from modules.audit.utils import write_audit_external
 
-_DEFAULT_HOST = "smtp.example.com"
+_DEFAULT_HOST = "smtp.sollustecnologia.com"
 _DEFAULT_PORT = 587
-_DEFAULT_USERNAME = "notificacoes@example.com"
+_DEFAULT_USERNAME = "contratos.automatico@sollustecnologia.com"
 # _DEFAULT_PASSWORD removed - must be set via ASSISTENCIA_SMTP_PASSWORD or MAIL_PASSWORD env var
-_DEFAULT_FROM_EMAIL = "assistencia@example.com"
-_DEFAULT_FROM_NAME = "Assistência Técnica"
-_DEFAULT_RECIPIENTS = ["tecnica@example.com"]
+_DEFAULT_FROM_EMAIL = "Automatico.tecnica@sollustecnologia.com"
+_DEFAULT_FROM_NAME = "Tenica Equipamentos"
+_DEFAULT_RECIPIENTS = ["grupo_tecnica@sollustecnologia.com"]
 
 
 def _format_date_br(value: date | datetime | str | None) -> str:

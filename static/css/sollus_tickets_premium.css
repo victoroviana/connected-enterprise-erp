@@ -21,10 +21,24 @@ html[data-theme="dark"] {
 /* Global Module Background Override */
 .ticket-premium-container {
     min-height: calc(100vh - var(--nav-h));
-    margin: -1.5rem -1.5rem -1.5rem -1.5rem; /* Ajuste para preencher o container do layout */
-    padding: 2.5rem !important;
+    margin: -1.5rem -1.5rem -1.5rem -1.5rem;
+    padding: 2rem 2.5rem !important;
     background-color: var(--premium-bg-soft);
     animation: fadeIn 0.6s ease-out;
+}
+
+@media (max-width: 1200px) {
+    .ticket-premium-container {
+        padding: 1.25rem 1rem !important;
+        margin: -1.25rem -1rem -1.5rem -1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .ticket-premium-container {
+        padding: 0.75rem 0.5rem !important;
+        margin: -1.25rem -0.5rem -1.5rem -0.5rem;
+    }
 }
 
 @keyframes fadeIn {
@@ -226,4 +240,63 @@ html[data-theme="dark"] {
 /* Dark Mode Overrides */
 html[data-theme="dark"] .text-dark-mode-white {
     color: #ffffff !important;
+}
+
+/* Layout Lateral Garantido do Ticket Detail (Informações do Chamado) */
+.ticket-detail-row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+@media (min-width: 768px) {
+    .ticket-detail-row {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: flex-start !important;
+    }
+    .ticket-main-col {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+        width: auto !important;
+        max-width: none !important;
+    }
+    .ticket-sidebar-col {
+        flex: 0 0 330px !important;
+        width: 330px !important;
+        min-width: 290px !important;
+        max-width: 380px !important;
+    }
+}
+
+@media (min-width: 1200px) {
+    .ticket-sidebar-col {
+        flex: 0 0 370px !important;
+        width: 370px !important;
+    }
+}
+
+/* Sticky Sidebar with internal scroll for compact/laptop screens */
+@media (min-width: 768px) {
+    .ticket-sidebar-sticky {
+        position: sticky;
+        top: calc(var(--nav-h) + 1rem);
+        max-height: calc(100vh - var(--nav-h) - 1.5rem);
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+    .ticket-sidebar-sticky::-webkit-scrollbar {
+        width: 4px;
+    }
+    .ticket-sidebar-sticky::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.3);
+        border-radius: 4px;
+    }
+}
+
+@media (max-width: 991px) {
+    .thread-bubble {
+        max-width: 92% !important;
+        padding: 1rem !important;
+    }
 }

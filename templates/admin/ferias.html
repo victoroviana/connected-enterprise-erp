@@ -93,7 +93,7 @@
 
 <div class="row g-4">
 
-  <div class="col-xl-4">
+  <div class="col-12 col-lg-4 col-xl-4">
 
     <div class="vac-alert h-100">
 
@@ -133,7 +133,7 @@
 
                 <div class="vac-alert__item">
 
-                  <strong>{{ vac_user.nome_completo if vac_user else entry.usuario_id }}</strong>
+                  <strong>{{ (vac_user.nome_completo or vac_user.usuario) if vac_user else entry.usuario_id }}</strong>
 
                   <span class="period">{{ entry.data_inicial | local('%d/%m') }} → {{ entry.data_final | local('%d/%m') }} • {{ entry.display_unit or entry.unidade }}</span>
 
@@ -181,7 +181,7 @@
 
   </div>
 
-  <div class="col-xl-8">
+  <div class="col-12 col-lg-8 col-xl-8">
 
     <div class="card vac-card">
 
@@ -249,7 +249,7 @@
 
                 {% set vac_user = vacation_user_map.get(entry.id) %}
 
-                <td class="fw-semibold">{{ vac_user.nome_completo if vac_user else entry.usuario_id }}</td>
+                <td class="fw-semibold">{{ (vac_user.nome_completo or vac_user.usuario) if vac_user else entry.usuario_id }}</td>
 
                 <td>{{ entry.data_inicial | local('%d/%m/%Y') }} → {{ entry.data_final | local('%d/%m/%Y') }}</td>
 
@@ -279,12 +279,14 @@
 
                     </button>
 
-                    <form method="post" action="{{ url_for('admin_tools_bp.excluir_ferias', ferias_id=entry.id) }}" onsubmit="return confirm('Remover o período de {{ vac_user.nome_completo if vac_user else entry.usuario_id }}?');">
-
+                    <form method="post" action="{{ url_for('admin_tools_bp.excluir_ferias', ferias_id=entry.id) }}"
+                          data-confirm-delete="true"
+                          data-entity-type="Período de Férias"
+                          data-entity-name="{{ (vac_user.nome_completo or vac_user.usuario) if vac_user else entry.usuario_id }}"
+                          data-entity-detail="Período: {{ entry.data_inicio.strftime('%d/%m/%Y') if entry.data_inicio else '-' }} até {{ entry.data_fim.strftime('%d/%m/%Y') if entry.data_fim else '-' }}"
+                          data-confirm-warning="O agendamento de férias será removido da escala do colaborador.">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                      <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
-
+                      <button type="submit" class="btn btn-outline-danger" title="Excluir férias"><i class="bi bi-trash"></i></button>
                     </form>
 
                   </div>
@@ -400,7 +402,7 @@
 
                   {% for user in users %}
 
-                  <option value="{{ user.id }}">{{ user.nome_completo }}</option>
+                  <option value="{{ user.id }}">{{ user.nome_completo or user.usuario }}</option>
 
                   {% endfor %}
 
@@ -494,7 +496,7 @@
 
             {% for user in users %}
 
-            <option value="{{ user.id }}">{{ user.nome_completo }}</option>
+            <option value="{{ user.id }}">{{ user.nome_completo or user.usuario }}</option>
 
             {% endfor %}
 

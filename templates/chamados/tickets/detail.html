@@ -83,7 +83,10 @@
             {% if can_edit %}
             <div class="mt-3">
               <form method="POST" action="{{ url_for('tickets.delete_ticket', ticket_id=ticket.id) }}"
-                    onsubmit="return confirm('Excluir o chamado #{{ ticket.id }}? Esta ação é irreversível.');">
+                    data-confirm-delete="true"
+                    data-entity-type="Chamado"
+                    data-entity-name="#{{ ticket.id }} - {{ ticket.title }}"
+                    data-confirm-warning="O chamado, suas respostas e todos os anexos associados serão excluídos permanentemente.">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-outline-danger w-100">
                   <i class="bi bi-trash"></i> Excluir Chamado
@@ -197,7 +200,10 @@
                             {% if can_edit %}
                             <form method="POST"
                                   action="{{ url_for('tickets.attachments_delete', ticket_id=ticket.id, att_id=att.id) }}"
-                                  onsubmit="return confirm('Remover o anexo {{ name }}?');">
+                                  data-confirm-delete="true"
+                                  data-entity-type="Anexo do Chamado"
+                                  data-entity-name="{{ name }}"
+                                  data-confirm-warning="O arquivo do anexo será excluído permanentemente.">
                               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                               <button class="btn btn-sm btn-outline-danger" title="Excluir">
                                 <i class="bi bi-trash"></i>

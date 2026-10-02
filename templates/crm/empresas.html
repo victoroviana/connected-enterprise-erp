@@ -1,0 +1,878 @@
+{% extends "layout.html" %}
+
+{% block title %}Empresas - Sollus CRM{% endblock %}
+
+{% block head %}
+  <link href="{{ url_for('static', filename='css/crm_premium.css') }}" rel="stylesheet">
+  <style>
+    .empresa-row {
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+    .empresa-row:hover {
+      background-color: rgba(13, 110, 253, 0.05) !important;
+    }
+    [data-theme="dark"] .empresa-row:hover,
+    [data-bs-theme="dark"] .empresa-row:hover {
+      background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+    .company-title-link {
+      color: inherit;
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .empresa-row:hover .company-title-link {
+      color: var(--bs-primary, #0d6efd) !important;
+    }
+    .empresa-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+    .stat-card-mini {
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 12px;
+      padding: 10px 14px;
+      background: rgba(248, 249, 250, 0.85);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    [data-theme="dark"] .stat-card-mini,
+    [data-bs-theme="dark"] .stat-card-mini {
+      background: #182030;
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    .nav-tabs .nav-link {
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #6c757d;
+      font-weight: 600;
+      padding: 0.6rem 1rem;
+    }
+    .nav-tabs .nav-link.active {
+      color: var(--bs-primary, #0d6efd);
+      border-bottom-color: var(--bs-primary, #0d6efd);
+      background: transparent;
+    }
+    .contact-card-item {
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #fff;
+    }
+    [data-theme="dark"] .contact-card-item,
+    [data-bs-theme="dark"] .contact-card-item {
+      background: #1c2436;
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="crm-page-container px-2 py-0">
+  <!-- Cabeçalho -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+    <div>
+      <h4 class="fw-bold mb-1 d-flex align-items-center gap-2">
+        <i class="bi bi-buildings text-primary"></i>
+        <span>Diretório de Empresas</span>
+      </h4>
+      <p class="text-muted small mb-0">Base de clientes e organizações vinculadas às negociações do Sollus CRM. Clique em uma empresa para ver a ficha completa.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('crm.index') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
+        <i class="bi bi-funnel"></i> Ir para Funis de Vendas
+      </a>
+    </div>
+  </div>
+
+  <!-- Barra de Busca -->
+  <div class="card border shadow-sm mb-3">
+    <div class="card-body p-2">
+      <form method="GET" action="{{ url_for('crm.empresas') }}" class="row g-2 align-items-center">
+        <div class="col-md-10">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" name="q" value="{{ search or '' }}" class="form-control border-start-0" placeholder="Buscar por Razão Social, Nome Fantasia, CNPJ, Telefone ou E-mail...">
+          </div>
+        </div>
+        <div class="col-md-2 d-flex gap-1">
+          <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-search me-1"></i> Buscar</button>
+          {% if search %}
+            <a href="{{ url_for('crm.empresas') }}" class="btn btn-sm btn-outline-secondary" title="Limpar"><i class="bi bi-x-circle"></i></a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabela de Empresas -->
+  <div class="card border shadow-sm">
+    <div class="table-responsive">
+      <table class="table crm-table align-middle mb-0">
+        <thead>
+          <tr>
+            <th class="ps-3">Nome / Razão Social</th>
+            <th>CNPJ</th>
+            <th>Segmento</th>
+            <th>Telefone</th>
+            <th>E-mail</th>
+            <th>Porte</th>
+            <th class="text-end pe-3">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if empresas %}
+            {% for emp in empresas %}
+              <tr class="empresa-row" id="row-empresa-{{ emp.id }}" data-id="{{ emp.id }}" onclick="openEmpresaModal('{{ emp.id }}')">
+                <td class="ps-3">
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="empresa-avatar bg-primary-subtle text-primary border border-primary-subtle">
+                      {{ emp.nome[:2]|upper }}
+                    </div>
+                    <div>
+                      <a href="javascript:void(0)" class="fw-bold company-title-link" onclick="openEmpresaModal('{{ emp.id }}'); event.stopPropagation();" style="font-size: 0.95rem;">
+                        <span id="label-nome-{{ emp.id }}">{{ emp.nome }}</span>
+                      </a>
+                      {% if emp.endereco %}
+                        <small class="text-muted d-block text-truncate" style="max-width: 280px;" title="{{ emp.endereco }}" id="label-endereco-{{ emp.id }}">
+                          <i class="bi bi-geo-alt me-1"></i>{{ emp.endereco }}
+                        </small>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td id="label-cnpj-{{ emp.id }}">{{ emp.cnpj or '<span class="text-muted small">-</span>'|safe }}</td>
+                <td>
+                  <span id="label-segmento-{{ emp.id }}">
+                    {% if emp.segmento %}
+                      <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">{{ emp.segmento }}</span>
+                    {% else %}
+                      <span class="text-muted small">-</span>
+                    {% endif %}
+                  </span>
+                </td>
+                <td id="label-tel-{{ emp.id }}">{{ emp.telefone or '<span class="text-muted small">-</span>'|safe }}</td>
+                <td id="label-email-{{ emp.id }}">{{ emp.email or '<span class="text-muted small">-</span>'|safe }}</td>
+                <td>
+                  <span id="label-porte-{{ emp.id }}">
+                    {% if emp.porte %}
+                      <span class="badge bg-info-subtle text-info border border-info-subtle">{{ emp.porte }}</span>
+                    {% else %}
+                      <span class="text-muted small">-</span>
+                    {% endif %}
+                  </span>
+                </td>
+                <td class="text-end pe-3" onclick="event.stopPropagation();">
+                  <div class="d-inline-flex gap-1">
+                    <button type="button" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 shadow-sm" onclick="openEmpresaModal('{{ emp.id }}')" title="Ver Ficha Completa da Empresa">
+                      <i class="bi bi-info-circle"></i> Detalhes
+                    </button>
+                    <a href="{{ url_for('crm.index') }}?q={{ emp.nome|urlencode }}" class="btn btn-sm btn-outline-secondary" title="Ver Negociações no Funil">
+                      <i class="bi bi-funnel"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">
+                <i class="bi bi-building-slash fs-1 d-block mb-2"></i>
+                Nenhuma empresa encontrada com os filtros informados.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginação -->
+    {% if pagination.pages > 1 %}
+      <div class="card-footer d-flex justify-content-between align-items-center py-2 px-3">
+        <small class="text-muted">Página <strong>{{ pagination.page }}</strong> de <strong>{{ pagination.pages }}</strong> (Total: {{ pagination.total }} empresas)</small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            {% if pagination.has_prev %}
+              <li class="page-item"><a class="page-link" href="{{ url_for('crm.empresas', page=pagination.prev_num, q=search) }}">Anterior</a></li>
+            {% endif %}
+            <li class="page-item disabled"><span class="page-link">{{ pagination.page }}</span></li>
+            {% if pagination.has_next %}
+              <li class="page-item"><a class="page-link" href="{{ url_for('crm.empresas', page=pagination.next_num, q=search) }}">Próxima</a></li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL DE INFORMAÇÕES E DETALHES DA EMPRESA
+     ========================================================================== -->
+<div class="modal modal-drawer-end fade" id="modalEmpresaDetalhes" tabindex="-1" aria-labelledby="modalEmpresaNome" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content border-0 shadow-lg">
+      
+      <!-- Cabeçalho -->
+      <div class="modal-header border-bottom pb-3">
+        <div class="d-flex align-items-center gap-3">
+          <div id="modalEmpresaAvatar" class="empresa-avatar bg-primary text-white shadow-sm" style="width: 48px; height: 48px; font-size: 1.25rem; border-radius: 14px;">
+            SO
+          </div>
+          <div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <h5 class="modal-title fw-bold text-dark mb-0" id="modalEmpresaNome">Nome da Empresa</h5>
+              <span id="modalEmpresaSegmentoBadge" class="badge bg-secondary-subtle text-secondary border">Segmento</span>
+              <span id="modalEmpresaPorteBadge" class="badge bg-info-subtle text-info border">Porte</span>
+            </div>
+            <div class="text-muted small mt-1 d-flex align-items-center gap-3 flex-wrap">
+              <span><i class="bi bi-card-heading me-1"></i>CNPJ: <strong id="modalEmpresaCnpj">-</strong></span>
+              <span><i class="bi bi-calendar-event me-1"></i>Cadastro: <span id="modalEmpresaCriadaEm">-</span></span>
+              <span><i class="bi bi-person-badge me-1"></i>Responsável: <strong id="modalEmpresaResponsavel">-</strong></span>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn-close-drawer" data-bs-dismiss="modal" aria-label="Fechar">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <!-- Corpo do Modal -->
+      <div class="modal-body p-4">
+        <!-- Estado de Carregamento -->
+        <div id="modalEmpresaLoading" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Carregando...</span>
+          </div>
+          <p class="text-muted small mt-2">Carregando informações da empresa...</p>
+        </div>
+
+        <!-- Conteúdo Completo -->
+        <div id="modalEmpresaContent" style="display: none;">
+          
+          <!-- Cards de Métricas Comerciais da Empresa -->
+          <div class="row g-2 mb-3">
+            <div class="col-6 col-md-3">
+              <div class="stat-card-mini text-center">
+                <small class="text-muted d-block" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 600;">Negociações</small>
+                <span id="statEmpresaTotalDeals" class="fw-bold fs-5 text-dark">0</span>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="stat-card-mini text-center">
+                <small class="text-muted d-block" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 600;">Em Aberto</small>
+                <span id="statEmpresaAbertas" class="fw-bold fs-5 text-primary">0</span>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="stat-card-mini text-center">
+                <small class="text-muted d-block" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 600;">Ganhas</small>
+                <span id="statEmpresaGanhas" class="fw-bold fs-5 text-success">0</span>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="stat-card-mini text-center">
+                <small class="text-muted d-block" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 600;">Total Ganho</small>
+                <span id="statEmpresaValorGanho" class="fw-bold fs-6 text-success d-block text-truncate" title="Total Ganho">R$ 0,00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Abas de Navegação -->
+          <ul class="nav nav-tabs mb-3" id="empresaModalTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="tab-dados-btn" data-bs-toggle="tab" data-bs-target="#tab-dados" type="button" role="tab">
+                <i class="bi bi-info-circle me-1"></i> Ficha Cadastral
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab-negociacoes-btn" data-bs-toggle="tab" data-bs-target="#tab-negociacoes" type="button" role="tab">
+                <i class="bi bi-kanban me-1"></i> Negociações <span id="badgeQtdNegociacoes" class="badge bg-primary-subtle text-primary rounded-pill ms-1">0</span>
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab-contatos-btn" data-bs-toggle="tab" data-bs-target="#tab-contatos" type="button" role="tab">
+                <i class="bi bi-people me-1"></i> Contatos <span id="badgeQtdContatos" class="badge bg-secondary-subtle text-secondary rounded-pill ms-1">0</span>
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab-propostas-btn" data-bs-toggle="tab" data-bs-target="#tab-propostas" type="button" role="tab">
+                <i class="bi bi-file-earmark-text me-1"></i> Propostas <span id="badgeQtdPropostas" class="badge bg-secondary-subtle text-secondary rounded-pill ms-1">0</span>
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content" id="empresaModalTabContent">
+            
+            <!-- ABA 1: FICHA CADASTRAL -->
+            <div class="tab-pane fade show active" id="tab-dados" role="tabpanel">
+              <!-- Visualização -->
+              <div id="empresaViewMode">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="fw-bold mb-0 text-dark">Informações da Organização</h6>
+                  <button type="button" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" onclick="toggleEditEmpresa(true)">
+                    <i class="bi bi-pencil"></i> Editar Dados
+                  </button>
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="p-3 border rounded-3 bg-white h-100 shadow-sm">
+                      <div class="text-muted small fw-bold mb-3 text-uppercase d-flex align-items-center gap-1">
+                        <i class="bi bi-telephone text-primary"></i> Contato e Canais
+                      </div>
+                      <div class="mb-2">
+                        <small class="text-muted d-block">Telefone Principal:</small>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                          <span id="viewEmpresaTelefone" class="fw-semibold text-dark">-</span>
+                          <span id="viewEmpresaWhatsappBtn"></span>
+                        </div>
+                      </div>
+                      <div class="mb-2">
+                        <small class="text-muted d-block">E-mail Comercial:</small>
+                        <span id="viewEmpresaEmail" class="fw-semibold text-dark">-</span>
+                      </div>
+                      <div>
+                        <small class="text-muted d-block">Website:</small>
+                        <span id="viewEmpresaSite" class="fw-semibold text-dark">-</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="p-3 border rounded-3 bg-white h-100 shadow-sm">
+                      <div class="text-muted small fw-bold mb-3 text-uppercase d-flex align-items-center gap-1">
+                        <i class="bi bi-building-gear text-primary"></i> Perfil Corporativo
+                      </div>
+                      <div class="mb-2">
+                        <small class="text-muted d-block">CNPJ:</small>
+                        <span id="viewEmpresaCnpj" class="fw-semibold text-dark">-</span>
+                      </div>
+                      <div class="mb-2">
+                        <small class="text-muted d-block">Segmento de Atuação:</small>
+                        <span id="viewEmpresaSegmento" class="fw-semibold text-dark">-</span>
+                      </div>
+                      <div class="row g-2">
+                        <div class="col-6">
+                          <small class="text-muted d-block">Porte da Empresa:</small>
+                          <span id="viewEmpresaPorte" class="fw-semibold text-dark">-</span>
+                        </div>
+                        <div class="col-6">
+                          <small class="text-muted d-block">Nº Funcionários:</small>
+                          <span id="viewEmpresaFuncionarios" class="fw-semibold text-dark">-</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-12">
+                    <div class="p-3 border rounded-3 bg-white shadow-sm">
+                      <div class="text-muted small fw-bold mb-2 text-uppercase d-flex align-items-center gap-1">
+                        <i class="bi bi-geo-alt text-primary"></i> Endereço
+                      </div>
+                      <div id="viewEmpresaEndereco" class="text-dark fw-medium">-</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Formulário de Edição -->
+              <form id="formEditarEmpresa" style="display: none;" onsubmit="salvarEmpresa(event)">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="fw-bold mb-0 text-primary d-flex align-items-center gap-1">
+                    <i class="bi bi-pencil-square"></i> Editar Dados da Empresa
+                  </h6>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleEditEmpresa(false)">
+                    Cancelar
+                  </button>
+                </div>
+
+                <div class="row g-2">
+                  <div class="col-md-8">
+                    <label class="form-label small fw-semibold">Razão Social / Nome da Empresa *</label>
+                    <input type="text" id="editEmpresaNome" class="form-control form-control-sm" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-semibold">CNPJ</label>
+                    <input type="text" id="editEmpresaCnpj" class="form-control form-control-sm" placeholder="00.000.000/0000-00">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-semibold">Telefone</label>
+                    <input type="text" id="editEmpresaTelefone" class="form-control form-control-sm" placeholder="(00) 00000-0000">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-semibold">E-mail</label>
+                    <input type="email" id="editEmpresaEmail" class="form-control form-control-sm" placeholder="contato@empresa.com">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-semibold">Website</label>
+                    <input type="text" id="editEmpresaSite" class="form-control form-control-sm" placeholder="www.empresa.com.br">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small fw-semibold">Segmento</label>
+                    <input type="text" id="editEmpresaSegmento" class="form-control form-control-sm" placeholder="Ex: Indústria, Varejo, Saúde...">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Porte</label>
+                    <select id="editEmpresaPorte" class="form-select form-select-sm">
+                      <option value="">Selecione...</option>
+                      <option value="Microempresa (ME)">Microempresa (ME)</option>
+                      <option value="Pequeno Porte (EPP)">Pequeno Porte (EPP)</option>
+                      <option value="Médio Porte">Médio Porte</option>
+                      <option value="Grande Porte">Grande Porte</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Nº Funcionários</label>
+                    <input type="number" id="editEmpresaFuncionarios" class="form-control form-control-sm" min="0">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label small fw-semibold">Endereço Completo</label>
+                    <textarea id="editEmpresaEndereco" class="form-control form-control-sm" rows="2" placeholder="Rua, Número, Bairro, Cidade - UF, CEP"></textarea>
+                  </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                  <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleEditEmpresa(false)">Cancelar</button>
+                  <button type="submit" class="btn btn-sm btn-primary" id="btnSalvarEmpresa">
+                    <i class="bi bi-check2 me-1"></i> Salvar Alterações
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- ABA 2: NEGOCIAÇÕES NO CRM -->
+            <div class="tab-pane fade" id="tab-negociacoes" role="tabpanel">
+              <div id="listaNegociacoesEmpresa" class="table-responsive">
+                <!-- Preenchido via JavaScript -->
+              </div>
+            </div>
+
+            <!-- ABA 3: CONTATOS VINCULADOS -->
+            <div class="tab-pane fade" id="tab-contatos" role="tabpanel">
+              <div id="listaContatosEmpresa" class="d-flex flex-column gap-2">
+                <!-- Preenchido via JavaScript -->
+              </div>
+            </div>
+
+            <!-- ABA 4: PROPOSTAS COMERCIAIS -->
+            <div class="tab-pane fade" id="tab-propostas" role="tabpanel">
+              <div id="listaPropostasEmpresa">
+                <!-- Preenchido via JavaScript -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Rodapé do Modal -->
+      <div class="modal-footer border-top py-2 px-3 justify-content-between">
+        <a id="btnVerNoFunilGeral" href="#" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 shadow-sm">
+          <i class="bi bi-funnel"></i> Ver no Funil de Vendas
+        </a>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentEmpresa = null;
+
+  async function openEmpresaModal(empresaId, event) {
+    if (event) {
+      event.stopPropagation();
+    }
+
+    const modalEl = document.getElementById('modalEmpresaDetalhes');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+    // Reseta estado
+    document.getElementById('modalEmpresaLoading').style.display = 'block';
+    document.getElementById('modalEmpresaContent').style.display = 'none';
+    toggleEditEmpresa(false);
+
+    // Ativa a primeira aba
+    const firstTabBtn = document.getElementById('tab-dados-btn');
+    if (firstTabBtn) {
+      bootstrap.Tab.getOrCreateInstance(firstTabBtn).show();
+    }
+
+    modal.show();
+
+    try {
+      const response = await fetch(`/crm/api/empresas/${empresaId}/detalhes`);
+      const data = await response.json();
+
+      if (!data.success || !data.empresa) {
+        throw new Error(data.error || 'Não foi possível carregar os detalhes da empresa.');
+      }
+
+      currentEmpresa = data.empresa;
+      renderEmpresaModal(currentEmpresa);
+
+      document.getElementById('modalEmpresaLoading').style.display = 'none';
+      document.getElementById('modalEmpresaContent').style.display = 'block';
+    } catch (err) {
+      document.getElementById('modalEmpresaLoading').innerHTML = `
+        <div class="text-danger py-4">
+          <i class="bi bi-exclamation-triangle fs-2 d-block mb-2"></i>
+          <span>${err.message || 'Erro ao carregar dados da empresa.'}</span>
+        </div>
+      `;
+    }
+  }
+
+  function renderEmpresaModal(emp) {
+    // Cabeçalho
+    const avatarTxt = (emp.nome || 'SO').trim().substring(0, 2).toUpperCase();
+    document.getElementById('modalEmpresaAvatar').textContent = avatarTxt;
+    document.getElementById('modalEmpresaNome').textContent = emp.nome || 'Empresa Sem Nome';
+    
+    // Badges de Segmento e Porte
+    const segBadge = document.getElementById('modalEmpresaSegmentoBadge');
+    if (emp.segmento) {
+      segBadge.textContent = emp.segmento;
+      segBadge.style.display = 'inline-block';
+    } else {
+      segBadge.style.display = 'none';
+    }
+
+    const porteBadge = document.getElementById('modalEmpresaPorteBadge');
+    if (emp.porte) {
+      porteBadge.textContent = emp.porte;
+      porteBadge.style.display = 'inline-block';
+    } else {
+      porteBadge.style.display = 'none';
+    }
+
+    document.getElementById('modalEmpresaCnpj').textContent = emp.cnpj || '-';
+    document.getElementById('modalEmpresaCriadaEm').textContent = emp.created_at || '-';
+    document.getElementById('modalEmpresaResponsavel').textContent = emp.user_name || 'Não atribuído';
+
+    // Métricas rápidas
+    const stats = emp.stats || {};
+    document.getElementById('statEmpresaTotalDeals').textContent = stats.total_negociacoes || 0;
+    document.getElementById('statEmpresaAbertas').textContent = stats.abertas || 0;
+    document.getElementById('statEmpresaGanhas').textContent = stats.ganhas || 0;
+    document.getElementById('statEmpresaValorGanho').textContent = stats.valor_ganho_formatado || 'R$ 0,00';
+
+    // Badges nas abas
+    document.getElementById('badgeQtdNegociacoes').textContent = (emp.negociacoes || []).length;
+    document.getElementById('badgeQtdContatos').textContent = (emp.contatos || []).length;
+    document.getElementById('badgeQtdPropostas').textContent = (emp.propostas || []).length;
+
+    // ABA 1: Dados Cadastrais (View Mode)
+    document.getElementById('viewEmpresaCnpj').textContent = emp.cnpj || '-';
+    document.getElementById('viewEmpresaSegmento').textContent = emp.segmento || '-';
+    document.getElementById('viewEmpresaPorte').textContent = emp.porte || '-';
+    document.getElementById('viewEmpresaFuncionarios').textContent = emp.numero_funcionarios ? `${emp.numero_funcionarios} colaboradores` : '-';
+    document.getElementById('viewEmpresaEndereco').textContent = emp.endereco || 'Endereço não informado.';
+
+    // Telefone com WhatsApp
+    const telSpan = document.getElementById('viewEmpresaTelefone');
+    const waSpan = document.getElementById('viewEmpresaWhatsappBtn');
+    if (emp.telefone) {
+      telSpan.innerHTML = `<a href="tel:${emp.telefone}" class="text-decoration-none text-dark"><i class="bi bi-telephone me-1 text-primary"></i>${emp.telefone}</a>`;
+      if (emp.whatsapp_link) {
+        waSpan.innerHTML = `<a href="${emp.whatsapp_link}" target="_blank" class="btn btn-sm btn-success py-0 px-2 d-inline-flex align-items-center gap-1"><i class="bi bi-whatsapp"></i> WhatsApp</a>`;
+      } else {
+        waSpan.innerHTML = '';
+      }
+    } else {
+      telSpan.textContent = '-';
+      waSpan.innerHTML = '';
+    }
+
+    // Email
+    const emailSpan = document.getElementById('viewEmpresaEmail');
+    if (emp.email) {
+      emailSpan.innerHTML = `<a href="mailto:${emp.email}" class="text-decoration-none text-dark"><i class="bi bi-envelope me-1 text-primary"></i>${emp.email}</a>`;
+    } else {
+      emailSpan.textContent = '-';
+    }
+
+    // Site
+    const siteSpan = document.getElementById('viewEmpresaSite');
+    if (emp.site) {
+      let siteUrl = emp.site;
+      if (!siteUrl.startsWith('http://') && !siteUrl.startsWith('https://')) {
+        siteUrl = 'https://' + siteUrl;
+      }
+      siteSpan.innerHTML = `<a href="${siteUrl}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-primary"><i class="bi bi-globe me-1"></i>${emp.site} <i class="bi bi-box-arrow-up-right small"></i></a>`;
+    } else {
+      siteSpan.textContent = '-';
+    }
+
+    // Preenche campos do formulário de edição
+    document.getElementById('editEmpresaNome').value = emp.nome || '';
+    document.getElementById('editEmpresaCnpj').value = emp.cnpj || '';
+    document.getElementById('editEmpresaTelefone').value = emp.telefone || '';
+    document.getElementById('editEmpresaEmail').value = emp.email || '';
+    document.getElementById('editEmpresaSite').value = emp.site || '';
+    document.getElementById('editEmpresaSegmento').value = emp.segmento || '';
+    document.getElementById('editEmpresaPorte').value = emp.porte || '';
+    document.getElementById('editEmpresaFuncionarios').value = emp.numero_funcionarios || '';
+    document.getElementById('editEmpresaEndereco').value = emp.endereco || '';
+
+    // ABA 2: Negociações no CRM
+    renderNegociacoesList(emp.negociacoes || [], emp.nome);
+
+    // ABA 3: Contatos Vinculados
+    renderContatosList(emp.contatos || []);
+
+    // ABA 4: Propostas Comerciais
+    renderPropostasList(emp.propostas || []);
+
+    // Botão rodapé
+    const btnVerFunil = document.getElementById('btnVerNoFunilGeral');
+    btnVerFunil.href = `{{ url_for('crm.index') }}?q=${encodeURIComponent(emp.nome || '')}`;
+  }
+
+  function renderNegociacoesList(negociacoes, empresaNome) {
+    const container = document.getElementById('listaNegociacoesEmpresa');
+    if (!negociacoes || negociacoes.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-4 text-muted">
+          <i class="bi bi-kanban fs-2 d-block mb-2 text-secondary"></i>
+          <p class="mb-2">Nenhuma negociação registrada para esta empresa no momento.</p>
+          <a href="{{ url_for('crm.index') }}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-plus-circle me-1"></i> Ir para Funis de Vendas
+          </a>
+        </div>
+      `;
+      return;
+    }
+
+    let rowsHtml = negociacoes.map(n => {
+      let statusBadge = '<span class="badge bg-primary-subtle text-primary border border-primary-subtle">Em Aberto</span>';
+      if (n.status === 'ganho') {
+        statusBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle">Ganho</span>';
+      } else if (n.status === 'perdido') {
+        statusBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle">Perdido</span>';
+      } else if (n.status === 'pausado') {
+        statusBadge = '<span class="badge bg-warning-subtle text-warning border border-warning-subtle">Pausado</span>';
+      }
+
+      return `
+        <tr>
+          <td>
+            <div class="fw-bold text-dark">${n.nome}</div>
+            <small class="text-muted"><i class="bi bi-calendar3 me-1"></i>${n.created_at}</small>
+          </td>
+          <td>
+            <span class="badge bg-light text-dark border">${n.funil_nome || 'Funil'}</span>
+            <div class="small text-muted mt-1"><i class="bi bi-arrow-right-short"></i>${n.etapa_nome || 'Etapa'}</div>
+          </td>
+          <td class="fw-bold text-dark">${n.valor_formatado}</td>
+          <td>${statusBadge}</td>
+          <td><small class="text-muted">${n.user_name}</small></td>
+          <td class="text-end">
+            <a href="{{ url_for('crm.index') }}?q=${encodeURIComponent(n.nome)}" class="btn btn-sm btn-outline-primary" title="Abrir no Funil">
+              <i class="bi bi-arrow-up-right-square"></i>
+            </a>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <table class="table table-sm align-middle mb-0">
+        <thead>
+          <tr class="text-muted small">
+            <th>Oportunidade</th>
+            <th>Funil / Etapa</th>
+            <th>Valor</th>
+            <th>Status</th>
+            <th>Consultor</th>
+            <th class="text-end">Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderContatosList(contatos) {
+    const container = document.getElementById('listaContatosEmpresa');
+    if (!contatos || contatos.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-4 text-muted">
+          <i class="bi bi-person-x fs-2 d-block mb-2 text-secondary"></i>
+          <span>Nenhum contato vinculado diretamente a esta organização.</span>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = contatos.map(c => `
+      <div class="contact-card-item d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+          <div class="avatar bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px;">
+            ${(c.nome || 'CT').substring(0, 2).toUpperCase()}
+          </div>
+          <div>
+            <div class="fw-bold text-dark">${c.nome}</div>
+            <small class="text-muted d-block">${c.cargo || 'Contato Comercial'}</small>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+          ${c.email ? `<a href="mailto:${c.email}" class="text-decoration-none text-muted small"><i class="bi bi-envelope me-1 text-primary"></i>${c.email}</a>` : ''}
+          ${c.telefone ? `<span class="small text-muted"><i class="bi bi-telephone me-1"></i>${c.telefone}</span>` : ''}
+          ${c.celular ? `<span class="small text-muted"><i class="bi bi-phone me-1"></i>${c.celular}</span>` : ''}
+          ${c.whatsapp_link ? `
+            <a href="${c.whatsapp_link}" target="_blank" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1">
+              <i class="bi bi-whatsapp"></i> Conversar
+            </a>
+          ` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderPropostasList(propostas) {
+    const container = document.getElementById('listaPropostasEmpresa');
+    if (!propostas || propostas.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-4 text-muted">
+          <i class="bi bi-file-earmark-x fs-2 d-block mb-2 text-secondary"></i>
+          <span>Nenhuma proposta comercial recente vinculada a este CNPJ/Cliente.</span>
+        </div>
+      `;
+      return;
+    }
+
+    let rows = propostas.map(p => `
+      <tr>
+        <td><strong>#${p.numero}</strong></td>
+        <td>${p.cliente || '-'}</td>
+        <td class="fw-bold text-success">${p.valor_formatado}</td>
+        <td><span class="badge bg-secondary-subtle text-secondary border">${p.status}</span></td>
+        <td><small class="text-muted">${p.created_at || '-'}</small></td>
+        <td class="text-end">
+          <a href="/propostas" class="btn btn-sm btn-outline-primary" title="Ir para Módulo de Propostas">
+            <i class="bi bi-eye"></i>
+          </a>
+        </td>
+      </tr>
+    `).join('');
+
+    container.innerHTML = `
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr class="text-muted small">
+              <th>Nº</th>
+              <th>Cliente</th>
+              <th>Valor Total</th>
+              <th>Status</th>
+              <th>Data</th>
+              <th class="text-end">Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function toggleEditEmpresa(editing) {
+    document.getElementById('empresaViewMode').style.display = editing ? 'none' : 'block';
+    document.getElementById('formEditarEmpresa').style.display = editing ? 'block' : 'none';
+  }
+
+  async function salvarEmpresa(event) {
+    event.preventDefault();
+    if (!currentEmpresa || !currentEmpresa.id) return;
+
+    const btn = document.getElementById('btnSalvarEmpresa');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> Salvando...`;
+
+    const payload = {
+      nome: document.getElementById('editEmpresaNome').value.trim(),
+      cnpj: document.getElementById('editEmpresaCnpj').value.trim(),
+      telefone: document.getElementById('editEmpresaTelefone').value.trim(),
+      email: document.getElementById('editEmpresaEmail').value.trim(),
+      site: document.getElementById('editEmpresaSite').value.trim(),
+      segmento: document.getElementById('editEmpresaSegmento').value.trim(),
+      porte: document.getElementById('editEmpresaPorte').value,
+      numero_funcionarios: document.getElementById('editEmpresaFuncionarios').value || null,
+      endereco: document.getElementById('editEmpresaEndereco').value.trim()
+    };
+
+    try {
+      const res = await fetch(`/crm/api/empresas/${currentEmpresa.id}/editar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Erro ao salvar alterações da empresa.');
+      }
+
+      // Atualiza os dados locais
+      Object.assign(currentEmpresa, payload);
+      renderEmpresaModal(currentEmpresa);
+      toggleEditEmpresa(false);
+
+      // Atualiza a tabela na tela
+      const rowNome = document.getElementById(`label-nome-${currentEmpresa.id}`);
+      if (rowNome) rowNome.textContent = payload.nome;
+
+      const rowCnpj = document.getElementById(`label-cnpj-${currentEmpresa.id}`);
+      if (rowCnpj) rowCnpj.textContent = payload.cnpj || '-';
+
+      const rowTel = document.getElementById(`label-tel-${currentEmpresa.id}`);
+      if (rowTel) rowTel.textContent = payload.telefone || '-';
+
+      const rowEmail = document.getElementById(`label-email-${currentEmpresa.id}`);
+      if (rowEmail) rowEmail.textContent = payload.email || '-';
+
+      const rowSeg = document.getElementById(`label-segmento-${currentEmpresa.id}`);
+      if (rowSeg) {
+        rowSeg.innerHTML = payload.segmento ? `<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">${payload.segmento}</span>` : '<span class="text-muted small">-</span>';
+      }
+
+      const rowPorte = document.getElementById(`label-porte-${currentEmpresa.id}`);
+      if (rowPorte) {
+        rowPorte.innerHTML = payload.porte ? `<span class="badge bg-info-subtle text-info border border-info-subtle">${payload.porte}</span>` : '<span class="text-muted small">-</span>';
+      }
+
+      if (window.Swal) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Dados Atualizados!',
+          text: 'As informações da empresa foram salvas com sucesso.',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    } catch (err) {
+      alert(err.message || 'Erro ao atualizar dados da empresa.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
+</script>
+{% endblock %}

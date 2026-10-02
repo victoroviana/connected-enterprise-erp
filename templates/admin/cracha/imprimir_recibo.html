@@ -1,143 +1,145 @@
-﻿<!DOCTYPE html>
-<html lang="pt-br">
+<!DOCTYPE html>
+<html lang="pt-BR">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Recibo de Entrega de Crachá</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <title>Imprimir Recibo</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Language" content="pt-br">
+  <meta name="google" content="notranslate">
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}?v=3">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon.png') }}?v=3">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}?v=3">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
       margin: 0;
-      padding: 0;
-      background-color: #f4f4f4;
+      padding: 20px;
+      color: #1f2937;
+      background: #fff;
     }
 
     .print-container {
-      width: 800px;
-      margin: 20px auto;
-      padding: 20px;
-      background-color: #fff;
-      border: 1px solid #ccc;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      position: relative;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
     }
 
-    .logo-container {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .logo-container img {
-      max-width: 150px;
+    .container {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      padding-left: 15px;
+      padding-right: 15px;
+      box-sizing: border-box;
     }
 
     h1 {
-      text-align: center;
       font-size: 24px;
       margin-bottom: 20px;
+      text-align: center;
+      text-transform: uppercase;
     }
 
     p {
-      line-height: 1.6;
-      margin-bottom: 10px;
+      text-align: justify;
+      margin-bottom: 15px;
     }
 
     .signature {
-      margin-top: 50px;
+      margin-top: 30px;
+      text-align: center;
     }
 
     .signature-line {
       border-top: 1px solid #000;
-      margin-top: 5px;
-      position: relative;
+      margin-top: 10px;
+      padding-top: 5px;
     }
 
     .signature-label {
-      position: absolute;
-      top: -20px;
-      left: 0;
-      background-color: #fff;
-      padding: 0 5px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .logo-container {
+      background-color: #D3D3D3;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 8px;
+    }
+
+    .logo-container img {
+      height: 120px;
     }
 
     .footer {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      right: 20px;
-      font-size: 10px;
-      color: #666;
-    }
-
-    .footer a {
-      color: #666;
-      text-decoration: none;
-      margin-right: 10px;
-    }
-
-    .footer a:hover {
-      text-decoration: underline;
-    }
-
-    .social-icons {
-      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 50px;
       text-align: center;
     }
 
-    .social-icons a {
-      color: #666;
-      text-decoration: none;
-      margin-right: 10px;
+    .footer p {
+      font-size: 12px;
+      margin: 0;
+      line-height: 1.5;
+      flex-basis: 100%;
     }
 
-    .social-icons a:hover {
+    .footer img {
+      max-width: 80px;
+      margin-right: 20px;
+    }
+
+    .footer a {
+      display: inline-block;
+      margin: 0 10px;
+      color: #666;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
       color: #333;
     }
 
-    #generate-pdf {
-      display: block;
-      margin: 20px auto;
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #007bff;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    #generate-pdf:hover {
-      background-color: #0056b3;
-    }
-
     @media print {
-      body {
-        background-color: #fff;
-      }
-
-      .print-container {
-        width: 100%;
-        border: none;
-        box-shadow: none;
-      }
-
       #generate-pdf {
         display: none;
       }
     }
+
+    #generate-pdf {
+      display: block;
+      margin: 16px auto 0;
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
   </style>
+
 </head>
 
 <body>
   <br>
   <br>
-  <br>
   <div class="print-container">
     <div class="logo-container">
       <img src="{{ url_for('static', filename='images/recibo_logo.png') }}" alt="Logo da Empresa">
+      <h1></h1>
     </div>
     <br>
 
@@ -185,13 +187,85 @@
         </div>
       </div>
       <br>
+      <br>
+      <br>
+
+      {% if recibo.unidade == 'Sollus Tecnologia' %}
       <div class="footer">
         <p class="pull-right" style="text-align: center;">
-          Empresa Tecnologia e Soluções LTDA<br>
-          Av. Paulista, 1000 - Bela Vista - São Paulo - SP - CEP: 01310-100.<br>
-          Telefone: (11) 3000-0000 - www.empresa.com.br<br>
+          Sollus Comércio e Tecnologia em Controle de Ponto e Acesso LTDA<br>
+          Av. Brasil, 31.904 - Bangu - Rio de Janeiro - RJ - CEP: 21.863-000.<br>
+          Telefone: (21) 2413-3203 / (21) 3245-6256 - www.sollustecnologia.com<br>
+          <br>
+          <span style="display: inline-block; margin: 0 auto; text-align: center;">
+            <a href="#" target="_blank"><i class="fab fa-facebook-f"></i>@sollustecnologiaoficial</a>
+            <a href="#" target="_blank"><i class="fab fa-youtube"></i>@sollustecnologia4813</a>
+            <a href="#" target="_blank"><i class="fab fa-instagram"></i>@sollustecnologia</a>
+            <a href="#" target="_blank"><i class="fab fa-linkedin-in"></i> sollus-tecnologia-pontoeacesso</a>
+          </span>
         </p>
       </div>
+      {% elif recibo.unidade == 'Sollus Campos' %}
+      <div class="footer">
+        <p class="pull-right" style="text-align: center;">
+          Sollus Comércio e Tecnologia em Controle de Ponto e Acesso LTDA<br>
+          Rua Barão da Lagoa Dourada, 187. Centro. Campos dos Goytacazes/RJ. - CEP: 28035-211.<br>
+          Telefone: (22) 2733-3722 - www.sollustecnologia.com<br>
+          <br>
+          <span style="display: inline-block; margin: 0 auto; text-align: center;">
+            <a href="#" target="_blank"><i class="fab fa-facebook-f"></i>@sollustecnologiaoficial</a>
+            <a href="#" target="_blank"><i class="fab fa-youtube"></i>@sollustecnologia4813</a>
+            <a href="#" target="_blank"><i class="fab fa-instagram"></i>@sollustecnologia</a>
+            <a href="#" target="_blank"><i class="fab fa-linkedin-in"></i>/company/sollus-tecnologia-pontoeacesso</a>
+          </span>
+        </p>
+      </div>
+      {% elif recibo.unidade == 'Sollus Espirito Santo' %}
+      <div class="footer">
+        <p class="pull-right" style="text-align: center;">
+          Sollus Comércio e Tecnologia em Controle de Ponto e Acesso LTDA<br>
+          Rodovia do Sol, 2780 - SL 914. Praia de Itaparica. Vila Velha/ES. - CEP: 29102-020.<br>
+          Telefone: (27) 3072-4863 - www.sollustecnologia.com<br>
+          <br>
+          <span style="display: inline-block; margin: 0 auto; text-align: center;">
+            <a href="#" target="_blank"><i class="fab fa-facebook-f"></i>@sollustecnologiaoficial</a>
+            <a href="#" target="_blank"><i class="fab fa-youtube"></i>@sollustecnologia4813</a>
+            <a href="#" target="_blank"><i class="fab fa-instagram"></i>@sollustecnologia</a>
+            <a href="#" target="_blank"><i class="fab fa-linkedin-in"></i>/company/sollus-tecnologia-pontoeacesso</a>
+          </span>
+        </p>
+      </div>
+      {% elif recibo.unidade == 'Sollus Curitiba' %}
+      <div class="footer">
+        <p class="pull-right" style="text-align: center;">
+          Sollus Comércio e Tecnologia em Controle de Ponto e Acesso LTDA<br>
+          Rua Carlos Dietzsch, 359 - Sala 05. Portão. Curitiba/PR. CEP: 80330-000.<br>
+          Telefone: (41) 3797-5093 - www.sollustecnologia.com<br>
+          <br>
+          <span style="display: inline-block; margin: 0 auto; text-align: center;">
+            <a href="#" target="_blank"><i class="fab fa-facebook-f"></i>@sollustecnologiaoficial</a>
+            <a href="#" target="_blank"><i class="fab fa-youtube"></i>@sollustecnologia4813</a>
+            <a href="#" target="_blank"><i class="fab fa-instagram"></i>@sollustecnologia</a>
+            <a href="#" target="_blank"><i class="fab fa-linkedin-in"></i>/company/sollus-tecnologia-pontoeacesso</a>
+          </span>
+        </p>
+      </div>
+      {% else %}
+      <div class="footer">
+        <p class="pull-right" style="text-align: center;">
+          Sollus Comércio e Tecnologia em Controle de Ponto e Acesso LTDA<br>
+          Av. Brasil, 31.904 - Bangu - Rio de Janeiro - RJ - CEP: 21.863-000.<br>
+          Telefone: (21) 2413-3203 / (21) 3245-6256 - www.sollustecnologia.com<br>
+          <br>
+          <span style="display: inline-block; margin: 0 auto; text-align: center;">
+            <a href="#" target="_blank"><i class="fab fa-facebook-f"></i>@sollustecnologiaoficial</a>
+            <a href="#" target="_blank"><i class="fab fa-youtube"></i>@sollustecnologia4813</a>
+            <a href="#" target="_blank"><i class="fab fa-instagram"></i>@sollustecnologia</a>
+            <a href="#" target="_blank"><i class="fab fa-linkedin-in"></i>/company/sollus-tecnologia-pontoeacesso</a>
+          </span>
+        </p>
+      </div>
+      {% endif %}
     </div>
     <button id="generate-pdf">Gerar PDF</button>
   </div>
@@ -257,43 +331,54 @@
             success: true,
             request_id: requestId,
             filename: pdfFilename,
-            dataUrl: reader.result
+            data_url: reader.result
           }, origin);
         };
         reader.readAsDataURL(blob);
       }
     }
 
-    async function handleGeneratePdf() {
+    async function handleGenerate() {
+      if (generatePdfButton) {
+        generatePdfButton.style.display = 'none';
+      }
       try {
-        generatePdfButton.disabled = true;
         const blob = await generatePdfBlob();
-        await sendPdfToParent(blob);
+        if (isEmbed) {
+          await sendPdfToParent(blob);
+        } else {
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+        }
       } catch (err) {
-        console.error('Erro ao gerar PDF do recibo:', err);
-        if (window.parent && window.parent !== window) {
+        if (isEmbed && window.parent && window.parent !== window) {
           window.parent.postMessage({
             type: 'recibo-pdf',
             success: false,
             request_id: requestId,
-            error: err.message || 'Erro ao gerar PDF.'
+            message: err.message || 'Erro ao gerar o PDF.'
           }, window.location.origin);
         }
       } finally {
-        generatePdfButton.disabled = false;
+        if (generatePdfButton && !isEmbed) {
+          generatePdfButton.style.display = 'block';
+        }
       }
     }
 
     if (generatePdfButton) {
-      generatePdfButton.addEventListener('click', handleGeneratePdf);
+      generatePdfButton.addEventListener('click', handleGenerate);
     }
-
+    if (generatePdfButton && isEmbed) {
+      generatePdfButton.style.display = 'none';
+    }
     if (auto) {
       window.addEventListener('load', () => {
-        setTimeout(handleGeneratePdf, 300);
+        setTimeout(handleGenerate, 120);
       });
     }
   </script>
+
 </body>
 
 </html>

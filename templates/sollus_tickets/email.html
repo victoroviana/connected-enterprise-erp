@@ -8,7 +8,12 @@
     </div>
     <div style="padding:22px">
       <h2 style="margin:0 0 8px">{{ ticket.number or ticket.id }} - {{ ticket.subject }}</h2>
-      <p style="margin:0 0 14px;color:#5b667a">{{ body }}</p>
+      <div style="margin:0 0 18px;color:#172033;white-space:pre-wrap;line-height:1.6;font-size:15px">{{ body }}</div>
+      {% if ticket.assignee and ticket.assignee.signature_path %}
+        <div style="margin:16px 0 18px;border-top:1px solid #e5eaf2;padding-top:12px">
+          <img src="{{ url_for('static', filename=ticket.assignee.signature_path, _external=True) }}" alt="Assinatura" style="max-width:520px;width:100%;height:auto;display:block;border-radius:4px">
+        </div>
+      {% endif %}
       <table style="width:100%;font-size:14px;border-collapse:collapse">
         <tr><td style="padding:6px 0;color:#5b667a">Status</td><td>{{ ticket.status_key }}</td></tr>
         <tr><td style="padding:6px 0;color:#5b667a">Prioridade</td><td>{{ ticket.priority_key }}</td></tr>

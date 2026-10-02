@@ -87,24 +87,40 @@
   100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
-/* --- 3. Modal: apenas border-radius e box-shadow (SEM backdrop-filter nem transform) --- */
-/* backdrop-filter no .modal-backdrop causa flickering severo no Chrome/Edge
-   quando combinado com animações Bootstrap. Usamos só opacidade. */
+/* --- 3. Modal: Efeito Frosted Glass / Backdrop Blur --- */
+.modal-backdrop {
+  background-color: rgba(15, 23, 42, 0.48) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), backdrop-filter 0.25s ease, -webkit-backdrop-filter 0.25s ease !important;
+}
+
 .modal-backdrop.show {
-  background-color: rgba(15, 23, 42, 0.5) !important;
+  opacity: 1 !important;
+  background-color: rgba(15, 23, 42, 0.48) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
 }
 
 .modal-content {
-  /* SEM backdrop-filter — cria novo stacking context e causa artefatos visuais */
   background: #fff !important;
   border: 1px solid rgba(0, 0, 0, 0.08) !important;
   border-radius: 16px !important;
-  box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.2) !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
 }
 
-html[data-theme="dark"] .modal-content {
+html[data-theme="dark"] .modal-content,
+[data-theme="dark"] .modal-content,
+[data-bs-theme="dark"] .modal-content {
   background: #1e2535 !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+.swal2-container.swal2-backdrop-show {
+  background-color: rgba(15, 23, 42, 0.48) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
 }
 
 .glass-panel {

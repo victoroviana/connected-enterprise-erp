@@ -3,6 +3,7 @@
 import os
 import uuid
 import unicodedata
+from datetime import datetime
 
 from sqlalchemy import func, or_
 
@@ -149,8 +150,9 @@ def _resolve_equipment_image_src(*values: object, index: dict[str, str] | None =
 
 
 def _deny_access():
-    if _wants_json():
-        return jsonify({"ok": False, "message": "Você não tem permissão para acessar esta área."}), 403
+    from flask import request
+    if "/api/" in getattr(request, "path", "") or _wants_json():
+        return jsonify({"error": "Access denied", "success": False, "message": "Você não tem permissão para acessar esta área."}), 403
     flash("Você não tem permissão para acessar esta área.", "warning")
     return redirect(url_for("sem_permissao", area="Cadastros"))
 
@@ -158,13 +160,19 @@ def _deny_access():
 @equipamentos_bp.before_request
 def _check_cadastros_access():
     from flask import request
-    if "/api/" in getattr(request, "path", ""):
-        return
     endpoint = getattr(request, "endpoint", "") or ""
     if endpoint and not endpoint.startswith("equipamentos_bp."):
         return
-    if not current_user.is_authenticated:
+    if endpoint == "sem_permissao":
         return
+    if not current_user.is_authenticated and not session.get("usuario_id") and not session.get("user_id"):
+        if "/api/" in getattr(request, "path", "") or _wants_json():
+            return jsonify({"error": "Authentication required", "success": False, "message": "Autenticação necessária"}), 401
+        try:
+            login_url = url_for("auth_bp.login", next=request.full_path if request.method == "GET" else None)
+        except Exception:
+            login_url = "/login"
+        return redirect(login_url)
     if endpoint == "equipamentos_bp.get_equipamento":
         return
     role_key = normalize_role_key(getattr(current_user, "tipo", None) or session.get("tipo"))
@@ -402,23 +410,42 @@ def cadastro_equipamentos():
             preco_float = 0.0
 
 
+        u_name = "Estoque"
+        try:
+            if current_user and getattr(current_user, "is_authenticated", False):
+                u_name = current_user.nome_completo or current_user.usuario or "Estoque"
+        except Exception:
+            pass
+
         eq = Equipment(
-
             name=form.name.data,
-
+            fabricante=(form.fabricante.data or "").strip() or None,
             description=form.description.data,
-
             unit_price=preco_float,
-
             quantity=int(form.quantity.data),
-
-            illustration_path=saved_path,  # j relativo a static/images
-
+            illustration_path=saved_path,  # já relativo a static/images
+            preco_anterior=None,
+            preco_alterado_em=datetime.utcnow(),
+            preco_alterado_por=u_name,
         )
 
         db.session.add(eq)
-
         db.session.commit()
+
+        try:
+            from modules.crm.models import CrmEquipamentoHistoricoPreco
+            hist = CrmEquipamentoHistoricoPreco(
+                equipment_id=eq.id,
+                preco_antigo=preco_float,
+                preco_novo=preco_float,
+                alterado_em=datetime.utcnow(),
+                alterado_por=u_name,
+                origem="estoque_cadastro",
+            )
+            db.session.add(hist)
+            db.session.commit()
+        except Exception:
+            pass
 
         flash("Equipamento cadastrado com sucesso.", "success")
 
@@ -451,6 +478,8 @@ def get_equipamento(id):
 
             "nome": eq.name,
 
+            "fabricante": eq.fabricante or "",
+
             "descricao": eq.description,
 
             "imagem": eq.illustration_path or "",
@@ -468,37 +497,46 @@ def get_equipamento(id):
 
 
 @equipamentos_bp.route("/equipamentos/<int:id>", methods=["POST"])
-
 @login_required
-
 def editar_equipamento(id):
-
     eq = Equipment.query.get_or_404(id)
-
     data = request.json or {}
-
-    eq.name = data.get("nome", eq.name)
-
-    eq.description = data.get("descricao", eq.description)
-
-
+    new_name = data.get("nome", eq.name)
+    new_desc = data.get("descricao", eq.description)
+    new_mfg = data.get("fabricante", eq.fabricante)
 
     preco_str = str(data.get("preco", eq.unit_price)).replace(".", "").replace(",", ".")
-
     try:
+        new_price = float(preco_str)
+    except (ValueError, TypeError):
+        new_price = eq.unit_price
 
-        eq.unit_price = float(preco_str)
-
-    except ValueError:
-
+    u_name = "Estoque"
+    try:
+        if current_user and getattr(current_user, "is_authenticated", False):
+            u_name = current_user.nome_completo or current_user.usuario or "Estoque"
+    except Exception:
         pass
 
-
+    try:
+        from modules.crm.services.crm_service import update_equipment_price_and_description
+        eq, _ = update_equipment_price_and_description(
+            equipment_id=eq.id,
+            new_price=new_price,
+            new_description=new_desc,
+            new_name=new_name,
+            new_fabricante=new_mfg,
+            user_name=u_name,
+            origem="estoque",
+        )
+    except Exception:
+        eq.name = new_name
+        eq.description = new_desc
+        eq.unit_price = new_price
+        eq.fabricante = (new_mfg or "").strip() or None
 
     eq.quantity = int(data.get("quantidade", eq.quantity))
-
     db.session.commit()
-
     return jsonify({"success": True})
 
 
@@ -668,6 +706,7 @@ def cadastro_pecas():
 
         pc = Part(
             name=form.name.data,
+            fabricante=(form.fabricante.data or "").strip() or None,
             description=form.description.data,
             unit_price=preco_float,
             quantity=int(form.quantity.data),
@@ -689,6 +728,7 @@ def get_peca(id):
         {
             "id": pc.id,
             "nome": pc.name,
+            "fabricante": pc.fabricante or "",
             "descricao": pc.description or "",
             "imagem": pc.illustration_path or "",
             "preco": pc.unit_price or 0.0,
@@ -703,6 +743,8 @@ def editar_peca(id):
     pc = Part.query.get_or_404(id)
     data = request.json or {}
     pc.name = data.get("nome", pc.name)
+    if "fabricante" in data:
+        pc.fabricante = (data.get("fabricante") or "").strip() or None
     pc.description = data.get("descricao", pc.description)
 
     preco_str = str(data.get("preco", pc.unit_price)).replace(".", "").replace(",", ".")

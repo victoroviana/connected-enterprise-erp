@@ -398,7 +398,10 @@
                   <i class="fa-solid fa-pen me-1"></i> Editar
                 </button>
                 <form method="post" action="{{ url_for('cracha_bp.pedidos_excluir', pedido_id=row.id) }}"
-                      onsubmit="return confirm('Deseja realmente excluir este pedido?');">
+                      data-confirm-delete="true"
+                      data-entity-type="Pedido de Crachá"
+                      data-entity-name="#{{ row.id }} - {{ row.empresa }}"
+                      data-confirm-warning="O pedido e todos os seus vínculos de produção serão excluídos permanentemente.">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="btn btn-outline-danger btn-sm">
                     <i class="fa-solid fa-trash me-1"></i> Excluir

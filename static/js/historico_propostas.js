@@ -1220,6 +1220,8 @@
   function normalizeParamValues(formData) {
     const mappings = [
       { select: 'pagto_equip', other: 'pagto_equip_other', target: 'pagamento' },
+      { select: 'pagto_servico', other: 'pagto_servico_other', target: 'pagamento_servico' },
+      { select: 'pagto_contrato', other: 'pagto_contrato_other', target: 'pagamento_contrato' },
       { select: 'prazo_entrega', other: 'prazo_entrega_other', target: 'prazo_entrega' },
       { select: 'frete', other: 'frete_other', target: 'frete' },
       { select: 'garantia_eq', other: 'garantia_eq_other', target: 'garantia' },
@@ -1422,6 +1424,8 @@
 
         const paramValues = {
           pagto_equip: data.pagamento,
+          pagto_servico: data.pagamento_servico,
+          pagto_contrato: data.pagamento_contrato,
           prazo_entrega: data.prazo_entrega,
           frete: data.frete,
           garantia_eq: data.garantia,

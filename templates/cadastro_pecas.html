@@ -128,7 +128,7 @@
 
   <div class="row g-4">
     <!-- Novo Cadastro Card -->
-    <div class="col-12 col-xl-4">
+    <div class="col-12 col-lg-4 col-xl-4">
       <div class="card pecas-card mb-4">
         <div class="card-header">
           <h5 class="card-title fw-bold mb-0">Cadastrar Nova Peça / Item</h5>
@@ -141,6 +141,14 @@
               <label for="{{ form.name.id }}" class="form-label">{{ form.name.label }}</label>
               {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="Ex: 27000025 - ALINHADOR") }}
               {% for error in form.name.errors %}
+                <div class="invalid-feedback">{{ error }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="mb-3">
+              <label for="{{ form.fabricante.id }}" class="form-label">{{ form.fabricante.label }}</label>
+              {{ form.fabricante(class="form-control" + (" is-invalid" if form.fabricante.errors else ""), placeholder="Ex: Henry, Control iD, EVO...") }}
+              {% for error in form.fabricante.errors %}
                 <div class="invalid-feedback">{{ error }}</div>
               {% endfor %}
             </div>
@@ -188,7 +196,7 @@
     </div>
 
     <!-- Lista de Itens -->
-    <div class="col-12 col-xl-8">
+    <div class="col-12 col-lg-8 col-xl-8">
       <div class="card pecas-card mb-4">
         <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
           <h5 class="card-title fw-bold mb-0">Itens Cadastrados</h5>
@@ -207,6 +215,7 @@
                 <tr>
                   <th scope="col" style="width: 70px;">Imagem</th>
                   <th scope="col">Nome / Código</th>
+                  <th scope="col">Fabricante</th>
                   <th scope="col" class="d-none d-md-table-cell">Descrição</th>
                   <th scope="col" class="text-end">Preço</th>
                   <th scope="col" class="text-center" style="width: 90px;">Quantidade</th>
@@ -225,6 +234,11 @@
                     </td>
                     <td>
                       <div class="fw-bold">{{ pc.name }}</div>
+                    </td>
+                    <td>
+                      <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 0.75rem;">
+                        {{ pc.fabricante or '-' }}
+                      </span>
                     </td>
                     <td class="d-none d-md-table-cell text-muted small">
                       {{ pc.description or '-' }}
@@ -248,7 +262,7 @@
                   </tr>
                 {% else %}
                   <tr>
-                    <td colspan="6" class="text-center py-5 text-muted">
+                    <td colspan="7" class="text-center py-5 text-muted">
                       <i class="bi bi-box-seam fs-2 mb-3 d-block"></i>
                       Nenhuma peça cadastrada.
                     </td>
@@ -301,6 +315,10 @@
           <div class="mb-3">
             <label for="pecaNome" class="form-label">Nome / Código</label>
             <input type="text" class="form-control" id="pecaNome" required>
+          </div>
+          <div class="mb-3">
+            <label for="pecaFabricante" class="form-label">Fabricante</label>
+            <input type="text" class="form-control" id="pecaFabricante" placeholder="Ex: Henry, Control iD, EVO...">
           </div>
           <div class="mb-3">
             <label for="pecaDescricao" class="form-label">Descrição</label>

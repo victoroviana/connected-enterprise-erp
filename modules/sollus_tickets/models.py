@@ -46,6 +46,10 @@ class SollusTicketTeam(db.Model):
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
+    @property
+    def active_members(self):
+        return [m for m in self.members if m.user and getattr(m.user, "is_active", True)]
+
 
 class SollusTicketTeamMember(db.Model):
     __tablename__ = "sollus_ticket_team_members"

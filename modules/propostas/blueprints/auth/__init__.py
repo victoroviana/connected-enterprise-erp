@@ -31,7 +31,7 @@ def login_required(f):
             flash("Please log in to access this page.", "danger")
             return redirect(url_for("auth_bp.login", next=request.path))
 
-        return jsonify(error="login_required"), 401
+        return jsonify({"error": "Authentication required", "success": False, "message": "Autenticação necessária"}), 401
 
     return decorated_function
 

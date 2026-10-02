@@ -1,10 +1,15 @@
-<div class="modal sollus-modal fade" id="modalNovoChamado" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-scrollable">
+<div class="modal modal-drawer-end fade" id="modalNovoChamado" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
     <form class="modal-content" method="post" action="{{ url_for((chamados_namespace or 'support_bp') ~ '.criar_chamado') }}" enctype="multipart/form-data">
       {{ create_form.csrf_token }}
       <div class="modal-header">
-        <h5 class="modal-title">Criar chamado</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        <div>
+          <span class="drawer-eyebrow-badge badge bg-primary-subtle text-primary border border-primary-subtle">CHAMADOS · NOVO REGISTRO</span>
+          <h5 class="modal-title mt-1 mb-0">Criar Chamado</h5>
+        </div>
+        <button type="button" class="btn-close-drawer" data-bs-dismiss="modal" aria-label="Fechar">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
       <div class="modal-body">
         <div class="row g-3">
@@ -92,20 +97,26 @@
   </div>
 </div>
 
-<div class="modal sollus-modal fade" id="modalEditarChamado" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-scrollable">
+<div class="modal modal-drawer-end fade" id="modalEditarChamado" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
     <form class="modal-content" method="post" enctype="multipart/form-data">
       {{ edit_form.csrf_token }}
       {{ edit_form.chamado_id }}
       <div class="modal-header">
-        <h5 class="modal-title">Editar chamado</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        <div>
+          <span class="drawer-eyebrow-badge badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">CHAMADOS · EDIÇÃO</span>
+          <h5 class="modal-title mt-1 mb-0">Editar Chamado</h5>
+        </div>
+        <button type="button" class="btn-close-drawer" data-bs-dismiss="modal" aria-label="Fechar">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
       <div class="modal-body">
-        <div class="d-none">
-          {{ edit_form.region(class="form-select") }}
-        </div>
         <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Filial / Unidade</label>
+            {{ edit_form.region(class="form-select", id="edit-chamado-region") }}
+          </div>
           <div class="col-md-6">
             <label class="form-label">Data do atendimento</label>
             {{ edit_form.data(class="form-control") }}
@@ -170,13 +181,18 @@
   </div>
 </div>
 
-<div class="modal sollus-modal fade" id="modalFecharChamado" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-scrollable">
+<div class="modal modal-drawer-end fade" id="modalFecharChamado" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
     <form class="modal-content" method="post" enctype="multipart/form-data">
       {{ close_form.csrf_token }}
       <div class="modal-header">
-        <h5 class="modal-title">Fechar chamado</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        <div>
+          <span class="drawer-eyebrow-badge badge bg-success-subtle text-success border border-success-subtle">CHAMADOS · FINALIZAÇÃO</span>
+          <h5 class="modal-title mt-1 mb-0">Fechar Chamado</h5>
+        </div>
+        <button type="button" class="btn-close-drawer" data-bs-dismiss="modal" aria-label="Fechar">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
       <div class="modal-body">
         <div class="row g-3">
@@ -226,15 +242,24 @@
   </div>
 </div>
 
-<div class="modal sollus-modal fade" id="modalDetalhesChamado" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-scrollable">
+<div class="modal modal-drawer-end fade" id="modalDetalhesChamado" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Detalhes do chamado</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        <div>
+          <span class="drawer-eyebrow-badge badge bg-info-subtle text-info border border-info-subtle">CHAMADOS · DETALHES</span>
+          <h4 class="modal-title mt-1 mb-0">Detalhes do Chamado</h4>
+        </div>
+        <button type="button" class="btn-close-drawer" data-bs-dismiss="modal" aria-label="Fechar">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
       <div class="modal-body">
         <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Filial / Unidade</label>
+            <input class="form-control" readonly data-detail="region_label">
+          </div>
           <div class="col-md-6">
             <label class="form-label">Empresa</label>
             <input class="form-control" readonly data-detail="cliente">

@@ -19,8 +19,44 @@
   .task-chip{padding:.2rem .55rem;border-radius:999px;background:#f1f5f9;color:#475569;font-weight:600;font-size:.8rem;}
   .task-form{display:flex;gap:.35rem;align-items:center;margin-top:.35rem;}
   .task-form select{min-width:140px;}
-  .empty-lane{color:#94a3b8;font-size:.9rem;font-weight:600;}
   .lane-card.border-primary{border:2px solid var(--bs-primary) !important;}
+
+  html[data-theme="dark"] .lane-card {
+    background: rgba(15, 23, 42, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  }
+  html[data-theme="dark"] .lane-title {
+    color: #f8fafc;
+  }
+  html[data-theme="dark"] .lane-count {
+    background: rgba(56, 189, 248, 0.16);
+    color: #38bdf8;
+  }
+  html[data-theme="dark"] .lane-owner {
+    background: rgba(99, 102, 241, 0.2);
+    color: #a5b4fc;
+  }
+  html[data-theme="dark"] .task-card {
+    background: #0f172a !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  }
+  html[data-theme="dark"] .task-title {
+    color: #f8fafc;
+  }
+  html[data-theme="dark"] .task-meta {
+    color: #94a3b8;
+  }
+  html[data-theme="dark"] .task-chip {
+    background: rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+  }
+  html[data-theme="dark"] .task-form select {
+    background-color: #0b1220;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #f8fafc;
+  }
 </style>
 {% endblock %}
 
@@ -107,6 +143,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form method="post" action="{{ url_for('assist_bp.assistencia_criar') }}" enctype="multipart/form-data">
+        {{ create_form.hidden_tag() }}
         <div class="modal-body">
           <div class="row g-3">
             <div class="col-md-6">{{ create_form.nome.label(class="form-label") }}{{ create_form.nome(class="form-control") }}</div>

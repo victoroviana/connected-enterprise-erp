@@ -1,4 +1,4 @@
-from app import create_app
+from platform_app import create_app
 
 
 def _make_client():

@@ -25,9 +25,9 @@
 <div class="py-4 ticket-premium-container">
   {% set pr = priorities.get(ticket.priority_key) %}
   
-  <div class="row g-4">
+  <div class="row g-3 g-xl-4 ticket-detail-row">
     <!-- Coluna Principal (Conversa/Thread) -->
-    <div class="col-12 col-xl-8">
+    <div class="col-12 col-md-7 col-lg-8 col-xl-8 ticket-main-col">
       <div class="card card-premium border-0 p-4 mb-4">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
           <div>
@@ -114,6 +114,16 @@
 
                 {# Corpo da mensagem — modo leitura #}
                 <div class="thread-body text-body" id="entry-body-{{ entry.id }}" style="font-size: 0.95rem;">{{ entry.body | format_thread_body }}</div>
+
+                {# Assinatura em imagem do autor, se houver #}
+                {% if entry.author and entry.author.signature_path and entry.type == 'reply' %}
+                  <div class="entry-signature-container mt-3 pt-2 border-top border-secondary border-opacity-10">
+                    <img src="{{ url_for('static', filename=entry.author.signature_path) }}"
+                         alt="Assinatura"
+                         class="img-fluid rounded"
+                         style="max-width: min(100%, 520px); height: auto; max-height: 220px; object-fit: contain; display: block;">
+                  </div>
+                {% endif %}
 
                 {# Indicador de edição #}
                 {% if entry.edited_at %}
@@ -288,8 +298,20 @@
                 </select>
               </div>
             {% endif %}
-            <textarea class="form-control mb-3" id="body" name="body" rows="6" placeholder="Escreva aqui sua resposta ou nota interna..." required></textarea>
+            <textarea class="form-control mb-2" id="body" name="body" rows="6" placeholder="Escreva aqui sua resposta ou nota interna..." required></textarea>
             
+            <div class="d-flex align-items-center justify-content-between mb-3 px-1 text-muted" id="agentSignatureStatus" style="font-size: 0.75rem;">
+              <span class="d-flex align-items-center gap-1">
+                <i class="bi bi-pen text-primary"></i>
+                <span id="agentSignatureLabel">Assinatura ativa</span>
+                <span id="agentSignatureImageBadge" style="display:none;" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill ms-1 fw-normal">
+                  <i class="bi bi-image me-1"></i>Imagem ativa
+                </span>
+              </span>
+              <a href="#" data-bs-toggle="modal" data-bs-target="#profileModal" class="text-decoration-none text-primary fw-medium" title="Personalizar minha assinatura">
+                <i class="bi bi-pencil-square me-1"></i>Editar minha assinatura
+              </a>
+            </div>
             <div class="mb-3">
               <label class="form-label small fw-bold text-muted" for="attachments">
                 <i class="bi bi-send me-1"></i> Anexos (Opcional)
@@ -328,34 +350,34 @@
     </div>
 
     <!-- Coluna Lateral (Gestão) -->
-    <div class="col-12 col-xl-4">
-      <div class="card card-premium border-0 p-4 sticky-top" style="top: 1.5rem; z-index: 10;">
-        <a class="btn btn-outline-secondary btn-sm w-100 rounded-pill mb-4" href="{{ url_for('sollus_tickets.dashboard') }}">
+    <div class="col-12 col-md-5 col-lg-4 col-xl-4 ticket-sidebar-col">
+      <div class="card card-premium border-0 p-3 p-xl-4 ticket-sidebar-sticky">
+        <a class="btn btn-outline-secondary btn-sm w-100 rounded-pill mb-3 mb-xl-4" href="{{ url_for('sollus_tickets.dashboard') }}">
           <i class="bi bi-arrow-left me-1"></i> Voltar ao Painel
         </a>
         <div class="sidebar-section-title"><i class="bi bi-info-circle-fill me-1"></i> Informações do Chamado</div>
-        <div class="rounded-4 p-3 mb-4" style="background: var(--premium-bg-soft);">
-          <div class="row g-3">
+        <div class="rounded-4 p-2 p-xl-3 mb-3 mb-xl-4" style="background: var(--premium-bg-soft);">
+          <div class="row g-2 g-xl-3">
             <div class="col-6">
-              <div class="small text-muted mb-1">Solicitante</div>
+              <div class="small text-muted mb-1" style="font-size: 0.75rem;">Solicitante</div>
               <div class="fw-bold small text-truncate" title="{{ ticket.requester_label }}">{{ ticket.requester_label }}</div>
               {% if ticket.contact and ticket.contact.email %}
-                <div class="small text-muted text-truncate" style="font-size: 0.8em;" title="{{ ticket.contact.email }}">{{ ticket.contact.email }}</div>
+                <div class="small text-muted text-truncate" style="font-size: 0.75em;" title="{{ ticket.contact.email }}">{{ ticket.contact.email }}</div>
               {% elif ticket.requester and ticket.requester.email %}
-                <div class="small text-muted text-truncate" style="font-size: 0.8em;" title="{{ ticket.requester.email }}">{{ ticket.requester.email }}</div>
+                <div class="small text-muted text-truncate" style="font-size: 0.75em;" title="{{ ticket.requester.email }}">{{ ticket.requester.email }}</div>
               {% endif %}
             </div>
             <div class="col-6">
-              <div class="small text-muted mb-1">Aberto em</div>
-              <div class="fw-bold small">{{ ticket.created_at | local('%d/%m/%Y') }}</div>
+              <div class="small text-muted mb-1" style="font-size: 0.75rem;">Aberto em</div>
+              <div class="fw-bold small text-truncate">{{ ticket.created_at | local('%d/%m/%Y') }}</div>
             </div>
             <div class="col-6">
-              <div class="small text-muted mb-1">Departamento</div>
-              <div class="fw-bold small">{{ ticket.department.name if ticket.department else 'Geral' }}</div>
+              <div class="small text-muted mb-1" style="font-size: 0.75rem;">Departamento</div>
+              <div class="fw-bold small text-truncate" title="{{ ticket.department.name if ticket.department else 'Geral' }}">{{ ticket.department.name if ticket.department else 'Geral' }}</div>
             </div>
             <div class="col-6">
-              <div class="small text-muted mb-1">SLA</div>
-              <div class="fw-bold small {{ 'text-danger' if ticket.overdue_at else '' }}">
+              <div class="small text-muted mb-1" style="font-size: 0.75rem;">SLA</div>
+              <div class="fw-bold small text-truncate {{ 'text-danger' if ticket.overdue_at else '' }}">
                 {{ ticket.due_at | local('%d/%m %H:%M') if ticket.due_at else '-' }}
               </div>
             </div>
@@ -473,9 +495,13 @@
                 </span>
               </div>
               {% if can_delete or can_manage %}
-                <form method="post" action="{{ url_for('sollus_tickets.delete_collaborator', ticket_id=ticket.id, collaborator_id=collab.id) }}" class="d-inline mb-0">
+                <form method="post" action="{{ url_for('sollus_tickets.delete_collaborator', ticket_id=ticket.id, collaborator_id=collab.id) }}" class="d-inline mb-0"
+                      data-confirm-delete="true"
+                      data-entity-type="Colaborador"
+                      data-entity-name="{{ collab.contact.name or collab.contact.email or 'Colaborador' }}"
+                      data-confirm-warning="O colaborador será removido do acompanhamento deste chamado.">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-link text-danger p-0 border-0 btn-sm"><i class="bi bi-trash"></i></button>
+                  <button class="btn btn-link text-danger p-0 border-0 btn-sm" title="Remover colaborador"><i class="bi bi-trash"></i></button>
                 </form>
               {% endif %}
             </div>
@@ -518,7 +544,11 @@
                   </span>
                 </div>
                 {% if can_link or can_merge %}
-                  <form method="post" action="{{ url_for('sollus_tickets.unrelate', relation_id=rel.id, back_id=ticket.id) }}" class="d-inline ms-2" onsubmit="return confirm('Deseja realmente remover a relação com o chamado {{ other_ticket.number or other_ticket.id }}?');">
+                  <form method="post" action="{{ url_for('sollus_tickets.unrelate', relation_id=rel.id, back_id=ticket.id) }}" class="d-inline ms-2"
+                        data-confirm-delete="true"
+                        data-entity-type="Vínculo de Chamado"
+                        data-entity-name="Chamado {{ other_ticket.number or ('#' ~ other_ticket.id) }}"
+                        data-confirm-warning="A vinculação entre os dois chamados será desfeita.">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Remover relação">
                       <i class="bi bi-x-circle fs-6"></i>
@@ -554,15 +584,14 @@
     </div>
   </div>
 </div>
-</div>
   <!-- Modal de Criação de Tarefa -->
   {% if can_tasks %}
-    <div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 p-3" style="background: var(--card); border-radius: 1.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
-          <div class="modal-header border-0 pb-0">
+    <div class="modal modal-drawer-end fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content border-0">
+          <div class="modal-header border-bottom">
             <h5 class="modal-title fw-bold" id="createTaskModalLabel"><i class="bi bi-plus-lg me-1"></i> Nova Tarefa</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close-drawer" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
           </div>
           <div class="modal-body pt-3">
             <form class="form-premium" method="post" action="{{ url_for('sollus_tickets.create_task', ticket_id=ticket.id) }}">
@@ -647,21 +676,24 @@
 {% endif %}
 
   <!-- Modal de Histórico de Edições de Entrada -->
-  <div class="modal fade" id="editHistoryModal" tabindex="-1" aria-labelledby="editHistoryModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content border-0 p-3" style="background: var(--card); border-radius: 1.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
-        <div class="modal-header border-0 pb-0">
-          <h5 class="modal-title fw-bold" id="editHistoryModalLabel"><i class="bi bi-clock-history me-2 text-warning"></i>Histórico de Edições</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+  <div class="modal modal-drawer-end fade" id="editHistoryModal" tabindex="-1" aria-labelledby="editHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content border-0">
+        <div class="modal-header border-bottom">
+          <div>
+            <span class="drawer-eyebrow-badge badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">AUDITORIA · HISTÓRICO</span>
+            <h5 class="modal-title mt-1 mb-0" id="editHistoryModalLabel"><i class="bi bi-clock-history me-2 text-warning"></i>Histórico de Edições</h5>
+          </div>
+          <button type="button" class="btn-close-drawer" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
         </div>
-        <div class="modal-body pt-3" style="max-height: 60vh; overflow-y: auto;">
+        <div class="modal-body p-4">
           <div id="editHistoryContent">
             <div class="text-center py-4 text-muted small">
               <span class="spinner-border spinner-border-sm me-2"></span>Carregando histórico...
             </div>
           </div>
         </div>
-        <div class="modal-footer border-0 pt-0">
+        <div class="modal-footer border-top">
           <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Fechar</button>
         </div>
       </div>
@@ -669,14 +701,17 @@
   </div>
 
   <!-- Modal de Detalhes do Histórico (Eventos de Sistema) -->
-  <div class="modal fade" id="systemEventsModal" tabindex="-1" aria-labelledby="systemEventsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content border-0 p-3" style="background: var(--card); border-radius: 1.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
-        <div class="modal-header border-0 pb-0">
-          <h5 class="modal-title fw-bold" id="systemEventsModalLabel"><i class="bi bi-info-circle me-2 text-primary"></i>Detalhes do Histórico</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+  <div class="modal modal-drawer-end fade" id="systemEventsModal" tabindex="-1" aria-labelledby="systemEventsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content border-0">
+        <div class="modal-header border-bottom">
+          <div>
+            <span class="drawer-eyebrow-badge badge bg-info-subtle text-info border border-info-subtle">AUDITORIA · EVENTOS</span>
+            <h5 class="modal-title mt-1 mb-0" id="systemEventsModalLabel"><i class="bi bi-info-circle me-2 text-primary"></i>Eventos do Sistema</h5>
+          </div>
+          <button type="button" class="btn-close-drawer" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
         </div>
-        <div class="modal-body pt-3" style="max-height: 60vh; overflow-y: auto;">
+        <div class="modal-body p-4">
           <div class="list-group list-group-flush">
             {% set event_list = ticket.events | sort(attribute='created_at') %}
             {% for item in event_list %}
@@ -717,7 +752,7 @@
             {% endfor %}
           </div>
         </div>
-        <div class="modal-footer border-0 pt-0">
+        <div class="modal-footer border-top">
           <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Fechar</button>
         </div>
       </div>
@@ -894,14 +929,29 @@
   fetch('{{ url_for("sollus_tickets.api_agent_signature") }}')
     .then(r => r.ok ? r.json() : null)
     .then(data => {
+      const sigLabel = document.getElementById('agentSignatureLabel');
+      const sigImgBadge = document.getElementById('agentSignatureImageBadge');
       if (data && data.signature && bodyTextarea && !bodyTextarea.value) {
         bodyTextarea.value = '\n\n' + data.signature;
         // posiciona o cursor no início
         bodyTextarea.setSelectionRange(0, 0);
         bodyTextarea.scrollTop = 0;
       }
+      if (sigLabel) {
+        if (data && data.signature_text) {
+          sigLabel.textContent = 'Assinatura personalizada ativa';
+        } else {
+          sigLabel.textContent = 'Assinatura padrão ativa';
+        }
+      }
+      if (sigImgBadge && data && data.signature_image_url) {
+        sigImgBadge.style.display = 'inline-block';
+      }
     })
-    .catch(() => {});
+    .catch(() => {
+      const sigLabel = document.getElementById('agentSignatureLabel');
+      if (sigLabel) sigLabel.textContent = 'Assinatura automática';
+    });
 
   /* ── Resposta rápida simples (select → textarea) ── */
   const cannedSelect = document.getElementById('cannedResponse');

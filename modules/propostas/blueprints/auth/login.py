@@ -5,7 +5,7 @@ from urllib.parse import urlparse, urljoin
 
 from flask import (
     render_template, redirect, url_for,
-    flash, request, session, current_app,
+    flash, request, session, current_app, jsonify, make_response,
 )
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
@@ -13,6 +13,7 @@ from pathlib import Path
 import time
 from werkzeug.security import check_password_hash
 
+from extensions import csrf
 from . import auth_bp         # Blueprint criado em __init__.py
 from .permissions_utils import (
     effective_permissions,
@@ -41,12 +42,22 @@ def _avatar_upload_dir() -> Path:
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@auth_bp.route("/login_ajax", methods=["POST"], endpoint="login_ajax")
+@csrf.exempt
 def login():
     current_app.logger.info("auth.login accessed method=%s", request.method)
 
+    is_ajax = (
+        request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        or request.is_json
+        or request.path.endswith("/login_ajax")
+        or request.args.get("ajax") == "1"
+    )
+
     if request.method == "POST":
-        login_identifier = (request.form.get("usuario") or request.form.get("email") or "").strip()
-        senha_form = request.form.get("senha") or request.form.get("password")
+        data = request.get_json(silent=True) or request.form.to_dict()
+        login_identifier = (data.get("usuario") or data.get("email") or "").strip()
+        senha_form = data.get("senha") or data.get("password")
 
         user = None
         if login_identifier:
@@ -74,6 +85,8 @@ def login():
                     "role_initials": role_initials,
                     "prox_num": user.prox_num or 1,
                     "avatar_path": user.avatar_path,
+                    "signature_path": user.signature_path,
+                    "signature_text": user.signature_text,
                     "phone": user.phone or '',
                     "extra_phones": user.extra_phones or [],
                     "permissions": perms,
@@ -81,16 +94,34 @@ def login():
             )
             session.permanent = True
 
-            flash("Login realizado com sucesso!", "success")
-            next_url = request.args.get("next")
+            next_url = request.args.get("next") or data.get("next")
             if not next_url or not _is_safe_url(next_url):
                 next_url = url_for("index")
+
+            if is_ajax:
+                return jsonify({
+                    "ok": True,
+                    "msg": "Login realizado com sucesso!",
+                    "redirect": next_url,
+                })
+
+            flash("Login realizado com sucesso!", "success")
             return redirect(next_url)
+
+        if is_ajax:
+            return jsonify({
+                "ok": False,
+                "msg": "Usuário ou senha inválidos.",
+            }), 401
 
         flash("Usuário ou senha inválidos.", "danger")
 
     current_app.logger.info("Rendering auth/login.html template")
-    return render_template("auth/login.html")
+    resp = make_response(render_template("auth/login.html"))
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
 
 
 @auth_bp.route("/logout")
@@ -101,9 +132,18 @@ def logout():
     return redirect(url_for("auth_bp.login"))
 
 
+def _signature_upload_dir() -> Path:
+    target = Path(current_app.static_folder) / "signatures"
+    target.mkdir(parents=True, exist_ok=True)
+    return target
+
+
 @auth_bp.route("/profile/avatar", methods=["POST"])
+@auth_bp.route("/profile/update", methods=["POST"])
 @login_required
 def update_avatar():
+    from PIL import Image
+
     file = request.files.get("avatar")
     filename = (file.filename or "") if file else ""
     ext = filename.rsplit(".", 1)[-1].lower() if file and "." in filename else ""
@@ -114,7 +154,7 @@ def update_avatar():
         ext = ""
 
     if file and ext not in ALLOWED_AVATAR_EXTENSIONS:
-        flash("Formatos permitidos: png, jpg, jpeg, webp.", "danger")
+        flash("Formatos de avatar permitidos: png, jpg, jpeg, webp.", "danger")
         return redirect(request.referrer or url_for("index"))
 
     phone_raw = (request.form.get("phone") or "").strip()
@@ -150,41 +190,67 @@ def update_avatar():
         session["avatar_path"] = relative_path
         avatar_updated = True
 
-    if not phone_changed and not extras_changed and not avatar_updated:
+    # ── Assinatura em texto ──
+    sig_text_raw = request.form.get("signature_text")
+    sig_text_changed = False
+    if sig_text_raw is not None:
+        clean_sig = sig_text_raw.strip() or None
+        if clean_sig != (current_user.signature_text or None):
+            current_user.signature_text = clean_sig
+            session["signature_text"] = clean_sig
+            sig_text_changed = True
+
+    # ── Remoção da imagem de assinatura ──
+    remove_sig = request.form.get("remove_signature_image") == "1"
+    sig_removed = False
+    if remove_sig and current_user.signature_path:
+        old_sig = Path(current_app.static_folder) / current_user.signature_path
+        try:
+            old_sig.unlink(missing_ok=True)
+        except Exception:
+            pass
+        current_user.signature_path = None
+        session["signature_path"] = None
+        sig_removed = True
+
+    # ── Upload de nova imagem de assinatura ──
+    sig_file = request.files.get("signature_image")
+    sig_filename = (sig_file.filename or "") if sig_file else ""
+    sig_ext = sig_filename.rsplit(".", 1)[-1].lower() if sig_file and "." in sig_filename else ""
+    if sig_file and not sig_filename:
+        sig_file = None
+
+    sig_updated = False
+    if sig_file:
+        if sig_ext not in {"png", "jpg", "jpeg", "webp"}:
+            flash("Formato de assinatura inválido. Use PNG, JPG ou WEBP.", "danger")
+            return redirect(request.referrer or url_for("index"))
+
+        sig_dir = _signature_upload_dir()
+        sig_name = f"user_{current_user.id}.png"
+        sig_dest = sig_dir / sig_name
+
+        try:
+            sig_file.stream.seek(0)
+            with Image.open(sig_file.stream) as img:
+                img = img.convert('RGBA')
+                img.thumbnail((800, 240), Image.LANCZOS)
+                img.save(str(sig_dest), format='PNG', optimize=True)
+            rel_sig_path = f"signatures/{sig_name}"
+            current_user.signature_path = rel_sig_path
+            session["signature_path"] = rel_sig_path
+            sig_updated = True
+        except Exception as exc:
+            current_app.logger.warning("Falha ao salvar assinatura em imagem: %s", exc)
+            flash("Erro ao processar imagem de assinatura.", "danger")
+            return redirect(request.referrer or url_for("index"))
+
+    if not phone_changed and not extras_changed and not avatar_updated and not sig_text_changed and not sig_removed and not sig_updated:
         flash("Nenhuma alteração realizada.", "info")
         return redirect(request.referrer or url_for("index"))
 
     from extensions import db  # import tardio para evitar ciclo
 
     db.session.commit()
-    flash("Perfil atualizado com sucesso!", "success")
-    return redirect(request.referrer or url_for("index"))
-
-    filename = file.filename or ""
-    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
-    if ext not in ALLOWED_AVATAR_EXTENSIONS:
-        flash("Formatos permitidos: png, jpg, jpeg, webp.", "danger")
-        return redirect(request.referrer or url_for("index"))
-
-    safe_name = secure_filename(f"avatar_{current_user.id}_{int(time.time())}.{ext}")
-    target_dir = _avatar_upload_dir()
-    destination = target_dir / safe_name
-    file.save(destination)
-
-    # Remove antigo
-    if current_user.avatar_path:
-        old = Path(current_app.static_folder) / current_user.avatar_path
-        try:
-            old.unlink(missing_ok=True)
-        except Exception:
-            pass
-
-    relative_path = f"uploads/avatars/{safe_name}"
-    current_user.avatar_path = relative_path
-    session["avatar_path"] = relative_path
-
-    from extensions import db  # import tardio para evitar ciclo
-
-    db.session.commit()
-    flash("Avatar atualizado com sucesso!", "success")
+    flash("Perfil e assinatura atualizados com sucesso!", "success")
     return redirect(request.referrer or url_for("index"))

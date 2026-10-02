@@ -29,6 +29,7 @@ from ...models import (
     SollusTicketDepartment,
     SollusTicketEmailTemplate,
     SollusTicketEmailTemplateGroup,
+    SollusTicketEvent,
     SollusTicketFieldValue,
     SollusTicketFilterRule,
     SollusTicketFormField,
@@ -392,7 +393,7 @@ def create_ticket_route():
 @login_required
 def detail(ticket_id: int):
     ticket = ticket_visible_query(current_user).filter(SollusTicket.id == ticket_id).first_or_404()
-    lock_ok, lock = acquire_ticket_lock(ticket, current_user, purpose="view", minutes=10)
+    lock_ok, lock = acquire_ticket_lock(ticket, current_user, purpose="view", minutes=3)
     return render_template(
         "sollus_tickets/detail.html",
         ticket=ticket,
@@ -823,6 +824,187 @@ def closed_tickets():
     )
 
 
+@sollus_tickets_bp.route("/historico-transferencias", endpoint="transfer_history")
+@login_required
+def transfer_history():
+    import ast
+    import json
+    from datetime import datetime, date
+    from sqlalchemy.orm import joinedload
+    from sqlalchemy import or_, cast, String
+    from modules.propostas.models import User
+
+    # Query params / filters
+    q = (request.args.get("q") or "").strip()
+    start_raw = (request.args.get("data_inicio") or "").strip()
+    end_raw = (request.args.get("data_fim") or "").strip()
+    origem_depto_id = _as_int(request.args.get("origem_depto_id"))
+    destino_depto_id = _as_int(request.args.get("destino_depto_id"))
+    tipo = (request.args.get("tipo") or "all").strip()
+    autor_id = _as_int(request.args.get("autor_id"))
+    page = max(1, _as_int(request.args.get("page")) or 1)
+    per_page = 25
+
+    start_date = _parse_date(start_raw)
+    end_date = _parse_date(end_raw, end_of_day=True)
+
+    base_query = (
+        SollusTicketEvent.query
+        .options(joinedload(SollusTicketEvent.ticket), joinedload(SollusTicketEvent.actor))
+        .filter(SollusTicketEvent.action == "transfer")
+    )
+
+    if start_date:
+        base_query = base_query.filter(SollusTicketEvent.created_at >= start_date)
+    if end_date:
+        base_query = base_query.filter(SollusTicketEvent.created_at <= end_date)
+    if autor_id:
+        base_query = base_query.filter(SollusTicketEvent.actor_user_id == autor_id)
+
+    if q:
+        clean_q = q.lstrip("#").strip()
+        base_query = base_query.join(SollusTicketEvent.ticket).filter(
+            or_(
+                SollusTicket.number.ilike(f"%{clean_q}%"),
+                SollusTicket.legacy_number.ilike(f"%{clean_q}%"),
+                cast(SollusTicket.id, String) == clean_q,
+                SollusTicket.subject.ilike(f"%{q}%"),
+            )
+        )
+
+    events_raw = base_query.order_by(SollusTicketEvent.created_at.desc()).all()
+
+    dept_map = {d.id: d.name for d in SollusTicketDepartment.query.all()}
+    all_users = User.query.all()
+    user_map = {u.id: (u.nome_completo or u.name or u.usuario or u.email) for u in all_users}
+
+    def _parse_payload(val: str | None) -> dict:
+        if not val:
+            return {}
+        try:
+            res = ast.literal_eval(val)
+            if isinstance(res, dict):
+                return res
+        except Exception:
+            pass
+        try:
+            res = json.loads(val)
+            if isinstance(res, dict):
+                return res
+        except Exception:
+            pass
+        return {}
+
+    today = date.today()
+    total_in_period = len(events_raw)
+    total_inter_dept = 0
+    total_today = 0
+
+    processed_events = []
+    for ev in events_raw:
+        before = _parse_payload(ev.before_value)
+        after = _parse_payload(ev.after_value)
+
+        b_dept_id = before.get("department_id")
+        a_dept_id = after.get("department_id")
+        b_assignee_id = before.get("assignee_id")
+        a_assignee_id = after.get("assignee_id")
+
+        b_dept_name = dept_map.get(b_dept_id) if b_dept_id else "Não atribuído"
+        a_dept_name = dept_map.get(a_dept_id) if a_dept_id else "Não atribuído"
+        b_assignee_name = user_map.get(b_assignee_id) if b_assignee_id else "Nenhum"
+        a_assignee_name = user_map.get(a_assignee_id) if a_assignee_id else "Nenhum"
+
+        is_inter_dept = (b_dept_id != a_dept_id)
+        is_same_dept = (b_dept_id == a_dept_id)
+
+        if is_inter_dept:
+            total_inter_dept += 1
+        if ev.created_at and ev.created_at.date() == today:
+            total_today += 1
+
+        if origem_depto_id and b_dept_id != origem_depto_id:
+            continue
+        if destino_depto_id and a_dept_id != destino_depto_id:
+            continue
+
+        if tipo == "inter_dept" and not is_inter_dept:
+            continue
+        if tipo == "same_dept" and not is_same_dept:
+            continue
+
+        reason = ""
+        if ev.message and "Motivo:" in ev.message:
+            reason = ev.message.split("Motivo:", 1)[1].strip()
+        elif ev.message and "motivo:" in ev.message.lower():
+            idx = ev.message.lower().find("motivo:")
+            reason = ev.message[idx + 7:].strip()
+
+        actor_label = "Sistema"
+        if ev.actor:
+            actor_label = ev.actor.nome_completo or ev.actor.name or ev.actor.usuario or ev.actor.email
+        elif ev.actor_user_id and ev.actor_user_id in user_map:
+            actor_label = user_map[ev.actor_user_id]
+
+        processed_events.append({
+            "id": ev.id,
+            "created_at": ev.created_at,
+            "ticket": ev.ticket,
+            "ticket_id": ev.ticket_id,
+            "actor_name": actor_label,
+            "origin_dept_id": b_dept_id,
+            "origin_dept_name": b_dept_name,
+            "dest_dept_id": a_dept_id,
+            "dest_dept_name": a_dept_name,
+            "origin_assignee_name": b_assignee_name,
+            "dest_assignee_name": a_assignee_name,
+            "is_inter_dept": is_inter_dept,
+            "reason": reason,
+            "raw_message": ev.message,
+        })
+
+    total_filtered = len(processed_events)
+    total_pages = max(1, (total_filtered + per_page - 1) // per_page)
+    if page > total_pages:
+        page = total_pages
+
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    paginated_items = processed_events[start_idx:end_idx]
+
+    departments = SollusTicketDepartment.query.order_by(SollusTicketDepartment.name.asc()).all()
+    actors = [u for u in all_users if u.is_active]
+    actors.sort(key=lambda u: (u.nome_completo or u.name or u.usuario or "").lower())
+
+    return render_template(
+        "sollus_tickets/transfer_history.html",
+        items=paginated_items,
+        departments=departments,
+        actors=actors,
+        filters={
+            "q": q,
+            "data_inicio": start_raw,
+            "data_fim": end_raw,
+            "origem_depto_id": origem_depto_id,
+            "destino_depto_id": destino_depto_id,
+            "tipo": tipo,
+            "autor_id": autor_id,
+        },
+        stats={
+            "total_period": total_in_period,
+            "total_inter_dept": total_inter_dept,
+            "total_today": total_today,
+            "total_filtered": total_filtered,
+        },
+        pagination={
+            "page": page,
+            "per_page": per_page,
+            "total": total_filtered,
+            "pages": total_pages,
+        },
+    )
+
+
 @sollus_tickets_bp.route("/relatorios", endpoint="reports")
 @login_required
 def reports():
@@ -1151,12 +1333,22 @@ def admin_settings():
             )
         except Exception as exc:
             db.session.rollback()
-            flash(f"Erro ao salvar configuração: {exc}", "danger")
+            msg = str(exc)
+            if "1062" in msg and "Duplicate entry" in msg:
+                flash("Já existe um registro com este mesmo identificador ou título. O sistema tentou ajustar, mas você pode usar um título levemente diferente.", "warning")
+            else:
+                flash(f"Erro ao salvar configuração: {exc}", "danger")
         return redirect(url_for("sollus_tickets.admin_settings"))
         
     try:
         from modules.propostas.models import User
-        all_active_users = User.query.filter(User.is_active.is_(True)).order_by(User.nome_completo.asc()).all()
+        from sqlalchemy import case
+        all_active_users = User.query.filter(User.is_active.is_(True)).order_by(
+            case((User.nome_completo.is_(None), 1), else_=0),
+            User.nome_completo.asc(),
+            User.usuario.asc(),
+            User.email.asc()
+        ).all()
         return render_template(
             "sollus_tickets/admin_settings.html",
             departments=SollusTicketDepartment.query.order_by(SollusTicketDepartment.name).all(),
@@ -1229,15 +1421,35 @@ def toggle_mailbox_active_route(mailbox_id: int):
 
 
 
+def _unique_slug(model_cls, base_text: str, current_id: int | None = None, fallback: str = "item") -> str:
+    raw_slug = (slugify(base_text) or fallback).strip("-")[:100]
+    if not raw_slug:
+        raw_slug = fallback
+    candidate = raw_slug
+    counter = 2
+    while True:
+        query = model_cls.query.filter(model_cls.slug == candidate)
+        if current_id:
+            query = query.filter(model_cls.id != current_id)
+        if not query.first():
+            return candidate
+        suffix = f"-{counter}"
+        max_base = 120 - len(suffix)
+        candidate = f"{raw_slug[:max_base]}{suffix}"
+        counter += 1
+
+
 def _upsert_department() -> None:
     item_id = _as_int(request.form.get("id"))
     dept = SollusTicketDepartment.query.get(item_id) if item_id else None
+    name = (request.form.get("name") or (dept.name if dept else "Departamento")).strip()
+    slug_input = (request.form.get("slug") or "").strip() or name
+    unique_slug = _unique_slug(SollusTicketDepartment, slug_input, current_id=item_id, fallback="departamento")
     if not dept:
-        name = (request.form.get("name") or "Departamento").strip()
-        dept = SollusTicketDepartment(name=name, slug=slugify(name))
+        dept = SollusTicketDepartment(name=name, slug=unique_slug)
         db.session.add(dept)
-    dept.name = (request.form.get("name") or dept.name).strip()
-    dept.slug = (request.form.get("slug") or slugify(dept.name)).strip()
+    dept.name = name
+    dept.slug = unique_slug
     dept.email = (request.form.get("email") or "").strip() or None
     dept.email_template_group_id = _as_int(request.form.get("email_template_group_id"))
     dept.is_active = request.form.get("is_active") == "on"
@@ -1248,13 +1460,15 @@ def _upsert_department() -> None:
 def _upsert_team() -> None:
     item_id = _as_int(request.form.get("id"))
     team = SollusTicketTeam.query.get(item_id) if item_id else None
+    name = (request.form.get("name") or (team.name if team else "Equipe")).strip()
+    slug_input = (request.form.get("slug") or "").strip() or name
+    unique_slug = _unique_slug(SollusTicketTeam, slug_input, current_id=item_id, fallback="equipe")
     if not team:
-        name = (request.form.get("name") or "Equipe").strip()
-        team = SollusTicketTeam(name=name, slug=slugify(name))
+        team = SollusTicketTeam(name=name, slug=unique_slug)
         db.session.add(team)
         db.session.flush()
-    team.name = (request.form.get("name") or team.name).strip()
-    team.slug = (request.form.get("slug") or slugify(team.name)).strip()
+    team.name = name
+    team.slug = unique_slug
     team.is_active = request.form.get("is_active") == "on"
     selected = {_as_int(value) for value in request.form.getlist("member_ids")}
     selected.discard(None)
@@ -1267,12 +1481,14 @@ def _upsert_team() -> None:
 def _upsert_queue() -> None:
     item_id = _as_int(request.form.get("id"))
     name = (request.form.get("name") or "Fila").strip()
+    slug_input = (request.form.get("slug") or "").strip() or name
+    unique_slug = _unique_slug(SollusTicketQueue, slug_input, current_id=item_id, fallback="fila")
     queue = SollusTicketQueue.query.get(item_id) if item_id else None
     if not queue:
-        queue = SollusTicketQueue(name=name, slug=slugify(name))
+        queue = SollusTicketQueue(name=name, slug=unique_slug)
         db.session.add(queue)
     queue.name = name
-    queue.slug = (request.form.get("slug") or slugify(name)).strip()
+    queue.slug = unique_slug
     queue.department_id = _as_int(request.form.get("department_id"))
     queue.team_id = _as_int(request.form.get("team_id"))
     queue.sort_order = _as_int(request.form.get("sort_order")) or 0
@@ -1283,12 +1499,14 @@ def _upsert_queue() -> None:
 def _upsert_sla() -> None:
     item_id = _as_int(request.form.get("id"))
     name = (request.form.get("name") or "SLA").strip()
+    slug_input = (request.form.get("slug") or "").strip() or name
+    unique_slug = _unique_slug(SollusTicketSLA, slug_input, current_id=item_id, fallback="sla")
     sla = SollusTicketSLA.query.get(item_id) if item_id else None
     if not sla:
-        sla = SollusTicketSLA(name=name, slug=slugify(name))
+        sla = SollusTicketSLA(name=name, slug=unique_slug)
         db.session.add(sla)
     sla.name = name
-    sla.slug = (request.form.get("slug") or slugify(name)).strip()
+    sla.slug = unique_slug
     sla.grace_period_hours = _as_int(request.form.get("grace_period_hours")) or 48
     sla.is_active = request.form.get("is_active") == "on"
     db.session.commit()
@@ -1297,12 +1515,14 @@ def _upsert_sla() -> None:
 def _upsert_topic() -> None:
     item_id = _as_int(request.form.get("id"))
     name = (request.form.get("name") or "Topico").strip()
+    slug_input = (request.form.get("slug") or "").strip() or name
+    unique_slug = _unique_slug(SollusTicketTopic, slug_input, current_id=item_id, fallback="topico")
     topic = SollusTicketTopic.query.get(item_id) if item_id else None
     if not topic:
-        topic = SollusTicketTopic(name=name, slug=slugify(name))
+        topic = SollusTicketTopic(name=name, slug=unique_slug)
         db.session.add(topic)
     topic.name = name
-    topic.slug = (request.form.get("slug") or slugify(name)).strip()
+    topic.slug = unique_slug
     topic.department_id = _as_int(request.form.get("department_id"))
     topic.is_active = request.form.get("is_active") == "on"
     db.session.commit()
@@ -1329,12 +1549,15 @@ def _upsert_field() -> None:
 def _upsert_canned() -> None:
     item_id = _as_int(request.form.get("id"))
     title = (request.form.get("title") or "Resposta").strip()
+    slug_input = (request.form.get("slug") or "").strip() or title
+    unique_slug = _unique_slug(SollusTicketCannedResponse, slug_input, current_id=item_id, fallback="resposta")
+
     canned = SollusTicketCannedResponse.query.get(item_id) if item_id else None
     if not canned:
-        canned = SollusTicketCannedResponse(title=title, slug=slugify(title), created_by_id=current_user.id)
+        canned = SollusTicketCannedResponse(title=title, slug=unique_slug, created_by_id=current_user.id)
         db.session.add(canned)
     canned.title = title
-    canned.slug = (request.form.get("slug") or slugify(title)).strip()
+    canned.slug = unique_slug
     canned.body = (request.form.get("body") or "").strip()
     canned.department_id = _as_int(request.form.get("department_id"))
     canned.is_active = request.form.get("is_active") == "on"
@@ -1678,18 +1901,29 @@ def api_topic_fields(topic_id: int):
 @sollus_tickets_bp.route("/api/agent/signature", endpoint="api_agent_signature")
 @login_required
 def api_agent_signature():
-    from flask import jsonify, send_file
+    from flask import jsonify, url_for
     from pathlib import Path
+
+    sig_text = (getattr(current_user, "signature_text", None) or "").strip()
+    if sig_text:
+        signature = f"\n\n--\n{sig_text}"
+    else:
+        name = getattr(current_user, "nome_completo", None) or getattr(current_user, "email", "")
+        signature = f"\n\n--\n{name}"
+
+    sig_image_url = None
     sig_path = getattr(current_user, "signature_path", None)
     if sig_path:
-        full_path = Path(current_app.config.get("UPLOADS_DIR", "uploads")) / sig_path
+        full_path = Path(current_app.static_folder) / sig_path
         if full_path.exists():
-            try:
-                return jsonify({"ok": True, "signature": full_path.read_text(encoding="utf-8")})
-            except Exception:
-                pass
-    name = getattr(current_user, "nome_completo", None) or getattr(current_user, "email", "")
-    return jsonify({"ok": True, "signature": f"\n\n--\n{name}"})
+            sig_image_url = url_for("static", filename=sig_path)
+
+    return jsonify({
+        "ok": True,
+        "signature": signature,
+        "signature_text": sig_text,
+        "signature_image_url": sig_image_url,
+    })
 
 
 # ---------------------------------------------------------------------------

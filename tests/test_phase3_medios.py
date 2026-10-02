@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 from io import BytesIO
 import openpyxl
 
-from app import create_app
+from platform_app import create_app
 from extensions import db, executor
 from utils.helpers import sanitize_html, submit_bg_task
 from modules.suporte.services.chamados import fetch_chamados, REGIONAL_BOARDS

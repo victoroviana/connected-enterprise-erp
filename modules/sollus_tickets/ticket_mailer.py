@@ -218,7 +218,29 @@ def process_email_queue(app) -> int:
                 item.status = "skipped"
                 item.last_error = "Sem destinatarios validos"
                 db.session.commit()
-                continue
+            if "SLA Vencida" in item.subject:
+                import re
+                from modules.sollus_tickets.models import SollusTicket
+                m = re.search(r"#([0-9a-zA-Z]+)", item.subject)
+                if m:
+                    raw_num = m.group(1)
+                    t_num = raw_num.lstrip("0") or "0"
+                    t_chk = SollusTicket.query.filter(
+                        (SollusTicket.number == raw_num) |
+                        (SollusTicket.number.like(f"%{t_num}%")) |
+                        (SollusTicket.id == int(t_num) if t_num.isdigit() else False)
+                    ).first()
+                    if t_chk and (
+                        t_chk.closed_at is not None
+                        or t_chk.resolved_at is not None
+                        or t_chk.status_key in ["closed", "resolved", "archived", "deleted"]
+                        or (getattr(t_chk, "status_rel", None) and getattr(t_chk.status_rel, "is_closed", False))
+                    ):
+                        item.status = "skipped"
+                        item.last_error = f"Descartado: ticket #{t_chk.number} ja esta resolvido/fechado (status={t_chk.status_key})."
+                        db.session.commit()
+                        app.logger.info("[tickets_mail] Alerta de SLA descartado da fila: ticket #%s ja resolvido.", t_chk.number)
+                        continue
 
             try:
                 msg = Message(subject=item.subject, recipients=recipients)
@@ -461,6 +483,14 @@ def send_sla_alert_email(ticket) -> bool:
     Dispara alerta de SLA vencida para o responsável pelo ticket.
     Usa template 'ticket.overlimit' ou fallback.
     """
+    # Blindagem: nunca alertar sobre tickets fechados ou resolvidos
+    if ticket.closed_at is not None or ticket.resolved_at is not None:
+        return False
+    if (ticket.status_key or "").lower() in ["closed", "resolved", "archived", "deleted"]:
+        return False
+    if getattr(ticket, "status_rel", None) and (ticket.status_rel.is_closed or (ticket.status_rel.state or "").lower() in ["closed", "archived"]):
+        return False
+
     # Limitar envio de e-mails a 2 vezes por dia: uma de manhã e uma de tarde (horário local)
     local_tz = get_local_timezone()
     now_local = datetime.now(local_tz)
@@ -572,13 +602,18 @@ def run_sla_alerts(app=None) -> int:
             SollusTicket.query
             .filter(
                 SollusTicket.overdue_at.isnot(None),
-                SollusTicket.status_key.notin_(["closed", "resolved", "archived"]),
-                SollusTicket.closed_at.is_(None),  # extra guard: never alert on closed tickets
+                SollusTicket.status_key.notin_(["closed", "resolved", "archived", "deleted"]),
+                SollusTicket.closed_at.is_(None),
+                SollusTicket.resolved_at.is_(None),  # extra guard: never alert on resolved tickets
             )
             .limit(100)
             .all()
         )
         for ticket in overdue_tickets:
+            if ticket.closed_at or ticket.resolved_at or ticket.status_key in ["closed", "resolved", "archived", "deleted"]:
+                continue
+            if getattr(ticket, "status_rel", None) and (ticket.status_rel.is_closed or (ticket.status_rel.state or "").lower() in ["closed", "archived"]):
+                continue
             try:
                 if send_sla_alert_email(ticket):
                     sent += 1

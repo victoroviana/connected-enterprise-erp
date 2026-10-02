@@ -43,6 +43,8 @@
       .then(data => {
         document.getElementById('pecaId').value = data.id;
         document.getElementById('pecaNome').value = data.nome;
+        const mfgEl = document.getElementById('pecaFabricante');
+        if (mfgEl) { mfgEl.value = data.fabricante || ''; }
         document.getElementById('pecaDescricao').value = data.descricao || '';
         document.getElementById('pecaPreco').value = (parseFloat(data.preco||0))
           .toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
@@ -57,8 +59,10 @@
 
   function salvarEdicaoPeca() {
     const id = document.getElementById('pecaId').value;
+    const mfgEl = document.getElementById('pecaFabricante');
     const payload = {
       nome: document.getElementById('pecaNome').value,
+      fabricante: mfgEl ? mfgEl.value : '',
       descricao: document.getElementById('pecaDescricao').value,
       preco: document.getElementById('pecaPreco').value,
       quantidade: parseInt(document.getElementById('pecaQuantidade').value, 10)

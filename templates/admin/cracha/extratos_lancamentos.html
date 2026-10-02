@@ -172,6 +172,7 @@
             <th>Descrição</th>
             <th class="text-end">Crédito / Débito</th>
             <th class="text-end">Saldo</th>
+            <th class="text-center" style="width: 80px;">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -197,11 +198,25 @@
             <td class="text-end fw-bold {{ 'saldo-value' if row.tipo == 'saldo' else 'text-dark' }}">
               {{ row.saldo_no_dia if row.saldo_no_dia is not none else '-' }}
             </td>
+            <td class="text-center">
+              {% if row.tipo == 'movimento' and row.id %}
+                <form method="post" action="{{ url_for('cracha_bp.extratos_excluir_lancamento', lancamento_id=row.id) }}" class="d-inline"
+                      data-confirm-delete="true"
+                      data-entity-type="Lançamento de Extrato"
+                      data-entity-name="{{ row.descricao or ('Lançamento #' ~ row.id) }}"
+                      data-confirm-warning="O lançamento será removido permanentemente e o saldo do extrato será recalculado automaticamente.">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-outline-danger btn-sm p-1 px-2" title="Remover lançamento">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </form>
+              {% endif %}
+            </td>
           </tr>
           {% endfor %}
           {% if not lancamentos %}
           <tr>
-            <td colspan="4" class="text-center text-muted py-4">Nenhum lançamento encontrado.</td>
+            <td colspan="5" class="text-center text-muted py-4">Nenhum lançamento encontrado.</td>
           </tr>
           {% endif %}
         </tbody>

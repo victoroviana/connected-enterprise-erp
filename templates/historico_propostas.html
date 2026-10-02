@@ -198,13 +198,46 @@
 
 
     #historyPdfModal .modal-footer{padding:1.2rem 1.25rem;}
-
-
-
   }
 
-
-
+  html[data-theme="dark"] .history-table thead {
+    background: rgba(255, 255, 255, 0.04);
+    color: #94a3b8;
+  }
+  html[data-theme="dark"] .history-table .version-row td {
+    background: rgba(15, 23, 42, 0.7);
+  }
+  html[data-theme="dark"] .version-item {
+    background: #0f172a;
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #f8fafc;
+  }
+  html[data-theme="dark"] .search-select-menu {
+    background: #0f172a;
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+  html[data-theme="dark"] .search-select-item {
+    color: #f8fafc;
+  }
+  html[data-theme="dark"] .search-select-item:hover,
+  html[data-theme="dark"] .search-select-item:focus {
+    background: rgba(0, 164, 245, 0.15);
+    color: #38bdf8;
+  }
+  html[data-theme="dark"] #historyPdfModal .modal-content {
+    background: #0b1220;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  html[data-theme="dark"] #historyPdfModal .modal-body {
+    background: #0b1220;
+  }
+  html[data-theme="dark"] #historyPdfModal .modal-footer {
+    background: #090e18;
+  }
+  html[data-theme="dark"] .ambiente-preview-thumb {
+    background: #0f172a;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
 </style>
 
 
@@ -647,6 +680,13 @@
           <div class="small text-muted">
             {{ version_label }}{% if proposta.is_original %} · Original{% endif %}{% if proposta.approved_at %} · Aprovada{% endif %}
           </div>
+          {% if session.get('tipo') not in ['admin', 'gestor'] %}
+            {% if proposta.usuario_id != session.get('usuario_id') %}
+              <div class="mt-1"><span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size:0.75rem;"><i class="bi bi-person-badge me-1"></i>Para: {{ (proposta.usuario.nome_completo if proposta.usuario else '') or (proposta.usuario.usuario if proposta.usuario else 'Consultor #' ~ proposta.usuario_id) }}</span></div>
+            {% elif proposta.created_by_id and proposta.created_by_id != session.get('usuario_id') and proposta.created_by_id != proposta.usuario_id %}
+              <div class="mt-1"><span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle" style="font-size:0.75rem;"><i class="bi bi-person-check me-1"></i>Criada por: {{ (proposta.created_by.nome_completo if proposta.created_by else '') or (proposta.created_by.usuario if proposta.created_by else 'Outro usuário') }}</span></div>
+            {% endif %}
+          {% endif %}
         </td>
 
 
@@ -688,13 +728,12 @@
 
 
         {% if session.get('tipo') in ['admin', 'gestor'] %}
-
-
-
-          <td>{{ proposta.usuario.nome_completo or proposta.usuario.usuario }}</td>
-
-
-
+          <td>
+            <strong>{{ (proposta.usuario.nome_completo if proposta.usuario else '') or (proposta.usuario.usuario if proposta.usuario else 'Consultor #' ~ proposta.usuario_id) }}</strong>
+            {% if proposta.created_by and proposta.created_by_id != proposta.usuario_id %}
+              <div class="small text-muted"><i class="bi bi-person-fill-gear me-1"></i>Criada por {{ (proposta.created_by.nome_completo if proposta.created_by else '') or (proposta.created_by.usuario if proposta.created_by else 'Outro usuário') }}</div>
+            {% endif %}
+          </td>
         {% endif %}
 
 
@@ -752,17 +791,13 @@
 
 
             <form method="post"
-
-
-
                   action="{{ url_for('propostas_bp.excluir_proposta', id=proposta.id) }}"
-
-
-
-                  onsubmit="return confirm('Deseja realmente excluir esta proposta?')">
-
-
-
+                  data-confirm-delete="true"
+                  data-entity-type="Proposta Comercial"
+                  data-entity-name="Proposta #{{ proposta.id }} — {{ proposta.client_name or proposta.company }}"
+                  data-entity-detail="Empresa: {{ proposta.company }} | Valor: R$ {{ '%.2f'|format(proposta.total_price or 0.0) }}"
+                  data-confirm-warning="A proposta será excluída permanentemente. Esta ação não pode ser desfeita.">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
               <button class="btn btn-outline-danger btn-sm history-action-btn">Excluir</button>
 
 
@@ -789,7 +824,7 @@
           <div class="version-list">
             {% for versao in versions %}
             {% set versao_label = 'Versão ' ~ (versao.version_number or loop.index) %}
-            {% set can_approve = session.get('tipo') in ['admin', 'gestor'] or versao.usuario_id == session.get('usuario_id') %}
+            {% set can_approve = session.get('tipo') in ['admin', 'gestor'] or versao.usuario_id == session.get('usuario_id') or (versao.created_by_id and versao.created_by_id == session.get('usuario_id')) %}
             <div class="version-item {% if versao.id == proposta.id %}is-current{% endif %}">
               <div class="version-main">
                 <span>{{ versao_label }}</span>
@@ -806,7 +841,7 @@
                   · Aprovada em {{ versao.approved_at_local | local('%d/%m/%Y %H:%M') }}
                 {% endif %}
                 {% if versao.approved_by %}
-                  · {{ versao.approved_by.nome_completo or versao.approved_by.usuario }}
+                  · {{ (versao.approved_by.nome_completo if versao.approved_by else '') or (versao.approved_by.usuario if versao.approved_by else '---') }}
                 {% endif %}
               </div>
               <div class="version-actions">
@@ -1443,6 +1478,38 @@
 
 
               <input type="text" name="pagto_equip_other" id="pagto_equip_other_edit" class="form-control">
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Condições de Pagamento (Serviço)</label>
+              <select class="form-select param-select-edit" id="pagto_servico_edit" name="pagto_servico">
+                <option value="">-- Selecione --</option>
+                {% for o in ParamOption.query.filter_by(category=ParamCategory.PAGTO_SERVICO).order_by(ParamOption.label) %}
+                <option value="{{ o.label }}">{{ o.label }}</option>
+                {% endfor %}
+                <option value="outros">Outros</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3 d-none" id="pagto_servico_other_edit_wrapper">
+              <label class="form-label">Condições de Pagamento (Serviço) (especifique)</label>
+              <input type="text" name="pagto_servico_other" id="pagto_servico_other_edit" class="form-control">
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Condições de Pagamento (Contrato)</label>
+              <select class="form-select param-select-edit" id="pagto_contrato_edit" name="pagto_contrato">
+                <option value="">-- Selecione --</option>
+                {% for o in ParamOption.query.filter_by(category=ParamCategory.PAGTO_CONTRATO).order_by(ParamOption.label) %}
+                <option value="{{ o.label }}">{{ o.label }}</option>
+                {% endfor %}
+                <option value="outros">Outros</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3 d-none" id="pagto_contrato_other_edit_wrapper">
+              <label class="form-label">Condições de Pagamento (Contrato) (especifique)</label>
+              <input type="text" name="pagto_contrato_other" id="pagto_contrato_other_edit" class="form-control">
 
 
 

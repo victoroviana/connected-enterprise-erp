@@ -167,6 +167,36 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Confirmação de Exclusão de Template -->
+<div class="modal sollus-modal fade" id="modalConfirmarExcluirTemplate" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger bg-opacity-10 border-bottom-0 pb-2">
+                <h5 class="modal-title fw-bold text-danger d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="mb-2">Deseja realmente excluir este tipo de orçamento?</p>
+                <div class="p-3 bg-light rounded-3 border text-center my-3">
+                    <span class="fs-5 fw-bold text-dark" id="modalExcluirTplLabel">-</span>
+                </div>
+                <div class="alert alert-warning d-flex align-items-center gap-2 mb-0 py-2 small">
+                    <i class="bi bi-info-circle flex-shrink-0 fs-5"></i>
+                    <span>Esta ação não pode ser desfeita. Os orçamentos existentes no histórico serão mantidos.</span>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light px-3" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger px-4 shadow-sm" id="btnConfirmarExcluirTemplate">
+                    <i class="bi bi-trash me-1"></i>Sim, Excluir
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -245,11 +275,60 @@
         }
     }
     
-    async function deleteTemplate(id, label) {
-        if (!confirm(`Tem certeza que deseja excluir o tipo de orçamento "${label}"?`)) {
+    let templateIdToDelete = null;
+
+    function getModalDeleteTpl() {
+        const el = document.getElementById('modalConfirmarExcluirTemplate');
+        if (!el) return null;
+        try {
+            if (window.bootstrap && window.bootstrap.Modal) {
+                return window.bootstrap.Modal.getOrCreateInstance(el);
+            }
+        } catch(e) {}
+        return null;
+    }
+
+    function deleteTemplate(id, label) {
+        templateIdToDelete = id;
+
+        if (window.showConfirmDeleteModal) {
+            window.showConfirmDeleteModal({
+                entityType: 'Template de Orçamento',
+                entityName: label,
+                prompt: `Tem certeza que deseja excluir o tipo de orçamento "${label}"?`,
+                warning: 'Esta ação não pode ser desfeita. O template de orçamento será removido permanentemente.',
+                confirmButtonText: 'Sim, Excluir Template',
+                onConfirm: () => executarExclusaoTemplate(id)
+            });
             return;
         }
-        
+
+        document.getElementById('modalExcluirTplLabel').textContent = label;
+        const modal = getModalDeleteTpl();
+        if (modal) {
+            modal.show();
+        } else if (confirm(`Tem certeza que deseja excluir o tipo de orçamento "${label}"?`)) {
+            executarExclusaoTemplate(id);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnConfirmar = document.getElementById('btnConfirmarExcluirTemplate');
+        if (btnConfirmar) {
+            btnConfirmar.addEventListener('click', function() {
+                if (templateIdToDelete) {
+                    executarExclusaoTemplate(templateIdToDelete);
+                }
+            });
+        }
+    });
+
+    async function executarExclusaoTemplate(id) {
+        const btn = document.getElementById('btnConfirmarExcluirTemplate');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Excluindo...';
+        }
         try {
             const response = await fetch(`{{ url_for('assist_bp.excluir_orcamento_template', template_id=0) }}`.replace('0', id), {
                 method: 'POST',
@@ -263,9 +342,17 @@
                 window.location.reload();
             } else {
                 alert(data.message || 'Erro ao excluir template.');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-trash me-1"></i>Sim, Excluir';
+                }
             }
         } catch (error) {
             alert('Erro ao excluir template.');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-trash me-1"></i>Sim, Excluir';
+            }
         }
     }
 

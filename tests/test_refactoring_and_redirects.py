@@ -1,5 +1,5 @@
 import pytest
-from app import create_app
+from platform_app import create_app
 from flask import Flask, request
 from utils.helpers import wants_json, normalize_dept_name, paginate, format_date, format_datetime
 from datetime import date, datetime
